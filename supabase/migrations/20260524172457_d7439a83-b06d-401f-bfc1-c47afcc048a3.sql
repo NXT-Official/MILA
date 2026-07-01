@@ -1,0 +1,4 @@
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS color_hue TEXT,
+  ADD COLUMN IF NOT EXISTS color_value TEXT,
+  ADD COLUMN IF NOT EXISTS color_chroma TEXT;
