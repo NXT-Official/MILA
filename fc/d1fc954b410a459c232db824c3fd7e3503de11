@@ -1,0 +1,19 @@
+README.md
+  s_48429800af21c3::t_ea79208ef9825d 1-260
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "fcd1fc954b410a459c232db824c3fd7e3503de11",
+  "prompts": {},
+  "sessions": {
+    "s_48429800af21c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3dc47aae-ce8e-41e8-ac8e-2f7c71e0250d",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
