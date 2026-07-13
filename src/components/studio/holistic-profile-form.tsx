@@ -7,12 +7,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  FACE_SHAPES,
-  HAIR_TYPES,
-  updateHolisticProfile,
-} from "@/lib/profile.functions";
+import { updateHolisticProfile } from "@/lib/profile.functions";
+import { FACE_SHAPES, HAIR_TYPES } from "@/constants/style-profile";
 import { cn } from "@/lib/utils";
+import { queryKeys } from "@/constants/query-keys";
 
 const schema = z.object({
   face_shape: z.enum(FACE_SHAPES, { message: "Select a face shape" }),
@@ -50,8 +48,7 @@ export function HolisticProfileForm({ userId, initial }: Props) {
     mutationFn: (values: FormValues) => saveFn({ data: values }),
     onSuccess: () => {
       toast.success("Your holistic profile is saved.");
-      qc.invalidateQueries({ queryKey: ["profile", userId] });
-      qc.invalidateQueries({ queryKey: ["holistic-profile", userId] });
+      qc.invalidateQueries({ queryKey: queryKeys.profile(userId) });
     },
     onError: (err: unknown) => {
       toast.error(err instanceof Error ? err.message : "Could not save.");
@@ -70,16 +67,13 @@ export function HolisticProfileForm({ userId, initial }: Props) {
         <span className="text-[10px] uppercase tracking-[0.32em] text-stone block">
           Holistic Profile
         </span>
-        <h3 className="font-serif text-2xl text-ink tracking-wide">
-          Face & Hair Signature
-        </h3>
+        <h3 className="font-serif text-2xl text-ink tracking-wide">Face & Hair Signature</h3>
         <p className="text-sm text-stone max-w-md mx-auto">
-          These details refine how Mila curates makeup, hair, and silhouette
-          guidance for your daily looks.
+          These details refine how Mila curates makeup, hair, and silhouette guidance for your daily
+          looks.
         </p>
       </div>
 
-      {/* Face Shape */}
       <div className="space-y-3">
         <label className="text-xs uppercase tracking-[0.2em] text-ink font-medium block">
           Face Shape
@@ -97,26 +91,23 @@ export function HolisticProfileForm({ userId, initial }: Props) {
                 className={cn(
                   "px-3 py-3 text-left rounded-xl border transition-all duration-300",
                   active
-                    ? "bg-white border-stone/40 shadow-atelier-soft -translate-y-[1px]"
-                    : "border-stone/10 bg-porcelain/30 hover:bg-white hover:border-stone/30"
+                    ? "bg-surface dark:bg-secondary border-stone/40 shadow-atelier-soft -translate-y-px"
+                    : "border-stone/10 bg-porcelain/30 hover:bg-surface dark:hover:bg-secondary hover:border-stone/30",
                 )}
               >
                 <span className="text-[11px] uppercase tracking-[0.22em] text-ink flex items-center justify-between gap-2">
                   {shape}
-                  {active && <Check className="h-3 w-3" />}
+                  {active && <Check className="size-3" />}
                 </span>
               </button>
             );
           })}
         </div>
         {form.formState.errors.face_shape && (
-          <p className="text-[11px] text-destructive">
-            {form.formState.errors.face_shape.message}
-          </p>
+          <p className="text-[11px] text-destructive">{form.formState.errors.face_shape.message}</p>
         )}
       </div>
 
-      {/* Hair Type */}
       <div className="space-y-3 pt-4 border-t border-porcelain/40">
         <label className="text-xs uppercase tracking-[0.2em] text-ink font-medium block">
           Hair Type
@@ -134,22 +125,20 @@ export function HolisticProfileForm({ userId, initial }: Props) {
                 className={cn(
                   "px-3 py-3 text-left rounded-xl border transition-all duration-300",
                   active
-                    ? "bg-white border-stone/40 shadow-atelier-soft -translate-y-[1px]"
-                    : "border-stone/10 bg-porcelain/30 hover:bg-white hover:border-stone/30"
+                    ? "bg-surface dark:bg-secondary border-stone/40 shadow-atelier-soft -translate-y-px"
+                    : "border-stone/10 bg-porcelain/30 hover:bg-surface dark:hover:bg-secondary hover:border-stone/30",
                 )}
               >
                 <span className="text-[11px] uppercase tracking-[0.22em] text-ink flex items-center justify-between gap-2">
                   {hair}
-                  {active && <Check className="h-3 w-3" />}
+                  {active && <Check className="size-3" />}
                 </span>
               </button>
             );
           })}
         </div>
         {form.formState.errors.hair_type && (
-          <p className="text-[11px] text-destructive">
-            {form.formState.errors.hair_type.message}
-          </p>
+          <p className="text-[11px] text-destructive">{form.formState.errors.hair_type.message}</p>
         )}
       </div>
 
@@ -160,9 +149,9 @@ export function HolisticProfileForm({ userId, initial }: Props) {
           className="text-xs uppercase tracking-widest h-11 px-8 rounded-none bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40"
         >
           {mutation.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+            <Loader2 className="size-3.5 mr-2 animate-spin" />
           ) : (
-            <Check className="h-3.5 w-3.5 mr-2" />
+            <Check className="size-3.5 mr-2" />
           )}
           Save Holistic Profile
         </Button>

@@ -1,11 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { aiChatCompletion } from "./ai.server";
+import {
+  CLOTHING_CATEGORIES as CATEGORIES,
+  CLOTHING_UNDERTONES as UNDERTONES,
+} from "@/constants/wardrobe";
 import { consumeAiCredit } from "./credits.server";
 import type { ClothingAttributes } from "./analyze-clothing.functions";
-
-const CATEGORIES = ["Tops", "Bottoms", "Outerwear", "Dresses", "Shoes", "Accessories"] as const;
-const UNDERTONES = ["Cool", "Warm", "Neutral"] as const;
 
 const Input = z.object({
   imageUrl: z.string().url(),
@@ -20,7 +22,10 @@ const tool = {
     parameters: {
       type: "object",
       properties: {
-        name: { type: "string", description: "Vivid luxury descriptor, e.g. 'cream quilted top-handle vanity case'." },
+        name: {
+          type: "string",
+          description: "Vivid luxury descriptor, e.g. 'cream quilted top-handle vanity case'.",
+        },
         category: { type: "string", enum: CATEGORIES as unknown as string[] },
         primary_color: { type: "string" },
         color_undertone: { type: "string", enum: UNDERTONES as unknown as string[] },
@@ -57,10 +62,6 @@ export type DupeHuntResult = {
   dupes: DupeMatch[];
 };
 
-/**
- * Score how strongly a product candidate matches the inspiration's
- * silhouette + color undertone + category.
- */
 function scoreCandidate(
   inspiration: ClothingAttributes,
   product: {
@@ -113,42 +114,33 @@ function scoreCandidate(
 
 export const findDupes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => Input.parse(input))
+  .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }): Promise<DupeHuntResult> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
-
     await consumeAiCredit(context.supabase, context.userId);
 
-    // Step 1 — extract structural attributes of the inspiration piece.
     const systemPrompt =
       "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract precise structural silhouette and color attributes so we can match budget dupes. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match. Always call the report_clothing_attributes tool.";
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extract the structural attributes for dupe hunting." },
-              { type: "image_url", image_url: { url: data.imageUrl } },
-            ],
-          },
-        ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "report_clothing_attributes" } },
-      }),
+    const aiRes = await aiChatCompletion({
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Extract the structural attributes for dupe hunting." },
+            { type: "image_url", image_url: { url: data.imageUrl } },
+          ],
+        },
+      ],
+      tools: [tool],
+      tool_choice: { type: "function", function: { name: "report_clothing_attributes" } },
     });
 
     if (aiRes.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-    if (aiRes.status === 402) throw new Error("AI credits exhausted. Add credits in Workspace settings.");
+    if (aiRes.status === 402) throw new Error("AI credits exhausted. Please try again later.");
     if (!aiRes.ok) {
       const t = await aiRes.text();
-      console.error("Gateway error", aiRes.status, t);
+      console.error("AI provider error", aiRes.status, t);
       throw new Error("Dupe extraction failed.");
     }
 
@@ -157,7 +149,6 @@ export const findDupes = createServerFn({ method: "POST" })
     if (!call) throw new Error("AI did not return attributes.");
     const inspiration = JSON.parse(call.function.arguments) as ClothingAttributes;
 
-    // Step 2 — query candidate products (scope by category first for speed).
     const { data: candidates, error } = await context.supabase
       .from("products")
       .select(
@@ -171,7 +162,6 @@ export const findDupes = createServerFn({ method: "POST" })
       throw new Error("Couldn't search the dupe catalog.");
     }
 
-    // Step 3 — score, sort, and return top N with affiliate links.
     const ranked = (candidates ?? [])
       .filter((p) => !!p.affiliate_link)
       .map((p) => {
@@ -181,7 +171,7 @@ export const findDupes = createServerFn({ method: "POST" })
       .filter((r) => r.score > 0)
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
-        return a.product.price - b.product.price; // cheaper wins on a tie
+        return a.product.price - b.product.price;
       })
       .slice(0, data.maxResults);
 

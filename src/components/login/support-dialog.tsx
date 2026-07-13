@@ -1,0 +1,110 @@
+import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { HelpCircle, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { submitSupportMessage } from "@/lib/support.functions";
+
+export function SupportDialog() {
+  const [feedbackType, setFeedbackType] = useState<"help" | "feedback">("help");
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const submitSupport = useServerFn(submitSupportMessage);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    setSubmitting(true);
+    try {
+      await submitSupport({ data: { kind: feedbackType, message: message.trim() } });
+      toast.success(
+        feedbackType === "help"
+          ? "Help request received. A Mila concierge technician will review your session shortly."
+          : "Studio feedback logged. Thank you for refining Mila's design intelligence.",
+      );
+      setMessage("");
+      setOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't send that. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <div className="flex items-center gap-5 text-[11px] text-muted-foreground">
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            onClick={() => setFeedbackType("help")}
+            className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <HelpCircle className="size-3.5" />
+            Studio Help Desk
+          </button>
+        </DialogTrigger>
+        <span className="h-3 w-px bg-border" />
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            onClick={() => setFeedbackType("feedback")}
+            className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <MessageSquare className="size-3.5" />
+            Send Feedback
+          </button>
+        </DialogTrigger>
+      </div>
+
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif">
+            {feedbackType === "help" ? "Mila Studio Help Desk" : "Send Feedback"}
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            {feedbackType === "help"
+              ? "Camera not catching your tones, lighting feeling off, or anything else not quite right? Tell us here."
+              : "Help optimize Mila's neural fashion matching matrices. Share your analytical feedback."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">
+              {feedbackType === "help"
+                ? "Describe the operational issue"
+                : "Your architectural observations"}
+            </Label>
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="min-h-25 text-sm resize-none"
+              required
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button
+              type="submit"
+              disabled={submitting || !message.trim()}
+              className="h-9 text-xs px-4"
+            >
+              {submitting ? "Transmitting…" : "Submit Transmission"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

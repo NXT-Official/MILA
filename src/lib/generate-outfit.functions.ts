@@ -1,21 +1,26 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { aiChatCompletion } from "./ai.server";
 import { consumeAiCredit } from "./credits.server";
+import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
+import { generateOutfitImage, isCloudflareRateLimitError } from "./cloudflare-image.server";
 
+// beautyPreferences is deliberately NOT part of this client-supplied input:
+// it's untrusted personalization data, so the handler loads it itself from
+// the authenticated user's profile (see below) instead of trusting whatever
+// shape the browser sends. bodyType/colorSeason/etc. remain client-supplied
+// for now — hardening those the same way is a separate, larger change.
 const Input = z.object({
   bodyType: z.string().min(1).max(64),
   colorSeason: z.string().min(1).max(64),
   skinUndertone: z.string().min(1).max(64).optional().nullable(),
   faceShape: z.string().min(1).max(64).optional().nullable(),
   hairType: z.string().min(1).max(64).optional().nullable(),
-  beautyPreferences: z.record(z.string(), z.unknown()).optional().nullable(),
   weather: z.string().min(1).max(120),
   tempF: z.number().min(-60).max(140).optional(),
   tempC: z.number().min(-50).max(60).optional(),
-  condition: z
-    .enum(["Sunny", "Cloudy", "Overcast", "Rain", "Snow", "Windy"])
-    .optional(),
+  condition: z.enum(["Sunny", "Cloudy", "Overcast", "Rain", "Snow", "Windy"]).optional(),
   location: z.string().min(1).max(120).optional(),
   lat: z.number().min(-90).max(90).optional(),
   lon: z.number().min(-180).max(180).optional(),
@@ -45,7 +50,8 @@ const tool = {
             },
             styling_notes: {
               type: "string",
-              description: "Quick adjustments, e.g. 'Roll cuffs, push up sleeves, half-tuck the shirt'.",
+              description:
+                "Quick adjustments, e.g. 'Roll cuffs, push up sleeves, half-tuck the shirt'.",
             },
           },
           required: ["headline", "description", "styling_notes"],
@@ -95,21 +101,90 @@ const tool = {
   },
 };
 
-export type DailyLook = {
-  outfit: { headline: string; description: string; styling_notes: string };
-  hair: { style: string; execution_tip: string };
-  makeup: { palette: string; details: string };
-  vibe_alignment_score: number;
+export const DailyLookSchema = z.object({
+  outfit: z.object({
+    headline: z.string().min(1),
+    description: z.string().min(1),
+    styling_notes: z.string().min(1),
+  }),
+  hair: z.object({
+    style: z.string().min(1),
+    execution_tip: z.string().min(1),
+  }),
+  makeup: z.object({
+    palette: z.string().min(1),
+    details: z.string().min(1),
+  }),
+  vibe_alignment_score: z.number().int().min(1).max(10),
+});
+export type DailyLook = z.infer<typeof DailyLookSchema>;
+
+/**
+ * The complete client-side result: the written look plus its visual (or why
+ * it's missing). Assembled client-side from two calls — generateDailyLook
+ * (Gemini) then regenerateOutfitImage (Cloudflare) — so the dashboard can
+ * render the written outfit the moment it's ready instead of waiting on the
+ * image too.
+ */
+export type GeneratedLook = DailyLook & {
+  imageDataUri: string | null;
+  imageGenerationError?: string;
 };
+
+function stripMarkdownFences(text: string): string {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fenced ? fenced[1].trim() : trimmed;
+}
+
+/** Maps an image-generation failure to a friendly, credential-free message for the UI. */
+function friendlyImageError(err: unknown): string {
+  if (isCloudflareRateLimitError(err)) {
+    return "The visual service is temporarily busy. Your written outfit is still available.";
+  }
+  return "The outfit was created, but its visual could not be generated.";
+}
+
+/** Generates the outfit visual from an already-validated Gemini result; never throws. */
+async function tryGenerateOutfitImage(
+  outfit: DailyLook,
+): Promise<{ imageDataUri: string | null; imageGenerationError?: string }> {
+  try {
+    const imageDataUri = await generateOutfitImage(outfit);
+    return { imageDataUri };
+  } catch (error) {
+    console.error(
+      "[generateOutfitImage] failed:",
+      error instanceof Error ? error.message : "Unknown error",
+    );
+    return { imageDataUri: null, imageGenerationError: friendlyImageError(error) };
+  }
+}
 
 export const generateDailyLook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => Input.parse(input))
+  .validator((input: unknown) => {
+    const parsed = Input.safeParse(input);
+    if (!parsed.success) {
+      // Safe to log in full: this input is occasion/weather/profile-shape
+      // strings, never credentials or tokens.
+      console.error("[generateDailyLook] invalid input", parsed.error.flatten());
+      throw new Error("Mila couldn't prepare your style profile for this look. Please try again.");
+    }
+    return parsed.data;
+  })
   .handler(async ({ data, context }): Promise<DailyLook> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
-
     await consumeAiCredit(context.supabase, context.userId);
+
+    const { data: profileRow, error: profileError } = await context.supabase
+      .from("profiles")
+      .select("beauty_preferences")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (profileError) {
+      console.error("[generateDailyLook] failed to load beauty preferences", profileError);
+    }
+    const beautyPreferences = normalizeBeautyPreferences(profileRow?.beauty_preferences);
 
     let tempF = data.tempF;
     let tempC = data.tempC;
@@ -148,33 +223,38 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     const conditionLine = condition ?? "Mixed";
     const locationLine = data.location ?? "the user's location";
 
-    const beautyPrefsLine = data.beautyPreferences
-      ? JSON.stringify(data.beautyPreferences)
-      : "none specified";
+    const beautyPrefsLine = formatBeautyPreferencesForPrompt(beautyPreferences);
 
     const faceShapeValue = data.faceShape?.trim() || null;
     const hairTypeValue = data.hairType?.trim() || null;
     const colorSeasonValue = data.colorSeason?.trim();
     if (!colorSeasonValue) throw new Error("Color season missing from profile.");
-    if (!data.bodyType?.trim()) throw new Error("Body type missing from profile. Complete your Studio dossier first.");
+    if (!data.bodyType?.trim())
+      throw new Error("Body type missing from profile. Complete your Studio dossier first.");
 
-    // Build the profile + hair lines conditionally — no silent "unspecified" placeholders.
     const profileLines = [
       `- Body type: ${data.bodyType}`,
       `- 16-season color profile: ${colorSeasonValue} (AUTHORITATIVE — every color reference in outfit/hair/makeup MUST be drawn from this exact season; do NOT substitute a different season name)`,
       data.skinUndertone ? `- Skin undertone: ${data.skinUndertone}` : null,
-      faceShapeValue ? `- Face shape: ${faceShapeValue} (use this exact face-shape name in the hair rationale)` : null,
-      hairTypeValue ? `- Hair type: ${hairTypeValue} (use this exact hair-type name in the hair rationale)` : null,
+      faceShapeValue
+        ? `- Face shape: ${faceShapeValue} (use this exact face-shape name in the hair rationale)`
+        : null,
+      hairTypeValue
+        ? `- Hair type: ${hairTypeValue} (use this exact hair-type name in the hair rationale)`
+        : null,
       `- Beauty preferences: ${beautyPrefsLine}`,
-    ].filter(Boolean).join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
 
-    const hairRule = (faceShapeValue && hairTypeValue)
-      ? `- HAIR (CROSS-REFERENCE REQUIRED): the 'style' MUST be a specific silhouette engineered for BOTH the user's hair type (${hairTypeValue}) AND face shape (${faceShapeValue}). Reference the face shape "${faceShapeValue}" by name inside the rationale. Name the silhouette concretely (parting, length, volume placement, finish). Explain in one clause how it balances the ${faceShapeValue} face shape. NEVER prescribe a silhouette that fights the hair type. The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
-      : hairTypeValue
-        ? `- HAIR: prescribe a concrete silhouette appropriate to ${hairTypeValue} hair (parting, length, volume placement, finish). The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
-        : faceShapeValue
-          ? `- HAIR: prescribe a concrete silhouette that flatters a ${faceShapeValue} face shape; reference it by name in the rationale. Name the silhouette concretely and give one execution tip.`
-          : `- HAIR: prescribe a concrete silhouette (parting, length, volume placement, finish) plus one execution tip.`;
+    const hairRule =
+      faceShapeValue && hairTypeValue
+        ? `- HAIR (CROSS-REFERENCE REQUIRED): the 'style' MUST be a specific silhouette engineered for BOTH the user's hair type (${hairTypeValue}) AND face shape (${faceShapeValue}). Reference the face shape "${faceShapeValue}" by name inside the rationale. Name the silhouette concretely (parting, length, volume placement, finish). Explain in one clause how it balances the ${faceShapeValue} face shape. NEVER prescribe a silhouette that fights the hair type. The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
+        : hairTypeValue
+          ? `- HAIR: prescribe a concrete silhouette appropriate to ${hairTypeValue} hair (parting, length, volume placement, finish). The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
+          : faceShapeValue
+            ? `- HAIR: prescribe a concrete silhouette that flatters a ${faceShapeValue} face shape; reference it by name in the rationale. Name the silhouette concretely and give one execution tip.`
+            : `- HAIR: prescribe a concrete silhouette (parting, length, volume placement, finish) plus one execution tip.`;
 
     const systemPrompt = `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup — from first principles. NOT from any inventory.
 
@@ -207,46 +287,55 @@ ${hairRule}
 
 Always call the report_daily_look tool.`;
 
-    // Server-side trace: full prompt + interpolated profile values so we can
-    // confirm that the AI is receiving the user's real dossier vectors.
-    // eslint-disable-next-line no-console
-    console.log("[generateDailyLook] resolved profile inputs", {
-      bodyType: data.bodyType,
-      colorSeason: colorSeasonValue,
-      skinUndertone: data.skinUndertone ?? null,
-      faceShape: faceShapeValue,
-      hairType: hairTypeValue,
-      beautyPreferences: data.beautyPreferences ?? null,
-      vibe: data.vibe,
-      tempF, tempC, condition, location: locationLine,
-    });
-    // eslint-disable-next-line no-console
-    console.log("[generateDailyLook] full system prompt →\n" + systemPrompt);
-
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: "Compose today's complete look." },
-        ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "report_daily_look" } },
-      }),
+    const res = await aiChatCompletion({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: "Compose today's complete look." },
+      ],
+      tools: [tool],
+      tool_choice: { type: "function", function: { name: "report_daily_look" } },
     });
 
     if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Add credits in Workspace settings.");
+    if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
     if (!res.ok) {
       const t = await res.text();
-      console.error("Gateway error", res.status, t);
+      console.error("AI provider error", res.status, t);
       throw new Error("Couldn't generate today's look.");
     }
 
     const json = await res.json();
     const call = json.choices?.[0]?.message?.tool_calls?.[0];
     if (!call) throw new Error("AI did not return a selection.");
-    return JSON.parse(call.function.arguments) as DailyLook;
+
+    let parsedArgs: unknown;
+    try {
+      parsedArgs = JSON.parse(stripMarkdownFences(call.function.arguments));
+    } catch (err) {
+      console.error("[generateDailyLook] AI returned non-JSON arguments", err);
+      throw new Error("Mila couldn't compose a look this time. Please try again.");
+    }
+
+    const look = DailyLookSchema.safeParse(parsedArgs);
+    if (!look.success) {
+      console.error("[generateDailyLook] AI response failed validation", look.error.flatten());
+      throw new Error("Mila couldn't compose a look this time. Please try again.");
+    }
+    return look.data;
   });
+
+/**
+ * Regenerates only the visual for an already-generated outfit — does not
+ * call Gemini again. Powers the dashboard's "Retry visual" action.
+ */
+export const regenerateOutfitImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => {
+    const parsed = DailyLookSchema.safeParse(input);
+    if (!parsed.success) {
+      console.error("[regenerateOutfitImage] invalid input", parsed.error.flatten());
+      throw new Error("Mila couldn't prepare that outfit for a new visual. Please try again.");
+    }
+    return parsed.data;
+  })
+  .handler(async ({ data }) => tryGenerateOutfitImage(data));

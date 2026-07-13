@@ -1,1 +1,0 @@
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS beauty_preferences jsonb NOT NULL DEFAULT '[]'::jsonb;

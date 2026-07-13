@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { getCurrentUserRoles } from "@/lib/admin.functions";
+import { hasPermission } from "@/lib/authorization";
 
 const CreatePostInput = z.object({
   image_path_back: z.string().min(1),
@@ -15,10 +17,12 @@ export interface FeedPost {
   caption: string | null;
   created_at: string;
   generated_look_id: string | null;
-  image_url_back: string; // signed
-  image_url_front: string; // signed
+  image_url_back: string;
+  image_url_front: string;
   author_name: string | null;
   is_self: boolean;
+  hidden?: boolean;
+  hidden_reason?: string | null;
 }
 
 export interface FeedResponse {
@@ -26,7 +30,7 @@ export interface FeedResponse {
   posts: FeedPost[];
 }
 
-const SIGNED_URL_TTL = 60 * 60; // 1 hour
+const SIGNED_URL_TTL = 60 * 60;
 
 function startOfTodayIso(): string {
   const d = new Date();
@@ -36,7 +40,7 @@ function startOfTodayIso(): string {
 
 export const createPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => CreatePostInput.parse(input))
+  .validator((input: unknown) => CreatePostInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
@@ -125,4 +129,71 @@ export const getFeed = createServerFn({ method: "GET" })
     }));
 
     return { has_posted_today: true, posts };
+  });
+
+const MemberProfileInput = z.object({ user_id: z.string().uuid() });
+
+export interface MemberProfileResponse {
+  profile: {
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    color_season: string | null;
+    face_shape: string | null;
+    hair_type: string | null;
+    created_at: string;
+  };
+  posts: FeedPost[];
+  can_view_hidden: boolean;
+}
+
+export const getMemberProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => MemberProfileInput.parse(input))
+  .handler(async ({ data, context }): Promise<MemberProfileResponse> => {
+    const roles = await getCurrentUserRoles(context.supabase, context.userId);
+    const canViewHidden =
+      data.user_id === context.userId || hasPermission(roles, "moderation.view");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const profileResult = await supabaseAdmin
+      .from("profiles")
+      .select("id,full_name,username,color_season,face_shape,hair_type,created_at")
+      .eq("id", data.user_id)
+      .maybeSingle();
+    if (profileResult.error || !profileResult.data) throw new Error("Member not found.");
+    const profile = profileResult.data;
+
+    let postsQuery = supabaseAdmin
+      .from("posts")
+      .select(
+        "id,user_id,caption,created_at,generated_look_id,image_url_back,image_url_front,hidden,hidden_reason",
+      )
+      .eq("user_id", data.user_id)
+      .order("created_at", { ascending: false })
+      .limit(80);
+    if (!canViewHidden) postsQuery = postsQuery.eq("hidden", false);
+    const { data: posts, error: postsError } = await postsQuery;
+    if (postsError) throw new Error("Couldn't load this member's posts.");
+
+    const paths = (posts ?? []).flatMap((post) => [post.image_url_back, post.image_url_front]);
+    const signed = paths.length
+      ? await supabaseAdmin.storage.from("posts").createSignedUrls(paths, SIGNED_URL_TTL)
+      : { data: [], error: null };
+    if (signed.error) throw new Error("Couldn't load this member's post images.");
+    const urlMap = new Map<string, string>();
+    for (const item of signed.data ?? []) {
+      if (item.path && item.signedUrl) urlMap.set(item.path, item.signedUrl);
+    }
+
+    return {
+      profile,
+      can_view_hidden: canViewHidden,
+      posts: (posts ?? []).map((post) => ({
+        ...post,
+        image_url_back: urlMap.get(post.image_url_back) ?? "",
+        image_url_front: urlMap.get(post.image_url_front) ?? "",
+        author_name: profile.full_name,
+        is_self: post.user_id === context.userId,
+      })),
+    };
   });

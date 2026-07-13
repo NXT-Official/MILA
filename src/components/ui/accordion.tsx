@@ -29,7 +29,7 @@ const AccordionTrigger = React.forwardRef<
       {...props}
     >
       {children}
-      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+      <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
 ));
@@ -53,12 +53,7 @@ const AccordionContent = React.forwardRef<
   }, []);
 
   return (
-    <AccordionPrimitive.Content
-      ref={ref}
-      forceMount
-      className="overflow-hidden text-sm"
-      {...props}
-    >
+    <AccordionPrimitive.Content ref={ref} forceMount className="overflow-hidden text-sm" {...props}>
       <div ref={innerRef} />
       <AnimatePresence initial={false}>
         {open && (
@@ -67,7 +62,7 @@ const AccordionContent = React.forwardRef<
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" as const }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             style={{ overflow: "hidden" }}
           >
             <div className={cn("pb-4 pt-0", className)}>{children}</div>

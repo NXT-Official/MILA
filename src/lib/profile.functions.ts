@@ -1,21 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-
-export const FACE_SHAPES = ["Oval", "Round", "Square", "Heart", "Diamond", "Oblong"] as const;
-export const HAIR_TYPES = ["Straight/Fine", "Wavy", "Curly", "Coily/Textured"] as const;
+import { FACE_SHAPES, HAIR_TYPES } from "@/constants/style-profile";
 
 const HolisticInput = z.object({
   face_shape: z.enum(FACE_SHAPES).nullable().optional(),
   hair_type: z.enum(HAIR_TYPES).nullable().optional(),
-  beauty_preferences: z
-    .union([z.array(z.string()), z.record(z.string(), z.unknown())])
-    .optional(),
+  beauty_preferences: z.union([z.array(z.string()), z.record(z.string(), z.unknown())]).optional(),
 });
 
 export const updateHolisticProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => HolisticInput.parse(input))
+  .validator((input: unknown) => HolisticInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const patch: Record<string, unknown> = { id: userId, updated_at: new Date().toISOString() };
@@ -33,7 +29,9 @@ export const getMyProfile = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("profiles")
-      .select("id,full_name,body_type,color_season,skin_undertone,face_shape,hair_type,beauty_preferences,color_profile")
+      .select(
+        "id,full_name,body_type,color_season,skin_undertone,face_shape,hair_type,beauty_preferences,color_profile",
+      )
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);

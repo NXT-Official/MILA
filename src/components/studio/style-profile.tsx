@@ -1,7 +1,7 @@
-import React from 'react';
-import { Sparkles } from 'lucide-react';
-import { SEASONS_DATA } from '../../lib/color-analysis/seasonsData';
-import { migrateLegacySeason } from '../../lib/color-analysis/schemaMigration';
+import React from "react";
+import { Sparkles } from "lucide-react";
+import { SEASONS_DATA } from "../../lib/color-analysis/seasonsData";
+import { migrateLegacySeason } from "../../lib/color-analysis/schemaMigration";
 
 interface StyleProfileProps {
   profile: {
@@ -16,19 +16,21 @@ export const ColorDossierSection: React.FC<StyleProfileProps> = ({ profile }) =>
 
   if (!seasonData) {
     return (
-      <div className="rounded-[20px] bg-card border border-border shadow-[0_4px_24px_rgba(43,35,28,0.07),0_1px_4px_rgba(43,35,28,0.04)] p-8 text-center max-w-2xl">
-        <div className="mx-auto mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-foreground/[0.06]">
-          <Sparkles className="h-5 w-5 text-[var(--atelier-gold)]" />
+      <div className="rounded-card bg-card border border-border shadow-paper p-8 text-center max-w-2xl">
+        <div className="mx-auto mb-4 inline-flex size-10 items-center justify-center rounded-full bg-foreground/6">
+          <Sparkles className="size-5 text-accent" />
         </div>
-        <h3 className="font-serif text-xl text-foreground tracking-tight">Your Color Dossier Awaits</h3>
+        <h3 className="font-serif text-xl text-foreground tracking-tight">
+          Your Color Dossier Awaits
+        </h3>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
           Complete your color analysis mapping to unlock your expert color dossier.
         </p>
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined') {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (typeof window !== "undefined") {
+              window.scrollTo({ top: 0, behavior: "smooth" });
             }
           }}
           className="mt-5 inline-flex items-center justify-center h-11 px-6 rounded-none bg-foreground text-background text-xs uppercase tracking-widest hover:bg-foreground/90 transition-colors"
@@ -42,7 +44,7 @@ export const ColorDossierSection: React.FC<StyleProfileProps> = ({ profile }) =>
   const sisterSeason = SEASONS_DATA[seasonData.sisterSeasonId];
 
   return (
-    <div className="space-y-6 max-w-2xl bg-card p-6 rounded-[20px] border border-border shadow-[0_4px_24px_rgba(43,35,28,0.07),0_1px_4px_rgba(43,35,28,0.04)]">
+    <div className="space-y-6 max-w-2xl bg-card p-6 rounded-card border border-border shadow-paper">
       <div>
         <h2 className="text-xl font-bold text-slate-900">{seasonData.name} Dossier</h2>
         <p className="text-xs text-slate-500">
@@ -50,10 +52,12 @@ export const ColorDossierSection: React.FC<StyleProfileProps> = ({ profile }) =>
         </p>
       </div>
 
-      <hr className="border-none border-t border-[var(--atelier-gold-muted)] opacity-60" />
+      <hr className="border-none border-t border-line opacity-60" />
 
       <div>
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">Your Core Profile Matrix</h4>
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+          Your Core Profile Matrix
+        </h4>
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div className="bg-slate-50 p-3 rounded-xl">
             <span className="text-slate-400 block">Depth Value</span>
@@ -76,7 +80,9 @@ export const ColorDossierSection: React.FC<StyleProfileProps> = ({ profile }) =>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2">Power Colors</h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2">
+            Power Colors
+          </h4>
           <ul className="space-y-1 text-sm text-slate-700">
             {seasonData.bestColorsDescription.map((color, index) => (
               <li key={index} className="flex items-center space-x-2">
@@ -87,7 +93,9 @@ export const ColorDossierSection: React.FC<StyleProfileProps> = ({ profile }) =>
           </ul>
         </div>
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-rose-600 mb-2">Muted / Avoid</h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-rose-600 mb-2">
+            Muted / Avoid
+          </h4>
           <ul className="space-y-1 text-sm text-slate-700">
             {seasonData.avoidColorsDescription.map((color, index) => (
               <li key={index} className="flex items-center space-x-2">
@@ -105,8 +113,10 @@ export const ColorDossierSection: React.FC<StyleProfileProps> = ({ profile }) =>
             Mila's Stylist Secret: Your Sister Season
           </span>
           <p className="leading-relaxed">
-            You share your key structural traits with <strong className="text-indigo-900">{sisterSeason.name}</strong>!
-            When shopping, you can comfortably borrow pieces from their palette as long as you pull them back into balance using your signature {seasonData.dimensions.undertone.toLowerCase()} accents.
+            You share your key structural traits with{" "}
+            <strong className="text-indigo-900">{sisterSeason.name}</strong>! When shopping, you can
+            comfortably borrow pieces from their palette as long as you pull them back into balance
+            using your signature {seasonData.dimensions.undertone.toLowerCase()} accents.
           </p>
         </div>
       )}
