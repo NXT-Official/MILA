@@ -99,7 +99,7 @@ export function AdminSidebar({
                     : "text-stone hover:text-ink hover:bg-background/60",
                 )}
               >
-                <Icon className="size-[18px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <Icon className="size-4.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
                 {label}
               </Link>
             );
