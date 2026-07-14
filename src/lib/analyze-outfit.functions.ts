@@ -2,6 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
+import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
+import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+
+const ANALYZE_OUTFIT_LIMIT = 15;
+const ANALYZE_OUTFIT_WINDOW_SECONDS = 60 * 60;
 
 const Input = z.object({
   imageUrl: z.string().url(),
@@ -46,7 +51,19 @@ const tool = {
 export const analyzeOutfit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    try {
+      await consumeRateLimit(
+        `ai:analyzeOutfit:${context.userId}`,
+        ANALYZE_OUTFIT_LIMIT,
+        ANALYZE_OUTFIT_WINDOW_SECONDS,
+      );
+    } catch (err) {
+      if (err instanceof RateLimitExceededError) throw new Error(err.message);
+      throw err;
+    }
+    const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
+
     const systemPrompt = `You are an expert fashion stylist and color analyst. You are evaluating an outfit for a user with a ${data.bodyType} body type and a ${data.colorSeason} color profile. Look at the attached image. Does the silhouette flatter their specific body type? Do the colors harmonize with their season? Be candid but encouraging. Always call the report_outfit_analysis tool with your findings.`;
 
     const res = await aiChatCompletion({
@@ -56,7 +73,7 @@ export const analyzeOutfit = createServerFn({ method: "POST" })
           role: "user",
           content: [
             { type: "text", text: "Analyze this outfit for me." },
-            { type: "image_url", image_url: { url: data.imageUrl } },
+            { type: "image_url", image_url: { url: imageUrl } },
           ],
         },
       ],

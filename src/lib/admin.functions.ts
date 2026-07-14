@@ -481,7 +481,7 @@ export const adminDashboardStats = createServerFn({ method: "GET" })
     };
   });
 
-async function recordStaffAction(
+export async function recordStaffAction(
   actorUserId: string,
   action: string,
   targetType: string,

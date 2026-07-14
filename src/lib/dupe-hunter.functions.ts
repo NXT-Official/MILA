@@ -7,7 +7,12 @@ import {
   CLOTHING_UNDERTONES as UNDERTONES,
 } from "@/constants/wardrobe";
 import { consumeAiCredit } from "./credits.server";
+import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import type { ClothingAttributes } from "./analyze-clothing.functions";
+
+const FIND_DUPES_LIMIT = 15;
+const FIND_DUPES_WINDOW_SECONDS = 60 * 60;
 
 const Input = z.object({
   imageUrl: z.string().url(),
@@ -116,7 +121,18 @@ export const findDupes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }): Promise<DupeHuntResult> => {
+    try {
+      await consumeRateLimit(
+        `ai:findDupes:${context.userId}`,
+        FIND_DUPES_LIMIT,
+        FIND_DUPES_WINDOW_SECONDS,
+      );
+    } catch (err) {
+      if (err instanceof RateLimitExceededError) throw new Error(err.message);
+      throw err;
+    }
     await consumeAiCredit(context.supabase, context.userId);
+    const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
 
     const systemPrompt =
       "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract precise structural silhouette and color attributes so we can match budget dupes. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match. Always call the report_clothing_attributes tool.";
@@ -128,7 +144,7 @@ export const findDupes = createServerFn({ method: "POST" })
           role: "user",
           content: [
             { type: "text", text: "Extract the structural attributes for dupe hunting." },
-            { type: "image_url", image_url: { url: data.imageUrl } },
+            { type: "image_url", image_url: { url: imageUrl } },
           ],
         },
       ],

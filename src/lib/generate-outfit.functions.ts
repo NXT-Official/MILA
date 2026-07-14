@@ -3,8 +3,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { consumeAiCredit } from "./credits.server";
+import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
 import { generateOutfitImage, isCloudflareRateLimitError } from "./cloudflare-image.server";
+
+const GENERATE_LOOK_LIMIT = 10;
+const GENERATE_LOOK_WINDOW_SECONDS = 60 * 60;
 
 // beautyPreferences is deliberately NOT part of this client-supplied input:
 // it's untrusted personalization data, so the handler loads it itself from
@@ -174,6 +178,16 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     return parsed.data;
   })
   .handler(async ({ data, context }): Promise<DailyLook> => {
+    try {
+      await consumeRateLimit(
+        `ai:generateDailyLook:${context.userId}`,
+        GENERATE_LOOK_LIMIT,
+        GENERATE_LOOK_WINDOW_SECONDS,
+      );
+    } catch (err) {
+      if (err instanceof RateLimitExceededError) throw new Error(err.message);
+      throw err;
+    }
     await consumeAiCredit(context.supabase, context.userId);
 
     const { data: profileRow, error: profileError } = await context.supabase

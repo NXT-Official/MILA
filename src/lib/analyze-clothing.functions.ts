@@ -2,10 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
+import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
+import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 import {
   CLOTHING_CATEGORIES as CATEGORIES,
   CLOTHING_UNDERTONES as UNDERTONES,
 } from "@/constants/wardrobe";
+
+const ANALYZE_CLOTHING_LIMIT = 20;
+const ANALYZE_CLOTHING_WINDOW_SECONDS = 60 * 60;
 
 const MODES = ["catalog", "dupe-hunt"] as const;
 export type AnalyzeClothingMode = (typeof MODES)[number];
@@ -64,7 +69,19 @@ export const analyzeClothing = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(async ({ data }): Promise<ClothingAttributes> => {
+  .handler(async ({ data, context }): Promise<ClothingAttributes> => {
+    try {
+      await consumeRateLimit(
+        `ai:analyzeClothing:${context.userId}`,
+        ANALYZE_CLOTHING_LIMIT,
+        ANALYZE_CLOTHING_WINDOW_SECONDS,
+      );
+    } catch (err) {
+      if (err instanceof RateLimitExceededError) throw new Error(err.message);
+      throw err;
+    }
+    const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
+
     const systemPrompt =
       data.mode === "dupe-hunt"
         ? "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract the structural silhouette and color attributes precisely so we can hunt budget dupes. The 'name' must be a vivid descriptor of the luxury reference, e.g. 'cream quilted top-handle vanity case with chain detailing'. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match (e.g. 'top-handle', 'quilted', 'structured', 'chain-strap'). Always call the report_clothing_attributes tool with strict capitalization."
@@ -77,7 +94,7 @@ export const analyzeClothing = createServerFn({ method: "POST" })
           role: "user",
           content: [
             { type: "text", text: "Catalogue this garment." },
-            { type: "image_url", image_url: { url: data.imageUrl } },
+            { type: "image_url", image_url: { url: imageUrl } },
           ],
         },
       ],

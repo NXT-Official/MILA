@@ -2,12 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
+import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 import {
   SEASON_HEX_MATRIX,
   SEASON_KEYS,
   SEASONS_MASTER_DATA,
   type SeasonKey,
 } from "@/constants/style-profile";
+
+const ANALYZE_COLOR_LIMIT = 10;
+const ANALYZE_COLOR_WINDOW_SECONDS = 60 * 60;
 
 const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 const TONE_TYPES = ["Warm Tone (Yellow Base)", "Cool Tone (Blue Base)"] as const;
@@ -255,6 +259,19 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
             "[analyzePersonalColor] AI provider not configured (AI_API_KEY / AI_BASE_URL / AI_MODEL)",
           );
           return { success: false, error: "CONFIG_MISSING_API_KEY" };
+        }
+
+        try {
+          await consumeRateLimit(
+            `ai:analyzePersonalColor:${context.userId}`,
+            ANALYZE_COLOR_LIMIT,
+            ANALYZE_COLOR_WINDOW_SECONDS,
+          );
+        } catch (err) {
+          if (err instanceof RateLimitExceededError) {
+            return { success: false, error: "ANALYSIS_RATE_LIMITED" };
+          }
+          throw err;
         }
 
         const callGateway = async (

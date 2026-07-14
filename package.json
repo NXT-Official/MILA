@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "start": "bun .output/server/index.mjs",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "bun test"
   },
   "dependencies": {
     "@hcaptcha/react-hcaptcha": "^2.0.2",

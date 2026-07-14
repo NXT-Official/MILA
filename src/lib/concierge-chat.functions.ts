@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { consumeAiCredit } from "./credits.server";
-import { checkRateLimit } from "./rate-limit.server";
+import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 import { deriveColorMetrics } from "./profile-color";
 import { normalizeBeautyPreferences } from "./beauty-preferences";
 import { HUBS } from "@/constants/climate";
@@ -136,11 +136,11 @@ export const conciergeChat = createServerFn({ method: "POST" })
     return parsed.data;
   })
   .handler(async ({ data, context }): Promise<ConciergeReply> => {
-    const rate = checkRateLimit(`concierge:${context.userId}`, RATE_LIMIT, RATE_WINDOW_MS);
-    if (!rate.ok) {
-      throw new Error(
-        `Mila is fielding a lot of questions right now. Please try again in about ${rate.retryAfterSeconds} seconds.`,
-      );
+    try {
+      await consumeRateLimit(`ai:concierge:${context.userId}`, RATE_LIMIT, RATE_WINDOW_MS / 1000);
+    } catch (err) {
+      if (err instanceof RateLimitExceededError) throw new Error(err.message);
+      throw err;
     }
 
     await consumeAiCredit(context.supabase, context.userId);

@@ -1,17 +1,47 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
+import { verifyHcaptcha } from "./hcaptcha.server";
+import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 
 const SubmitSupportMessageInput = z.object({
   kind: z.enum(["help", "feedback"]),
   message: z.string().trim().min(1).max(2000),
+  captchaToken: z.string().min(1).max(4000),
 });
+
+const SUPPORT_SUBMIT_LIMIT = 5;
+const SUPPORT_SUBMIT_WINDOW_SECONDS = 10 * 60;
+
+/** Best-effort caller IP, assuming the deployment's proxy sets x-forwarded-for. */
+function clientIp(): string {
+  const forwarded = getRequest()?.headers.get("x-forwarded-for");
+  return forwarded?.split(",")[0]?.trim() || "unknown";
+}
 
 // Unauthenticated on purpose: the login page redirects signed-in users away,
 // so submitters here never have a session. Writes go through the service
-// role — support_messages has no anon/authenticated INSERT grant.
+// role — support_messages has no anon/authenticated INSERT grant. Being
+// unauthenticated and open to the public internet, this is gated by both a
+// server-verified hCaptcha token and a per-IP rate limit.
 export const submitSupportMessage = createServerFn({ method: "POST" })
   .validator((input: unknown) => SubmitSupportMessageInput.parse(input))
   .handler(async ({ data }) => {
+    const ip = clientIp();
+
+    try {
+      await consumeRateLimit(
+        `support-message:${ip}`,
+        SUPPORT_SUBMIT_LIMIT,
+        SUPPORT_SUBMIT_WINDOW_SECONDS,
+      );
+    } catch (err) {
+      if (err instanceof RateLimitExceededError) throw new Error(err.message);
+      throw err;
+    }
+
+    await verifyHcaptcha(data.captchaToken, ip !== "unknown" ? ip : undefined);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("support_messages")

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { assertAdmin } from "@/lib/admin.functions";
+import { assertAdmin, recordStaffAction } from "@/lib/admin.functions";
 import {
   createPlanInputSchema,
   updatePlanInputSchema,
@@ -72,8 +72,18 @@ export const adminCreateSubscriptionPlan = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId);
     const db = await getAdminDb();
     if (data.is_featured) await unfeatureOtherPlans(db);
-    const { error } = await db.from("subscription_plans").insert(data);
+    const { data: created, error } = await db
+      .from("subscription_plans")
+      .insert(data)
+      .select("id")
+      .single();
     if (error) throwPlanError(error, "Couldn't create the plan.");
+    await recordStaffAction(context.userId, "plan.created", "subscription_plan", created.id, {
+      slug: data.slug,
+      title: data.title,
+      is_active: data.is_active,
+      is_featured: data.is_featured,
+    });
     return { ok: true };
   });
 
@@ -88,6 +98,9 @@ export const adminUpdateSubscriptionPlan = createServerFn({ method: "POST" })
     if (fields.is_featured === true) await unfeatureOtherPlans(db, id);
     const { error } = await db.from("subscription_plans").update(fields).eq("id", id);
     if (error) throwPlanError(error, "Couldn't update the plan.");
+    await recordStaffAction(context.userId, "plan.updated", "subscription_plan", id, {
+      changed_fields: Object.keys(fields),
+    });
     return { ok: true };
   });
 
@@ -113,6 +126,12 @@ export const adminSetSubscriptionPlanArchived = createServerFn({ method: "POST" 
       )
       .eq("id", data.id);
     if (error) throwPlanError(error, "Couldn't update the plan.");
+    await recordStaffAction(
+      context.userId,
+      data.archived ? "plan.retired" : "plan.restored",
+      "subscription_plan",
+      data.id,
+    );
     return { ok: true };
   });
 
@@ -126,6 +145,7 @@ export const adminDeleteSubscriptionPlan = createServerFn({ method: "POST" })
     const db = await getAdminDb();
     const { error } = await db.from("subscription_plans").delete().eq("id", data.id);
     if (error) throwPlanError(error, "Couldn't delete the plan.");
+    await recordStaffAction(context.userId, "plan.deleted", "subscription_plan", data.id);
     return { ok: true };
   });
 

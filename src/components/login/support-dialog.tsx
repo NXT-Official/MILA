@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { HelpCircle, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -20,14 +21,20 @@ export function SupportDialog() {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
   const submitSupport = useServerFn(submitSupportMessage);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
+    if (!captchaToken) {
+      toast.error("Please complete the captcha challenge.");
+      return;
+    }
     setSubmitting(true);
     try {
-      await submitSupport({ data: { kind: feedbackType, message: message.trim() } });
+      await submitSupport({ data: { kind: feedbackType, message: message.trim(), captchaToken } });
       toast.success(
         feedbackType === "help"
           ? "Help request received. A Mila concierge technician will review your session shortly."
@@ -38,6 +45,8 @@ export function SupportDialog() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't send that. Please try again.");
     } finally {
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
       setSubmitting(false);
     }
   };
@@ -94,10 +103,18 @@ export function SupportDialog() {
               required
             />
           </div>
+          <div className="flex justify-center">
+            <HCaptcha
+              ref={captchaRef}
+              sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY}
+              onVerify={setCaptchaToken}
+              onExpire={() => setCaptchaToken(null)}
+            />
+          </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button
               type="submit"
-              disabled={submitting || !message.trim()}
+              disabled={submitting || !message.trim() || !captchaToken}
               className="h-9 text-xs px-4"
             >
               {submitting ? "Transmitting…" : "Submit Transmission"}

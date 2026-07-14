@@ -10,11 +10,8 @@ import {
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/components/layout/theme-provider";
-import { THEME_STORAGE_KEY } from "@/constants/app";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorState } from "@/components/ui/error-state";
-
-const themeInitScript = `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}})()`;
 
 function NotFoundComponent() {
   return (
@@ -90,7 +87,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script src="/theme-init.js" />
         <HeadContent />
       </head>
       <body>

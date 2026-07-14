@@ -422,6 +422,24 @@ export type Database = {
           },
         ];
       };
+      rate_limit_buckets: {
+        Row: {
+          count: number;
+          key: string;
+          window_start: string;
+        };
+        Insert: {
+          count?: number;
+          key: string;
+          window_start: string;
+        };
+        Update: {
+          count?: number;
+          key?: string;
+          window_start?: string;
+        };
+        Relationships: [];
+      };
       staff_audit_log: {
         Row: {
           action: string;
@@ -481,6 +499,17 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      check_rate_limit: {
+        Args: {
+          _key: string;
+          _limit: number;
+          _window_seconds: number;
+        };
+        Returns: {
+          allowed: boolean;
+          retry_after_seconds: number;
+        }[];
+      };
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"];
