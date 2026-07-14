@@ -11,6 +11,7 @@
     "start": "bun .output/server/index.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
   "dependencies": {
