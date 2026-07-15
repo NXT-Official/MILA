@@ -11,8 +11,8 @@ moderated community feed, and chat with a conversational styling assistant.
 ![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06b6d4?logo=tailwindcss&logoColor=white)
 ![Bun](https://img.shields.io/badge/Bun-package_manager-f472b6?logo=bun&logoColor=white)
 
-No automated test suite, CI workflow, or license file currently exists in this repository —
-see [Testing](#testing) and [License](#license).
+Security-critical rate limiting, auth abuse protection, hCaptcha, and middleware have Bun tests
+and run in CI. No license file currently exists — see [Testing](#testing) and [License](#license).
 
 ## Table of Contents
 
@@ -507,19 +507,21 @@ automatically) — the terminal will print the local and LAN URLs once it's read
 
 ## Development Scripts
 
-| Command             | Description                                                                         |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `bun run dev`       | Starts the Vite/TanStack Start development server                                   |
-| `bun run build`     | Production build — bundles the client and packages the Nitro server into `.output/` |
-| `bun run build:dev` | Same build, in Vite's `development` mode                                            |
-| `bun run preview`   | Serves the production build locally for a final check                               |
-| `bun run start`     | Runs the already-built server: `bun .output/server/index.mjs`                       |
-| `bun run lint`      | Runs ESLint across the repository                                                   |
-| `bun run format`    | Formats the repository with Prettier                                                |
+| Command                 | Description                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| `bun run dev`           | Starts the Vite/TanStack Start development server                                   |
+| `bun run build`         | Production build — bundles the client and packages the Nitro server into `.output/` |
+| `bun run build:dev`     | Same build, in Vite's `development` mode                                            |
+| `bun run preview`       | Serves the production build locally for a final check                               |
+| `bun run start`         | Runs the already-built server: `bun .output/server/index.mjs`                       |
+| `bun run lint`          | Runs ESLint across the repository                                                   |
+| `bun run format`        | Formats the repository with Prettier                                                |
+| `bun run typecheck`     | Runs TypeScript without emitting files                                              |
+| `bun test`              | Runs the Bun unit and integration test suite                                        |
+| `bun run test:watch`    | Runs Bun tests in watch mode                                                        |
+| `bun run test:coverage` | Runs Bun tests with line/function coverage                                          |
 
-There is no `test`, `typecheck`, `db:migrate`, or `seed` script. `bun run build` runs the full
-TypeScript/Vite pipeline and will fail on type errors, which is the closest thing to a type-check
-command currently available — see [Potential Improvements](#project-status).
+There is no `db:migrate` or `seed` script. Supabase migrations live under `supabase/migrations/`.
 
 ## Development Workflow
 
@@ -580,8 +582,10 @@ TypeScript handling, and will fail the build on type errors.
 
 ## Testing
 
-No automated test script is currently defined in `package.json`, and no test files were found
-in the repository. There is no unit, integration, or end-to-end test suite today.
+`bun test` runs colocated unit tests for rate limiting, middleware, auth abuse protection,
+hCaptcha verification, and client/server secret boundaries. Cross-module request-pipeline tests
+live under `tests/integration/`; external Supabase and hCaptcha calls are mocked, so tests never
+use production credentials or network services. Run `bun run test:coverage` for coverage.
 
 If a test strategy is added later, reasonable starting points given the codebase would be:
 
@@ -688,12 +692,10 @@ there is no route-level redirect).
 (`consumeAiCredit` always returns `999`); in-app purchases and ad-reward tracking have database
 tables but no application code exercising them.
 
-**Missing**: automated tests, a CI workflow, a license file, and deployment automation/config.
+**Missing**: a license file and deployment automation/config.
 
 ### Potential improvements
 
-- Add a `typecheck` script (e.g. `tsc --noEmit`) so type-checking doesn't require a full build
-- Add an automated test suite, starting with the areas listed in [Testing](#testing)
 - Add a route-level `beforeLoad` admin check on `/admin` in addition to the existing server-side
   enforcement, so non-admins never see even the "Restricted" shell render
 - Decide and implement the `moderator` role's actual permissions, or remove it from the schema

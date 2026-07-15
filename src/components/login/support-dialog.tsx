@@ -106,9 +106,10 @@ export function SupportDialog() {
           <div className="flex justify-center">
             <HCaptcha
               ref={captchaRef}
-              sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY}
+              sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
               onVerify={setCaptchaToken}
               onExpire={() => setCaptchaToken(null)}
+              onError={() => setCaptchaToken(null)}
             />
           </div>
           <div className="flex justify-end gap-2 pt-1">

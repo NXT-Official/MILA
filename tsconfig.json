@@ -5,6 +5,10 @@
     "vite.config.ts",
     "eslint.config.js"
   ],
+  "exclude": [
+    "**/*.test.ts",
+    "tests"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -15,7 +19,9 @@
       "DOM.Iterable"
     ],
     "types": [
-      "vite/client"
+      "vite/client",
+      "bun",
+      "node"
     ],
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,

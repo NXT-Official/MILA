@@ -178,9 +178,10 @@ export function SignupForm({
       <div className="flex justify-center">
         <HCaptcha
           ref={captchaRef}
-          sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY}
+          sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
           onVerify={setCaptchaToken}
           onExpire={() => setCaptchaToken(null)}
+          onError={() => setCaptchaToken(null)}
         />
       </div>
 
