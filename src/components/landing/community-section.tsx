@@ -1,8 +1,6 @@
 import { Reveal } from "@/components/landing/reveal";
 import { SeasonTag } from "@/components/landing/season-tag";
 
-const SEASONS = ["True Summer", "Soft Autumn", "Deep Winter", "Light Spring"];
-
 export function CommunitySection() {
   return (
     <Reveal className="mx-auto w-full max-w-6xl px-6 pb-24">
@@ -14,7 +12,7 @@ export function CommunitySection() {
         dresses with intention.
       </p>
       <div className="mt-8 flex flex-wrap gap-3">
-        {SEASONS.map((s) => (
+        {["True Summer", "Soft Autumn", "Deep Winter", "Light Spring"].map((s) => (
           <SeasonTag key={s} season={s} />
         ))}
       </div>

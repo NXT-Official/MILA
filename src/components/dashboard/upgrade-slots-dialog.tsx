@@ -30,10 +30,6 @@ const CREDIT_PACKS = [
   },
 ];
 
-// IN DEVELOPMENT [credit-purchases]:
-// No payment provider is integrated yet. Buy-pack controls are disabled so
-// the client can never trigger a fake purchase.
-// See /IN_DEVELOPMENT.txt.
 export function UpgradeSlotsDialog({
   open,
   onOpenChange,
