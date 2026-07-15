@@ -3,6 +3,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 import { requireEnv } from "@/lib/env";
+import { consumeRateLimit, RATE_LIMIT_POLICIES } from "@/lib/rate-limit.server";
 
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
@@ -53,6 +54,13 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     if (!data.claims.sub) {
       throw new Error("Unauthorized: No user ID found in token");
     }
+
+    const isWrite = request.method.toUpperCase() !== "GET";
+    await consumeRateLimit(
+      `user:${isWrite ? "write" : "read"}`,
+      data.claims.sub,
+      isWrite ? RATE_LIMIT_POLICIES.writeFunction : RATE_LIMIT_POLICIES.generalFunction,
+    );
 
     const { data: profile } = await supabase
       .from("profiles")

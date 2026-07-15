@@ -502,9 +502,12 @@ export type Database = {
           _key: string;
           _limit: number;
           _window_seconds: number;
+          _cost?: number;
         };
         Returns: {
           allowed: boolean;
+          remaining: number;
+          reset_at: string;
           retry_after_seconds: number;
         }[];
       };

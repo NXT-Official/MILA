@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordVisibilityButton } from "@/components/ui/password-visibility-button";
 import { passwordChecks } from "@/constants/password";
+import { signUpWithPassword } from "@/lib/auth.functions";
 
 const signupSchema = z.object({
   username: z
@@ -73,23 +74,15 @@ export function SignupForm({
     }
     setBusy(true);
     try {
-      const { data: signUpData, error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: { username: data.username },
+      const { session } = await signUpWithPassword({
+        data: {
+          email: data.email,
+          password: data.password,
+          username: data.username,
           captchaToken,
         },
       });
-      if (error) throw error;
-      if (signUpData.user) {
-        const { error: profileErr } = await supabase
-          .from("profiles")
-          .update({ username: data.username })
-          .eq("id", signUpData.user.id);
-        if (profileErr) console.warn("Profile username update failed:", profileErr.message);
-      }
+      if (session) await supabase.auth.setSession(session);
       toast.success("Studio profile created. Check your inbox to confirm.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed");

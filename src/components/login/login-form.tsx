@@ -6,6 +6,7 @@ import * as z from "zod";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { signInWithPassword } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,12 +53,14 @@ export function LoginForm({
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-        options: { captchaToken },
+      const { session } = await signInWithPassword({
+        data: {
+          email: data.email,
+          password: data.password,
+          captchaToken,
+        },
       });
-      if (error) throw error;
+      if (session) await supabase.auth.setSession(session);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Authentication failed");
     } finally {
