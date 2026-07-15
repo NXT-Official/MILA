@@ -14,9 +14,6 @@ import { FinalCtaSection } from "@/components/landing/final-cta-section";
 import { SiteFooter } from "@/components/landing/site-footer";
 
 export const Route = createFileRoute("/")({
-  // Fast path for client-side navigations only — see the component-level
-  // check below for the SSR/hard-refresh case (beforeLoad is skipped
-  // server-side since the session lives in localStorage).
   beforeLoad: async ({ context }) => {
     if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getSession();
@@ -37,9 +34,6 @@ function LandingPage() {
     navigate({ to: viewer.destination });
   }, [loading, session, viewer.isLoading, viewer.destination, navigate]);
 
-  // A session exists but we haven't resolved where it belongs yet — avoid
-  // flashing marketing content at a signed-in visitor. Signed-out visitors
-  // (the common case) skip this entirely once `loading` resolves.
   if (session && (loading || viewer.isLoading)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">

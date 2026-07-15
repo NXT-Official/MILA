@@ -93,7 +93,6 @@ function historyItemTitle(analysis: NormalizedAnalysis): string {
   return "Saved Look";
 }
 
-/** An image with a graceful, styled fallback — never a broken-image icon or bare alt text. */
 function HistoryImage({
   src,
   alt,

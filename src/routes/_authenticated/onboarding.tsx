@@ -15,17 +15,6 @@ function OnboardingLayout() {
   const viewer = useAuthenticatedViewerState(user?.id);
   const navigate = useNavigate();
   const { signingOut, handleSignOut } = useSignOut();
-
-  // Snapshot "already complete" once per mount, from the first resolved
-  // read — deliberately NOT reactive after that. The guided wizard saves
-  // each required field (color/body/face/hair) as the user completes it, so
-  // isStyleProfileComplete can flip true mid-session while beauty
-  // preferences, location, and the review step are still ahead. Without
-  // freezing this, that flip would eject the user to /dashboard before they
-  // ever see the review screen. A fresh mount (reload, or reopening this
-  // route later) takes a new snapshot and correctly bounces an already-
-  // complete user straight out, per "completed users cannot reopen
-  // mandatory onboarding."
   const wasCompleteAtLoad = useRef<boolean | null>(null);
   if (wasCompleteAtLoad.current === null && user && !viewer.isLoading) {
     wasCompleteAtLoad.current = viewer.isStyleProfileComplete;

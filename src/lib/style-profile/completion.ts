@@ -15,13 +15,6 @@ export function isNonEmptyColorProfile(value: unknown): boolean {
   return "season" in obj || "primarySwatches" in obj;
 }
 
-/**
- * Single source of truth for "has this user finished the style-profile
- * quiz." beauty_preferences and default_location are intentionally
- * excluded — see docs/superpowers/specs/2026-07-10-auth-routing-onboarding-design.md.
- * `color_season` here must be the raw base-season DB column value
- * (Spring/Summer/Autumn/Winter), not a derived sub-season display string.
- */
 export function isStyleProfileComplete(profile: StyleProfileRow | null | undefined): boolean {
   if (!profile) return false;
   return (

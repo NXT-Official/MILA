@@ -11,7 +11,6 @@ import {
   seasonSaturation,
 } from "@/lib/style-profile";
 
-/** Converts a raw analysis/quiz/known-season result into the full dossier shape stored in `color_profile`. */
 export function studioToDossier(p: StudioColorProfile, prev?: StudioDossier): StudioDossier {
   const season = p.season as Season;
   return {
@@ -45,7 +44,6 @@ export function studioToDossier(p: StudioColorProfile, prev?: StudioDossier): St
   };
 }
 
-/** Normalizes whatever shape is stored in `color_profile` JSONB back into a StudioDossier, or null if empty/unrecognized. */
 export function normalizeStoredProfile(raw: any): StudioDossier | null {
   if (!raw || typeof raw !== "object") return null;
   if (Array.isArray(raw.primarySwatches) && Array.isArray(raw.fabrication) && raw.stylistNote) {

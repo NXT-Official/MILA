@@ -15,12 +15,6 @@ export function adminSubscriptionPlansQueryOptions() {
   });
 }
 
-/**
- * Active, non-archived plans in display order — the one query every public
- * membership surface shares. RLS enforces the active/non-archived filter
- * even without the explicit .eq/.is below; they keep the query honest and
- * index-friendly.
- */
 export function publicSubscriptionPlansQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.subscriptionPlans,

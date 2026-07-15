@@ -14,13 +14,6 @@ export const Route = createFileRoute("/_authenticated/_app/pricing")({
 
 const CTA_NOTICE_ID = "membership-purchasing-development-message";
 
-/**
- * Member-facing membership catalog — the destination of the header credit
- * counter. Renders the live `subscription_plans` table (active,
- * non-archived, in sort order) via the same shared query the Atelier
- * drawer summary points at. Display only: purchasing is gated by
- * FEATURES.membershipPurchasing until a real payment flow exists.
- */
 function PricingPage() {
   const { data, isLoading, isError, refetch } = useQuery(publicSubscriptionPlansQueryOptions());
 
@@ -57,8 +50,6 @@ function PricingPage() {
         />
       ) : (
         <>
-          {/* pt-5 leaves room for the floating "Recommended" badge and the
-              featured card's slight lift on large screens. */}
           <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
             {data.map((plan) => (
               <PricingCard key={plan.id} plan={plan} ctaDescribedById={CTA_NOTICE_ID} />
@@ -76,7 +67,6 @@ function PricingPage() {
   );
 }
 
-/** Mirrors the loaded layout (header stays real) so plans appear without layout shift. */
 function PricingSkeleton() {
   return (
     <div

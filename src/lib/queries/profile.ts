@@ -7,8 +7,6 @@ import type { Json } from "@/integrations/supabase/types";
 export type DashboardProfile = {
   body_type: string | null;
   color_season: string | null;
-  /** Raw `profiles.color_season` column (base season only) — use this,
-   * not `color_season`, for style-profile completion checks. */
   color_season_base: string | null;
   skin_undertone: string | null;
   full_name: string | null;

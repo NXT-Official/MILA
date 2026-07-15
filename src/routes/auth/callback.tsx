@@ -12,10 +12,6 @@ export const Route = createFileRoute("/auth/callback")({
   validateSearch: (search: Record<string, unknown>) => ({
     next: sanitizeNext(search.next),
   }),
-  // Fast path only — this route is always reached via a fresh top-level
-  // navigation from the OAuth provider, so beforeLoad is skipped
-  // server-side (no session readable during SSR) and may not re-run
-  // purely on hydration. The component below is the real fallback.
   beforeLoad: async ({ search, context }) => {
     if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getSession();
@@ -23,9 +19,6 @@ export const Route = createFileRoute("/auth/callback")({
       throw redirect({ href: search.next });
     }
     const viewer = await loadAuthenticatedViewerState(context.queryClient, data.session.user.id);
-    // Only honor the caller-supplied `next` (already internal-path-only,
-    // per sanitizeNext) when it doesn't override a higher-priority
-    // destination — admin and onboarding always win.
     const destination = viewer.destination === "/dashboard" ? search.next : viewer.destination;
     throw redirect({ href: destination, replace: true });
   },

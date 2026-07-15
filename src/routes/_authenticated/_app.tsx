@@ -12,11 +12,6 @@ import { useAuthenticatedViewerState, loadAuthenticatedViewerState } from "@/lib
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/_app")({
-  // Fast path for client-side (SPA) navigations, where `window` exists and
-  // this can redirect before ever rendering AppLayout. Skipped during SSR
-  // (no way to read a localStorage-backed session server-side) — the
-  // component-level check below is what actually protects this route tree,
-  // mirroring how _authenticated.tsx protects itself.
   beforeLoad: async ({ context, location }) => {
     if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getSession();
@@ -59,9 +54,6 @@ function AppLayout() {
     navigate,
   ]);
 
-  // Withhold member content until the client has confirmed this viewer
-  // belongs here — SSR can't resolve this (session lives in localStorage),
-  // so this render gate, not beforeLoad, is the real protection.
   if (
     !user ||
     viewer.isLoading ||
