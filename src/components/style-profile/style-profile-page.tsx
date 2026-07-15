@@ -168,9 +168,6 @@ export function StyleProfile() {
           if (normalized && !localStudioUpdateRef.current) {
             setDossier(normalized);
             setHasRealDossier(true);
-            // Restore the "Select Your Known Color Profile" tile selection
-            // from the loaded dossier — it was previously never hydrated,
-            // so a saved selection always rendered as unselected on refresh.
             const matchedGroup = KNOWN_SEASON_GROUPS.find((g) => g.season === normalized.season);
             const matchedTile = matchedGroup?.tiles.find(
               (t) => SEASONS_MASTER_DATA[t.key].subSeason === normalized.subSeason,
@@ -189,11 +186,6 @@ export function StyleProfile() {
               ? bp.filter((x: unknown) => typeof x === "string")
               : [],
           });
-          // The sync badge previously only ever left its "idle" default via
-          // a side-effect of the debounced auto-save below, so a page that
-          // loaded already-saved data still showed "Awaiting Edits" until
-          // the user touched something. Seed it from what's actually
-          // persisted instead.
           if (persistedSeason) {
             setSyncStatus("synced");
           }
@@ -349,15 +341,6 @@ export function StyleProfile() {
     setBodyQuizOpen(false);
     setSyncStatus("syncing");
 
-    // Wait for persistence before reflecting success in the UI — a card
-    // selection alone must never imply the dossier is synced. Update, not
-    // upsert: the profiles row always already exists (created by the
-    // handle_new_user trigger at signup), and upsert's ON CONFLICT DO
-    // UPDATE path still evaluates the INSERT policy's WITH CHECK (which
-    // requires a valid username) even though no insert actually happens —
-    // this 403s for any account whose username is still NULL (a reachable
-    // state: handle_new_user drops an invalid/taken username rather than
-    // fail signup).
     const { error } = await supabase
       .from("profiles")
       .update({
