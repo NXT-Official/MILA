@@ -27,11 +27,6 @@ function SkeletonCard({ compact }: { compact?: boolean }) {
   );
 }
 
-/**
- * Full two-column skeleton shown only while Gemini itself is still
- * composing (before there's any written outfit to show). Mirrors the real
- * result's structure so the layout doesn't jump once content arrives.
- */
 export function OutfitResultSkeleton() {
   return (
     <div className="space-y-6" role="status" aria-live="polite">

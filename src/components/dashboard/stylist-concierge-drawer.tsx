@@ -32,7 +32,6 @@ type Msg = {
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  /** Anchored saved look, or null for a general styling conversation. */
   look: ConciergeLook | null;
   onClearLook: () => void;
   profile: StylistProfileContext;
@@ -61,10 +60,6 @@ function formatTime(ts: number) {
 let nextMsgId = 1;
 
 export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, profile }: Props) {
-  // Conversation state lives here (in the always-mounted app shell), so it
-  // survives closing and reopening the drawer within a session. Persistence
-  // across sessions is deliberately not implemented yet — see
-  // IN_DEVELOPMENT.txt if that changes.
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -72,9 +67,6 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
   const prevLookIdRef = useRef<string | null>(look?.lookId ?? null);
   const chat = useServerFn(conciergeChat);
 
-  // Anchoring a different look starts a fresh conversation so earlier
-  // image-specific replies can't bleed into the new look's context.
-  // Removing the anchor keeps the conversation and continues generally.
   useEffect(() => {
     const id = look?.lookId ?? null;
     if (id && id !== prevLookIdRef.current) setMessages([]);
@@ -93,7 +85,6 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
     [profile.bodyType, profile.colorSeason],
   );
 
-  /** Sends `text`; when `retryId` is set, re-sends that failed message instead of appending. */
   async function send(text: string, retryId?: number) {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
@@ -331,7 +322,7 @@ function MessageBubble({
         </p>
         <div
           className={cn(
-            "px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words rounded-2xl shadow-sm",
+            "px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap wrap-break-words rounded-2xl shadow-sm",
             isUser
               ? "bg-foreground text-background rounded-br-sm"
               : "bg-secondary/70 backdrop-blur-sm text-foreground border border-foreground/10 rounded-bl-sm",

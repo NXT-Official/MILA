@@ -3,13 +3,6 @@ import { LookSection } from "@/components/dashboard/look-section";
 import { ExpandableText } from "@/components/dashboard/expandable-text";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
 
-/**
- * The two-column "image left, Outfit/Hair/Makeup right" layout shared by
- * the dashboard's live result and the History detail view, so a saved look
- * looks exactly like the moment it was generated. `media` is the image
- * area — callers own its loading/error/retry behavior since that differs
- * between a live generation and a permanently-saved record.
- */
 export function GeneratedLookDetail({
   outfit,
   hair,

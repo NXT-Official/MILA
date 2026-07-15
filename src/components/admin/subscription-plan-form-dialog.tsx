@@ -90,9 +90,7 @@ function splitFeatures(text: string): string[] {
 interface SubscriptionPlanFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Present for edit mode; omitted when creating a new plan. */
   plan?: SubscriptionPlan;
-  /** Prefilled sort order for a newly created plan (end of the list). */
   nextSortOrder: number;
   onSaved: () => void;
 }
@@ -107,8 +105,6 @@ export function SubscriptionPlanFormDialog({
   const isEdit = !!plan;
   const createPlan = useServerFn(adminCreateSubscriptionPlan);
   const updatePlan = useServerFn(adminUpdateSubscriptionPlan);
-  // Auto-generate the slug from the title only until the admin touches the
-  // slug field (and never when editing an existing plan).
   const slugEdited = useRef(false);
 
   const {
@@ -153,8 +149,6 @@ export function SubscriptionPlanFormDialog({
       title: values.title,
       slug: values.slug,
       description: values.description,
-      // Validated by the refine above; parse from the string form to avoid
-      // float multiplication drift.
       price_amount: parsePriceToCents(values.price) ?? 0,
       currency: values.currency,
       billing_interval: values.billing_interval,
@@ -175,7 +169,6 @@ export function SubscriptionPlanFormDialog({
       onOpenChange(false);
       onSaved();
     } catch (err) {
-      // Keep the dialog open with the entered values so nothing is lost.
       toast.error(err instanceof Error ? err.message : "Couldn't save the plan.");
     }
   };

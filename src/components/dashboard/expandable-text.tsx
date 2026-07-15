@@ -1,18 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/**
- * Clamps text to a fixed line count and only shows a Read more / Show less
- * toggle when the text actually overflows that clamp — never truncates
- * without giving the user a way to see the rest.
- */
 export function ExpandableText({
   text,
   clampClassName,
   className,
 }: {
   text: string;
-  /** A literal Tailwind line-clamp class, e.g. "line-clamp-4". */
   clampClassName: string;
   className?: string;
 }) {

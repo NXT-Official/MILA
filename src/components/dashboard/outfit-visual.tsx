@@ -1,14 +1,6 @@
 import { ImageOff, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const FRAME_CLASS =
-  "relative mx-auto aspect-square w-full max-w-128 overflow-hidden rounded-card border border-border bg-card shadow-paper";
-
-/**
- * The left-column outfit visual — one fixed-size square frame covering all
- * three states (visualizing / ready / failed) so the layout never jumps
- * between them.
- */
 export function OutfitVisual({
   imageDataUri,
   imageGenerationError,
@@ -26,7 +18,10 @@ export function OutfitVisual({
 }) {
   if (loading) {
     return (
-      <div className={FRAME_CLASS} role="status">
+      <div
+        className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-card border border-border bg-card shadow-paper"
+        role="status"
+      >
         <div className="absolute inset-0 animate-pulse bg-accent-soft/50" />
         <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
           <Loader2 className="size-5 animate-spin text-accent" aria-hidden="true" />
@@ -39,7 +34,7 @@ export function OutfitVisual({
 
   if (imageDataUri) {
     return (
-      <div className={FRAME_CLASS}>
+      <div className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-card border border-border bg-card shadow-paper">
         <img
           src={imageDataUri}
           alt={`AI-generated visualization of ${headline}`}
@@ -50,7 +45,7 @@ export function OutfitVisual({
   }
 
   return (
-    <div className={FRAME_CLASS}>
+    <div className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-card border border-border bg-card shadow-paper">
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <ImageOff className="size-6 text-muted-foreground" aria-hidden="true" />
         <p className="text-sm text-muted-foreground">

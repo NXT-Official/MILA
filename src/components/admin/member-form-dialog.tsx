@@ -17,7 +17,6 @@ import { adminCreateMember, adminUpdateMember, type AdminUserRow } from "@/lib/a
 interface MemberFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Present for edit mode; omitted when creating a new member. */
   member?: AdminUserRow;
   onSaved: () => void;
 }
