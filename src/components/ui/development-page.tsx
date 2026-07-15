@@ -3,10 +3,6 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { DevelopmentBadge } from "@/components/ui/development-badge";
 
-/**
- * Full-route replacement for a page that isn't ready yet. Use instead of
- * rendering a broken or half-built interface underneath.
- */
 export function DevelopmentPage({
   title,
   description,

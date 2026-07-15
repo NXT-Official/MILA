@@ -1,11 +1,6 @@
 import { Construction } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/**
- * Inline notice for an unfinished portion of an otherwise working page —
- * e.g. one disabled action inside a functional form or panel. Pair with
- * `aria-describedby` on the control it explains.
- */
 export function DevelopmentNotice({
   id,
   title = "In development",

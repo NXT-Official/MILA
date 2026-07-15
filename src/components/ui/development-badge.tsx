@@ -2,7 +2,6 @@ import { Construction } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-/** Compact "In development" marker for nav items, section headings, cards, and controls. */
 export function DevelopmentBadge({ className }: { className?: string }) {
   return (
     <Badge
