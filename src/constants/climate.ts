@@ -1,7 +1,6 @@
 export type ClimateIcon = "sun" | "cloud" | "rain" | "snow" | "wind";
 export type ClimateCondition = "Sunny" | "Cloudy" | "Overcast" | "Rain" | "Snow" | "Windy";
 
-// Resolved live weather (from Open-Meteo). Never hardcoded/fallback data.
 export interface ClimateState {
   label: string;
   location: string;
@@ -11,13 +10,8 @@ export interface ClimateState {
   condition: ClimateCondition;
 }
 
-// profiles.default_location stores only a hub id (see src/lib/default-hub.ts).
-// Kept as a deliberate local-only cache for pre-auth render + offline; also
-// doubles as the one-time migration source the first time a user signs in.
 export const DEFAULT_HUB_STORAGE_KEY = "mila.default-hub";
 
-// Location registry only — resolves a saved hub id to city/lat/lon so live
-// weather can be fetched from Open-Meteo. No hardcoded climate data here.
 export const HUBS: Array<{
   id: string;
   city: string;

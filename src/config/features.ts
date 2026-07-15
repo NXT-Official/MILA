@@ -1,17 +1,3 @@
-/**
- * Central feature-availability registry for deployment gating. This is the
- * single source of truth for "is X finished enough to ship" — components
- * read from here instead of declaring their own ad-hoc availability flags.
- *
- * This is NOT an authorization system: it only controls whether an
- * otherwise-reachable UI affordance is shown as active or as
- * "In development". Real permission checks (admin/owner/RLS) are unrelated
- * and must never be weakened or replaced by a feature's status here.
- *
- * See /IN_DEVELOPMENT.txt for the full deployment inventory this registry
- * documents.
- */
-
 export type FeatureAvailability = "available" | "partial" | "development" | "disabled";
 
 export interface FeatureDefinition {
