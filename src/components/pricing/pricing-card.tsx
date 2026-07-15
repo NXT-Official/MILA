@@ -9,12 +9,6 @@ import {
   type PublicSubscriptionPlan,
 } from "@/lib/subscription-plans";
 
-/**
- * One membership plan card for the /pricing page. Every value shown comes
- * from the Supabase `subscription_plans` row — nothing is hardcoded here.
- * Purchasing is not implemented yet, so the CTA is disabled and points at
- * the page-level DevelopmentNotice via `ctaDescribedById`.
- */
 export function PricingCard({
   plan,
   ctaDescribedById,
@@ -64,7 +58,6 @@ export function PricingCard({
         </ul>
       )}
 
-      {/* mt-auto keeps every CTA bottom-aligned regardless of card content. */}
       <div className="mt-auto pt-8">
         <Button
           type="button"
@@ -88,7 +81,7 @@ function PlanFeature({ text }: { text: string }) {
   return (
     <li className="flex items-start gap-2.5 text-sm leading-relaxed text-ink">
       <Check className="mt-1 size-3.5 shrink-0 text-accent" aria-hidden="true" strokeWidth={2} />
-      <span className="min-w-0 break-words">{text}</span>
+      <span className="min-w-0 wrap-break-words">{text}</span>
     </li>
   );
 }
