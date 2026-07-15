@@ -66,9 +66,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   { id: "review", title: "Your Mila profile is ready", shortTitle: "Review" },
 ];
 
-/** Steps shown in the "Step X of N" progress indicator — everything but welcome. */
 export const COUNTED_STEPS = ONBOARDING_STEPS.filter((s) => s.id !== "welcome");
-
 export const ONBOARDING_STEP_IDS = ONBOARDING_STEPS.map((s) => s.id) as OnboardingStepId[];
 
 export function sanitizeOnboardingStep(value: unknown): OnboardingStepId | undefined {
@@ -126,12 +124,6 @@ export function isOnboardingStepComplete(
   switch (step) {
     case "welcome":
       return true;
-    // color-path is a chooser with no persisted data of its own — the
-    // actual required checkpoint is color-result. Treating color-path as
-    // "complete" only once hasColorProfile is true would make color-result
-    // (which requires color-path to be complete, per
-    // isOnboardingStepReachable) permanently unreachable, since
-    // hasColorProfile only becomes true *after* color-result is saved.
     case "color-path":
       return true;
     case "color-result":
@@ -164,7 +156,6 @@ function isBlankProfile(profile: ProfileSnapshot | null | undefined): boolean {
   );
 }
 
-/** Where a returning user should land: the welcome screen only for a truly blank profile. */
 export function getFirstIncompleteOnboardingStep(
   profile: ProfileSnapshot | null | undefined,
 ): OnboardingStepId {
@@ -190,10 +181,6 @@ export function getPreviousOnboardingStep(current: OnboardingStepId): Onboarding
   return steps[index - 1].id;
 }
 
-/**
- * A step is reachable only if every required step strictly before it is
- * already complete — prevents skipping ahead via the `step` search param.
- */
 export function isOnboardingStepReachable(
   step: OnboardingStepId,
   profile: ProfileSnapshot | null | undefined,

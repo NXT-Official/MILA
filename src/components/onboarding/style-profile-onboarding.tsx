@@ -16,7 +16,7 @@ import {
   getFirstIncompleteOnboardingStep,
   isOnboardingStepReachable,
   type OnboardingStepId,
-} from "./steps";
+} from "../../constants/steps";
 import { OnboardingProgressBar } from "./progress-bar";
 import { WelcomeStep } from "./steps/welcome-step";
 import { ColorPathStep } from "./steps/color-path-step";
@@ -46,18 +46,6 @@ export function StyleProfileOnboarding({
   const [completing, setCompleting] = useState(false);
   const [completionError, setCompletionError] = useState<string | null>(null);
 
-  // Resume: land on the first incomplete required step once the profile has
-  // loaded, unless the URL already names a reachable step (also clamps a
-  // hand-edited `step` search param that skips ahead of an incomplete
-  // required step). Runs exactly once per mount/hard-reload — NOT
-  // reactively on every step change. The wizard's own goTo() calls only
-  // fire after a step's save already succeeded, but the query cache that
-  // `profile` reads from updates asynchronously (invalidate + refetch), so
-  // re-running this check on every step change would race that refetch and
-  // bounce the user back a step before the fresh field lands. A step
-  // reached via the wizard's own Continue/Back buttons is already trusted;
-  // only a fresh mount (initial load, or a full page reload) needs this
-  // check at all.
   const didResolveInitialStepRef = useRef(false);
   useEffect(() => {
     if (!profile || didResolveInitialStepRef.current) return;
@@ -65,7 +53,6 @@ export function StyleProfileOnboarding({
     if (!step || !isOnboardingStepReachable(step, profile)) {
       onStepChange(getFirstIncompleteOnboardingStep(profile), { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, step]);
 
   useEffect(() => {

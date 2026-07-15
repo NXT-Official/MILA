@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StyleProfileOnboarding } from "@/components/onboarding/style-profile-onboarding";
-import { sanitizeOnboardingStep, type OnboardingStepId } from "@/components/onboarding/steps";
+import { sanitizeOnboardingStep, type OnboardingStepId } from "@/constants/steps";
 
 export const Route = createFileRoute("/_authenticated/onboarding/style-profile")({
   validateSearch: (search: Record<string, unknown>): { step?: OnboardingStepId } => {

@@ -6,7 +6,6 @@ import { CardMatrix } from "@/components/style-profile/shared";
 import { StepFooter } from "@/components/onboarding/step-shell";
 import type { MatrixOption } from "@/constants/style-profile";
 
-/** Shared shell for a single required-choice step (body type / face shape / hair type). */
 export function SingleSelectStep({
   fieldLabel,
   value,

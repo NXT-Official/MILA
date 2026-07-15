@@ -1,5 +1,9 @@
 import { cn } from "@/lib/utils";
-import { COUNTED_STEPS, getOnboardingStepIndex, type OnboardingStepId } from "./steps";
+import {
+  COUNTED_STEPS,
+  getOnboardingStepIndex,
+  type OnboardingStepId,
+} from "../../constants/steps";
 
 export function OnboardingProgressBar({ current }: { current: OnboardingStepId }) {
   const index = getOnboardingStepIndex(current);

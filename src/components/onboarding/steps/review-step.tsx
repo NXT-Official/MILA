@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { HUBS } from "@/constants/climate";
 import type { DashboardProfile } from "@/lib/queries/profile";
 import type { DetailedColorProfile as StudioDossier } from "@/constants/style-profile";
-import type { OnboardingStepId } from "@/components/onboarding/steps";
+import type { OnboardingStepId } from "@/constants/steps";
 
 function ReviewSection({
   title,
