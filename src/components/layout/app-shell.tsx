@@ -113,8 +113,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const initial = (displayName[0] ?? "M").toUpperCase();
 
   function openConcierge(look?: ConciergeLook | null) {
-    // Opened from the nav (no argument) the Concierge is a general styling
-    // conversation; entry points on saved looks pass an anchor instead.
     setConciergeLook(look ?? null);
     setIsConciergeOpen(true);
   }
@@ -214,10 +212,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onInsufficientCredits={() => setCreditPaywallOpen(true)}
         />
 
-        {/* Credit-pack paywall — only reachable from genuine
-          insufficient-credit failures (Lens capture above and the camera
-          drawer's onInsufficientCredits). The header coin now links to
-          /pricing instead of opening this. */}
         <UpgradeSlotsDialog
           open={creditPaywallOpen}
           onOpenChange={setCreditPaywallOpen}
