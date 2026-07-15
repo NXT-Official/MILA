@@ -10,11 +10,6 @@ import { generateOutfitImage, isCloudflareRateLimitError } from "./cloudflare-im
 const GENERATE_LOOK_LIMIT = 10;
 const GENERATE_LOOK_WINDOW_SECONDS = 60 * 60;
 
-// beautyPreferences is deliberately NOT part of this client-supplied input:
-// it's untrusted personalization data, so the handler loads it itself from
-// the authenticated user's profile (see below) instead of trusting whatever
-// shape the browser sends. bodyType/colorSeason/etc. remain client-supplied
-// for now — hardening those the same way is a separate, larger change.
 const Input = z.object({
   bodyType: z.string().min(1).max(64),
   colorSeason: z.string().min(1).max(64),
@@ -123,13 +118,6 @@ export const DailyLookSchema = z.object({
 });
 export type DailyLook = z.infer<typeof DailyLookSchema>;
 
-/**
- * The complete client-side result: the written look plus its visual (or why
- * it's missing). Assembled client-side from two calls — generateDailyLook
- * (Gemini) then regenerateOutfitImage (Cloudflare) — so the dashboard can
- * render the written outfit the moment it's ready instead of waiting on the
- * image too.
- */
 export type GeneratedLook = DailyLook & {
   imageDataUri: string | null;
   imageGenerationError?: string;
@@ -141,7 +129,6 @@ function stripMarkdownFences(text: string): string {
   return fenced ? fenced[1].trim() : trimmed;
 }
 
-/** Maps an image-generation failure to a friendly, credential-free message for the UI. */
 function friendlyImageError(err: unknown): string {
   if (isCloudflareRateLimitError(err)) {
     return "The visual service is temporarily busy. Your written outfit is still available.";
@@ -149,7 +136,6 @@ function friendlyImageError(err: unknown): string {
   return "The outfit was created, but its visual could not be generated.";
 }
 
-/** Generates the outfit visual from an already-validated Gemini result; never throws. */
 async function tryGenerateOutfitImage(
   outfit: DailyLook,
 ): Promise<{ imageDataUri: string | null; imageGenerationError?: string }> {
@@ -170,9 +156,6 @@ export const generateDailyLook = createServerFn({ method: "POST" })
   .validator((input: unknown) => {
     const parsed = Input.safeParse(input);
     if (!parsed.success) {
-      // Safe to log in full: this input is occasion/weather/profile-shape
-      // strings, never credentials or tokens.
-      console.error("[generateDailyLook] invalid input", parsed.error.flatten());
       throw new Error("Mila couldn't prepare your style profile for this look. Please try again.");
     }
     return parsed.data;
@@ -190,14 +173,12 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     }
     await consumeAiCredit(context.supabase, context.userId);
 
-    const { data: profileRow, error: profileError } = await context.supabase
+    const { data: profileRow } = await context.supabase
       .from("profiles")
       .select("beauty_preferences")
       .eq("id", context.userId)
       .maybeSingle();
-    if (profileError) {
-      console.error("[generateDailyLook] failed to load beauty preferences", profileError);
-    }
+
     const beautyPreferences = normalizeBeautyPreferences(profileRow?.beauty_preferences);
 
     let tempF = data.tempF;
@@ -314,7 +295,6 @@ Always call the report_daily_look tool.`;
     if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
     if (!res.ok) {
       const t = await res.text();
-      console.error("AI provider error", res.status, t);
       throw new Error("Couldn't generate today's look.");
     }
 
@@ -326,22 +306,16 @@ Always call the report_daily_look tool.`;
     try {
       parsedArgs = JSON.parse(stripMarkdownFences(call.function.arguments));
     } catch (err) {
-      console.error("[generateDailyLook] AI returned non-JSON arguments", err);
       throw new Error("Mila couldn't compose a look this time. Please try again.");
     }
 
     const look = DailyLookSchema.safeParse(parsedArgs);
     if (!look.success) {
-      console.error("[generateDailyLook] AI response failed validation", look.error.flatten());
       throw new Error("Mila couldn't compose a look this time. Please try again.");
     }
     return look.data;
   });
 
-/**
- * Regenerates only the visual for an already-generated outfit — does not
- * call Gemini again. Powers the dashboard's "Retry visual" action.
- */
 export const regenerateOutfitImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => {

@@ -10,11 +10,6 @@ const SaveOutfitInput = DailyLookSchema.extend({
   vibe: z.string().min(1).max(64),
 });
 
-/**
- * Uploads the generated visual to permanent storage and saves the outfit to
- * the user's history in one step. If the DB insert fails after a successful
- * upload, the just-uploaded image is deleted so no orphan is left behind.
- */
 export const saveOutfitToHistory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => {

@@ -448,8 +448,6 @@ export const adminDashboardStats = createServerFn({ method: "GET" })
         .limit(5),
     ]);
 
-    // TODO: no credits ledger table exists yet — this is the current running
-    // balance across all members, not a historical "issued" total.
     const aiCreditsAvailable = (entitlements.data ?? []).reduce(
       (sum: number, e: any) => sum + (e.ai_credits ?? 0),
       0,

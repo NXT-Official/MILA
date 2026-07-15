@@ -1,14 +1,5 @@
 import { z } from "zod";
 
-/**
- * Shared subscription-plan types, validation, and price helpers.
- * Single source of truth for the admin module (subscription-plans.functions.ts),
- * the admin UI, and the public membership surfaces.
- *
- * Money is stored as an integer in the currency's smallest unit (cents for
- * usd) — never as floats. See docs/subscription-plans.md.
- */
-
 export const BILLING_INTERVALS = ["monthly", "yearly", "one_time"] as const;
 export type BillingInterval = (typeof BILLING_INTERVALS)[number];
 
@@ -18,14 +9,11 @@ export const BILLING_INTERVAL_LABELS: Record<BillingInterval, string> = {
   one_time: "One-time",
 };
 
-/** Suffix shown next to a price, e.g. "$14.99 / month". */
 export const BILLING_INTERVAL_SUFFIX: Record<BillingInterval, string> = {
   monthly: "/ month",
   yearly: "/ year",
   one_time: "one-time",
 };
-
-/** Full database row, admin-only surfaces. */
 export interface SubscriptionPlan {
   id: string;
   slug: string;
@@ -44,7 +32,6 @@ export interface SubscriptionPlan {
   updated_at: string;
 }
 
-/** Fields safe to render to non-admin members. */
 export type PublicSubscriptionPlan = Pick<
   SubscriptionPlan,
   | "id"
@@ -62,11 +49,6 @@ export type PublicSubscriptionPlan = Pick<
 export const PUBLIC_PLAN_COLUMNS =
   "id,slug,title,description,price_amount,currency,billing_interval,credits_included,features,is_featured";
 
-/**
- * `features` is jsonb in Postgres — the admin form writes a validated
- * string[], but the column itself can hold anything. Normalize before
- * rendering so malformed rows degrade to an empty list instead of crashing.
- */
 export function normalizePlanFeatures(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -117,22 +99,16 @@ export function slugifyPlanTitle(title: string): string {
     .slice(0, 60);
 }
 
-// ponytail: the app's plans are usd — 2-decimal minor units are assumed.
-// If zero-decimal currencies (jpy, krw) are ever sold, add a minor-unit map.
-
-/** "9.99" -> 999. Returns null for anything that isn't a plain decimal price. */
 export function parsePriceToCents(input: string): number | null {
   const match = input.trim().match(/^(\d{1,7})(?:\.(\d{1,2}))?$/);
   if (!match) return null;
   return Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0") || "0");
 }
 
-/** 999 -> "9.99" (integer math, no float drift). */
 export function centsToPriceInput(cents: number): string {
   return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, "0")}`;
 }
 
-/** Currency-aware display, e.g. formatPlanPrice(1499, "usd") -> "$14.99". */
 export function formatPlanPrice(amountCents: number, currency: string): string {
   try {
     return new Intl.NumberFormat("en-US", {
@@ -140,7 +116,6 @@ export function formatPlanPrice(amountCents: number, currency: string): string {
       currency: currency.toUpperCase(),
     }).format(amountCents / 100);
   } catch {
-    // Unknown/invalid stored code — still show something sensible.
     return `${centsToPriceInput(amountCents)} ${currency}`;
   }
 }

@@ -8,20 +8,6 @@ import { deriveColorMetrics } from "./profile-color";
 import { normalizeBeautyPreferences } from "./beauty-preferences";
 import { HUBS } from "@/constants/climate";
 
-/**
- * Mila's Styling Concierge — the one server entry point for both chat modes:
- *
- * - General mode (no lookId): text-only styling conversation grounded in the
- *   authenticated user's style profile, loaded server-side.
- * - Look-anchored mode (lookId): the saved look's image and structured
- *   analysis are resolved from the user's own `outfits` row and attached to
- *   the request. Ownership is enforced with an explicit user_id filter on
- *   top of RLS — a foreign lookId behaves exactly like a missing one.
- *
- * The client never supplies the system prompt, model, profile data, image
- * URLs, or message roles beyond user/assistant.
- */
-
 const HistoryMessage = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().trim().min(1).max(4000),
@@ -35,7 +21,6 @@ const Input = z.object({
 
 export type ConciergeReply = { reply: string };
 
-/** Total character budget for prior turns sent to the model. */
 const HISTORY_CHAR_BUDGET = 6000;
 
 const RATE_LIMIT = 20;
@@ -61,7 +46,6 @@ const tool = {
   },
 };
 
-/** Keeps the most recent turns that fit the character budget, preserving order. */
 function boundHistory(history: Array<{ role: string; content: string }>) {
   const kept: Array<{ role: string; content: string }> = [];
   let used = 0;
@@ -79,11 +63,6 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
-/**
- * Turns whatever is stored in `outfits.analysis_result` into prompt-safe
- * text lines. Tolerates the daily_look shape, the Lens-analysis shape,
- * JSON strings, and malformed data — never throws.
- */
 function describeSavedLook(raw: unknown): string[] {
   let value = raw;
   if (typeof value === "string") {
@@ -145,8 +124,6 @@ export const conciergeChat = createServerFn({ method: "POST" })
 
     await consumeAiCredit(context.supabase, context.userId);
 
-    // Trusted personalization context — always loaded server-side, never
-    // taken from the client. Missing fields degrade gracefully.
     const { data: profileRow, error: profileError } = await context.supabase
       .from("profiles")
       .select(
@@ -174,8 +151,6 @@ export const conciergeChat = createServerFn({ method: "POST" })
       homeCity ? `- Home base: ${homeCity}` : null,
     ].filter(Boolean);
 
-    // Look-anchored context: resolve from the user's own outfits row. The
-    // explicit user_id filter enforces ownership on top of RLS.
     let lookLines: string[] = [];
     let lookImageUrl: string | null = null;
     if (data.lookId) {
@@ -193,8 +168,6 @@ export const conciergeChat = createServerFn({ method: "POST" })
         throw new Error("That saved look is no longer available. You can continue without it.");
       }
       lookLines = describeSavedLook(look.analysis_result);
-      // Only attach images served from our own public storage bucket —
-      // never fetch arbitrary URLs a row might have been tampered into.
       const trustedPrefix = `${process.env.SUPABASE_URL?.replace(/\/+$/, "")}/storage/v1/object/public/`;
       if (look.image_url?.startsWith(trustedPrefix)) {
         lookImageUrl = look.image_url;

@@ -8,17 +8,6 @@ import {
   type SubscriptionPlan,
 } from "@/lib/subscription-plans";
 
-/**
- * Admin-only subscription-plan mutations. Every handler re-asserts the admin
- * role server-side (assertAdmin) before touching the service-role client —
- * RLS on subscription_plans intentionally has no write policies.
- *
- * Public reads don't live here: they go straight through the browser client
- * with RLS filtering (see src/lib/queries/subscription-plans.ts), matching
- * how the rest of the app reads catalog data.
- */
-
-/** Map raw Postgres errors to safe, user-facing messages. */
 function throwPlanError(error: { code?: string; message: string }, fallback: string): never {
   console.error("[subscription-plans]", error);
   if (error.code === "23505") {
@@ -39,7 +28,6 @@ async function getAdminDb() {
   return supabaseAdmin;
 }
 
-/** Clear is_featured on every other non-archived plan so at most one remains. */
 async function unfeatureOtherPlans(db: Awaited<ReturnType<typeof getAdminDb>>, exceptId?: string) {
   let query = db
     .from("subscription_plans")
@@ -119,10 +107,8 @@ export const adminSetSubscriptionPlanArchived = createServerFn({ method: "POST" 
       .from("subscription_plans")
       .update(
         data.archived
-          ? // Archiving also pulls the plan from public view and the featured slot.
-            { archived_at: new Date().toISOString(), is_active: false, is_featured: false }
-          : // Restoring leaves the plan inactive; an admin re-activates deliberately.
-            { archived_at: null },
+          ? { archived_at: new Date().toISOString(), is_active: false, is_featured: false }
+          : { archived_at: null },
       )
       .eq("id", data.id);
     if (error) throwPlanError(error, "Couldn't update the plan.");
@@ -150,7 +136,6 @@ export const adminDeleteSubscriptionPlan = createServerFn({ method: "POST" })
   });
 
 const ReorderPlansInput = z.object({
-  // Full plan list in the new display order; indexes become sort_order.
   plan_ids: z.array(z.string().uuid()).min(1).max(200),
 });
 
@@ -160,8 +145,6 @@ export const adminReorderSubscriptionPlans = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const db = await getAdminDb();
-    // ponytail: N small updates, not a transaction — a mid-way failure only
-    // leaves a cosmetic ordering gap the next reorder fixes.
     const results = await Promise.all(
       data.plan_ids.map((id, index) =>
         db.from("subscription_plans").update({ sort_order: index }).eq("id", id),

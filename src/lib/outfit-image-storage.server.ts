@@ -31,13 +31,6 @@ function parseImageDataUri(dataUri: string): { mimeType: string; ext: string; bu
   return { mimeType, ext, buffer };
 }
 
-/**
- * Uploads a generated outfit image (a `data:image/...;base64,...` URI) to
- * the existing `outfits` storage bucket and returns its permanent public
- * URL. The storage path is always `${userId}/${uuid}.${ext}` — `userId`
- * must come from the verified session (context.userId), never from client
- * input, since the bucket's RLS policies scope reads/writes to that folder.
- */
 export async function uploadGeneratedOutfitImage({
   supabase,
   userId,
@@ -65,7 +58,6 @@ export async function uploadGeneratedOutfitImage({
   return { publicUrl, storagePath };
 }
 
-/** Best-effort cleanup for an uploaded image whose DB insert then failed. */
 export async function deleteOutfitImage(
   supabase: SupabaseClient<Database>,
   storagePath: string,

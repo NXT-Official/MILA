@@ -1,11 +1,3 @@
-/**
- * Server-side hCaptcha verification for unauthenticated, abuse-prone actions.
- * The React widget only proves a challenge was *rendered*; the token must be
- * redeemed against hCaptcha's siteverify API from the server before the
- * protected action runs. Fails closed: any network, config, or verification
- * failure rejects the action with a generic message.
- */
-
 const VERIFY_URL = "https://hcaptcha.com/siteverify";
 const VERIFY_TIMEOUT_MS = 8_000;
 

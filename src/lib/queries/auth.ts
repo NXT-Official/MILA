@@ -34,13 +34,6 @@ export function resolveAuthenticatedDestination(input: {
   return "/dashboard";
 }
 
-/**
- * Route-loader-friendly: reuses the query cache via ensureQueryData, so a
- * component rendering after the loader doesn't re-fetch. Suspension is
- * intentionally not modeled here — _authenticated.tsx's existing
- * suspended-account gate covers every destination this function can
- * return, regardless of which one is picked.
- */
 export async function loadAuthenticatedViewerState(
   queryClient: QueryClient,
   userId: string,

@@ -13,17 +13,11 @@ const SubmitSupportMessageInput = z.object({
 const SUPPORT_SUBMIT_LIMIT = 5;
 const SUPPORT_SUBMIT_WINDOW_SECONDS = 10 * 60;
 
-/** Best-effort caller IP, assuming the deployment's proxy sets x-forwarded-for. */
 function clientIp(): string {
   const forwarded = getRequest()?.headers.get("x-forwarded-for");
   return forwarded?.split(",")[0]?.trim() || "unknown";
 }
 
-// Unauthenticated on purpose: the login page redirects signed-in users away,
-// so submitters here never have a session. Writes go through the service
-// role — support_messages has no anon/authenticated INSERT grant. Being
-// unauthenticated and open to the public internet, this is gated by both a
-// server-verified hCaptcha token and a per-IP rate limit.
 export const submitSupportMessage = createServerFn({ method: "POST" })
   .validator((input: unknown) => SubmitSupportMessageInput.parse(input))
   .handler(async ({ data }) => {

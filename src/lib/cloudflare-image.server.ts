@@ -45,12 +45,6 @@ function cloudflareEnv() {
   return { accountId, apiToken, imageModel };
 }
 
-/**
- * Pure transform from a validated Gemini outfit result into a concise
- * image-generation prompt. Only draws on fields that actually exist on
- * DailyLook — no invented user characteristics, no fields Gemini didn't
- * produce.
- */
 export function buildOutfitImagePrompt(outfit: DailyLook): string {
   const outfitLine = [
     outfit.outfit.headline,
@@ -109,13 +103,6 @@ function statusToError(status: number): CloudflareImageError {
   return new CloudflareImageError(`Cloudflare image request failed (${status}).`, "server_error");
 }
 
-/**
- * Calls Cloudflare Workers AI (FLUX.1 Schnell by default) with a prompt
- * derived from the already-validated Gemini outfit result, and returns a
- * browser-ready `data:image/jpeg;base64,...` URI. Throws CloudflareImageError
- * on any failure — callers decide how to degrade (the written outfit must
- * never be lost because of an image failure).
- */
 export async function generateOutfitImage(outfit: DailyLook): Promise<string> {
   const { accountId, apiToken, imageModel } = cloudflareEnv();
   const prompt = buildOutfitImagePrompt(outfit);
