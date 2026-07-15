@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -479,7 +479,7 @@ export const adminDashboardStats = createServerFn({ method: "GET" })
     };
   });
 
-export async function recordStaffAction(
+export const recordStaffAction = createServerOnlyFn(async function recordStaffAction(
   actorUserId: string,
   action: string,
   targetType: string,
@@ -495,7 +495,7 @@ export async function recordStaffAction(
     metadata,
   });
   if (error) throw new Error("The action succeeded, but its audit record could not be saved.");
-}
+});
 
 export const getStaffAuthorization = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
