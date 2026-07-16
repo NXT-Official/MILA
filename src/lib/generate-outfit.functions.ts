@@ -3,12 +3,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { consumeAiCredit } from "./credits.server";
-import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
 import { generateOutfitImage, isCloudflareRateLimitError } from "./cloudflare-image.server";
-
-const GENERATE_LOOK_LIMIT = 10;
-const GENERATE_LOOK_WINDOW_SECONDS = 60 * 60;
 
 const Input = z.object({
   bodyType: z.string().min(1).max(64),
@@ -161,16 +157,6 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     return parsed.data;
   })
   .handler(async ({ data, context }): Promise<DailyLook> => {
-    try {
-      await consumeRateLimit(
-        `ai:generateDailyLook:${context.userId}`,
-        GENERATE_LOOK_LIMIT,
-        GENERATE_LOOK_WINDOW_SECONDS,
-      );
-    } catch (err) {
-      if (err instanceof RateLimitExceededError) throw new Error(err.message);
-      throw err;
-    }
     await consumeAiCredit(context.supabase, context.userId);
 
     const { data: profileRow } = await context.supabase
@@ -295,7 +281,7 @@ Always call the report_daily_look tool.`;
     if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
     if (!res.ok) {
       const t = await res.text();
-      throw new Error("Couldn't generate today's look.");
+      throw new Error(`AI service error: ${res.status} ${res.statusText} — ${t}`);
     }
 
     const json = await res.json();

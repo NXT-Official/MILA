@@ -9,9 +9,10 @@ test("browser Supabase client never imports or reads the service-role credential
   expect(client).toContain("VITE_SUPABASE_PUBLISHABLE_KEY");
 });
 
-test("password auth routes through server protection before Supabase calls", () => {
+test("password auth stays server-side and delegates abuse limits to Supabase Auth", () => {
   const auth = source("./auth-handler.server.ts");
-  expect(auth.indexOf("await deps.consume(")).toBeLessThan(auth.indexOf("deps.client().auth"));
+  expect(auth).toContain("signInWithPassword");
+  expect(auth).not.toContain("consumeRateLimit");
   expect(auth).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
 });
 

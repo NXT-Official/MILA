@@ -1,9 +1,7 @@
-import { getRequest } from "@tanstack/react-start/server";
 import { createClient, type Session } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireEnv } from "./env";
 import { Credentials, Signup, type CredentialsInput, type SignupInput } from "./auth-input";
-import { accountKey, clientIp, consumeRateLimit, RATE_LIMIT_POLICIES } from "./rate-limit.server";
 
 type AuthOperation = "login" | "signup";
 
@@ -18,16 +16,10 @@ function authClient() {
 }
 
 export type AuthDependencies = {
-  ip: () => string | undefined;
-  consume: typeof consumeRateLimit;
-  key: typeof accountKey;
   client: typeof authClient;
 };
 
 const defaults: AuthDependencies = {
-  ip: () => clientIp(getRequest()),
-  consume: consumeRateLimit,
-  key: accountKey,
   client: authClient,
 };
 
@@ -47,19 +39,6 @@ export async function authenticateWithPassword(
   deps = defaults,
 ) {
   const data = operation === "login" ? Credentials.parse(input) : Signup.parse(input);
-  const ip = deps.ip();
-  if (!ip) throw new Error("Unable to verify this request.");
-  const prefix = operation === "login" ? "auth:login" : "auth:signup";
-  await deps.consume(
-    `${prefix}:ip`,
-    ip,
-    operation === "login" ? RATE_LIMIT_POLICIES.loginIp : RATE_LIMIT_POLICIES.signupIp,
-  );
-  await deps.consume(
-    `${prefix}:account`,
-    deps.key(data.email),
-    operation === "login" ? RATE_LIMIT_POLICIES.loginAccount : RATE_LIMIT_POLICIES.signupAccount,
-  );
   const auth = deps.client().auth;
   const result =
     operation === "login"

@@ -1,6 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
 import { authenticateWithPassword, type AuthDependencies } from "./auth-handler.server";
-import { RateLimitExceededError } from "./rate-limit.server";
 
 const credentials = {
   email: "User@Example.com",
@@ -16,27 +15,16 @@ function dependencies(
 ) {
   const signInWithPassword = mock(async () => result);
   const signUp = mock(async () => result);
-  const consumed: Array<[string, string]> = [];
-  const consume = mock(async (namespace: string, identity: string) => {
-    consumed.push([namespace, identity]);
-  });
   const deps = {
-    ip: () => "203.0.113.4",
-    consume,
-    key: mock(() => "hashed-account-key"),
     client: () => ({ auth: { signInWithPassword, signUp } }),
   } as unknown as AuthDependencies;
-  return { deps, consume, consumed, signInWithPassword, signUp };
+  return { deps, signInWithPassword, signUp };
 }
 
 describe("security-sensitive password authentication", () => {
-  test("enforces IP and account limits before sign-in and passes hCaptcha to Supabase", async () => {
-    const { deps, consumed, signInWithPassword } = dependencies();
+  test("passes hCaptcha to Supabase sign-in", async () => {
+    const { deps, signInWithPassword } = dependencies();
     await authenticateWithPassword("login", credentials, deps);
-    expect(consumed.map(([namespace]) => namespace)).toEqual([
-      "auth:login:ip",
-      "auth:login:account",
-    ]);
     expect(signInWithPassword).toHaveBeenCalledWith({
       email: credentials.email,
       password: credentials.password,
@@ -44,23 +32,9 @@ describe("security-sensitive password authentication", () => {
     });
   });
 
-  test("blocks before Supabase when either limiter rejects", async () => {
-    for (const blockedCall of [1, 2]) {
-      const { deps, consume, signInWithPassword } = dependencies();
-      consume.mockImplementation(async () => {
-        if (consume.mock.calls.length === blockedCall) throw new RateLimitExceededError(30);
-      });
-      await expect(authenticateWithPassword("login", credentials, deps)).rejects.toBeInstanceOf(
-        RateLimitExceededError,
-      );
-      expect(signInWithPassword).not.toHaveBeenCalled();
-    }
-  });
-
-  test("sign-up uses separate policies, a hashed account identity, and CAPTCHA", async () => {
-    const { deps, consumed, signUp } = dependencies();
+  test("passes profile metadata and hCaptcha to Supabase sign-up", async () => {
+    const { deps, signUp } = dependencies();
     await authenticateWithPassword("signup", { ...credentials, username: "mila_user" }, deps);
-    expect(consumed[1]?.[1]).toBe("hashed-account-key");
     expect(signUp).toHaveBeenCalledWith({
       email: credentials.email,
       password: credentials.password,
@@ -82,12 +56,4 @@ describe("security-sensitive password authentication", () => {
     ).rejects.toThrow();
   });
 
-  test("does not call Supabase when no runtime IP is available", async () => {
-    const { deps, signInWithPassword } = dependencies();
-    deps.ip = () => undefined;
-    await expect(authenticateWithPassword("login", credentials, deps)).rejects.toThrow(
-      "Unable to verify",
-    );
-    expect(signInWithPassword).not.toHaveBeenCalled();
-  });
 });

@@ -1,9 +1,7 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import {
-  accountKey,
   clientIp,
   consumeRateLimit,
-  isRateLimitExempt,
   normalizeIp,
   RATE_LIMIT_POLICIES,
   RateLimitExceededError,
@@ -129,40 +127,11 @@ describe("identity protection", () => {
     expect(clientIp(request, () => "192.0.2.9")).toBe("198.51.100.3");
   });
 
-  test("hashes normalized emails without exposing them and varies by secret", () => {
-    const first = accountKey(" User@Example.com ", "test-secret");
-    expect(first).toBe(accountKey("user@example.com", "test-secret"));
-    expect(first).not.toContain("user@example.com");
-    expect(first).not.toBe(accountKey("user@example.com", "other-secret"));
-    expect(() => accountKey(" ", "test-secret")).toThrow("required");
-  });
 });
 
-test("policies are valid, unique by name, and sensitive limits are stricter", () => {
-  const entries = Object.entries(RATE_LIMIT_POLICIES);
-  expect(new Set(entries.map(([name]) => name)).size).toBe(entries.length);
-  for (const [, policy] of entries) {
+test("remaining endpoint policies are valid", () => {
+  for (const policy of Object.values(RATE_LIMIT_POLICIES)) {
     expect(policy.limit).toBeGreaterThan(0);
     expect(policy.windowSeconds).toBeGreaterThan(0);
   }
-  expect(RATE_LIMIT_POLICIES.loginAccount.limit).toBeLessThan(
-    RATE_LIMIT_POLICIES.anonymousPage.limit,
-  );
-  expect(RATE_LIMIT_POLICIES.signupAccount.limit).toBeLessThan(
-    RATE_LIMIT_POLICIES.generalFunction.limit,
-  );
-});
-
-test("exempts static assets, fonts, health, and favicons but not API routes", () => {
-  for (const path of [
-    "/assets/app.js",
-    "/x.css",
-    "/x.png",
-    "/x.woff2",
-    "/favicon.ico",
-    "/health",
-  ]) {
-    expect(isRateLimitExempt(path)).toBe(true);
-  }
-  expect(isRateLimitExempt("/api/upload")).toBe(false);
 });

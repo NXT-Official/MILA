@@ -1,17 +1,7 @@
-import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 import { getRequestIP } from "@tanstack/react-start/server";
 
 export const RATE_LIMIT_POLICIES = {
-  anonymousPage: { limit: 120, windowSeconds: 60, failure: "open" },
-  authenticatedPage: { limit: 300, windowSeconds: 60, failure: "open" },
-  generalFunction: { limit: 60, windowSeconds: 60, failure: "open" },
-  writeFunction: { limit: 20, windowSeconds: 60, failure: "closed" },
-  loginIp: { limit: 10, windowSeconds: 600, failure: "closed" },
-  loginAccount: { limit: 5, windowSeconds: 900, failure: "closed" },
-  signupIp: { limit: 5, windowSeconds: 900, failure: "closed" },
-  signupAccount: { limit: 3, windowSeconds: 3600, failure: "closed" },
-  oauthIp: { limit: 20, windowSeconds: 600, failure: "closed" },
   supportIp: { limit: 3, windowSeconds: 900, failure: "closed" },
 } as const;
 
@@ -66,12 +56,6 @@ export function clientIp(
   return fromHeader ?? normalizeIp(runtimeIp());
 }
 
-export function accountKey(email: string, secret = process.env.RATE_LIMIT_HMAC_SECRET): string {
-  if (!email.trim()) throw new Error("Account identifier is required");
-  if (!secret) throw new Error("Missing required environment variable: RATE_LIMIT_HMAC_SECRET");
-  return createHmac("sha256", secret).update(email.trim().toLowerCase()).digest("hex");
-}
-
 async function supabaseRateLimitStore(key: string, policy: RateLimitPolicy, cost: number) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
@@ -111,10 +95,4 @@ export async function consumeRateLimit(
     throw new RateLimitExceededError(data?.retry_after_seconds ?? policy.windowSeconds);
   }
   return data;
-}
-
-const STATIC_PATH =
-  /(?:^\/(?:_build|assets)\/|\.(?:avif|css|gif|ico|jpe?g|js|map|png|svg|webp|woff2?)$)/i;
-export function isRateLimitExempt(pathname: string) {
-  return pathname === "/favicon.ico" || pathname === "/health" || STATIC_PATH.test(pathname);
 }

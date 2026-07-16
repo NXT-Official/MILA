@@ -11,8 +11,8 @@ moderated community feed, and chat with a conversational styling assistant.
 ![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-06b6d4?logo=tailwindcss&logoColor=white)
 ![Bun](https://img.shields.io/badge/Bun-package_manager-f472b6?logo=bun&logoColor=white)
 
-Security-critical rate limiting, auth abuse protection, hCaptcha, and middleware have Bun tests
-and run in CI. No license file currently exists — see [Testing](#testing) and [License](#license).
+Cost-sensitive rate limiting, hCaptcha, and security boundaries have Bun tests and run in CI.
+No license file currently exists — see [Testing](#testing) and [License](#license).
 
 ## Table of Contents
 
@@ -464,9 +464,8 @@ Copy `.env.example` to `.env` and fill in real values — never commit `.env`.
 | `SUPABASE_URL`                           |                   Yes | Server                   | Same project URL, read by server functions                                                    |
 | `SUPABASE_PUBLISHABLE_KEY`               |                   Yes | Server                   | Anon key used by the request-scoped RLS client in `auth-middleware.ts`                        |
 | `SUPABASE_SERVICE_ROLE_KEY`              |                   Yes | Server, **secret**       | Bypasses RLS; used only by `client.server.ts` inside server functions                         |
-| `AI_API_KEY`                             | Yes (for AI features) | Server, **secret**       | Bearer token for the chat-completions provider                                                |
-| `AI_BASE_URL`                            | Yes (for AI features) | Server                   | Base URL of an OpenAI-compatible chat-completions API                                         |
-| `AI_MODEL`                               | Yes (for AI features) | Server                   | Model name/ID sent with every completion request                                              |
+| `AI_API_KEY`                             | Yes (for AI features) | Server, **secret**       | Gemini API key                                                                                |
+| `AI_MODEL`                               | Yes (for AI features) | Server                   | Gemini model name/ID sent with every request                                                  |
 | `VITE_HCAPTCHA_SITEKEY`                  |                   Yes | Client                   | hCaptcha site key rendered on the login/signup form                                           |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD`         |                    No | Local documentation only | Not read by any application code — a convention for the manual admin-bootstrap SQL step below |
 | `MODERATOR_EMAIL` / `MODERATOR_PASSWORD` |                    No | Local documentation only | Same as above; the moderator role has no authorization logic yet                              |
@@ -549,7 +548,7 @@ bun run start   # runs bun .output/server/index.mjs
 ```
 
 All server-scoped environment variables (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
-`SUPABASE_SERVICE_ROLE_KEY`, `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`) must be present in the
+`SUPABASE_SERVICE_ROLE_KEY`, `AI_API_KEY`, `AI_MODEL`) must be present in the
 runtime environment that runs `bun run start` — they are not baked into the client bundle at
 build time.
 
@@ -582,10 +581,9 @@ TypeScript handling, and will fail the build on type errors.
 
 ## Testing
 
-`bun test` runs colocated unit tests for rate limiting, middleware, auth abuse protection,
-hCaptcha verification, and client/server secret boundaries. Cross-module request-pipeline tests
-live under `tests/integration/`; external Supabase and hCaptcha calls are mocked, so tests never
-use production credentials or network services. Run `bun run test:coverage` for coverage.
+`bun test` runs colocated unit tests for cost-sensitive rate limiting, hCaptcha verification,
+and client/server secret boundaries. External Supabase and hCaptcha calls are mocked, so tests
+never use production credentials or network services. Run `bun run test:coverage` for coverage.
 
 If a test strategy is added later, reasonable starting points given the codebase would be:
 
@@ -648,8 +646,8 @@ Confirm the Supabase project's allowed redirect URLs include your dev/prod origi
 `/auth/callback`, and clear stale sessions from `localStorage` if testing repeatedly.
 
 **AI features return an error immediately**
-`AI_API_KEY`, `AI_BASE_URL`, and `AI_MODEL` must all be set — `isAiConfigured()` short-circuits
-otherwise. The endpoint must support multimodal (image) input and tool/function calling.
+`AI_API_KEY` and `AI_MODEL` must both be set — `isAiConfigured()` short-circuits
+otherwise. The selected Gemini model must support multimodal input and structured output.
 
 **Build fails**
 Run `bun run format` and `bun run lint` first, then re-run `bun run build` and read the
