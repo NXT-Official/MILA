@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Images, ImageOff, Sparkles } from "lucide-react";
+import { Images, ImageOff, Sparkles, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detail";
@@ -253,6 +254,27 @@ function History() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState<OutfitRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // ponytail: deletes the row only; the storage image is left orphaned — clean up server-side if it matters
+  async function deleteOutfit(item: OutfitRow) {
+    if (!user) return;
+    if (!window.confirm("Delete this look from your archive? This can't be undone.")) return;
+    setDeleting(true);
+    const { error } = await supabase
+      .from("outfits")
+      .delete()
+      .eq("id", item.id)
+      .eq("user_id", user.id);
+    setDeleting(false);
+    if (error) {
+      toast.error("Couldn't delete this look. Please try again.");
+      return;
+    }
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    setSelected(null);
+    toast.success("Look deleted from your archive.");
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -334,24 +356,39 @@ function History() {
               <HistoryDetailBody item={selected} analysis={selectedAnalysis} />
             ) : null}
           </div>
-          {selected && selectedAnalysis ? (
-            <div className="shrink-0 border-t border-border px-5 py-3 sm:px-6">
+          {selected ? (
+            <div className="shrink-0 border-t border-border px-5 py-3 sm:px-6 flex flex-wrap items-center justify-between gap-3">
               <Button
                 variant="outline"
-                className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"
-                onClick={() => {
-                  openConcierge({
-                    lookId: selected.id,
-                    imageUrl: selected.image_url,
-                    title: historyItemTitle(selectedAnalysis),
-                    source: "From History",
-                  });
-                  setSelected(null);
-                }}
+                disabled={deleting}
+                onClick={() => deleteOutfit(selected)}
+                className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px] text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
               >
-                <Sparkles className="size-4 mr-2 text-accent" aria-hidden="true" />
-                Ask Mila about this look
+                {deleting ? (
+                  <Loader2 className="size-4 mr-2 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 className="size-4 mr-2" aria-hidden="true" />
+                )}
+                Delete
               </Button>
+              {selectedAnalysis ? (
+                <Button
+                  variant="outline"
+                  className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"
+                  onClick={() => {
+                    openConcierge({
+                      lookId: selected.id,
+                      imageUrl: selected.image_url,
+                      title: historyItemTitle(selectedAnalysis),
+                      source: "From History",
+                    });
+                    setSelected(null);
+                  }}
+                >
+                  <Sparkles className="size-4 mr-2 text-accent" aria-hidden="true" />
+                  Ask Mila about this look
+                </Button>
+              ) : null}
             </div>
           ) : null}
         </DialogContent>
