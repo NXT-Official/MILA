@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Camera, Coins } from "lucide-react";
@@ -11,7 +11,6 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { DesktopNav } from "@/components/layout/desktop-nav";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { StudioCameraDrawer } from "@/components/dashboard/studio-camera-drawer";
-import { StylistConciergeDrawer } from "@/components/dashboard/stylist-concierge-drawer";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 import { ConciergeContext, type ConciergeLook } from "@/hooks/use-concierge";
 import { analyzeOutfit } from "@/lib/analyze-outfit.functions";
@@ -25,8 +24,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isLensOpen, setIsLensOpen] = useState(false);
   const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
-  const [isConciergeOpen, setIsConciergeOpen] = useState(false);
   const [conciergeLook, setConciergeLook] = useState<ConciergeLook | null>(null);
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyze = useServerFn(analyzeOutfit);
 
@@ -114,11 +113,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   function openConcierge(look?: ConciergeLook | null) {
     setConciergeLook(look ?? null);
-    setIsConciergeOpen(true);
+    navigate({ to: "/concierge" });
   }
 
   return (
-    <ConciergeContext.Provider value={{ openConcierge }}>
+    <ConciergeContext.Provider
+      value={{ openConcierge, look: conciergeLook, clearLook: () => setConciergeLook(null) }}
+    >
       <div className="min-h-screen flex flex-col w-full">
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-porcelain/30">
           <div className="max-w-7xl mx-auto h-16 px-5 md:px-8 flex items-center justify-between gap-6 relative">
@@ -176,17 +177,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           path={path}
           onOpenLens={() => setIsLensOpen(true)}
           onOpenConcierge={() => openConcierge()}
-        />
-
-        <StylistConciergeDrawer
-          open={isConciergeOpen}
-          onOpenChange={setIsConciergeOpen}
-          look={conciergeLook}
-          onClearLook={() => setConciergeLook(null)}
-          profile={{
-            bodyType: profile?.body_type ?? null,
-            colorSeason: profile?.color_season ?? null,
-          }}
         />
 
         <StudioMembershipDrawer

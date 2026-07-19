@@ -15,8 +15,12 @@ export interface ConciergeLook {
 }
 
 interface ConciergeApi {
-  /** Open the Concierge drawer. Pass a look to anchor it; omit for general mode. */
+  /** Open the Concierge page. Pass a look to anchor it; omit for general mode. */
   openConcierge: (look?: ConciergeLook | null) => void;
+  /** The look the conversation is currently anchored to, if any. */
+  look: ConciergeLook | null;
+  /** Detach the anchored look from the conversation. */
+  clearLook: () => void;
 }
 
 export const ConciergeContext = createContext<ConciergeApi | null>(null);

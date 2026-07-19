@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Loader2,
@@ -13,27 +13,14 @@ import {
   Mic,
   ImagePlus,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { conciergeChat } from "@/lib/concierge-chat.functions";
-import { useConcierge, type ConciergeLook } from "@/hooks/use-concierge";
+import type { ConciergeLook } from "@/hooks/use-concierge";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
-export interface StylistProfileContext {
-  bodyType: string | null | undefined;
-  colorSeason: string | null | undefined;
-}
 
 type Msg = {
   id: number;
@@ -43,14 +30,6 @@ type Msg = {
   failed?: boolean;
   imageUrl?: string;
 };
-
-interface Props {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  look: ConciergeLook | null;
-  onClearLook: () => void;
-  profile: StylistProfileContext;
-}
 
 const GENERAL_PROMPTS = [
   "Build an outfit for today",
@@ -116,7 +95,18 @@ function outfitTitle(raw: unknown): string {
 
 let nextMsgId = 1;
 
-export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, profile }: Props) {
+interface ConciergeChatProps {
+  look: ConciergeLook | null;
+  onSelectLook: (look: ConciergeLook) => void;
+}
+
+/**
+ * The full concierge conversation column: message list plus the footer form
+ * (quick prompts, archive strip, attachment, dictation, input). Renders as a
+ * fragment of flex children — hosts wrap it in a `flex flex-col` container.
+ * Remount with a new `key` to start a fresh chat.
+ */
+export function ConciergeChat({ look, onSelectLook }: ConciergeChatProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -124,7 +114,6 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
   const prevLookIdRef = useRef<string | null>(look?.lookId ?? null);
   const chat = useServerFn(conciergeChat);
   const { user } = useAuth();
-  const { openConcierge } = useConcierge();
   const [archive, setArchive] = useState<ArchiveItem[]>([]);
   const [archiveOpen, setArchiveOpen] = useState(
     () => typeof localStorage === "undefined" || localStorage.getItem(ARCHIVE_OPEN_KEY) !== "0",
@@ -161,9 +150,7 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
     setListening(true);
   }
 
-  useEffect(() => {
-    if (!open) recognitionRef.current?.stop();
-  }, [open]);
+  useEffect(() => () => recognitionRef.current?.stop(), []);
 
   function toggleArchive() {
     setArchiveOpen((v) => {
@@ -173,7 +160,7 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
   }
 
   useEffect(() => {
-    if (!open || look || !user) return;
+    if (look || !user) return;
     let cancelled = false;
     supabase
       .from("outfits")
@@ -194,7 +181,7 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
     return () => {
       cancelled = true;
     };
-  }, [open, look, user]);
+  }, [look, user]);
 
   useEffect(() => {
     const id = look?.lookId ?? null;
@@ -208,11 +195,6 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
   }, [messages, sending]);
 
   const quickPrompts = attachment ? ATTACHMENT_PROMPTS : look ? ANCHORED_PROMPTS : GENERAL_PROMPTS;
-
-  const seasonBadges = useMemo(
-    () => [profile.bodyType, profile.colorSeason].filter(Boolean) as string[],
-    [profile.bodyType, profile.colorSeason],
-  );
 
   async function send(text: string, retryId?: number) {
     const trimmed = text.trim();
@@ -278,70 +260,9 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0 gap-0">
-        <SheetHeader className="px-6 sm:px-8 pt-8 pb-5 border-b border-foreground/5 dark:border-white/10 text-left">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.42em] text-muted-foreground/80 font-medium">
-                Mila's Insights
-              </p>
-              <SheetTitle className="font-serif text-[28px] leading-tight tracking-[-0.01em] mt-1">
-                Mila's Styling Studio
-              </SheetTitle>
-              <SheetDescription className="text-xs leading-relaxed mt-1.5 text-muted-foreground">
-                Personal guidance on outfits, color, proportions, beauty, and occasions.
-              </SheetDescription>
-            </div>
-            {messages.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setMessages([])}
-                className="shrink-0 mt-1 text-[10px] uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-              >
-                New chat
-              </button>
-            )}
-          </div>
-
-          {seasonBadges.length > 0 && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {seasonBadges.map((b) => (
-                <Badge
-                  key={b}
-                  variant="outline"
-                  className="rounded-full px-3 py-0.5 text-[10px] font-normal uppercase tracking-[0.22em] border-foreground/15 bg-background/40"
-                >
-                  {b}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          {look && (
-            <div className="mt-4 flex items-center gap-3 rounded-xl border border-foreground/10 bg-background/50 p-2.5 shadow-sm">
-              <div className="size-14 rounded-lg bg-muted overflow-hidden shrink-0 ring-1 ring-foreground/5">
-                <LookThumbnail imageUrl={look.imageUrl} title={look.title} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium leading-tight truncate">{look.title}</p>
-                <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mt-0.5 truncate">
-                  {look.source}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onClearLook}
-                aria-label="Remove this look from the conversation"
-                className="shrink-0 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
-              >
-                <X className="size-4" strokeWidth={1.75} aria-hidden="true" />
-              </button>
-            </div>
-          )}
-        </SheetHeader>
-
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 sm:px-7 py-6 space-y-6">
+    <>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 sm:px-7 py-6">
+        <div className="mx-auto w-full max-w-3xl space-y-6">
           {messages.length === 0 && (
             <div className="pt-8 text-center px-4">
               <Sparkles className="size-6 mx-auto text-accent mb-4" strokeWidth={1.5} />
@@ -378,14 +299,16 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
             </div>
           )}
         </div>
+      </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send(input);
-          }}
-          className="border-t border-foreground/5 dark:border-white/10 px-4 sm:px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2.5 bg-background/60 backdrop-blur-xl"
-        >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          send(input);
+        }}
+        className="border-t border-foreground/5 dark:border-white/10 px-4 sm:px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-background/60 backdrop-blur-xl"
+      >
+        <div className="mx-auto w-full max-w-3xl space-y-2.5">
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick styling prompts">
             {quickPrompts.map((p) => (
               <button
@@ -423,7 +346,7 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
                       key={o.id}
                       type="button"
                       onClick={() =>
-                        openConcierge({
+                        onSelectLook({
                           lookId: o.id,
                           imageUrl: o.image_url,
                           title: o.title,
@@ -552,9 +475,46 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
               )}
             </Button>
           </div>
-        </form>
-      </SheetContent>
-    </Sheet>
+        </div>
+      </form>
+    </>
+  );
+}
+
+export function AnchoredLookCard({
+  look,
+  onClear,
+  className,
+}: {
+  look: ConciergeLook;
+  onClear: () => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-xl border border-foreground/10 bg-background/50 p-2.5 shadow-sm",
+        className,
+      )}
+    >
+      <div className="size-14 rounded-lg bg-muted overflow-hidden shrink-0 ring-1 ring-foreground/5">
+        <LookThumbnail imageUrl={look.imageUrl} title={look.title} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium leading-tight truncate">{look.title}</p>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mt-0.5 truncate">
+          {look.source}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label="Remove this look from the conversation"
+        className="shrink-0 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+      >
+        <X className="size-4" strokeWidth={1.75} aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 

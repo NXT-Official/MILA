@@ -27,6 +27,7 @@ import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
 import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
+import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
 import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_authenticated/_app/profile.$userId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -124,6 +125,12 @@ const AuthenticatedAppDashboardRoute =
     path: '/dashboard',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppConciergeRoute =
+  AuthenticatedAppConciergeRouteImport.update({
+    id: '/concierge',
+    path: '/concierge',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppProfileUserIdRoute =
   AuthenticatedAppProfileUserIdRouteImport.update({
     id: '/profile/$userId',
@@ -137,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
   '/history': typeof AuthenticatedAppHistoryRoute
@@ -155,6 +163,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
   '/history': typeof AuthenticatedAppHistoryRoute
@@ -177,6 +186,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/_authenticated/_app/concierge': typeof AuthenticatedAppConciergeRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/feed': typeof AuthenticatedAppFeedRoute
   '/_authenticated/_app/history': typeof AuthenticatedAppHistoryRoute
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/onboarding'
     | '/auth/callback'
+    | '/concierge'
     | '/dashboard'
     | '/feed'
     | '/history'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/auth/callback'
+    | '/concierge'
     | '/dashboard'
     | '/feed'
     | '/history'
@@ -237,6 +249,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/onboarding'
     | '/auth/callback'
+    | '/_authenticated/_app/concierge'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/feed'
     | '/_authenticated/_app/history'
@@ -386,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppDashboardRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/concierge': {
+      id: '/_authenticated/_app/concierge'
+      path: '/concierge'
+      fullPath: '/concierge'
+      preLoaderRoute: typeof AuthenticatedAppConciergeRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/profile/$userId': {
       id: '/_authenticated/_app/profile/$userId'
       path: '/profile/$userId'
@@ -397,6 +417,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppConciergeRoute: typeof AuthenticatedAppConciergeRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppFeedRoute: typeof AuthenticatedAppFeedRoute
   AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
@@ -406,6 +427,7 @@ interface AuthenticatedAppRouteChildren {
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppConciergeRoute: AuthenticatedAppConciergeRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppFeedRoute: AuthenticatedAppFeedRoute,
   AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,
