@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Send, Sparkles, Shirt, RotateCcw, X, Wand2 } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  Sparkles,
+  Shirt,
+  RotateCcw,
+  X,
+  Wand2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -12,7 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { conciergeChat } from "@/lib/concierge-chat.functions";
-import type { ConciergeLook } from "@/hooks/use-concierge";
+import { useConcierge, type ConciergeLook } from "@/hooks/use-concierge";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +69,21 @@ function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+type ArchiveItem = { id: string; image_url: string | null; title: string };
+
+const ARCHIVE_OPEN_KEY = "concierge-archive-open";
+
+// ponytail: minimal title extraction; history.tsx has the full normalizer if shapes grow
+function outfitTitle(raw: unknown): string {
+  try {
+    const v = typeof raw === "string" ? JSON.parse(raw) : raw;
+    const headline = (v as { outfit?: { headline?: unknown } } | null)?.outfit?.headline;
+    return typeof headline === "string" ? headline : "Saved Look";
+  } catch {
+    return "Saved Look";
+  }
+}
+
 let nextMsgId = 1;
 
 export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, profile }: Props) {
@@ -66,6 +93,43 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevLookIdRef = useRef<string | null>(look?.lookId ?? null);
   const chat = useServerFn(conciergeChat);
+  const { user } = useAuth();
+  const { openConcierge } = useConcierge();
+  const [archive, setArchive] = useState<ArchiveItem[]>([]);
+  const [archiveOpen, setArchiveOpen] = useState(
+    () => typeof localStorage === "undefined" || localStorage.getItem(ARCHIVE_OPEN_KEY) !== "0",
+  );
+
+  function toggleArchive() {
+    setArchiveOpen((v) => {
+      localStorage.setItem(ARCHIVE_OPEN_KEY, v ? "0" : "1");
+      return !v;
+    });
+  }
+
+  useEffect(() => {
+    if (!open || look || !user) return;
+    let cancelled = false;
+    supabase
+      .from("outfits")
+      .select("id,image_url,analysis_result")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setArchive(
+          data.map((o) => ({
+            id: o.id,
+            image_url: o.image_url,
+            title: outfitTitle(o.analysis_result),
+          })),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, look, user]);
 
   useEffect(() => {
     const id = look?.lookId ?? null;
@@ -249,6 +313,50 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
               </button>
             ))}
           </div>
+
+          {!look && archive.length > 0 && (
+            <div>
+              <button
+                type="button"
+                onClick={toggleArchive}
+                aria-expanded={archiveOpen}
+                className="flex w-full items-center justify-between text-[10px] uppercase tracking-[0.32em] text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                Ask about a look from your archive
+                {archiveOpen ? (
+                  <ChevronDown className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <ChevronUp className="size-3.5" aria-hidden="true" />
+                )}
+              </button>
+              {archiveOpen && (
+                <div className="mt-2 flex gap-2.5 overflow-x-auto pb-1">
+                  {archive.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() =>
+                        openConcierge({
+                          lookId: o.id,
+                          imageUrl: o.image_url,
+                          title: o.title,
+                          source: "From your archive",
+                        })
+                      }
+                      className="group w-16 shrink-0 text-left"
+                    >
+                      <div className="size-16 overflow-hidden rounded-xl bg-muted ring-1 ring-foreground/10 transition group-hover:ring-foreground/30">
+                        <LookThumbnail imageUrl={o.image_url} title={o.title} />
+                      </div>
+                      <p className="mt-1 text-[10px] leading-tight text-muted-foreground line-clamp-1">
+                        {o.title}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <Input
