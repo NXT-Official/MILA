@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, Camera, ArrowLeft } from "lucide-react";
+import { Loader2, ExternalLink, Camera, ArrowLeft, ImageOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { findDupes, type DupeHuntResult } from "@/lib/dupe-hunter.functions";
 import { createPost } from "@/lib/posts.functions";
@@ -369,21 +369,35 @@ export function StudioCameraDrawer({
                       <Carousel opts={{ align: "start" }}>
                         <CarouselContent className="-ml-3">
                           {dupeResult.dupes.map((d) => (
-                            <CarouselItem key={d.id} className="pl-3 basis-[78%] sm:basis-[52%]">
+                            <CarouselItem key={d.id} className="pl-3 basis-[78%] sm:basis-1/2">
                               <div className="h-full rounded-2xl border border-porcelain/60 bg-background/70 backdrop-blur overflow-hidden flex flex-col shadow-atelier-soft">
                                 <div className="aspect-3/4 bg-atelier-ivory/60 overflow-hidden">
-                                  {d.image_url ? (
+                                  {d.image_url && (
                                     <img
                                       src={d.image_url}
                                       alt={d.title}
                                       className="h-full w-full object-cover"
                                       loading="lazy"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                        e.currentTarget.nextElementSibling?.classList.replace(
+                                          "hidden",
+                                          "flex",
+                                        );
+                                      }}
                                     />
-                                  ) : (
-                                    <div className="h-full w-full flex items-center justify-center text-stone text-[10px] uppercase tracking-[0.3em]">
-                                      No image
-                                    </div>
                                   )}
+                                  <div
+                                    className={cn(
+                                      "h-full w-full flex-col items-center justify-center gap-2 text-stone",
+                                      d.image_url ? "hidden" : "flex",
+                                    )}
+                                  >
+                                    <ImageOff className="size-5" strokeWidth={1.5} />
+                                    <span className="text-[10px] uppercase tracking-[0.3em]">
+                                      Image not available
+                                    </span>
+                                  </div>
                                 </div>
                                 <div className="p-4 flex-1 flex flex-col gap-3">
                                   <div className="flex-1">
