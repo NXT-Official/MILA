@@ -10,6 +10,7 @@ import {
   Wand2,
   ChevronDown,
   ChevronUp,
+  Mic,
 } from "lucide-react";
 import {
   Sheet,
@@ -73,6 +74,25 @@ type ArchiveItem = { id: string; image_url: string | null; title: string };
 
 const ARCHIVE_OPEN_KEY = "concierge-archive-open";
 
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start(): void;
+  stop(): void;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+};
+
+const SpeechRecognitionCtor =
+  typeof window !== "undefined"
+    ? (((window as unknown as Record<string, unknown>).SpeechRecognition as
+        (new () => SpeechRecognitionLike) | undefined) ??
+      ((window as unknown as Record<string, unknown>).webkitSpeechRecognition as
+        (new () => SpeechRecognitionLike) | undefined))
+    : undefined;
+
 // ponytail: minimal title extraction; history.tsx has the full normalizer if shapes grow
 function outfitTitle(raw: unknown): string {
   try {
@@ -99,6 +119,39 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
   const [archiveOpen, setArchiveOpen] = useState(
     () => typeof localStorage === "undefined" || localStorage.getItem(ARCHIVE_OPEN_KEY) !== "0",
   );
+
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const dictationBaseRef = useRef("");
+
+  function toggleDictation() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    if (!SpeechRecognitionCtor) return;
+    const rec = new SpeechRecognitionCtor();
+    rec.lang = navigator.language || "en-US";
+    rec.continuous = true;
+    rec.interimResults = true;
+    dictationBaseRef.current = input.trim() ? input.trim() + " " : "";
+    rec.onresult = (e) => {
+      let transcript = "";
+      for (let i = 0; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      setInput(dictationBaseRef.current + transcript);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    rec.start();
+    setListening(true);
+  }
+
+  useEffect(() => {
+    if (!open) recognitionRef.current?.stop();
+  }, [open]);
 
   function toggleArchive() {
     setArchiveOpen((v) => {
@@ -358,16 +411,51 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
             </div>
           )}
 
+          {listening && (
+            <p
+              role="status"
+              className="flex items-center gap-2 px-1 text-[10px] uppercase tracking-[0.32em] text-accent"
+            >
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-accent" />
+              </span>
+              Listening — tap the mic to stop
+            </p>
+          )}
+
           <div className="flex items-center gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Mila about color, fit, or your next OOTD…"
+              placeholder={
+                listening ? "Listening…" : "Ask Mila about color, fit, or your next OOTD…"
+              }
               aria-label="Message Mila"
               maxLength={2000}
               disabled={sending}
-              className="rounded-full border-foreground/15 bg-background/70 focus-visible:ring-0 px-4 h-10"
+              className={cn(
+                "rounded-full border-foreground/15 bg-background/70 focus-visible:ring-0 px-4 h-10",
+                listening && "border-accent/50",
+              )}
             />
+            {SpeechRecognitionCtor && (
+              <Button
+                type="button"
+                size="icon"
+                variant={listening ? "primary" : "outline"}
+                onClick={toggleDictation}
+                disabled={sending}
+                aria-pressed={listening}
+                aria-label={listening ? "Stop dictation" : "Dictate your message"}
+                className={cn(
+                  "rounded-full size-10 shrink-0 shadow-sm",
+                  listening && "animate-pulse",
+                )}
+              >
+                <Mic className="size-4" aria-hidden="true" />
+              </Button>
+            )}
             <Button
               type="submit"
               size="icon"
