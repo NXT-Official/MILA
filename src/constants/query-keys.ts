@@ -4,6 +4,8 @@ export const queryKeys = {
   memberProfile: (userId: string) => ["member-profile", userId] as const,
   suspended: (userId: string | undefined) => ["suspended", userId] as const,
   credits: (userId: string | undefined) => ["credits", userId] as const,
+  conciergeConversations: (userId: string | undefined) =>
+    ["concierge-conversations", userId] as const,
   staffGate: ["staff:gate"] as const,
   adminUsers: ["admin:users"] as const,
   adminPosts: ["admin:posts"] as const,

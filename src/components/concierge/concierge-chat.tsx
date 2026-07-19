@@ -98,6 +98,10 @@ let nextMsgId = 1;
 interface ConciergeChatProps {
   look: ConciergeLook | null;
   onSelectLook: (look: ConciergeLook) => void;
+  /** Resume a saved conversation: its messages load on mount and new turns append to it. */
+  initialConversationId?: string | null;
+  /** Fired once when a fresh chat persists its first exchange. */
+  onConversationCreated?: (id: string) => void;
 }
 
 /**
@@ -106,8 +110,14 @@ interface ConciergeChatProps {
  * fragment of flex children — hosts wrap it in a `flex flex-col` container.
  * Remount with a new `key` to start a fresh chat.
  */
-export function ConciergeChat({ look, onSelectLook }: ConciergeChatProps) {
+export function ConciergeChat({
+  look,
+  onSelectLook,
+  initialConversationId = null,
+  onConversationCreated,
+}: ConciergeChatProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
+  const conversationIdRef = useRef<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -151,6 +161,75 @@ export function ConciergeChat({ look, onSelectLook }: ConciergeChatProps) {
   }
 
   useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  useEffect(() => {
+    // Skip when this component itself just created the conversation — the
+    // messages are already on screen and don't need re-hydrating.
+    if (!initialConversationId || conversationIdRef.current === initialConversationId) return;
+    let cancelled = false;
+    supabase
+      .from("concierge_messages")
+      .select("role,content,image_url,created_at")
+      .eq("conversation_id", initialConversationId)
+      .order("created_at")
+      .order("role", { ascending: false })
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        // Committed only on delivery so a double-invoked (dev StrictMode)
+        // first run, whose result is discarded, doesn't block the re-fetch.
+        conversationIdRef.current = initialConversationId;
+        setMessages(
+          data.map((m) => ({
+            id: nextMsgId++,
+            role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
+            content: m.content,
+            ts: new Date(m.created_at).getTime(),
+            imageUrl: m.image_url ?? undefined,
+          })),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialConversationId]);
+
+  // ponytail: history is best-effort — a failed save never blocks the chat
+  async function persistExchange(userText: string, imageUrl: string | null, reply: string) {
+    if (!user) return;
+    try {
+      let convId = conversationIdRef.current;
+      if (!convId) {
+        const { data: conv, error } = await supabase
+          .from("concierge_conversations")
+          .insert({ user_id: user.id, title: userText.slice(0, 120) })
+          .select("id")
+          .single();
+        if (error || !conv) {
+          if (error) console.warn("[concierge] couldn't save conversation:", error.message);
+          return;
+        }
+        convId = conv.id;
+        conversationIdRef.current = convId;
+        onConversationCreated?.(convId);
+      }
+      await supabase.from("concierge_messages").insert([
+        {
+          conversation_id: convId,
+          user_id: user.id,
+          role: "user",
+          content: userText,
+          image_url: imageUrl,
+        },
+        { conversation_id: convId, user_id: user.id, role: "assistant", content: reply },
+      ]);
+      await supabase
+        .from("concierge_conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", convId);
+    } catch {
+      // best-effort
+    }
+  }
 
   function toggleArchive() {
     setArchiveOpen((v) => {
@@ -251,6 +330,7 @@ export function ConciergeChat({ look, onSelectLook }: ConciergeChatProps) {
         ...prev,
         { id: nextMsgId++, role: "assistant", content: res.reply, ts: Date.now() },
       ]);
+      void persistExchange(trimmed, uploadedUrl, res.reply);
     } catch (e) {
       setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, failed: true } : m)));
       toast.error(e instanceof Error ? e.message : "Mila couldn't respond just now.");
