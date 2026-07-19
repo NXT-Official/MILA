@@ -158,7 +158,9 @@ function ConciergePage() {
               </button>
             </div>
           </div>
-          {look && <AnchoredLookCard look={look} onClear={clearLook} className="mt-3 max-w-md" />}
+          <div className="max-w-3xl mx-auto">
+            {look && <AnchoredLookCard look={look} onClear={clearLook} className="mt-3 w-full" />}
+          </div>
         </header>
 
         <ConciergeChat
