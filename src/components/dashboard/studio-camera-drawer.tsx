@@ -162,7 +162,17 @@ export function StudioCameraDrawer({
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (open) return;
+        if (dupeLoading) {
+          toast.message("Still hunting — hang tight.");
+          return;
+        }
+        onClose();
+      }}
+    >
       <SheetContent
         side="bottom"
         className="rounded-t-3xl border-t border-foreground/5 dark:border-white/10 px-6 pt-8 pb-10 max-h-[92vh] overflow-y-auto"
