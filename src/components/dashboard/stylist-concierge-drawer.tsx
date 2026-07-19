@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
   Mic,
+  ImagePlus,
 } from "lucide-react";
 import {
   Sheet,
@@ -40,6 +41,7 @@ type Msg = {
   content: string;
   ts: number;
   failed?: boolean;
+  imageUrl?: string;
 };
 
 interface Props {
@@ -56,6 +58,14 @@ const GENERAL_PROMPTS = [
   "Help me plan a capsule wardrobe",
   "What should I wear to a dinner?",
   "Suggest an easy beauty look",
+];
+
+const ATTACHMENT_PROMPTS = [
+  "What do you think of this?",
+  "How would you style this?",
+  "Does this suit my palette?",
+  "What occasions fit this piece?",
+  "What would you pair with it?",
 ];
 
 const ANCHORED_PROMPTS = [
@@ -123,6 +133,8 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const dictationBaseRef = useRef("");
+  const [attachment, setAttachment] = useState<{ file: File; preview: string } | null>(null);
+  const attachRef = useRef<HTMLInputElement>(null);
 
   function toggleDictation() {
     if (listening) {
@@ -195,7 +207,7 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, sending]);
 
-  const quickPrompts = look ? ANCHORED_PROMPTS : GENERAL_PROMPTS;
+  const quickPrompts = attachment ? ATTACHMENT_PROMPTS : look ? ANCHORED_PROMPTS : GENERAL_PROMPTS;
 
   const seasonBadges = useMemo(
     () => [profile.bodyType, profile.colorSeason].filter(Boolean) as string[],
@@ -206,6 +218,9 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
     const trimmed = text.trim();
     if (!trimmed || sending) return;
 
+    // ponytail: retrying a failed message re-sends its text only, not its attachment
+    const attached = retryId == null ? attachment : null;
+
     let userMsg: Msg;
     let priorMessages: Msg[];
     if (retryId != null) {
@@ -213,14 +228,32 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
       priorMessages = messages.slice(0, messages.indexOf(userMsg));
       setMessages((prev) => prev.map((m) => (m.id === retryId ? { ...m, failed: false } : m)));
     } else {
-      userMsg = { id: nextMsgId++, role: "user", content: trimmed, ts: Date.now() };
+      userMsg = {
+        id: nextMsgId++,
+        role: "user",
+        content: trimmed,
+        ts: Date.now(),
+        imageUrl: attached?.preview,
+      };
       priorMessages = messages;
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
+      setAttachment(null);
     }
     setSending(true);
 
     try {
+      let uploadedUrl: string | null = null;
+      if (attached) {
+        if (!user) throw new Error("Sign in to attach a photo.");
+        const ext = (attached.file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("outfits")
+          .upload(path, attached.file, { contentType: attached.file.type || "image/jpeg" });
+        if (upErr) throw upErr;
+        uploadedUrl = supabase.storage.from("outfits").getPublicUrl(path).data.publicUrl;
+      }
       const res = await chat({
         data: {
           message: trimmed,
@@ -229,6 +262,7 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
             .slice(-12)
             .map((m) => ({ role: m.role, content: m.content })),
           lookId: look?.lookId ?? null,
+          imageUrl: uploadedUrl,
         },
       });
       setMessages((prev) => [
@@ -411,6 +445,27 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
             </div>
           )}
 
+          {attachment && (
+            <div className="flex w-fit items-center gap-2.5 rounded-xl border border-foreground/10 bg-background/50 p-2">
+              <img
+                src={attachment.preview}
+                alt="Attached image preview"
+                className="size-10 rounded-lg object-cover"
+              />
+              <p className="max-w-40 truncate text-[11px] text-muted-foreground">
+                {attachment.file.name}
+              </p>
+              <button
+                type="button"
+                onClick={() => setAttachment(null)}
+                aria-label="Remove attached image"
+                className="rounded-full p-1 text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+              >
+                <X className="size-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          )}
+
           {listening && (
             <p
               role="status"
@@ -439,6 +494,33 @@ export function StylistConciergeDrawer({ open, onOpenChange, look, onClearLook, 
                 listening && "border-accent/50",
               )}
             />
+            <input
+              ref={attachRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (!f) return;
+                if (!f.type.startsWith("image/")) {
+                  toast.error("Images only, please.");
+                  return;
+                }
+                setAttachment({ file: f, preview: URL.createObjectURL(f) });
+              }}
+            />
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={() => attachRef.current?.click()}
+              disabled={sending}
+              aria-label="Attach an image"
+              className="rounded-full size-10 shrink-0 shadow-sm"
+            >
+              <ImagePlus className="size-4" aria-hidden="true" />
+            </Button>
             {SpeechRecognitionCtor && (
               <Button
                 type="button"
@@ -524,6 +606,13 @@ function MessageBubble({
               : "bg-secondary/70 backdrop-blur-sm text-foreground border border-foreground/10 rounded-bl-sm",
           )}
         >
+          {msg.imageUrl && (
+            <img
+              src={msg.imageUrl}
+              alt="Attached to this message"
+              className="mb-2 max-h-40 rounded-xl object-cover"
+            />
+          )}
           {msg.content}
         </div>
         {msg.failed && (

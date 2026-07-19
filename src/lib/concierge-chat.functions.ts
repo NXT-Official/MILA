@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { consumeAiCredit } from "./credits.server";
@@ -17,6 +18,7 @@ const Input = z.object({
   message: z.string().trim().min(1, "Message is required.").max(2000),
   history: z.array(HistoryMessage).max(12).default([]),
   lookId: z.string().uuid().nullable().optional(),
+  imageUrl: z.string().url().max(2048).nullable().optional(),
 });
 
 export type ConciergeReply = { reply: string };
@@ -174,6 +176,7 @@ export const conciergeChat = createServerFn({ method: "POST" })
       }
     }
 
+    const attachedImageUrl = data.imageUrl ? assertTrustedStorageImageUrl(data.imageUrl) : null;
     const anchored = !!data.lookId;
     const systemPrompt = `You are Mila, a thoughtful personal fashion stylist. You give practical, specific styling advice — outfits, color, proportions, beauty, occasions, packing, wardrobe planning — and always explain briefly why a suggestion works, offering an alternative when useful.
 
@@ -185,7 +188,9 @@ ${
     ? `ANCHORED LOOK: the client is asking about one specific saved look.${lookImageUrl ? " Its photo is attached to this conversation." : " Its photo could not be attached — rely on the details below and say so if a visual judgement is asked for."}
 ${lookLines.length ? lookLines.map((l) => `- ${l}`).join("\n") : "- No structured details available for this look."}
 Distinguish clearly between what you can see/know about this look and general guidance.`
-    : `NO IMAGE has been shared in this conversation. Never claim to see an outfit or photo. Answer general styling questions directly and completely — do NOT ask the client to upload a photo unless the question genuinely cannot be answered without one.`
+    : attachedImageUrl
+      ? `The client attached a photo to their latest message — it is included in this conversation. Ground your visual judgements in what the photo actually shows.`
+      : `NO IMAGE has been shared in this conversation. Never claim to see an outfit or photo. Answer general styling questions directly and completely — do NOT ask the client to upload a photo unless the question genuinely cannot be answered without one.`
 }
 
 RULES:
@@ -211,7 +216,15 @@ RULES:
           ]
         : []),
       ...history.map((m) => ({ role: m.role, content: m.content })),
-      { role: "user", content: data.message },
+      attachedImageUrl
+        ? {
+            role: "user",
+            content: [
+              { type: "text", text: data.message },
+              { type: "image_url", image_url: { url: attachedImageUrl } },
+            ],
+          }
+        : { role: "user", content: data.message },
     ];
 
     const res = await aiChatCompletion({
