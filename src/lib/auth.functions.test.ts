@@ -55,5 +55,4 @@ describe("security-sensitive password authentication", () => {
       authenticateWithPassword("login", { ...credentials, captchaToken: "" }, deps),
     ).rejects.toThrow();
   });
-
 });

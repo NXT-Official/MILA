@@ -126,7 +126,6 @@ describe("identity protection", () => {
     process.env.RATE_LIMIT_TRUSTED_IP_HEADER = "CF-Connecting-IP";
     expect(clientIp(request, () => "192.0.2.9")).toBe("198.51.100.3");
   });
-
 });
 
 test("remaining endpoint policies are valid", () => {
