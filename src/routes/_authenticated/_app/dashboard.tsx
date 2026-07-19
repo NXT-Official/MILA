@@ -33,7 +33,19 @@ import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
 import { motion, type Variants } from "framer-motion";
 
-const VIBES = ["Casual", "Business Casual", "Business Attire", "Formal", "Date Night"] as const;
+const VIBES = [
+  "Everyday Casual",
+  "Work or School",
+  "Business Casual",
+  "Business Attire",
+  "Brunch",
+  "Date Night",
+  "Dinner",
+  "Party",
+  "Formal Event",
+  "Travel",
+  "Active Day",
+] as const;
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -94,7 +106,7 @@ function Dashboard() {
   const [savingLook, setSavingLook] = useState(false);
   const [savedLook, setSavedLook] = useState<{ id: string; imageUrl: string } | null>(null);
   const lookSaved = !!savedLook;
-  const [vibe, setVibe] = useState<Vibe>("Casual");
+  const [vibe, setVibe] = useState<Vibe>("Everyday Casual");
   const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
   const [climate, setClimate] = useState<ClimateState | null>(null);
 
@@ -243,7 +255,7 @@ function Dashboard() {
 
           <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
             <div className="w-full sm:max-w-xs">
-              <p className="atelier-kicker mb-2">Occasion Vibe Selector</p>
+              <p className="atelier-kicker mb-2">Today's Mood</p>
               <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
                 <SelectTrigger className="h-11 rounded-full border-border bg-card/60 backdrop-blur uppercase tracking-[0.18em] text-[11px]">
                   <SelectValue placeholder="Select an occasion" />
@@ -272,14 +284,14 @@ function Dashboard() {
                 </>
               ) : climate ? (
                 <>
-                  <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Generate look —{" "}
+                  <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Create my look —{" "}
                   {climate.tempC}°C{" "}
                   {climate.label.replace(/^[-\d.]+\s*°[CF]\s*/i, "").split(/[\s,]+/)[0] ||
                     climate.condition}
                 </>
               ) : (
                 <>
-                  <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Generate look
+                  <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Create my look
                 </>
               )}
             </Button>
@@ -401,10 +413,8 @@ function Dashboard() {
               </motion.div>
             ) : (
               <div className="rounded-2xl border border-border bg-card p-10 text-center">
-                <p className="atelier-kicker">Awaiting your cue</p>
-                <p className="atelier-title mt-2">
-                  Pick a vibe, then let Mila prescribe today's OOTD.
-                </p>
+                <p className="atelier-kicker">ready when you are</p>
+                <p className="atelier-title mt-2">Set the mood. Mila will compose the rest.</p>
                 <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
                   Each look is composed from first principles — tuned to your palette, body
                   architecture, and the weather outside.
