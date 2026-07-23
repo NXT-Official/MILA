@@ -93,7 +93,7 @@ export const MASTER_SEASONAL_PALETTES: Record<string, SeasonalPaletteSpec> = {
     characteristics: "Pure Earthy Warmth, Medium Saturation, Forest & Spice Baseline",
     palette: SEASON_HEX_MATRIX.AUTUMN_TRUE,
     makeup: "Burnished brick lip, warm sienna blush, satin golden base.",
-    styling: "Heavy cotton twill, oiled saddle leather, antique brass, carved tigers eye.",
+    styling: "Heavy cotton twill, oiled saddle leather, antique brass, carved tiger's eye.",
   },
   "autumn-deep": {
     key: "autumn-deep",

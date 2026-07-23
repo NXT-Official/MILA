@@ -398,7 +398,7 @@ export const SEASONS_MASTER_DATA: Record<SeasonKey, StaticSeasonSpec> = {
     avoidColors: [
       "Pure High-Contrast Black (drops heavy shadow lines on delicate features)",
       "Stark Bleached White (creates excessive facial contrast shadows)",
-      "Vivid Primary Tones (overpower the soft expression matrix)",
+      "Vivid Primary Tones (overpower the palette's soft, delicate feel)",
     ],
     beautyMap: {
       hair: "Light milk chocolate brown, honey blonde highlights, or bright warm amber.",

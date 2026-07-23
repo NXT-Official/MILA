@@ -51,7 +51,7 @@ export function AuthCard() {
             <span className="w-full border-t border-border/60" />
           </div>
           <div className="relative flex justify-center text-[10px] uppercase tracking-[0.3em]">
-            <span className="bg-card px-3 text-muted-foreground">Or secure email gate</span>
+            <span className="bg-card px-3 text-muted-foreground">Or continue with email</span>
           </div>
         </div>
 
@@ -95,7 +95,7 @@ export function AuthCard() {
       <div className="px-6 pb-5 -mt-1">
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/80 justify-center">
           <ShieldCheck className="size-3" />
-          Production-grade encrypted ecosystem authentication.
+          Your sign-in is encrypted and secure.
         </div>
       </div>
     </Card>

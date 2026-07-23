@@ -464,7 +464,7 @@ export function DetailedColorResultView({
     <div className="space-y-8 animate-fade-in text-left max-w-xl mx-auto">
       <div className="text-center border-b-[0.5px] border-border pb-6">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-foreground text-background text-[9px] uppercase tracking-widest font-medium">
-          <ShieldCheck className="size-3.5" /> SEOUL DIGITAL DIAGNOSTIC REUSE
+          <ShieldCheck className="size-3.5" /> SEOUL DIGITAL DIAGNOSTIC
         </div>
         <p className="text-[10px] uppercase tracking-[0.25em] text-accent mt-5 mb-1">
           Your Diagnostic Palette
@@ -499,7 +499,7 @@ export function DetailedColorResultView({
         </div>
         <div className="border-[0.5px] border-border p-3 bg-foreground/1">
           <p className="text-[9px] uppercase tracking-wider text-destructive">
-            Grave Color (Worst Tone)
+            Color to Avoid
           </p>
           <p className="font-medium text-xs uppercase mt-0.5 text-destructive/90">
             Avoid Next to Face
@@ -545,7 +545,7 @@ export function DetailedColorResultView({
 
       <div className="border border-destructive/10 bg-destructive/1 p-4">
         <p className="text-[10px] uppercase text-destructive tracking-widest mb-2 flex items-center gap-1">
-          <XIcon className="size-3" /> Grave Tone Exclusions
+          <XIcon className="size-3" /> Tones to Avoid
         </p>
         <div className="flex flex-col gap-1.5">
           {profile.avoid.map((a) => (
@@ -563,7 +563,7 @@ export function DetailedColorResultView({
         onClick={onClose}
         className="w-full text-xs uppercase tracking-widest h-11 rounded-none bg-foreground text-background"
       >
-        Complete Session Validation
+        Save My Results
       </Button>
     </div>
   );

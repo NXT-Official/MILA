@@ -37,8 +37,8 @@ export function SupportDialog() {
       await submitSupport({ data: { kind: feedbackType, message: message.trim(), captchaToken } });
       toast.success(
         feedbackType === "help"
-          ? "Help request received. A Mila concierge technician will review your session shortly."
-          : "Studio feedback logged. Thank you for refining Mila's design intelligence.",
+          ? "Help request received. Someone from the Mila team will look into it shortly."
+          : "Feedback received. Thanks for helping us make Mila better.",
       );
       setMessage("");
       setOpen(false);
@@ -85,7 +85,7 @@ export function SupportDialog() {
           <DialogDescription className="text-xs">
             {feedbackType === "help"
               ? "Camera not catching your tones, lighting feeling off, or anything else not quite right? Tell us here."
-              : "Help optimize Mila's neural fashion matching matrices. Share your analytical feedback."}
+              : "Got thoughts on Mila's styling suggestions? Let us know what's working and what isn't."}
           </DialogDescription>
         </DialogHeader>
 
@@ -93,8 +93,8 @@ export function SupportDialog() {
           <div className="space-y-1.5">
             <Label className="text-xs">
               {feedbackType === "help"
-                ? "Describe the operational issue"
-                : "Your architectural observations"}
+                ? "What went wrong?"
+                : "Your feedback"}
             </Label>
             <Textarea
               value={message}
@@ -118,7 +118,7 @@ export function SupportDialog() {
               disabled={submitting || !message.trim() || !captchaToken}
               className="h-9 text-xs px-4"
             >
-              {submitting ? "Transmitting…" : "Submit Transmission"}
+              {submitting ? "Sending…" : "Send"}
             </Button>
           </div>
         </form>

@@ -2,23 +2,23 @@ export const TESTIMONIALS = [
   {
     name: "Amara",
     season: "True Summer",
-    quote: "As a True Summer, I finally understand what to buy.",
+    quote: "I'm a True Summer and I finally know what to actually buy.",
   },
-  { name: "Jess", season: "Soft Autumn", quote: "Mila got my face shape right from day one." },
+  { name: "Jess", season: "Soft Autumn", quote: "Mila nailed my face shape on the first try." },
   {
     name: "Priya",
     season: "Deep Winter",
-    quote: "She told me exactly which reds are mine. Not red — mine.",
+    quote: "I used to just grab 'a red.' Now I know which red is actually mine.",
   },
   {
     name: "Sofia",
     season: "Light Spring",
-    quote: "One tap before work. I stopped second-guessing the mirror.",
+    quote: "One tap before work and I've stopped second-guessing myself in the mirror.",
   },
   {
     name: "Renee",
     season: "True Autumn",
-    quote: "The first app that talks about my shape without talking around it.",
+    quote: "First app that's straight with me about my shape instead of dancing around it.",
   },
 ];
 

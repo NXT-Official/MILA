@@ -30,7 +30,7 @@ export const MOOD_COLLECT_DEFAULT: DetailedColorProfile = {
   avoidColors: [
     "Pure High-Contrast Black (Swallows delicate features and drops heavy shadow lines)",
     "Stark Bleached White (Creates excessive facial contrast shadows)",
-    "Strong / Vivid Primary Tones (Completely overpowers the soft expression matrix)",
+    "Strong / Vivid Primary Tones (Completely overpowers the palette's soft, delicate feel)",
   ],
   beautyMap: {
     hair: "Light milk chocolate brown, honey blonde highlights, or bright warm amber tones. Avoid ashy or jet black colors.",
@@ -41,6 +41,6 @@ export const MOOD_COLLECT_DEFAULT: DetailedColorProfile = {
   accessories: ["Polished 14k Yellow Gold", "Warm Rose Gold", "Delicate Seed Pearls"],
   denimRegistry: ["Soft Bleached Blue Denim", "Pure Dark Gray Denim"],
   stylistNote:
-    "Studio Diagnostic: Your canvas thrives on high lightness paired with delicate, low-to-medium saturation. Warm milk-pastels instantly clear away surface shadows and lift the jaw parameters effortlessly, maintaining a natural, lit-from-within glow.",
+    "Studio Diagnostic: Your canvas thrives on high lightness paired with delicate, low-to-medium saturation. Warm milk-pastels soften shadows and brighten your whole face, keeping that natural, lit-from-within glow.",
   fullPalette: SEASON_HEX_MATRIX.SPRING_LIGHT,
 };

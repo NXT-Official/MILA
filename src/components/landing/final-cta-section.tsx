@@ -8,7 +8,7 @@ export function FinalCtaSection() {
       <div className="atelier-card p-10 text-center sm:p-16">
         <h2 className="font-serif">Style that knows you.</h2>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed">
-          Answer 3 quick questions and Mila will compose your first look — tuned to your colours,
+          Answer three quick questions and Mila will compose your first look — tuned to your colours,
           your shape, and today's weather.
         </p>
         <div className="mt-8 flex justify-center">
