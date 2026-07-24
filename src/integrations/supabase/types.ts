@@ -294,6 +294,7 @@ export type Database = {
           full_name: string | null;
           hair_type: string | null;
           id: string;
+          paddle_customer_id: string | null;
           skin_undertone: string | null;
           suspended: boolean;
           updated_at: string;
@@ -310,6 +311,7 @@ export type Database = {
           full_name?: string | null;
           hair_type?: string | null;
           id: string;
+          paddle_customer_id?: string | null;
           skin_undertone?: string | null;
           suspended?: boolean;
           updated_at?: string;
@@ -326,6 +328,7 @@ export type Database = {
           full_name?: string | null;
           hair_type?: string | null;
           id?: string;
+          paddle_customer_id?: string | null;
           skin_undertone?: string | null;
           suspended?: boolean;
           updated_at?: string;
@@ -425,6 +428,60 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean;
+          created_at: string;
+          current_period_end: string | null;
+          id: string;
+          paddle_customer_id: string;
+          paddle_subscription_id: string;
+          plan_id: string;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          current_period_end?: string | null;
+          id?: string;
+          paddle_customer_id: string;
+          paddle_subscription_id: string;
+          plan_id: string;
+          status: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          current_period_end?: string | null;
+          id?: string;
+          paddle_customer_id?: string;
+          paddle_subscription_id?: string;
+          plan_id?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       support_messages: {
         Row: {
