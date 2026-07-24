@@ -111,6 +111,7 @@ export function StudioCameraDrawer({
         data: { publicUrl },
       } = supabase.storage.from("outfits").getPublicUrl(path);
       const result = await runDupes({ data: { imageUrl: publicUrl } });
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(userId) });
       setDupeResult(result);
       if (result.dupes.length === 0) {
         toast.message("No catalog matches yet — try a different angle.");

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -28,6 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyze = useServerFn(analyzeOutfit);
+  const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({
     ...profileQueryOptions(user?.id),
@@ -72,6 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           colorSeason: profile.color_season,
         },
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user.id) });
       const { data: savedLook } = await supabase
         .from("outfits")
         .insert({

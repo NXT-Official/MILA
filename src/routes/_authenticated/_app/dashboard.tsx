@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, Loader2, CheckCircle2, Wand2, Bookmark, RotateCcw } from "lucide-react";
 import { ClimateWidget, ClimateGlyph } from "@/components/dashboard/climate-widget";
 import type { ClimateState } from "@/constants/climate";
@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { profileQueryOptions } from "@/lib/queries/profile";
+import { queryKeys } from "@/constants/query-keys";
 import { isStyleProfileComplete } from "@/lib/style-profile/completion";
 import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
@@ -80,6 +81,7 @@ type Vibe = (typeof VIBES)[number];
 
 function Dashboard() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: profile } = useQuery({
     ...profileQueryOptions(user?.id),
@@ -166,6 +168,7 @@ function Dashboard() {
       };
 
       outfit = await generate({ data: payload });
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     } catch (e) {
       setGenerating(false);
       if (isInsufficientCreditsError(e)) {
