@@ -17,6 +17,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
 import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminSubscriptionPlansRouteImport } from './routes/_authenticated/admin/subscription-plans'
@@ -67,6 +68,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const ApiWebhooksPaddleRoute = ApiWebhooksPaddleRouteImport.update({
+  id: '/api/webhooks/paddle',
+  path: '/api/webhooks/paddle',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedOnboardingStyleProfileRoute =
   AuthenticatedOnboardingStyleProfileRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
+  '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
+  '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
+  '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/_app/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/admin/subscription-plans'
     | '/admin/support'
     | '/onboarding/style-profile'
+    | '/api/webhooks/paddle'
     | '/admin/'
     | '/profile/$userId'
   fileRoutesByTo: FileRoutesByTo
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/admin/subscription-plans'
     | '/admin/support'
     | '/onboarding/style-profile'
+    | '/api/webhooks/paddle'
     | '/admin'
     | '/profile/$userId'
   id:
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/subscription-plans'
     | '/_authenticated/admin/support'
     | '/_authenticated/onboarding/style-profile'
+    | '/api/webhooks/paddle'
     | '/_authenticated/admin/'
     | '/_authenticated/_app/profile/$userId'
   fileRoutesById: FileRoutesById
@@ -269,6 +281,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -328,6 +341,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/webhooks/paddle': {
+      id: '/api/webhooks/paddle'
+      path: '/api/webhooks/paddle'
+      fullPath: '/api/webhooks/paddle'
+      preLoaderRoute: typeof ApiWebhooksPaddleRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/onboarding/style-profile': {
       id: '/_authenticated/onboarding/style-profile'
@@ -495,6 +515,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
