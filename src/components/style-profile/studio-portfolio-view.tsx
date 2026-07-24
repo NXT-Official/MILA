@@ -37,10 +37,10 @@ export function StudioPortfolioView({
     return name.trim();
   });
   return (
-    <section className="mt-10 border border-foreground/15 bg-card animate-fade-in">
+    <section className="mt-10 bg-card rounded-card border border-border shadow-paper animate-fade-in">
       <header className="px-6 sm:px-10 pt-10 pb-8 border-b-[0.5px] border-border">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-foreground text-background text-[9px] uppercase tracking-[0.32em] font-medium">
+          <div className="inline-flex items-center gap-1.5 px-3 rounded-xl py-1 bg-foreground text-background text-[9px] uppercase tracking-[0.32em] font-medium">
             <ShieldCheck className="size-3" /> Seoul Atelier Record
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -58,7 +58,7 @@ export function StudioPortfolioView({
               </button>
             )}
             {!isDemo && profile.calibrationSource && (
-              <span className="text-[9px] uppercase tracking-[0.32em] text-foreground border-[0.5px] border-foreground/60 px-2 py-1">
+              <span className="text-[9px] uppercase tracking-[0.32em] rounded-xl text-foreground border-[0.5px] border-foreground/60 px-2 py-1">
                 {profile.confidenceLabel
                   ? profile.confidenceLabel
                   : profile.calibrationSource === "Studio Calibrated"
