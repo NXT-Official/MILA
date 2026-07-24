@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { grantAiCredits } from "@/lib/credits.server";
 
 function parseSignatureHeader(header: string): { ts?: string; h1?: string } {
   const parsed: Record<string, string> = {};
@@ -110,5 +111,60 @@ export async function applyPaddleSubscriptionEvent(
     .eq("user_id", userId);
   if (entitlementError) {
     console.error("[paddle-webhook] failed to sync entitlements", entitlementError);
+  }
+}
+
+export type PaddleTransactionWebhookEvent = {
+  event_type: "transaction.completed";
+  data: {
+    id: string;
+    customer_id: string;
+    items: Array<{ price: { id: string } }>;
+    custom_data: { user_id?: string } | null;
+  };
+};
+
+export async function applyPaddleCreditPackEvent(
+  db: MilaSupabaseClient,
+  event: PaddleTransactionWebhookEvent,
+  grant: typeof grantAiCredits = grantAiCredits,
+): Promise<void> {
+  const { data } = event;
+  const priceId = data.items[0]?.price.id;
+  const { data: pack, error: packError } = await db
+    .from("credit_packs")
+    .select("id, credits")
+    .eq("paddle_price_id", priceId ?? "")
+    .maybeSingle();
+  if (packError || !pack) return;
+
+  const userId = data.custom_data?.user_id;
+  if (!userId) {
+    console.error("[paddle-webhook] missing custom_data.user_id", { transactionId: data.id });
+    return;
+  }
+
+  const { data: insertedRows, error: insertError } = await db
+    .from("credit_pack_purchases")
+    .upsert(
+      {
+        user_id: userId,
+        credit_pack_id: pack.id,
+        paddle_transaction_id: data.id,
+        credits_granted: pack.credits,
+      },
+      { onConflict: "paddle_transaction_id", ignoreDuplicates: true },
+    )
+    .select("id");
+  if (insertError) {
+    console.error("[paddle-webhook] failed to record credit pack purchase", insertError);
+    return;
+  }
+  if (!insertedRows || insertedRows.length === 0) return;
+
+  try {
+    await grant(db, userId, pack.credits);
+  } catch (err) {
+    console.error("[paddle-webhook] failed to grant ai credits", err);
   }
 }

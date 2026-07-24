@@ -1,6 +1,12 @@
 import { describe, expect, mock, test } from "bun:test";
 import { createHmac } from "node:crypto";
-import { applyPaddleSubscriptionEvent, verifyPaddleSignature, type PaddleSubscriptionWebhookEvent } from "./paddle-webhook.server";
+import {
+  applyPaddleCreditPackEvent,
+  applyPaddleSubscriptionEvent,
+  verifyPaddleSignature,
+  type PaddleSubscriptionWebhookEvent,
+  type PaddleTransactionWebhookEvent,
+} from "./paddle-webhook.server";
 
 const secret = "whsec_test_secret";
 
@@ -177,5 +183,72 @@ describe("applyPaddleSubscriptionEvent", () => {
 
     expect(subscriptionUpserts).toEqual([]);
     expect(entitlementUpdates).toEqual([]);
+  });
+});
+
+function fakeCreditPackDb(config: { pack: Terminal; purchaseInsert: Terminal }) {
+  const from = mock((table: string) => {
+    if (table === "credit_packs") return fakeChain(config.pack);
+    if (table === "credit_pack_purchases") return fakeChain(config.purchaseInsert);
+    throw new Error(`unexpected table ${table}`);
+  });
+  return { db: { from } as never };
+}
+
+function baseTransactionEvent(
+  overrides: Partial<PaddleTransactionWebhookEvent["data"]>,
+): PaddleTransactionWebhookEvent {
+  return {
+    event_type: "transaction.completed",
+    data: {
+      id: "txn_123",
+      customer_id: "ctm_123",
+      items: [{ price: { id: "pri_pack_small" } }],
+      custom_data: { user_id: "user-1" },
+      ...overrides,
+    },
+  };
+}
+
+describe("applyPaddleCreditPackEvent", () => {
+  test("grants credits on first delivery of a known pack purchase", async () => {
+    const { db } = fakeCreditPackDb({
+      pack: { data: { id: "pack-1", credits: 10 }, error: null },
+      purchaseInsert: { data: [{ id: "purchase-1" }], error: null },
+    });
+    const grant = mock(async () => 42);
+    await applyPaddleCreditPackEvent(db, baseTransactionEvent({}), grant);
+    expect(grant).toHaveBeenCalledTimes(1);
+    expect(grant).toHaveBeenCalledWith(db, "user-1", 10);
+  });
+
+  test("does not grant again on a retried webhook delivery", async () => {
+    const { db } = fakeCreditPackDb({
+      pack: { data: { id: "pack-1", credits: 10 }, error: null },
+      purchaseInsert: { data: [], error: null }, // ignoreDuplicates: true -> empty rows on conflict
+    });
+    const grant = mock(async () => 42);
+    await applyPaddleCreditPackEvent(db, baseTransactionEvent({}), grant);
+    expect(grant).not.toHaveBeenCalled();
+  });
+
+  test("is a no-op when the price id doesn't match a known pack (e.g. a subscription renewal)", async () => {
+    const { db } = fakeCreditPackDb({
+      pack: { data: null, error: null },
+      purchaseInsert: { data: [], error: null },
+    });
+    const grant = mock(async () => 42);
+    await applyPaddleCreditPackEvent(db, baseTransactionEvent({}), grant);
+    expect(grant).not.toHaveBeenCalled();
+  });
+
+  test("skips processing when custom_data.user_id is missing", async () => {
+    const { db } = fakeCreditPackDb({
+      pack: { data: { id: "pack-1", credits: 10 }, error: null },
+      purchaseInsert: { data: [{ id: "purchase-1" }], error: null },
+    });
+    const grant = mock(async () => 42);
+    await applyPaddleCreditPackEvent(db, baseTransactionEvent({ custom_data: null }), grant);
+    expect(grant).not.toHaveBeenCalled();
   });
 });
