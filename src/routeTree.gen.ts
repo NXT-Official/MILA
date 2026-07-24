@@ -23,6 +23,7 @@ import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminSubscriptionPlansRouteImport } from './routes/_authenticated/admin/subscription-plans'
 import { Route as AuthenticatedAdminModerationRouteImport } from './routes/_authenticated/admin/moderation'
 import { Route as AuthenticatedAdminMembersRouteImport } from './routes/_authenticated/admin/members'
+import { Route as AuthenticatedAdminCreditPacksRouteImport } from './routes/_authenticated/admin/credit-packs'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
@@ -104,6 +105,12 @@ const AuthenticatedAdminMembersRoute =
     path: '/members',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminCreditPacksRoute =
+  AuthenticatedAdminCreditPacksRouteImport.update({
+    id: '/credit-packs',
+    path: '/credit-packs',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAppStyleProfileRoute =
   AuthenticatedAppStyleProfileRouteImport.update({
     id: '/style-profile',
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof AuthenticatedAppHistoryRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
+  '/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
   '/admin/members': typeof AuthenticatedAdminMembersRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
@@ -176,6 +184,7 @@ export interface FileRoutesByTo {
   '/history': typeof AuthenticatedAppHistoryRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
+  '/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
   '/admin/members': typeof AuthenticatedAdminMembersRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
@@ -200,6 +209,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/history': typeof AuthenticatedAppHistoryRoute
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
+  '/_authenticated/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
   '/_authenticated/admin/members': typeof AuthenticatedAdminMembersRoute
   '/_authenticated/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/_authenticated/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/pricing'
     | '/style-profile'
+    | '/admin/credit-packs'
     | '/admin/members'
     | '/admin/moderation'
     | '/admin/subscription-plans'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/pricing'
     | '/style-profile'
+    | '/admin/credit-packs'
     | '/admin/members'
     | '/admin/moderation'
     | '/admin/subscription-plans'
@@ -266,6 +278,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/history'
     | '/_authenticated/_app/pricing'
     | '/_authenticated/_app/style-profile'
+    | '/_authenticated/admin/credit-packs'
     | '/_authenticated/admin/members'
     | '/_authenticated/admin/moderation'
     | '/_authenticated/admin/subscription-plans'
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMembersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/credit-packs': {
+      id: '/_authenticated/admin/credit-packs'
+      path: '/credit-packs'
+      fullPath: '/admin/credit-packs'
+      preLoaderRoute: typeof AuthenticatedAdminCreditPacksRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/_app/style-profile': {
       id: '/_authenticated/_app/style-profile'
       path: '/style-profile'
@@ -460,6 +480,7 @@ const AuthenticatedAppRouteWithChildren =
   AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminCreditPacksRoute: typeof AuthenticatedAdminCreditPacksRoute
   AuthenticatedAdminMembersRoute: typeof AuthenticatedAdminMembersRoute
   AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
   AuthenticatedAdminSubscriptionPlansRoute: typeof AuthenticatedAdminSubscriptionPlansRoute
@@ -468,6 +489,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminCreditPacksRoute: AuthenticatedAdminCreditPacksRoute,
   AuthenticatedAdminMembersRoute: AuthenticatedAdminMembersRoute,
   AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
   AuthenticatedAdminSubscriptionPlansRoute:

@@ -184,24 +184,47 @@ export function CreditPackFormDialog({
             />
           </FormField>
 
-          <FormField label="Description" htmlFor="pack-description" error={errors.description?.message}>
+          <FormField
+            label="Description"
+            htmlFor="pack-description"
+            error={errors.description?.message}
+          >
             <Textarea id="pack-description" rows={2} {...register("description")} />
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Price" htmlFor="pack-price" required error={errors.price?.message}>
-              <Input id="pack-price" inputMode="decimal" placeholder="1.99" {...register("price")} />
+              <Input
+                id="pack-price"
+                inputMode="decimal"
+                placeholder="1.99"
+                {...register("price")}
+              />
             </FormField>
-            <FormField label="Currency" htmlFor="pack-currency" required error={errors.currency?.message}>
+            <FormField
+              label="Currency"
+              htmlFor="pack-currency"
+              required
+              error={errors.currency?.message}
+            >
               <Input id="pack-currency" maxLength={3} {...register("currency")} />
             </FormField>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Credits" htmlFor="pack-credits" required error={errors.credits?.message}>
+            <FormField
+              label="Credits"
+              htmlFor="pack-credits"
+              required
+              error={errors.credits?.message}
+            >
               <Input id="pack-credits" type="number" min={1} {...register("credits")} />
             </FormField>
-            <FormField label="Sort Order" htmlFor="pack-sort-order" error={errors.sort_order?.message}>
+            <FormField
+              label="Sort Order"
+              htmlFor="pack-sort-order"
+              error={errors.sort_order?.message}
+            >
               <Input id="pack-sort-order" type="number" min={0} {...register("sort_order")} />
             </FormField>
           </div>

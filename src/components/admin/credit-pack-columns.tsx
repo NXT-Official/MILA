@@ -111,7 +111,11 @@ export function getCreditPackColumns({
                 <DropdownMenuItem onClick={() => onArchive(pack, !archived)}>
                   {archived ? (
                     <>
-                      <ArchiveRestore className="mr-2 size-4" strokeWidth={1.75} aria-hidden="true" />
+                      <ArchiveRestore
+                        className="mr-2 size-4"
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                      />
                       Restore
                     </>
                   ) : (
