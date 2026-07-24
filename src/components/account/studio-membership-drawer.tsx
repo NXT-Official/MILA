@@ -9,6 +9,8 @@ import {
 import { Link } from "@tanstack/react-router";
 import { Archive, AlertCircle, ArrowRight, Check, Download, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -17,6 +19,10 @@ import { passwordChecks } from "@/constants/password";
 import { fetchDefaultHubId, localDefaultHubId, saveDefaultHubId } from "@/lib/default-hub";
 import { DevelopmentBadge } from "@/components/ui/development-badge";
 import { DevelopmentNotice } from "@/components/ui/development-notice";
+import { queryKeys } from "@/constants/query-keys";
+import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
+import { cancelMySubscription } from "@/lib/subscriptions.functions";
+import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
 
 interface StudioMembershipDrawerProps {
   isOpen: boolean;
@@ -42,6 +48,32 @@ export function StudioMembershipDrawer({
     "membership" | "preferences" | "location" | "privacy" | "security"
   >("membership");
   const { user: authUser, signOut, signingOut } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: subscription } = useQuery({
+    ...mySubscriptionQueryOptions(authUser?.id),
+    enabled: !!authUser,
+  });
+  const cancelSubscription = useServerFn(cancelMySubscription);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+
+  async function handleConfirmCancel() {
+    setCanceling(true);
+    try {
+      const result = await cancelSubscription();
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Your membership ends on ${new Date(result.endsAt).toLocaleDateString()}.`);
+      setCancelDialogOpen(false);
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
+      }, 4000);
+    } finally {
+      setCanceling(false);
+    }
+  }
   const [defaultHubId, setDefaultHubId] = useState<string>(() => localDefaultHubId() ?? HUBS[0].id);
 
   useEffect(() => {
@@ -255,7 +287,9 @@ export function StudioMembershipDrawer({
                       <span className="uppercase tracking-[0.2em] text-stone text-[10px]">
                         Current Tier
                       </span>
-                      <span className="font-semibold text-ink">Free</span>
+                      <span className="font-semibold text-ink">
+                        {subscription ? subscription.plan_title : "Free"}
+                      </span>
                     </div>
                     {credits != null && (
                       <div className="flex items-center justify-between text-xs">
@@ -265,18 +299,44 @@ export function StudioMembershipDrawer({
                         <span className="font-semibold text-ink tabular-nums">{credits}</span>
                       </div>
                     )}
-                    <p className="pt-1 text-xs leading-relaxed text-stone">
-                      Compare Atelier memberships and their included styling credits on the plans
-                      page.
-                    </p>
-                    <Link
-                      to="/pricing"
-                      onClick={onClose}
-                      className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                    >
-                      View Membership Plans
-                      <span aria-hidden="true">→</span>
-                    </Link>
+                    {subscription ? (
+                      <>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="uppercase tracking-[0.2em] text-[10px] text-stone">
+                            {subscription.cancel_at_period_end ? "Ends" : "Renews"}
+                          </span>
+                          <span className="font-semibold text-ink">
+                            {subscription.current_period_end
+                              ? new Date(subscription.current_period_end).toLocaleDateString()
+                              : "—"}
+                          </span>
+                        </div>
+                        {!subscription.cancel_at_period_end && (
+                          <button
+                            type="button"
+                            onClick={() => setCancelDialogOpen(true)}
+                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
+                          >
+                            Cancel Membership
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p className="pt-1 text-xs leading-relaxed text-stone">
+                          Compare Atelier memberships and their included styling credits on the plans
+                          page.
+                        </p>
+                        <Link
+                          to="/pricing"
+                          onClick={onClose}
+                          className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                        >
+                          View Membership Plans
+                          <span aria-hidden="true">→</span>
+                        </Link>
+                      </>
+                    )}
                   </div>
 
                   {/*
@@ -559,6 +619,16 @@ export function StudioMembershipDrawer({
           )}
         </div>
       </SheetContent>
+
+      {subscription && !subscription.cancel_at_period_end && (
+        <CancelMembershipDialog
+          open={cancelDialogOpen}
+          endsAt={subscription.current_period_end ?? new Date().toISOString()}
+          pending={canceling}
+          onOpenChange={setCancelDialogOpen}
+          onConfirm={handleConfirmCancel}
+        />
+      )}
     </Sheet>
   );
 }
