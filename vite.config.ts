@@ -16,7 +16,13 @@ function buildCsp(supabaseUrl: string | undefined): string {
 
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
-    "script-src": ["'self'", "'unsafe-inline'", "https://hcaptcha.com", "https://*.hcaptcha.com"],
+    "script-src": [
+      "'self'",
+      "'unsafe-inline'",
+      "https://hcaptcha.com",
+      "https://*.hcaptcha.com",
+      "https://cdn.paddle.com",
+    ],
     "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
     "img-src": ["'self'", "data:", "blob:", "https:"],
@@ -27,7 +33,12 @@ function buildCsp(supabaseUrl: string | undefined): string {
       "https://hcaptcha.com",
       "https://*.hcaptcha.com",
     ],
-    "frame-src": ["https://hcaptcha.com", "https://*.hcaptcha.com"],
+    "frame-src": [
+      "https://hcaptcha.com",
+      "https://*.hcaptcha.com",
+      "https://buy.paddle.com",
+      "https://sandbox-buy.paddle.com",
+    ],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
     "form-action": ["'self'"],
