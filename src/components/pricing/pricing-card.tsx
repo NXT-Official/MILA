@@ -1,7 +1,6 @@
 import { Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DevelopmentBadge } from "@/components/ui/development-badge";
 import { cn } from "@/lib/utils";
 import {
   BILLING_INTERVAL_SUFFIX,
@@ -11,10 +10,12 @@ import {
 
 export function PricingCard({
   plan,
-  ctaDescribedById,
+  onChoosePlan,
+  disabled,
 }: {
   plan: PublicSubscriptionPlan;
-  ctaDescribedById: string;
+  onChoosePlan?: () => void;
+  disabled?: boolean;
 }) {
   const price = formatPlanPrice(plan.price_amount, plan.currency);
   const interval = BILLING_INTERVAL_SUFFIX[plan.billing_interval];
@@ -61,17 +62,13 @@ export function PricingCard({
       <div className="mt-auto pt-8">
         <Button
           type="button"
-          disabled
+          onClick={onChoosePlan}
+          disabled={disabled || !plan.paddle_price_id || !onChoosePlan}
           variant={plan.is_featured ? "primary" : "secondary"}
           className="w-full"
-          aria-describedby={ctaDescribedById}
-          aria-label={`Choose the ${plan.title} plan — purchasing is in development`}
         >
           Choose Plan
         </Button>
-        <div className="mt-3 flex justify-center">
-          <DevelopmentBadge />
-        </div>
       </div>
     </li>
   );

@@ -3,19 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { ScrollText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { DevelopmentNotice } from "@/components/ui/development-notice";
-import { FEATURES } from "@/config/features";
 import { PricingCard } from "@/components/pricing/pricing-card";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
+import { useAuth } from "@/hooks/use-auth";
+import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 
 export const Route = createFileRoute("/_authenticated/_app/pricing")({
   component: PricingPage,
 });
 
-const CTA_NOTICE_ID = "membership-purchasing-development-message";
-
 function PricingPage() {
   const { data, isLoading, isError, refetch } = useQuery(publicSubscriptionPlansQueryOptions());
+  const { user } = useAuth();
+  const { openCheckout, ready } = usePaddleCheckout(user?.id);
 
   return (
     <div className="atelier-page max-w-6xl">
@@ -49,19 +49,18 @@ function PricingPage() {
           description="Please check back soon."
         />
       ) : (
-        <>
-          <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-            {data.map((plan) => (
-              <PricingCard key={plan.id} plan={plan} ctaDescribedById={CTA_NOTICE_ID} />
-            ))}
-          </ul>
-
-          <DevelopmentNotice
-            id={CTA_NOTICE_ID}
-            className="mx-auto mt-10 max-w-xl"
-            description={FEATURES.membershipPurchasing.description}
-          />
-        </>
+        <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+          {data.map((plan) => (
+            <PricingCard
+              key={plan.id}
+              plan={plan}
+              disabled={!ready}
+              onChoosePlan={
+                user ? () => openCheckout(plan, { id: user.id, email: user.email }) : undefined
+              }
+            />
+          ))}
+        </ul>
       )}
     </div>
   );
