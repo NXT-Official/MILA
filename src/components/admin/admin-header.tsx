@@ -8,6 +8,10 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     title: "Subscription Plans",
     subtitle: "Manage the membership plan catalog",
   },
+  "/admin/credit-packs": {
+    title: "Credit Packs",
+    subtitle: "Manage one-time top-up packs",
+  },
   "/admin/moderation": { title: "Moderation", subtitle: "Review and moderate the feed" },
   "/admin/support": { title: "Support", subtitle: "Help desk & feedback" },
 };

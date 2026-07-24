@@ -6,6 +6,7 @@ import {
   ShieldAlert,
   LifeBuoy,
   CreditCard,
+  Coins,
   LogOut,
   Loader2,
 } from "lucide-react";
@@ -44,6 +45,12 @@ const ADMIN_LINKS: AdminNavItem[] = [
     label: "Plans",
     icon: CreditCard,
     permission: STAFF_ROUTE_PERMISSIONS["/admin/subscription-plans"],
+  },
+  {
+    to: "/admin/credit-packs",
+    label: "Credit Packs",
+    icon: Coins,
+    permission: STAFF_ROUTE_PERMISSIONS["/admin/credit-packs"],
   },
   {
     to: "/admin/moderation",

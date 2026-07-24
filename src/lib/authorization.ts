@@ -31,6 +31,7 @@ export const STAFF_ROUTE_PERMISSIONS = {
   "/admin": "admin.dashboard.view",
   "/admin/members": "members.view",
   "/admin/subscription-plans": "subscriptionPlans.manage",
+  "/admin/credit-packs": "subscriptionPlans.manage",
   "/admin/moderation": "moderation.view",
   "/admin/support": "support.view",
 } as const satisfies Record<string, AppPermission>;
