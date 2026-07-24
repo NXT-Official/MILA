@@ -17,8 +17,8 @@ import { Input } from "@/components/ui/input";
 import { HUBS } from "@/constants/climate";
 import { passwordChecks } from "@/constants/password";
 import { fetchDefaultHubId, localDefaultHubId, saveDefaultHubId } from "@/lib/default-hub";
-import { DevelopmentBadge } from "@/components/ui/development-badge";
-import { DevelopmentNotice } from "@/components/ui/development-notice";
+import { CreditsUsageMeter } from "@/components/account/credits-usage-meter";
+import { DEFAULT_AI_CREDITS } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { cancelMySubscription } from "@/lib/subscriptions.functions";
@@ -291,14 +291,6 @@ export function StudioMembershipDrawer({
                         {subscription ? subscription.plan_title : "Free"}
                       </span>
                     </div>
-                    {credits != null && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="uppercase tracking-[0.2em text-[10px] text-stone">
-                          Styling Credits
-                        </span>
-                        <span className="font-semibold text-ink tabular-nums">{credits}</span>
-                      </div>
-                    )}
                     {subscription ? (
                       <>
                         <div className="flex items-center justify-between text-xs">
@@ -339,41 +331,10 @@ export function StudioMembershipDrawer({
                     )}
                   </div>
 
-                  {/*
-                    IN DEVELOPMENT [membership-passes]:
-                    No pass-acquisition or partner-editorial flow is wired
-                    up yet — both controls are disabled so nothing fires
-                    silently when clicked.
-                    See /IN_DEVELOPMENT.txt.
-                  */}
-                  <div className="space-y-3">
-                    <button
-                      type="button"
-                      disabled
-                      aria-describedby="membership-passes-development-message"
-                      className="w-full py-3 rounded-lg bg-ink text-white text-[11px] uppercase tracking-[0.25em] font-semibold opacity-50 cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      Acquire Passes
-                      <DevelopmentBadge className="bg-white/15 text-white border-white/25" />
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled
-                      aria-describedby="membership-passes-development-message"
-                      className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink opacity-60 cursor-not-allowed flex items-center justify-center gap-3"
-                    >
-                      <span>View Partner Editorial</span>
-                      <span className="text-[9px] text-stone normal-case tracking-normal">
-                        +1 Pass
-                      </span>
-                    </button>
-
-                    <DevelopmentNotice
-                      id="membership-passes-development-message"
-                      description="Experience a brief presentation from our luxury partners to receive a complimentary styling pass. This action is not available yet."
-                    />
-                  </div>
+                  <CreditsUsageMeter
+                    remaining={credits ?? DEFAULT_AI_CREDITS}
+                    total={subscription?.credits_included ?? DEFAULT_AI_CREDITS}
+                  />
                 </div>
               </div>
 

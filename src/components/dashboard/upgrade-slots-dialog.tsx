@@ -1,4 +1,5 @@
 import { Sparkles, Zap } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import {
   Dialog,
   DialogContent,
@@ -6,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { DevelopmentBadge } from "@/components/ui/development-badge";
 import { DevelopmentNotice } from "@/components/ui/development-notice";
 
@@ -54,6 +56,10 @@ export function UpgradeSlotsDialog({
             are previewed below — purchasing isn't available yet.
           </DialogDescription>
         </DialogHeader>
+
+        <Button asChild className="w-full" onClick={() => onOpenChange(false)}>
+          <Link to="/pricing">View Membership Plans</Link>
+        </Button>
 
         <div className="mt-2 space-y-3">
           {CREDIT_PACKS.map((p) => (
