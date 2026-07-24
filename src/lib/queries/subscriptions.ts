@@ -8,6 +8,7 @@ export interface MySubscription {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   plan_title: string;
+  credits_included: number;
   price_amount: number;
   currency: string;
   billing_interval: BillingInterval;
@@ -38,7 +39,7 @@ export function mySubscriptionQueryOptions(userId: string | undefined) {
       // becomes a real feature.
       const { data: plan, error: planError } = await supabase
         .from("subscription_plans")
-        .select("title, price_amount, currency, billing_interval")
+        .select("title, credits_included, price_amount, currency, billing_interval")
         .eq("id", sub.plan_id)
         .maybeSingle();
       if (planError || !plan) return null;
@@ -48,6 +49,7 @@ export function mySubscriptionQueryOptions(userId: string | undefined) {
         current_period_end: sub.current_period_end,
         cancel_at_period_end: sub.cancel_at_period_end,
         plan_title: plan.title,
+        credits_included: plan.credits_included,
         price_amount: plan.price_amount,
         currency: plan.currency,
         billing_interval: plan.billing_interval as BillingInterval,
