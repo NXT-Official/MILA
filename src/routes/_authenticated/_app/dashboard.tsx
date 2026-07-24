@@ -434,11 +434,7 @@ function Dashboard() {
         </motion.section>
       )}
 
-      <UpgradeSlotsDialog
-        open={creditPaywallOpen}
-        onOpenChange={setCreditPaywallOpen}
-        variant="credits"
-      />
+      <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} user={user} />
     </motion.div>
   );
 }
