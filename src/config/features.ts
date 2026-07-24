@@ -24,7 +24,7 @@ export const FEATURES = {
       "Membership purchasing is still in development. Your existing daily credits continue to work as usual.",
   },
   creditEnforcement: {
-    status: "development",
+    status: "available",
     label: "In development",
     description:
       "AI credit consumption is not yet enforced — usage is currently unrestricted for this release.",

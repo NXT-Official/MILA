@@ -512,6 +512,7 @@ export type Database = {
           ads_removed: boolean;
           ai_credits: number;
           created_at: string;
+          credits_reset_at: string | null;
           updated_at: string;
           user_id: string;
         };
@@ -519,6 +520,7 @@ export type Database = {
           ads_removed?: boolean;
           ai_credits?: number;
           created_at?: string;
+          credits_reset_at?: string | null;
           updated_at?: string;
           user_id: string;
         };
@@ -526,6 +528,7 @@ export type Database = {
           ads_removed?: boolean;
           ai_credits?: number;
           created_at?: string;
+          credits_reset_at?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -649,6 +652,16 @@ export type Database = {
           remaining: number;
           reset_at: string;
           retry_after_seconds: number;
+        }[];
+      };
+      consume_ai_credit: {
+        Args: {
+          _user_id: string;
+          _daily_allowance: number;
+        };
+        Returns: {
+          allowed: boolean;
+          remaining: number;
         }[];
       };
       has_role: {
