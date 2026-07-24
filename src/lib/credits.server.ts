@@ -52,3 +52,34 @@ export async function consumeAiCredit(
   if (!result.allowed) throw new InsufficientCreditsError();
   return result.remaining;
 }
+
+export type GrantCreditStore = (
+  userId: string,
+  dailyAllowance: number,
+  amount: number,
+) => Promise<number>;
+
+async function supabaseGrantCreditStore(
+  userId: string,
+  dailyAllowance: number,
+  amount: number,
+): Promise<number> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.rpc("grant_ai_credits", {
+    _user_id: userId,
+    _daily_allowance: dailyAllowance,
+    _amount: amount,
+  });
+  if (error) throw error;
+  return data as number;
+}
+
+export async function grantAiCredits(
+  supabase: SupabaseClient,
+  userId: string,
+  amount: number,
+  store: GrantCreditStore = supabaseGrantCreditStore,
+): Promise<number> {
+  const dailyAllowance = await resolveDailyCreditAllowance(supabase, userId);
+  return store(userId, dailyAllowance, amount);
+}

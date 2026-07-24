@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import { consumeAiCredit } from "./credits.server";
+import { consumeAiCredit, grantAiCredits } from "./credits.server";
 import { InsufficientCreditsError } from "./credits";
 import { MemoryCreditStore } from "../../tests/helpers/memory-credit-store";
 
@@ -59,5 +59,30 @@ describe("consumeAiCredit", () => {
     today = "2026-07-25";
     const remaining = await consumeAiCredit(supabase, "user-1", store.consume);
     expect(remaining).toBe(99);
+  });
+});
+
+describe("grantAiCredits", () => {
+  test("adds credits on top of today's existing balance", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 100);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 3, "2026-07-24");
+    const remaining = await grantAiCredits(supabase, "user-1", 10, store.grant);
+    expect(remaining).toBe(13);
+  });
+
+  test("resets to the daily allowance before granting when the balance is stale", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 100);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 0, "2026-07-23");
+    const remaining = await grantAiCredits(supabase, "user-1", 10, store.grant);
+    expect(remaining).toBe(110);
+  });
+
+  test("falls back to DEFAULT_AI_CREDITS with no in-force subscription", async () => {
+    const supabase = fakeSupabase(null, null);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    const remaining = await grantAiCredits(supabase, "user-1", 10, store.grant);
+    expect(remaining).toBe(15); // DEFAULT_AI_CREDITS (5) + 10
   });
 });

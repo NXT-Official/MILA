@@ -1,4 +1,4 @@
-import type { ConsumeCreditStore } from "../../src/lib/credits.server";
+import type { ConsumeCreditStore, GrantCreditStore } from "../../src/lib/credits.server";
 
 export class MemoryCreditStore {
   private entitlements = new Map<string, { credits: number; resetAt: string }>();
@@ -20,5 +20,14 @@ export class MemoryCreditStore {
     const remaining = credits - 1;
     this.entitlements.set(userId, { credits: remaining, resetAt: today });
     return { allowed: true, remaining };
+  };
+
+  grant: GrantCreditStore = async (userId, dailyAllowance, amount) => {
+    const today = this.today();
+    const existing = this.entitlements.get(userId) ?? { credits: dailyAllowance, resetAt: "" };
+    const credits = existing.resetAt === today ? existing.credits : dailyAllowance;
+    const remaining = credits + amount;
+    this.entitlements.set(userId, { credits: remaining, resetAt: today });
+    return remaining;
   };
 }
