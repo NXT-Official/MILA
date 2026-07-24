@@ -14,4 +14,6 @@ export const queryKeys = {
   adminDashboard: ["admin:dashboard"] as const,
   adminSubscriptionPlans: ["admin:subscription-plans"] as const,
   subscriptionPlans: ["subscription-plans"] as const,
+  adminCreditPacks: ["admin:credit-packs"] as const,
+  creditPacks: ["credit-packs"] as const,
 };
