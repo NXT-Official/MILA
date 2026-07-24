@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { DevelopmentBadge } from "@/components/ui/development-badge";
 import { DevelopmentNotice } from "@/components/ui/development-notice";
 
 const CREDIT_PACKS = [
@@ -47,13 +46,10 @@ export function UpgradeSlotsDialog({
           <div className="mx-auto sm:mx-0 mb-2 inline-flex items-center justify-center size-12 rounded-full bg-atelier-champagne/20 ring-1 ring-atelier-champagne/40">
             <Zap className="size-5 text-foreground" strokeWidth={1.75} />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <DialogTitle className="font-serif text-2xl">Studio Energy Depleted</DialogTitle>
-            <DevelopmentBadge />
-          </div>
+          <DialogTitle className="font-serif text-2xl">Studio Energy Depleted</DialogTitle>
           <DialogDescription>
-            Your complimentary daily styling credits have been filled for the session. Credit packs
-            are previewed below — purchasing isn't available yet.
+            You've used today's complimentary styling credits. Upgrade your membership for a
+            bigger daily allowance, or check out one-time credit packs below.
           </DialogDescription>
         </DialogHeader>
 
