@@ -378,6 +378,8 @@ export type Database = {
           id: string;
           is_active: boolean;
           is_featured: boolean;
+          paddle_price_id: string | null;
+          paddle_product_id: string | null;
           price_amount: number;
           slug: string;
           sort_order: number;
@@ -395,6 +397,8 @@ export type Database = {
           id?: string;
           is_active?: boolean;
           is_featured?: boolean;
+          paddle_price_id?: string | null;
+          paddle_product_id?: string | null;
           price_amount?: number;
           slug: string;
           sort_order?: number;
@@ -412,6 +416,8 @@ export type Database = {
           id?: string;
           is_active?: boolean;
           is_featured?: boolean;
+          paddle_price_id?: string | null;
+          paddle_product_id?: string | null;
           price_amount?: number;
           slug?: string;
           sort_order?: number;

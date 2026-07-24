@@ -27,6 +27,8 @@ export interface SubscriptionPlan {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
+  paddle_product_id: string | null;
+  paddle_price_id: string | null;
   archived_at: string | null;
   created_at: string;
   updated_at: string;
