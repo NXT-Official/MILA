@@ -46,10 +46,11 @@ export type PublicSubscriptionPlan = Pick<
   | "credits_included"
   | "features"
   | "is_featured"
+  | "paddle_price_id"
 >;
 
 export const PUBLIC_PLAN_COLUMNS =
-  "id,slug,title,description,price_amount,currency,billing_interval,credits_included,features,is_featured";
+  "id,slug,title,description,price_amount,currency,billing_interval,credits_included,features,is_featured,paddle_price_id";
 
 export function normalizePlanFeatures(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
