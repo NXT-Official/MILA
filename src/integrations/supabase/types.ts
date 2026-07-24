@@ -155,6 +155,99 @@ export type Database = {
           },
         ];
       };
+      credit_pack_purchases: {
+        Row: {
+          id: string;
+          user_id: string;
+          credit_pack_id: string;
+          paddle_transaction_id: string;
+          credits_granted: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          credit_pack_id: string;
+          paddle_transaction_id: string;
+          credits_granted: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          credit_pack_id?: string;
+          paddle_transaction_id?: string;
+          credits_granted?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "credit_pack_purchases_credit_pack_id_fkey";
+            columns: ["credit_pack_id"];
+            isOneToOne: false;
+            referencedRelation: "credit_packs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "credit_pack_purchases_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      credit_packs: {
+        Row: {
+          archived_at: string | null;
+          created_at: string;
+          credits: number;
+          currency: string;
+          description: string;
+          id: string;
+          is_active: boolean;
+          paddle_price_id: string | null;
+          paddle_product_id: string | null;
+          price_amount: number;
+          slug: string;
+          sort_order: number;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          archived_at?: string | null;
+          created_at?: string;
+          credits: number;
+          currency?: string;
+          description?: string;
+          id?: string;
+          is_active?: boolean;
+          paddle_price_id?: string | null;
+          paddle_product_id?: string | null;
+          price_amount?: number;
+          slug: string;
+          sort_order?: number;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          created_at?: string;
+          credits?: number;
+          currency?: string;
+          description?: string;
+          id?: string;
+          is_active?: boolean;
+          paddle_price_id?: string | null;
+          paddle_product_id?: string | null;
+          price_amount?: number;
+          slug?: string;
+          sort_order?: number;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       outfits: {
         Row: {
           analysis_result: Json | null;
@@ -663,6 +756,14 @@ export type Database = {
           allowed: boolean;
           remaining: number;
         }[];
+      };
+      grant_ai_credits: {
+        Args: {
+          _user_id: string;
+          _daily_allowance: number;
+          _amount: number;
+        };
+        Returns: number;
       };
       has_role: {
         Args: {
