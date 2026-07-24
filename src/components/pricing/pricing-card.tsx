@@ -51,7 +51,7 @@ export function PricingCard({
       {(plan.credits_included > 0 || plan.features.length > 0) && (
         <ul className="mt-6 space-y-2.5 border-t border-line pt-6">
           {plan.credits_included > 0 && (
-            <PlanFeature text={`${plan.credits_included} styling credits included`} />
+            <PlanFeature text={`${plan.credits_included} styling credits per day`} />
           )}
           {plan.features.map((feature) => (
             <PlanFeature key={feature} text={feature} />
