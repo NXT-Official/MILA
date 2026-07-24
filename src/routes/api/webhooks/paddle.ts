@@ -2,12 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { requireEnv } from "@/lib/env";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
+  applyPaddleCreditPackEvent,
   applyPaddleSubscriptionEvent,
   verifyPaddleSignature,
   type PaddleSubscriptionWebhookEvent,
+  type PaddleTransactionWebhookEvent,
 } from "@/lib/paddle-webhook.server";
 
-const HANDLED_EVENT_TYPES = new Set(["subscription.created", "subscription.updated", "subscription.canceled"]);
+const SUBSCRIPTION_EVENT_TYPES = new Set([
+  "subscription.created",
+  "subscription.updated",
+  "subscription.canceled",
+]);
+const TRANSACTION_EVENT_TYPES = new Set(["transaction.completed"]);
 
 export const Route = createFileRoute("/api/webhooks/paddle")({
   server: {
@@ -23,9 +30,17 @@ export const Route = createFileRoute("/api/webhooks/paddle")({
           return new Response("Invalid signature", { status: 401 });
         }
 
-        const event = JSON.parse(rawBody) as PaddleSubscriptionWebhookEvent;
-        if (HANDLED_EVENT_TYPES.has(event.event_type)) {
-          await applyPaddleSubscriptionEvent(supabaseAdmin, event);
+        const event = JSON.parse(rawBody) as { event_type: string };
+        if (SUBSCRIPTION_EVENT_TYPES.has(event.event_type)) {
+          await applyPaddleSubscriptionEvent(
+            supabaseAdmin,
+            event as unknown as PaddleSubscriptionWebhookEvent,
+          );
+        } else if (TRANSACTION_EVENT_TYPES.has(event.event_type)) {
+          await applyPaddleCreditPackEvent(
+            supabaseAdmin,
+            event as unknown as PaddleTransactionWebhookEvent,
+          );
         }
 
         return Response.json({ ok: true });
