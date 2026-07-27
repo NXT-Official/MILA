@@ -1,4 +1,4 @@
-import { Sparkles, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import {
   Dialog,
@@ -8,8 +8,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
-import { formatPlanPrice } from "@/lib/subscription-plans";
 
 export function UpgradeSlotsDialog({
   open,
@@ -20,8 +18,6 @@ export function UpgradeSlotsDialog({
   onOpenChange: (o: boolean) => void;
   user: { id: string; email?: string } | null | undefined;
 }) {
-  const { openCheckout, ready } = usePaddleCheckout(user?.id);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -31,8 +27,8 @@ export function UpgradeSlotsDialog({
           </div>
           <DialogTitle className="font-serif text-2xl">Studio Energy Depleted</DialogTitle>
           <DialogDescription>
-            You've used today's complimentary styling credits. Upgrade your membership for a bigger
-            daily allowance, or top up now to keep going today.
+            You've used today's styling credits. Move to a membership with a bigger daily allowance
+            — members can also top up with a credit pack to keep going today.
           </DialogDescription>
         </DialogHeader>
 
