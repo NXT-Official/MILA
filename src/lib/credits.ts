@@ -7,7 +7,12 @@
 // name-based check silently never matches for server-thrown errors.
 export const INSUFFICIENT_CREDITS = "You're out of styling credits for today.";
 
-export const DEFAULT_AI_CREDITS = 5;
+// Free-tier daily allowance. Zero by design: credits come from a subscription
+// plan (subscription_plans.credits_included) or a purchased pack, never from
+// signing up. consume_ai_credit resets the balance to this every day, so this
+// constant — not the column default — is what actually decides what a
+// non-subscriber gets.
+export const DEFAULT_AI_CREDITS = 0;
 
 export class InsufficientCreditsError extends Error {
   constructor() {
