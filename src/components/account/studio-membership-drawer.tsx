@@ -316,8 +316,8 @@ export function StudioMembershipDrawer({
                     ) : (
                       <>
                         <p className="pt-1 text-xs leading-relaxed text-stone">
-                          Compare Atelier memberships and their included styling credits on the plans
-                          page.
+                          Compare Atelier memberships and their included styling credits on the
+                          plans page.
                         </p>
                         <Link
                           to="/pricing"

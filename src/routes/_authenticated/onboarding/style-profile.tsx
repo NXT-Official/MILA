@@ -15,7 +15,10 @@ function RouteComponent() {
   const navigate = Route.useNavigate();
 
   function onStepChange(next: OnboardingStepId, opts?: { replace?: boolean }) {
-    navigate({ search: (prev: { step?: OnboardingStepId }) => ({ ...prev, step: next }), replace: opts?.replace });
+    navigate({
+      search: (prev: { step?: OnboardingStepId }) => ({ ...prev, step: next }),
+      replace: opts?.replace,
+    });
   }
 
   return <StyleProfileOnboarding step={step} onStepChange={onStepChange} />;

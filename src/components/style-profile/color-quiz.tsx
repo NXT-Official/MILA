@@ -498,9 +498,7 @@ export function DetailedColorResultView({
           </p>
         </div>
         <div className="border-[0.5px] border-border p-3 bg-foreground/1">
-          <p className="text-[9px] uppercase tracking-wider text-destructive">
-            Color to Avoid
-          </p>
+          <p className="text-[9px] uppercase tracking-wider text-destructive">Color to Avoid</p>
           <p className="font-medium text-xs uppercase mt-0.5 text-destructive/90">
             Avoid Next to Face
           </p>

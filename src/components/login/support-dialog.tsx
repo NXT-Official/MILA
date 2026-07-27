@@ -92,9 +92,7 @@ export function SupportDialog() {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">
-              {feedbackType === "help"
-                ? "What went wrong?"
-                : "Your feedback"}
+              {feedbackType === "help" ? "What went wrong?" : "Your feedback"}
             </Label>
             <Textarea
               value={message}

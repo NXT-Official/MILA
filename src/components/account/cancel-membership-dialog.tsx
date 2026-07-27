@@ -27,8 +27,8 @@ export function CancelMembershipDialog({
         <DialogHeader>
           <DialogTitle>Cancel your membership?</DialogTitle>
           <DialogDescription>
-            You'll keep access until {new Date(endsAt).toLocaleDateString()}. After that, your
-            plan won't renew.
+            You'll keep access until {new Date(endsAt).toLocaleDateString()}. After that, your plan
+            won't renew.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
