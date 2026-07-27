@@ -72,7 +72,10 @@ export const adminListUsers = createServerFn({ method: "GET" })
     const [profilesRes, rolesRes, entRes] = await Promise.all([
       supabaseAdmin.from("profiles").select("id,full_name,username,suspended").in("id", ids),
       supabaseAdmin.from("user_roles").select("user_id,role").in("user_id", ids),
-      supabaseAdmin.from("user_entitlements").select("user_id,ai_credits").in("user_id", ids),
+      supabaseAdmin
+        .from("user_entitlements")
+        .select("user_id,ai_credits,purchased_credits")
+        .in("user_id", ids),
     ]);
 
     const pMap = new Map((profilesRes.data ?? []).map((p: any) => [p.id, p]));
@@ -82,7 +85,9 @@ export const adminListUsers = createServerFn({ method: "GET" })
     const moderatorSet = new Set(
       (rolesRes.data ?? []).filter((r) => r.role === "moderator").map((r) => r.user_id),
     );
-    const credMap = new Map((entRes.data ?? []).map((e: any) => [e.user_id, e.ai_credits]));
+    const credMap = new Map(
+      (entRes.data ?? []).map((e: any) => [e.user_id, e.ai_credits + e.purchased_credits]),
+    );
 
     return users.map((u) => {
       const p: any = pMap.get(u.id) ?? {};
@@ -429,7 +434,7 @@ export const adminDashboardStats = createServerFn({ method: "GET" })
         .from("user_roles")
         .select("*", { count: "exact", head: true })
         .eq("role", "admin"),
-      supabaseAdmin.from("user_entitlements").select("ai_credits"),
+      supabaseAdmin.from("user_entitlements").select("ai_credits,purchased_credits"),
       supabaseAdmin.from("posts").select("*", { count: "exact", head: true }),
       supabaseAdmin.from("posts").select("*", { count: "exact", head: true }).eq("hidden", true),
       supabaseAdmin
@@ -449,7 +454,7 @@ export const adminDashboardStats = createServerFn({ method: "GET" })
     ]);
 
     const aiCreditsAvailable = (entitlements.data ?? []).reduce(
-      (sum: number, e: any) => sum + (e.ai_credits ?? 0),
+      (sum: number, e: any) => sum + (e.ai_credits ?? 0) + (e.purchased_credits ?? 0),
       0,
     );
 

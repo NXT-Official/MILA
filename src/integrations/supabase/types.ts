@@ -607,6 +607,7 @@ export type Database = {
           created_at: string;
           credits_reset_at: string | null;
           look_image_pending: boolean;
+          purchased_credits: number;
           updated_at: string;
           user_id: string;
         };
@@ -616,6 +617,7 @@ export type Database = {
           created_at?: string;
           credits_reset_at?: string | null;
           look_image_pending?: boolean;
+          purchased_credits?: number;
           updated_at?: string;
           user_id: string;
         };
@@ -625,6 +627,7 @@ export type Database = {
           created_at?: string;
           credits_reset_at?: string | null;
           look_image_pending?: boolean;
+          purchased_credits?: number;
           updated_at?: string;
           user_id?: string;
         };
