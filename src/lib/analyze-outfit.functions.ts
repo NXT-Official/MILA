@@ -4,7 +4,7 @@ import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
-import { consumeAiCredit } from "./credits.server";
+import { withAiCredit } from "./credits.server";
 
 const ANALYZE_OUTFIT_LIMIT = 15;
 const ANALYZE_OUTFIT_WINDOW_SECONDS = 60 * 60;
@@ -65,43 +65,43 @@ export const analyzeOutfit = createServerFn({ method: "POST" })
     }
     // The hourly cap above throttles bursts; this is what actually gates on
     // balance. Callers turn InsufficientCreditsError into the paywall.
-    await consumeAiCredit(context.supabase, context.userId);
+    return withAiCredit(context.supabase, context.userId, async () => {
+      const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
 
-    const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
+      const systemPrompt = `You are an expert fashion stylist and color analyst. You are evaluating an outfit for a user with a ${data.bodyType} body type and a ${data.colorSeason} color profile. Look at the attached image. Does the silhouette flatter their specific body type? Do the colors harmonize with their season? Be candid but encouraging. Always call the report_outfit_analysis tool with your findings.`;
 
-    const systemPrompt = `You are an expert fashion stylist and color analyst. You are evaluating an outfit for a user with a ${data.bodyType} body type and a ${data.colorSeason} color profile. Look at the attached image. Does the silhouette flatter their specific body type? Do the colors harmonize with their season? Be candid but encouraging. Always call the report_outfit_analysis tool with your findings.`;
+      const res = await aiChatCompletion({
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Analyze this outfit for me." },
+              { type: "image_url", image_url: { url: imageUrl } },
+            ],
+          },
+        ],
+        tools: [tool],
+        tool_choice: { type: "function", function: { name: "report_outfit_analysis" } },
+      });
 
-    const res = await aiChatCompletion({
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Analyze this outfit for me." },
-            { type: "image_url", image_url: { url: imageUrl } },
-          ],
-        },
-      ],
-      tools: [tool],
-      tool_choice: { type: "function", function: { name: "report_outfit_analysis" } },
+      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
+      if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
+      if (!res.ok) {
+        const t = await res.text();
+        console.error("AI provider error", res.status, t);
+        throw new Error("AI analysis failed.");
+      }
+
+      const json = await res.json();
+      const call = json.choices?.[0]?.message?.tool_calls?.[0];
+      if (!call) throw new Error("AI did not return analysis.");
+      const args = JSON.parse(call.function.arguments);
+      return args as {
+        color_match: string;
+        silhouette: string;
+        overall_score: number;
+        verdict: string;
+      };
     });
-
-    if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-    if (!res.ok) {
-      const t = await res.text();
-      console.error("AI provider error", res.status, t);
-      throw new Error("AI analysis failed.");
-    }
-
-    const json = await res.json();
-    const call = json.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call) throw new Error("AI did not return analysis.");
-    const args = JSON.parse(call.function.arguments);
-    return args as {
-      color_match: string;
-      silhouette: string;
-      overall_score: number;
-      verdict: string;
-    };
   });

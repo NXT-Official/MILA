@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
-import { consumeAiCredit } from "./credits.server";
+import { withAiCredit } from "./credits.server";
 import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 import { deriveColorMetrics } from "./profile-color";
 import { normalizeBeautyPreferences } from "./beauty-preferences";
@@ -124,61 +124,62 @@ export const conciergeChat = createServerFn({ method: "POST" })
       throw err;
     }
 
-    await consumeAiCredit(context.supabase, context.userId);
-
-    const { data: profileRow, error: profileError } = await context.supabase
-      .from("profiles")
-      .select(
-        "body_type,color_season,skin_undertone,face_shape,hair_type,beauty_preferences,color_profile,default_location",
-      )
-      .eq("id", context.userId)
-      .maybeSingle();
-    if (profileError) {
-      console.error("[conciergeChat] failed to load profile", profileError.message);
-    }
-
-    const metrics = deriveColorMetrics(profileRow);
-    const colorProfile = (profileRow?.color_profile ?? null) as { subSeason?: string } | null;
-    const colorSeason = str(colorProfile?.subSeason) ?? metrics.season;
-    const beautyPrefs = normalizeBeautyPreferences(profileRow?.beauty_preferences);
-    const homeCity = HUBS.find((h) => h.id === profileRow?.default_location)?.city ?? null;
-
-    const profileLines = [
-      profileRow?.body_type ? `- Body type: ${profileRow.body_type}` : null,
-      colorSeason ? `- Color season: ${colorSeason}` : null,
-      metrics.undertone ? `- Skin undertone: ${metrics.undertone}` : null,
-      profileRow?.face_shape ? `- Face shape: ${profileRow.face_shape}` : null,
-      profileRow?.hair_type ? `- Hair type: ${profileRow.hair_type}` : null,
-      beautyPrefs.length ? `- Beauty preferences: ${beautyPrefs.join(", ")}` : null,
-      homeCity ? `- Home base: ${homeCity}` : null,
-    ].filter(Boolean);
-
-    let lookLines: string[] = [];
-    let lookImageUrl: string | null = null;
-    if (data.lookId) {
-      const { data: look, error: lookError } = await context.supabase
-        .from("outfits")
-        .select("id,image_url,analysis_result")
-        .eq("id", data.lookId)
-        .eq("user_id", context.userId)
+    // Wraps the profile/look loads too — a chat about a look that was deleted
+    // out from under the client must not cost the client a credit.
+    return withAiCredit(context.supabase, context.userId, async () => {
+      const { data: profileRow, error: profileError } = await context.supabase
+        .from("profiles")
+        .select(
+          "body_type,color_season,skin_undertone,face_shape,hair_type,beauty_preferences,color_profile,default_location",
+        )
+        .eq("id", context.userId)
         .maybeSingle();
-      if (lookError) {
-        console.error("[conciergeChat] failed to load look", lookError.message);
-        throw new Error("Mila couldn't open that saved look. Please try again.");
+      if (profileError) {
+        console.error("[conciergeChat] failed to load profile", profileError.message);
       }
-      if (!look) {
-        throw new Error("That saved look is no longer available. You can continue without it.");
-      }
-      lookLines = describeSavedLook(look.analysis_result);
-      const trustedPrefix = `${process.env.SUPABASE_URL?.replace(/\/+$/, "")}/storage/v1/object/public/`;
-      if (look.image_url?.startsWith(trustedPrefix)) {
-        lookImageUrl = look.image_url;
-      }
-    }
 
-    const attachedImageUrl = data.imageUrl ? assertTrustedStorageImageUrl(data.imageUrl) : null;
-    const anchored = !!data.lookId;
-    const systemPrompt = `You are Mila, a thoughtful personal fashion stylist. You give practical, specific styling advice — outfits, color, proportions, beauty, occasions, packing, wardrobe planning — and always explain briefly why a suggestion works, offering an alternative when useful.
+      const metrics = deriveColorMetrics(profileRow);
+      const colorProfile = (profileRow?.color_profile ?? null) as { subSeason?: string } | null;
+      const colorSeason = str(colorProfile?.subSeason) ?? metrics.season;
+      const beautyPrefs = normalizeBeautyPreferences(profileRow?.beauty_preferences);
+      const homeCity = HUBS.find((h) => h.id === profileRow?.default_location)?.city ?? null;
+
+      const profileLines = [
+        profileRow?.body_type ? `- Body type: ${profileRow.body_type}` : null,
+        colorSeason ? `- Color season: ${colorSeason}` : null,
+        metrics.undertone ? `- Skin undertone: ${metrics.undertone}` : null,
+        profileRow?.face_shape ? `- Face shape: ${profileRow.face_shape}` : null,
+        profileRow?.hair_type ? `- Hair type: ${profileRow.hair_type}` : null,
+        beautyPrefs.length ? `- Beauty preferences: ${beautyPrefs.join(", ")}` : null,
+        homeCity ? `- Home base: ${homeCity}` : null,
+      ].filter(Boolean);
+
+      let lookLines: string[] = [];
+      let lookImageUrl: string | null = null;
+      if (data.lookId) {
+        const { data: look, error: lookError } = await context.supabase
+          .from("outfits")
+          .select("id,image_url,analysis_result")
+          .eq("id", data.lookId)
+          .eq("user_id", context.userId)
+          .maybeSingle();
+        if (lookError) {
+          console.error("[conciergeChat] failed to load look", lookError.message);
+          throw new Error("Mila couldn't open that saved look. Please try again.");
+        }
+        if (!look) {
+          throw new Error("That saved look is no longer available. You can continue without it.");
+        }
+        lookLines = describeSavedLook(look.analysis_result);
+        const trustedPrefix = `${process.env.SUPABASE_URL?.replace(/\/+$/, "")}/storage/v1/object/public/`;
+        if (look.image_url?.startsWith(trustedPrefix)) {
+          lookImageUrl = look.image_url;
+        }
+      }
+
+      const attachedImageUrl = data.imageUrl ? assertTrustedStorageImageUrl(data.imageUrl) : null;
+      const anchored = !!data.lookId;
+      const systemPrompt = `You are Mila, a thoughtful personal fashion stylist. You give practical, specific styling advice — outfits, color, proportions, beauty, occasions, packing, wardrobe planning — and always explain briefly why a suggestion works, offering an alternative when useful.
 
 CLIENT PROFILE (use what's here; if a detail you need is missing, state your assumption or ask ONE focused question — never invent profile facts):
 ${profileLines.length ? profileLines.join("\n") : "- No style profile on file yet — give great general guidance and state assumptions."}
@@ -200,58 +201,59 @@ RULES:
 - Keep replies focused: usually 2-6 sentences.
 - Always call the report_concierge_reply tool.`;
 
-    const history = boundHistory(data.history);
+      const history = boundHistory(data.history);
 
-    const messages: Array<Record<string, unknown>> = [
-      { role: "system", content: systemPrompt },
-      ...(lookImageUrl
-        ? [
-            {
-              role: "user" as const,
+      const messages: Array<Record<string, unknown>> = [
+        { role: "system", content: systemPrompt },
+        ...(lookImageUrl
+          ? [
+              {
+                role: "user" as const,
+                content: [
+                  { type: "text", text: "This is the saved look we're discussing." },
+                  { type: "image_url", image_url: { url: lookImageUrl } },
+                ],
+              },
+            ]
+          : []),
+        ...history.map((m) => ({ role: m.role, content: m.content })),
+        attachedImageUrl
+          ? {
+              role: "user",
               content: [
-                { type: "text", text: "This is the saved look we're discussing." },
-                { type: "image_url", image_url: { url: lookImageUrl } },
+                { type: "text", text: data.message },
+                { type: "image_url", image_url: { url: attachedImageUrl } },
               ],
-            },
-          ]
-        : []),
-      ...history.map((m) => ({ role: m.role, content: m.content })),
-      attachedImageUrl
-        ? {
-            role: "user",
-            content: [
-              { type: "text", text: data.message },
-              { type: "image_url", image_url: { url: attachedImageUrl } },
-            ],
-          }
-        : { role: "user", content: data.message },
-    ];
+            }
+          : { role: "user", content: data.message },
+      ];
 
-    const res = await aiChatCompletion({
-      messages,
-      tools: [tool],
-      tool_choice: { type: "function", function: { name: "report_concierge_reply" } },
+      const res = await aiChatCompletion({
+        messages,
+        tools: [tool],
+        tool_choice: { type: "function", function: { name: "report_concierge_reply" } },
+      });
+
+      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
+      if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
+      if (!res.ok) {
+        const t = await res.text();
+        console.error("AI provider error", res.status, t);
+        throw new Error("Mila couldn't respond just now. Please try again.");
+      }
+
+      let reply: unknown;
+      try {
+        const json = await res.json();
+        const call = json.choices?.[0]?.message?.tool_calls?.[0];
+        reply = call ? JSON.parse(call.function.arguments).reply : null;
+      } catch (err) {
+        console.error("[conciergeChat] malformed provider response", err);
+        throw new Error("Mila couldn't respond just now. Please try again.");
+      }
+      if (typeof reply !== "string" || !reply.trim()) {
+        throw new Error("Mila couldn't respond just now. Please try again.");
+      }
+      return { reply: reply.trim() };
     });
-
-    if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-    if (!res.ok) {
-      const t = await res.text();
-      console.error("AI provider error", res.status, t);
-      throw new Error("Mila couldn't respond just now. Please try again.");
-    }
-
-    let reply: unknown;
-    try {
-      const json = await res.json();
-      const call = json.choices?.[0]?.message?.tool_calls?.[0];
-      reply = call ? JSON.parse(call.function.arguments).reply : null;
-    } catch (err) {
-      console.error("[conciergeChat] malformed provider response", err);
-      throw new Error("Mila couldn't respond just now. Please try again.");
-    }
-    if (typeof reply !== "string" || !reply.trim()) {
-      throw new Error("Mila couldn't respond just now. Please try again.");
-    }
-    return { reply: reply.trim() };
   });

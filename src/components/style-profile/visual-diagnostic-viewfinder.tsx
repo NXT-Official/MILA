@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { queryKeys } from "@/constants/query-keys";
 import {
   Camera,
   X as XIcon,
@@ -80,6 +83,8 @@ export function VisualDiagnosticViewfinder({
   const [pipelineLog, setPipelineLog] = useState<string[]>(["Waiting for the right light…"]);
   const [manualCalibrateOpen, setManualCalibrateOpen] = useState(false);
   const analyze = useServerFn(analyzeStudioColor);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   function pushLog(line: string) {
     setPipelineLog((prev) => [
@@ -248,6 +253,9 @@ export function VisualDiagnosticViewfinder({
       );
       pushLog(`Something went wrong: ${e?.message || "unknown"}.`);
       setAnalyzing(false);
+    } finally {
+      // A reading costs a credit (refunded if it failed) — resync the badge.
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
 

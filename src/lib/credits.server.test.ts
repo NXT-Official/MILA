@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import { consumeAiCredit, grantAiCredits, payForLookImage } from "./credits.server";
+import { consumeAiCredit, grantAiCredits, payForLookImage, withAiCredit } from "./credits.server";
 import { InsufficientCreditsError } from "./credits";
 import { MemoryCreditStore } from "../../tests/helpers/memory-credit-store";
 
@@ -88,6 +88,80 @@ describe("consumeAiCredit", () => {
     today = "2026-07-25";
     const remaining = await consumeAiCredit(supabase, "user-1", store.consume);
     expect(remaining).toBe(99);
+  });
+});
+
+describe("withAiCredit", () => {
+  test("charges once when the work succeeds", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 10);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 10, "2026-07-24");
+
+    const result = await withAiCredit(supabase, "user-1", async () => "reply", {
+      consume: store.consume,
+      grant: store.grant,
+    });
+
+    expect(result).toBe("reply");
+    // 10 - 1 charged, then this assertion spends one more.
+    expect(await store.consume("user-1", 10)).toEqual({ allowed: true, remaining: 8 });
+  });
+
+  test("refunds when the work throws", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 10);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 10, "2026-07-24");
+
+    await expect(
+      withAiCredit(
+        supabase,
+        "user-1",
+        async () => {
+          throw new Error("AI analysis failed.");
+        },
+        { consume: store.consume, grant: store.grant },
+      ),
+    ).rejects.toThrow("AI analysis failed.");
+
+    // Charged then refunded: the assertion below is the only credit spent.
+    expect(await store.consume("user-1", 10)).toEqual({ allowed: true, remaining: 9 });
+  });
+
+  test("refunds when the work reports failure by returning", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 10);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 10, "2026-07-24");
+
+    const result = await withAiCredit(
+      supabase,
+      "user-1",
+      async () => ({ success: false as const, error: "ANALYSIS_PARSING_FAILED" }),
+      { refundIf: (r) => !r.success, consume: store.consume, grant: store.grant },
+    );
+
+    expect(result.success).toBe(false);
+    // Charged then refunded: the assertion below is the only credit spent.
+    expect(await store.consume("user-1", 10)).toEqual({ allowed: true, remaining: 9 });
+  });
+
+  test("a depleted user never reaches the work", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 10);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 0, "2026-07-24");
+    let ran = false;
+
+    await expect(
+      withAiCredit(
+        supabase,
+        "user-1",
+        async () => {
+          ran = true;
+          return "reply";
+        },
+        { consume: store.consume, grant: store.grant },
+      ),
+    ).rejects.toBeInstanceOf(InsufficientCreditsError);
+    expect(ran).toBe(false);
   });
 });
 

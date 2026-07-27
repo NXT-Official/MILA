@@ -84,6 +84,48 @@ export async function grantAiCredits(
   return store(userId, dailyAllowance, amount);
 }
 
+export type WithAiCreditOptions<T> = {
+  /** For handlers that report failure by returning rather than throwing. */
+  refundIf?: (result: T) => boolean;
+  consume?: ConsumeCreditStore;
+  grant?: GrantCreditStore;
+};
+
+/**
+ * Charge a credit, run the AI work, put the credit back if the work failed —
+ * a provider 5xx, a missing tool_call, a bad lookId. Every AI entry point goes
+ * through this: all of those failures tell the client "please try again", so
+ * billing for them means a retry loop costs a credit per attempt and returns
+ * nothing.
+ *
+ * ponytail: the refund lands in purchased_credits (grant_ai_credits' only
+ * bucket), so a refunded daily credit stops expiring. Harmless at this failure
+ * rate; if it ever needs to be exact, give the SQL function a _bucket arg.
+ */
+export async function withAiCredit<T>(
+  supabase: SupabaseClient,
+  userId: string,
+  produce: () => Promise<T>,
+  opts: WithAiCreditOptions<T> = {},
+): Promise<T> {
+  await consumeAiCredit(supabase, userId, opts.consume);
+  const refund = () =>
+    grantAiCredits(supabase, userId, 1, opts.grant).catch((err) =>
+      // Never let a failed refund mask the failure the caller is reporting.
+      console.error("[withAiCredit] refund failed", err),
+    );
+
+  let result: T;
+  try {
+    result = await produce();
+  } catch (err) {
+    await refund();
+    throw err;
+  }
+  if (opts.refundIf?.(result)) await refund();
+  return result;
+}
+
 export type LookImageDeps = {
   claim: (userId: string) => Promise<boolean>;
   mark: (userId: string) => Promise<void>;

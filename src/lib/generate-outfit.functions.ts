@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
-import { consumeAiCredit, markLookImagePending, payForLookImage } from "./credits.server";
+import { withAiCredit, markLookImagePending, payForLookImage } from "./credits.server";
 import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
 import { generateOutfitImage, isCloudflareRateLimitError } from "./cloudflare-image.server";
 
@@ -157,87 +157,88 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     return parsed.data;
   })
   .handler(async ({ data, context }): Promise<DailyLook> => {
-    await consumeAiCredit(context.supabase, context.userId);
+    return withAiCredit(context.supabase, context.userId, async () => {
+      const { data: profileRow } = await context.supabase
+        .from("profiles")
+        .select("beauty_preferences")
+        .eq("id", context.userId)
+        .maybeSingle();
 
-    const { data: profileRow } = await context.supabase
-      .from("profiles")
-      .select("beauty_preferences")
-      .eq("id", context.userId)
-      .maybeSingle();
+      const beautyPreferences = normalizeBeautyPreferences(profileRow?.beauty_preferences);
 
-    const beautyPreferences = normalizeBeautyPreferences(profileRow?.beauty_preferences);
-
-    let tempF = data.tempF;
-    let tempC = data.tempC;
-    let condition = data.condition;
-    if ((tempF == null || !condition) && data.lat != null && data.lon != null) {
-      try {
-        const r = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${data.lat}&longitude=${data.lon}&current=temperature_2m,weather_code,wind_speed_10m`,
-        );
-        const j = (await r.json()) as {
-          current?: { temperature_2m?: number; weather_code?: number; wind_speed_10m?: number };
-        };
-        const c = Math.round(j?.current?.temperature_2m ?? 20);
-        const code = j?.current?.weather_code ?? 2;
-        const wind = Math.round(j?.current?.wind_speed_10m ?? 0);
-        tempC = tempC ?? c;
-        tempF = tempF ?? Math.round((c * 9) / 5 + 32);
-        if (!condition) {
-          if ([71, 73, 75, 77, 85, 86].includes(code)) condition = "Snow";
-          else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(code))
-            condition = "Rain";
-          else if (code === 0 || code === 1) condition = "Sunny";
-          else if (wind >= 25) condition = "Windy";
-          else if (code === 3 || [45, 48].includes(code)) condition = "Overcast";
-          else condition = "Cloudy";
+      let tempF = data.tempF;
+      let tempC = data.tempC;
+      let condition = data.condition;
+      if ((tempF == null || !condition) && data.lat != null && data.lon != null) {
+        try {
+          const r = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${data.lat}&longitude=${data.lon}&current=temperature_2m,weather_code,wind_speed_10m`,
+          );
+          const j = (await r.json()) as {
+            current?: { temperature_2m?: number; weather_code?: number; wind_speed_10m?: number };
+          };
+          const c = Math.round(j?.current?.temperature_2m ?? 20);
+          const code = j?.current?.weather_code ?? 2;
+          const wind = Math.round(j?.current?.wind_speed_10m ?? 0);
+          tempC = tempC ?? c;
+          tempF = tempF ?? Math.round((c * 9) / 5 + 32);
+          if (!condition) {
+            if ([71, 73, 75, 77, 85, 86].includes(code)) condition = "Snow";
+            else if (
+              [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(code)
+            )
+              condition = "Rain";
+            else if (code === 0 || code === 1) condition = "Sunny";
+            else if (wind >= 25) condition = "Windy";
+            else if (code === 3 || [45, 48].includes(code)) condition = "Overcast";
+            else condition = "Cloudy";
+          }
+        } catch (err) {
+          console.warn("Open-Meteo fetch failed; falling back to label only.", err);
         }
-      } catch (err) {
-        console.warn("Open-Meteo fetch failed; falling back to label only.", err);
       }
-    }
 
-    const tempLine =
-      tempF != null
-        ? `${tempF}°F (${tempC ?? Math.round(((tempF - 32) * 5) / 9)}°C)`
-        : data.weather;
-    const conditionLine = condition ?? "Mixed";
-    const locationLine = data.location ?? "the user's location";
+      const tempLine =
+        tempF != null
+          ? `${tempF}°F (${tempC ?? Math.round(((tempF - 32) * 5) / 9)}°C)`
+          : data.weather;
+      const conditionLine = condition ?? "Mixed";
+      const locationLine = data.location ?? "the user's location";
 
-    const beautyPrefsLine = formatBeautyPreferencesForPrompt(beautyPreferences);
+      const beautyPrefsLine = formatBeautyPreferencesForPrompt(beautyPreferences);
 
-    const faceShapeValue = data.faceShape?.trim() || null;
-    const hairTypeValue = data.hairType?.trim() || null;
-    const colorSeasonValue = data.colorSeason?.trim();
-    if (!colorSeasonValue) throw new Error("Color season missing from profile.");
-    if (!data.bodyType?.trim())
-      throw new Error("Body type missing from profile. Complete your Studio dossier first.");
+      const faceShapeValue = data.faceShape?.trim() || null;
+      const hairTypeValue = data.hairType?.trim() || null;
+      const colorSeasonValue = data.colorSeason?.trim();
+      if (!colorSeasonValue) throw new Error("Color season missing from profile.");
+      if (!data.bodyType?.trim())
+        throw new Error("Body type missing from profile. Complete your Studio dossier first.");
 
-    const profileLines = [
-      `- Body type: ${data.bodyType}`,
-      `- 16-season color profile: ${colorSeasonValue} (AUTHORITATIVE — every color reference in outfit/hair/makeup MUST be drawn from this exact season; do NOT substitute a different season name)`,
-      data.skinUndertone ? `- Skin undertone: ${data.skinUndertone}` : null,
-      faceShapeValue
-        ? `- Face shape: ${faceShapeValue} (use this exact face-shape name in the hair rationale)`
-        : null,
-      hairTypeValue
-        ? `- Hair type: ${hairTypeValue} (use this exact hair-type name in the hair rationale)`
-        : null,
-      `- Beauty preferences: ${beautyPrefsLine}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
+      const profileLines = [
+        `- Body type: ${data.bodyType}`,
+        `- 16-season color profile: ${colorSeasonValue} (AUTHORITATIVE — every color reference in outfit/hair/makeup MUST be drawn from this exact season; do NOT substitute a different season name)`,
+        data.skinUndertone ? `- Skin undertone: ${data.skinUndertone}` : null,
+        faceShapeValue
+          ? `- Face shape: ${faceShapeValue} (use this exact face-shape name in the hair rationale)`
+          : null,
+        hairTypeValue
+          ? `- Hair type: ${hairTypeValue} (use this exact hair-type name in the hair rationale)`
+          : null,
+        `- Beauty preferences: ${beautyPrefsLine}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
 
-    const hairRule =
-      faceShapeValue && hairTypeValue
-        ? `- HAIR (CROSS-REFERENCE REQUIRED): the 'style' MUST be a specific silhouette engineered for BOTH the user's hair type (${hairTypeValue}) AND face shape (${faceShapeValue}). Reference the face shape "${faceShapeValue}" by name inside the rationale. Name the silhouette concretely (parting, length, volume placement, finish). Explain in one clause how it balances the ${faceShapeValue} face shape. NEVER prescribe a silhouette that fights the hair type. The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
-        : hairTypeValue
-          ? `- HAIR: prescribe a concrete silhouette appropriate to ${hairTypeValue} hair (parting, length, volume placement, finish). The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
-          : faceShapeValue
-            ? `- HAIR: prescribe a concrete silhouette that flatters a ${faceShapeValue} face shape; reference it by name in the rationale. Name the silhouette concretely and give one execution tip.`
-            : `- HAIR: prescribe a concrete silhouette (parting, length, volume placement, finish) plus one execution tip.`;
+      const hairRule =
+        faceShapeValue && hairTypeValue
+          ? `- HAIR (CROSS-REFERENCE REQUIRED): the 'style' MUST be a specific silhouette engineered for BOTH the user's hair type (${hairTypeValue}) AND face shape (${faceShapeValue}). Reference the face shape "${faceShapeValue}" by name inside the rationale. Name the silhouette concretely (parting, length, volume placement, finish). Explain in one clause how it balances the ${faceShapeValue} face shape. NEVER prescribe a silhouette that fights the hair type. The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
+          : hairTypeValue
+            ? `- HAIR: prescribe a concrete silhouette appropriate to ${hairTypeValue} hair (parting, length, volume placement, finish). The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
+            : faceShapeValue
+              ? `- HAIR: prescribe a concrete silhouette that flatters a ${faceShapeValue} face shape; reference it by name in the rationale. Name the silhouette concretely and give one execution tip.`
+              : `- HAIR: prescribe a concrete silhouette (parting, length, volume placement, finish) plus one execution tip.`;
 
-    const systemPrompt = `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup — from first principles. NOT from any inventory.
+      const systemPrompt = `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup — from first principles. NOT from any inventory.
 
 CLIENT PROFILE:
 ${profileLines}
@@ -268,41 +269,42 @@ ${hairRule}
 
 Always call the report_daily_look tool.`;
 
-    const res = await aiChatCompletion({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: "Compose today's complete look." },
-      ],
-      tools: [tool],
-      tool_choice: { type: "function", function: { name: "report_daily_look" } },
+      const res = await aiChatCompletion({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Compose today's complete look." },
+        ],
+        tools: [tool],
+        tool_choice: { type: "function", function: { name: "report_daily_look" } },
+      });
+
+      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
+      if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`AI service error: ${res.status} ${res.statusText} — ${t}`);
+      }
+
+      const json = await res.json();
+      const call = json.choices?.[0]?.message?.tool_calls?.[0];
+      if (!call) throw new Error("AI did not return a selection.");
+
+      let parsedArgs: unknown;
+      try {
+        parsedArgs = JSON.parse(stripMarkdownFences(call.function.arguments));
+      } catch (err) {
+        throw new Error("Mila couldn't compose a look this time. Please try again.");
+      }
+
+      const look = DailyLookSchema.safeParse(parsedArgs);
+      if (!look.success) {
+        throw new Error("Mila couldn't compose a look this time. Please try again.");
+      }
+      // The credit charged above covers this look's first visual, rendered by the
+      // separate regenerateOutfitImage call the client makes next.
+      await markLookImagePending(context.userId);
+      return look.data;
     });
-
-    if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`AI service error: ${res.status} ${res.statusText} — ${t}`);
-    }
-
-    const json = await res.json();
-    const call = json.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call) throw new Error("AI did not return a selection.");
-
-    let parsedArgs: unknown;
-    try {
-      parsedArgs = JSON.parse(stripMarkdownFences(call.function.arguments));
-    } catch (err) {
-      throw new Error("Mila couldn't compose a look this time. Please try again.");
-    }
-
-    const look = DailyLookSchema.safeParse(parsedArgs);
-    if (!look.success) {
-      throw new Error("Mila couldn't compose a look this time. Please try again.");
-    }
-    // The credit charged above covers this look's first visual, rendered by the
-    // separate regenerateOutfitImage call the client makes next.
-    await markLookImagePending(context.userId);
-    return look.data;
   });
 
 export const regenerateOutfitImage = createServerFn({ method: "POST" })

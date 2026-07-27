@@ -20,6 +20,8 @@ import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog"
 import { isInsufficientCreditsError } from "@/lib/credits";
 import type { ConciergeLook } from "@/hooks/use-concierge";
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -127,6 +129,7 @@ export function ConciergeChat({
   const prevLookIdRef = useRef<string | null>(look?.lookId ?? null);
   const chat = useServerFn(conciergeChat);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [archive, setArchive] = useState<ArchiveItem[]>([]);
   const [archiveOpen, setArchiveOpen] = useState(
     () => typeof localStorage === "undefined" || localStorage.getItem(ARCHIVE_OPEN_KEY) !== "0",
@@ -342,6 +345,8 @@ export function ConciergeChat({
       else toast.error(e instanceof Error ? e.message : "Mila couldn't respond just now.");
     } finally {
       setSending(false);
+      // Every message costs a credit — keep the shell's badge honest.
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
 

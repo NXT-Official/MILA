@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
 import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
-import { consumeAiCredit } from "./credits.server";
+import { withAiCredit } from "./credits.server";
 import { INSUFFICIENT_CREDITS, isInsufficientCreditsError } from "./credits";
 import {
   SEASON_HEX_MATRIX,
@@ -208,6 +208,31 @@ const slimTool = {
   },
 };
 
+// Named so the credit-wrapped body below keeps its literal `success` types —
+// an unannotated closure would widen them to boolean and stop matching.
+type ColorAnalysisResult =
+  | {
+      success: true;
+      profile: StudioColorProfile;
+      telemetry: {
+        pass1Raw: {
+          ambientLighting: string;
+          biologicalUndertone: string;
+          computedContrast: string;
+        };
+        interceptTriggered: boolean;
+        gatekeeperNotes: string[];
+        pass2OverrideInputs: {
+          ambientLighting: string;
+          biologicalUndertone: string;
+          computedContrast: string;
+          sensorClippingEvent: boolean;
+        };
+        forcedDiagnostic: boolean;
+      };
+    }
+  | { success: false; error: string; detail?: string };
+
 export const analyzePersonalColor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
@@ -228,101 +253,70 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
       })
       .parse(input),
   )
-  .handler(
-    async ({
-      data,
-      context,
-    }): Promise<
-      | {
-          success: true;
-          profile: StudioColorProfile;
-          telemetry: {
-            pass1Raw: {
-              ambientLighting: string;
-              biologicalUndertone: string;
-              computedContrast: string;
-            };
-            interceptTriggered: boolean;
-            gatekeeperNotes: string[];
-            pass2OverrideInputs: {
-              ambientLighting: string;
-              biologicalUndertone: string;
-              computedContrast: string;
-              sensorClippingEvent: boolean;
-            };
-            forcedDiagnostic: boolean;
-          };
-        }
-      | { success: false; error: string; detail?: string }
-    > => {
+  .handler(async ({ data, context }): Promise<ColorAnalysisResult> => {
+    try {
+      if (!isAiConfigured()) {
+        console.error("[analyzePersonalColor] AI provider not configured (AI_API_KEY / AI_MODEL)");
+        return { success: false, error: "CONFIG_MISSING_API_KEY" };
+      }
+
       try {
-        if (!isAiConfigured()) {
-          console.error(
-            "[analyzePersonalColor] AI provider not configured (AI_API_KEY / AI_MODEL)",
-          );
-          return { success: false, error: "CONFIG_MISSING_API_KEY" };
+        await consumeRateLimit(
+          `ai:analyzePersonalColor:${context.userId}`,
+          ANALYZE_COLOR_LIMIT,
+          ANALYZE_COLOR_WINDOW_SECONDS,
+        );
+      } catch (err) {
+        if (err instanceof RateLimitExceededError) {
+          return { success: false, error: "ANALYSIS_RATE_LIMITED" };
         }
+        throw err;
+      }
 
-        try {
-          await consumeRateLimit(
-            `ai:analyzePersonalColor:${context.userId}`,
-            ANALYZE_COLOR_LIMIT,
-            ANALYZE_COLOR_WINDOW_SECONDS,
-          );
-        } catch (err) {
-          if (err instanceof RateLimitExceededError) {
-            return { success: false, error: "ANALYSIS_RATE_LIMITED" };
-          }
-          throw err;
-        }
-
-        // Balance gate. This handler answers with error codes rather than
-        // throwing (the outer catch would flatten a throw into
-        // SERVER_GATEWAY_TIMEOUT), and the viewfinder toasts `error` verbatim —
-        // so hand back the human sentence, not a code.
-        try {
-          await consumeAiCredit(context.supabase, context.userId);
-        } catch (err) {
-          if (isInsufficientCreditsError(err)) {
-            return { success: false, error: INSUFFICIENT_CREDITS };
-          }
-          throw err;
-        }
-
-        const callGateway = async (
-          systemPrompt: string,
-          userText: string,
-          toolDef: typeof slimTool | typeof calibrationTool,
-        ) => {
-          const res = await aiChatCompletion({
-            messages: [
-              { role: "system", content: systemPrompt },
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: userText },
+      // Balance gate. This handler answers with error codes rather than
+      // throwing (the outer catch would flatten a throw into
+      // SERVER_GATEWAY_TIMEOUT), and the viewfinder toasts `error` verbatim —
+      // so hand back the human sentence, not a code. Two vision passes ride
+      // on the one credit, and every failure exit below refunds it.
+      try {
+        return await withAiCredit<ColorAnalysisResult>(
+          context.supabase,
+          context.userId,
+          async () => {
+            const callGateway = async (
+              systemPrompt: string,
+              userText: string,
+              toolDef: typeof slimTool | typeof calibrationTool,
+            ) => {
+              const res = await aiChatCompletion({
+                messages: [
+                  { role: "system", content: systemPrompt },
                   {
-                    type: "image_url",
-                    image_url: { url: `data:image/jpeg;base64,${data.imageBase64}` },
+                    role: "user",
+                    content: [
+                      { type: "text", text: userText },
+                      {
+                        type: "image_url",
+                        image_url: { url: `data:image/jpeg;base64,${data.imageBase64}` },
+                      },
+                    ],
                   },
                 ],
-              },
-            ],
-            tools: [toolDef],
-            tool_choice: {
-              type: "function",
-              function: { name: toolDef.function.name },
-            },
-          });
-          return res;
-        };
+                tools: [toolDef],
+                tool_choice: {
+                  type: "function",
+                  function: { name: toolDef.function.name },
+                },
+              });
+              return res;
+            };
 
-        const forced = data.diagnostics?.forceCalibration;
-        let pass1Parsed: { success: true; data: z.infer<typeof CalibrationSchema> };
-        if (forced) {
-          pass1Parsed = { success: true, data: forced };
-        } else {
-          const calibrationPrompt = `You are the front-end CALIBRATION sensor for a Seoul color studio. Your only job is to read the raw environment + skin of THIS portrait and return three normalized metrics. You DO NOT pick a seasonal palette — a second model handles that downstream.
+            const forced = data.diagnostics?.forceCalibration;
+            let pass1Parsed: { success: true; data: z.infer<typeof CalibrationSchema> };
+            if (forced) {
+              pass1Parsed = { success: true, data: forced };
+            } else {
+              const calibrationPrompt = `You are the front-end CALIBRATION sensor for a Seoul color studio. Your only job is to read the raw environment + skin of THIS portrait and return three normalized metrics. You DO NOT pick a seasonal palette — a second model handles that downstream.
 
 Execute silently:
 1. Profile the room lighting. Identify backlight (bright source behind the subject), warm overhead lamp bleed, cool fluorescent wash, neutral daylight, dim indoor tungsten, or a mixed cast. Use sclera and teeth as the white-balance anchor — any yellow/blue shift on those neutral-white surfaces is pure lighting bleed.
@@ -331,103 +325,107 @@ Execute silently:
 
 Return ONLY by calling the report_calibration tool.`;
 
-          const pass1Res = await callGateway(
-            calibrationPrompt,
-            "Run the Pass-1 calibration read on this portrait.",
-            calibrationTool,
-          );
-          if (pass1Res.status === 429) return { success: false, error: "ANALYSIS_RATE_LIMITED" };
-          if (pass1Res.status === 402)
-            return { success: false, error: "ANALYSIS_CREDITS_EXHAUSTED" };
-          if (!pass1Res.ok) {
-            const t = await pass1Res.text();
-            console.error("[analyzePersonalColor] Pass1 gateway error", pass1Res.status, t);
-            return {
-              success: false,
-              error: "ANALYSIS_GATEWAY_FAILURE",
-              detail: `Pass1 HTTP ${pass1Res.status}`,
+              const pass1Res = await callGateway(
+                calibrationPrompt,
+                "Run the Pass-1 calibration read on this portrait.",
+                calibrationTool,
+              );
+              if (pass1Res.status === 429)
+                return { success: false, error: "ANALYSIS_RATE_LIMITED" };
+              if (pass1Res.status === 402)
+                return { success: false, error: "ANALYSIS_CREDITS_EXHAUSTED" };
+              if (!pass1Res.ok) {
+                const t = await pass1Res.text();
+                console.error("[analyzePersonalColor] Pass1 gateway error", pass1Res.status, t);
+                return {
+                  success: false,
+                  error: "ANALYSIS_GATEWAY_FAILURE",
+                  detail: `Pass1 HTTP ${pass1Res.status}`,
+                };
+              }
+              const pass1Json = await pass1Res.json();
+              const pass1Call = pass1Json.choices?.[0]?.message?.tool_calls?.[0];
+              if (!pass1Call) {
+                console.error(
+                  "[analyzePersonalColor] Pass1 no tool_call",
+                  JSON.stringify(pass1Json).slice(0, 500),
+                );
+                return {
+                  success: false,
+                  error: "ANALYSIS_PARSING_FAILED",
+                  detail: "Pass1: no tool_call returned",
+                };
+              }
+              let pass1Args: unknown;
+              try {
+                pass1Args = JSON.parse(pass1Call.function.arguments);
+              } catch (e) {
+                console.error("[analyzePersonalColor] Pass1 JSON parse failed", e);
+                return {
+                  success: false,
+                  error: "ANALYSIS_PARSING_FAILED",
+                  detail: "Pass1: invalid tool args JSON",
+                };
+              }
+              const parsed1 = CalibrationSchema.safeParse(pass1Args);
+              if (!parsed1.success) {
+                console.error(
+                  "[analyzePersonalColor] Pass1 schema mismatch",
+                  parsed1.error.flatten(),
+                );
+                return {
+                  success: false,
+                  error: "ANALYSIS_PARSING_FAILED",
+                  detail: parsed1.error.message,
+                };
+              }
+              pass1Parsed = parsed1;
+            }
+
+            const pass1Raw = { ...pass1Parsed.data };
+
+            const calibration: Calibration = {
+              ...pass1Parsed.data,
+              sensorClippingEvent: false,
+              notes: [],
             };
-          }
-          const pass1Json = await pass1Res.json();
-          const pass1Call = pass1Json.choices?.[0]?.message?.tool_calls?.[0];
-          if (!pass1Call) {
-            console.error(
-              "[analyzePersonalColor] Pass1 no tool_call",
-              JSON.stringify(pass1Json).slice(0, 500),
-            );
-            return {
-              success: false,
-              error: "ANALYSIS_PARSING_FAILED",
-              detail: "Pass1: no tool_call returned",
-            };
-          }
-          let pass1Args: unknown;
-          try {
-            pass1Args = JSON.parse(pass1Call.function.arguments);
-          } catch (e) {
-            console.error("[analyzePersonalColor] Pass1 JSON parse failed", e);
-            return {
-              success: false,
-              error: "ANALYSIS_PARSING_FAILED",
-              detail: "Pass1: invalid tool args JSON",
-            };
-          }
-          const parsed1 = CalibrationSchema.safeParse(pass1Args);
-          if (!parsed1.success) {
-            console.error("[analyzePersonalColor] Pass1 schema mismatch", parsed1.error.flatten());
-            return {
-              success: false,
-              error: "ANALYSIS_PARSING_FAILED",
-              detail: parsed1.error.message,
-            };
-          }
-          pass1Parsed = parsed1;
-        }
 
-        const pass1Raw = { ...pass1Parsed.data };
+            if (calibration.ambientLighting === "backlit") {
+              if (
+                calibration.computedContrast === "high" ||
+                calibration.computedContrast === "medium"
+              ) {
+                calibration.notes.push(
+                  `Backlight detected — clamped computedContrast from "${calibration.computedContrast}" to "low-medium".`,
+                );
+                calibration.computedContrast = "low-medium";
+              }
+              calibration.sensorClippingEvent = true;
+            }
 
-        const calibration: Calibration = {
-          ...pass1Parsed.data,
-          sensorClippingEvent: false,
-          notes: [],
-        };
+            if (calibration.biologicalUndertone === "neutral") {
+              calibration.sensorClippingEvent = true;
+              calibration.notes.push(
+                "Neutral undertone read — flag sensorClippingEvent, lean on hair-root / iris-root anchors.",
+              );
+            }
 
-        if (calibration.ambientLighting === "backlit") {
-          if (
-            calibration.computedContrast === "high" ||
-            calibration.computedContrast === "medium"
-          ) {
-            calibration.notes.push(
-              `Backlight detected — clamped computedContrast from "${calibration.computedContrast}" to "low-medium".`,
-            );
-            calibration.computedContrast = "low-medium";
-          }
-          calibration.sensorClippingEvent = true;
-        }
+            const warmAmbient = calibration.ambientLighting === "warm_lamp";
+            const coolAmbient = calibration.ambientLighting === "cool_fluorescent";
+            const coolBio =
+              calibration.biologicalUndertone === "cool_pink" ||
+              calibration.biologicalUndertone === "cool_blue";
+            const warmBio =
+              calibration.biologicalUndertone === "warm_gold" ||
+              calibration.biologicalUndertone === "warm_peach";
+            if ((warmAmbient && coolBio) || (coolAmbient && warmBio)) {
+              calibration.sensorClippingEvent = true;
+              calibration.notes.push(
+                `Conflicting ambient (${calibration.ambientLighting}) vs biological (${calibration.biologicalUndertone}) — sensorClippingEvent.`,
+              );
+            }
 
-        if (calibration.biologicalUndertone === "neutral") {
-          calibration.sensorClippingEvent = true;
-          calibration.notes.push(
-            "Neutral undertone read — flag sensorClippingEvent, lean on hair-root / iris-root anchors.",
-          );
-        }
-
-        const warmAmbient = calibration.ambientLighting === "warm_lamp";
-        const coolAmbient = calibration.ambientLighting === "cool_fluorescent";
-        const coolBio =
-          calibration.biologicalUndertone === "cool_pink" ||
-          calibration.biologicalUndertone === "cool_blue";
-        const warmBio =
-          calibration.biologicalUndertone === "warm_gold" ||
-          calibration.biologicalUndertone === "warm_peach";
-        if ((warmAmbient && coolBio) || (coolAmbient && warmBio)) {
-          calibration.sensorClippingEvent = true;
-          calibration.notes.push(
-            `Conflicting ambient (${calibration.ambientLighting}) vs biological (${calibration.biologicalUndertone}) — sensorClippingEvent.`,
-          );
-        }
-
-        const calibrationBlock = `=== VALIDATED PASS-1 CALIBRATION OVERRIDES (AUTHORITATIVE) ===
+            const calibrationBlock = `=== VALIDATED PASS-1 CALIBRATION OVERRIDES (AUTHORITATIVE) ===
 ambientLighting        : ${calibration.ambientLighting}
 biologicalUndertone    : ${calibration.biologicalUndertone}
 computedContrast       : ${calibration.computedContrast}
@@ -436,7 +434,7 @@ gatekeeperNotes        : ${calibration.notes.length ? calibration.notes.join(" |
 
 These values have already been white-balance-corrected and shadow-discounted by the upstream calibration sensor. You MUST use them as the source of truth — do NOT re-derive ambient lighting or contrast from raw pixels. If sensorClippingEvent is TRUE, you are forbidden from returning any WINTER_* key purely on the basis of visible darkness or contrast.`;
 
-        const systemPrompt = `You are a master colorist at an Apgujeong, Seoul studio. Pass-1 calibration has already cleaned the environmental + biological signal for THIS portrait. Your ONLY job in Pass 2 is to map the validated calibration data + visible facial structure to a strict PCCS seasonal key.
+            const systemPrompt = `You are a master colorist at an Apgujeong, Seoul studio. Pass-1 calibration has already cleaned the environmental + biological signal for THIS portrait. Your ONLY job in Pass 2 is to map the validated calibration data + visible facial structure to a strict PCCS seasonal key.
 
 ${calibrationBlock}
 
@@ -615,165 +613,181 @@ Populate the tool payload exactly so the UI can log the system's thought process
 === OUTPUT ===
 Return ONLY the slim raw vision read by calling the report_studio_color_profile tool. Do not invent or echo any color palettes, hex codes, fabric lists, makeup specs, or styling text — those hydrate downstream from a static dictionary keyed by your season output.`;
 
-        const res = await callGateway(
-          systemPrompt,
-          "Run the Pass-2 PCCS routing using the validated calibration data above. Map this portrait to its strict seasonal key.",
-          slimTool,
+            const res = await callGateway(
+              systemPrompt,
+              "Run the Pass-2 PCCS routing using the validated calibration data above. Map this portrait to its strict seasonal key.",
+              slimTool,
+            );
+
+            if (res.status === 429) {
+              return { success: false, error: "ANALYSIS_RATE_LIMITED" };
+            }
+            if (res.status === 402) {
+              return { success: false, error: "ANALYSIS_CREDITS_EXHAUSTED" };
+            }
+            if (!res.ok) {
+              const t = await res.text();
+              console.error("[analyzePersonalColor] Gateway error", res.status, t);
+              return {
+                success: false,
+                error: "ANALYSIS_GATEWAY_FAILURE",
+                detail: `HTTP ${res.status}`,
+              };
+            }
+
+            const json = await res.json();
+            const call = json.choices?.[0]?.message?.tool_calls?.[0];
+            if (!call) {
+              console.error(
+                "[analyzePersonalColor] No tool_call in gateway response",
+                JSON.stringify(json).slice(0, 500),
+              );
+              return {
+                success: false,
+                error: "ANALYSIS_PARSING_FAILED",
+                detail: "No tool_call returned",
+              };
+            }
+            let args: unknown;
+            try {
+              args = JSON.parse(call.function.arguments);
+            } catch (e) {
+              console.error(
+                "[analyzePersonalColor] tool args JSON parse failed",
+                e,
+                call.function.arguments?.slice?.(0, 500),
+              );
+              return {
+                success: false,
+                error: "ANALYSIS_PARSING_FAILED",
+                detail: "Invalid JSON in tool arguments",
+              };
+            }
+            const slim = SlimVisionSchema.safeParse(args);
+            if (!slim.success) {
+              console.error("[analyzePersonalColor] Slim schema mismatch", slim.error.flatten());
+              return {
+                success: false,
+                error: "ANALYSIS_PARSING_FAILED",
+                detail: slim.error.message,
+              };
+            }
+
+            const spec = SEASONS_MASTER_DATA[slim.data.season];
+            const hydrated: StudioColorProfile = {
+              ...spec,
+              faceShape: slim.data.faceShape,
+              bodyType: slim.data.bodyType,
+              stylistNote: slim.data.stylistNote,
+              fullPalette: SEASON_HEX_MATRIX[slim.data.season],
+              detectedLighting: slim.data.detectedLighting,
+              calculatedUndertone: slim.data.calculatedUndertone,
+              confidenceScore: slim.data.confidenceScore,
+            };
+
+            const AMBIENT_NOISE_PATTERN = /backlit|glare|yellow.*lamp|blue-?light|ambient noise/i;
+            const FALLBACK_SEASONS = new Set<SeasonKey>(["SPRING_LIGHT", "SUMMER_MUTED"]);
+            if (
+              FALLBACK_SEASONS.has(slim.data.season) &&
+              typeof hydrated.detectedLighting === "string" &&
+              AMBIENT_NOISE_PATTERN.test(hydrated.detectedLighting)
+            ) {
+              const undertoneText = (slim.data.calculatedUndertone || "").toLowerCase();
+              const LANE_B_HINT = /ash|mousy|charcoal|slate|grey|gray|cool|neutral/;
+              const LANE_A_HINT = /warm|gold|honey|peach|amber|copper|caramel/;
+              const leansCool =
+                slim.data.undertone !== "Warm" &&
+                (LANE_B_HINT.test(undertoneText) || !LANE_A_HINT.test(undertoneText));
+
+              const targetSeason: SeasonKey = leansCool ? "SUMMER_MUTED" : "SPRING_LIGHT";
+              const targetSpec = SEASONS_MASTER_DATA[targetSeason];
+
+              hydrated.season = targetSpec.season;
+              hydrated.subSeason = targetSpec.subSeason;
+              hydrated.toneType = targetSpec.toneType;
+              hydrated.brightness = targetSpec.brightness;
+              hydrated.saturation = targetSpec.saturation;
+              hydrated.contrastScale = targetSpec.contrastScale;
+              hydrated.primarySwatches = targetSpec.primarySwatches;
+              hydrated.secondarySwatches = targetSpec.secondarySwatches;
+              hydrated.avoidColors = targetSpec.avoidColors;
+              hydrated.beautyMap = targetSpec.beautyMap;
+              hydrated.fabrication = targetSpec.fabrication;
+              hydrated.accessories = targetSpec.accessories;
+              hydrated.denimRegistry = targetSpec.denimRegistry;
+              hydrated.fullPalette = SEASON_HEX_MATRIX[targetSeason];
+
+              hydrated.confidenceScore = 100;
+              hydrated.confidenceLabel = "100% (Studio Calibrated)";
+              hydrated.detectedLighting = "Backlit Window Glare / Ambient Noise Detected";
+              hydrated.stylistNote = leansCool
+                ? "Our studio sensors detected intense background glare and lens reflections. The system successfully bypassed the camera noise to isolate your soft, elegant cool-neutral undertone and unlock your true Summer Muted palette flawlessly."
+                : "Our studio sensors detected intense background glare and lens reflections. The system bypassed the camera sensor noise to calibrate and unlock your authentic, delicate Spring Light palette flawlessly.";
+            }
+
+            const parsed = StudioColorProfileSchema.safeParse(hydrated);
+            if (!parsed.success) {
+              console.error(
+                "[analyzePersonalColor] Hydrated profile schema mismatch",
+                parsed.error.flatten(),
+              );
+              return {
+                success: false,
+                error: "ANALYSIS_PARSING_FAILED",
+                detail: parsed.error.message,
+              };
+            }
+            const telemetry = {
+              pass1Raw: {
+                ambientLighting: pass1Raw.ambientLighting,
+                biologicalUndertone: pass1Raw.biologicalUndertone,
+                computedContrast: pass1Raw.computedContrast,
+              },
+              interceptTriggered: calibration.sensorClippingEvent,
+              gatekeeperNotes: calibration.notes,
+              pass2OverrideInputs: {
+                ambientLighting: calibration.ambientLighting,
+                biologicalUndertone: calibration.biologicalUndertone,
+                computedContrast: calibration.computedContrast,
+                sensorClippingEvent: calibration.sensorClippingEvent,
+              },
+              forcedDiagnostic: Boolean(forced),
+            };
+            try {
+              const { supabase, userId } = context;
+              const { error: persistError } = await supabase.from("profiles").upsert(
+                {
+                  id: userId,
+                  skin_undertone: parsed.data.toneType.startsWith("Warm") ? "Warm" : "Cool",
+                  color_season: parsed.data.season,
+                  color_profile: parsed.data as never,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "id" },
+              );
+              if (persistError) {
+                console.error("[analyzePersonalColor] profiles upsert failed:", persistError);
+              }
+            } catch (persistEx) {
+              console.error("[analyzePersonalColor] profiles upsert threw:", persistEx);
+            }
+
+            return { success: true, profile: parsed.data, telemetry };
+          },
+          { refundIf: (r) => !r.success },
         );
-
-        if (res.status === 429) {
-          return { success: false, error: "ANALYSIS_RATE_LIMITED" };
+      } catch (err) {
+        if (isInsufficientCreditsError(err)) {
+          return { success: false, error: INSUFFICIENT_CREDITS };
         }
-        if (res.status === 402) {
-          return { success: false, error: "ANALYSIS_CREDITS_EXHAUSTED" };
-        }
-        if (!res.ok) {
-          const t = await res.text();
-          console.error("[analyzePersonalColor] Gateway error", res.status, t);
-          return {
-            success: false,
-            error: "ANALYSIS_GATEWAY_FAILURE",
-            detail: `HTTP ${res.status}`,
-          };
-        }
-
-        const json = await res.json();
-        const call = json.choices?.[0]?.message?.tool_calls?.[0];
-        if (!call) {
-          console.error(
-            "[analyzePersonalColor] No tool_call in gateway response",
-            JSON.stringify(json).slice(0, 500),
-          );
-          return {
-            success: false,
-            error: "ANALYSIS_PARSING_FAILED",
-            detail: "No tool_call returned",
-          };
-        }
-        let args: unknown;
-        try {
-          args = JSON.parse(call.function.arguments);
-        } catch (e) {
-          console.error(
-            "[analyzePersonalColor] tool args JSON parse failed",
-            e,
-            call.function.arguments?.slice?.(0, 500),
-          );
-          return {
-            success: false,
-            error: "ANALYSIS_PARSING_FAILED",
-            detail: "Invalid JSON in tool arguments",
-          };
-        }
-        const slim = SlimVisionSchema.safeParse(args);
-        if (!slim.success) {
-          console.error("[analyzePersonalColor] Slim schema mismatch", slim.error.flatten());
-          return { success: false, error: "ANALYSIS_PARSING_FAILED", detail: slim.error.message };
-        }
-
-        const spec = SEASONS_MASTER_DATA[slim.data.season];
-        const hydrated: StudioColorProfile = {
-          ...spec,
-          faceShape: slim.data.faceShape,
-          bodyType: slim.data.bodyType,
-          stylistNote: slim.data.stylistNote,
-          fullPalette: SEASON_HEX_MATRIX[slim.data.season],
-          detectedLighting: slim.data.detectedLighting,
-          calculatedUndertone: slim.data.calculatedUndertone,
-          confidenceScore: slim.data.confidenceScore,
-        };
-
-        const AMBIENT_NOISE_PATTERN = /backlit|glare|yellow.*lamp|blue-?light|ambient noise/i;
-        const FALLBACK_SEASONS = new Set<SeasonKey>(["SPRING_LIGHT", "SUMMER_MUTED"]);
-        if (
-          FALLBACK_SEASONS.has(slim.data.season) &&
-          typeof hydrated.detectedLighting === "string" &&
-          AMBIENT_NOISE_PATTERN.test(hydrated.detectedLighting)
-        ) {
-          const undertoneText = (slim.data.calculatedUndertone || "").toLowerCase();
-          const LANE_B_HINT = /ash|mousy|charcoal|slate|grey|gray|cool|neutral/;
-          const LANE_A_HINT = /warm|gold|honey|peach|amber|copper|caramel/;
-          const leansCool =
-            slim.data.undertone !== "Warm" &&
-            (LANE_B_HINT.test(undertoneText) || !LANE_A_HINT.test(undertoneText));
-
-          const targetSeason: SeasonKey = leansCool ? "SUMMER_MUTED" : "SPRING_LIGHT";
-          const targetSpec = SEASONS_MASTER_DATA[targetSeason];
-
-          hydrated.season = targetSpec.season;
-          hydrated.subSeason = targetSpec.subSeason;
-          hydrated.toneType = targetSpec.toneType;
-          hydrated.brightness = targetSpec.brightness;
-          hydrated.saturation = targetSpec.saturation;
-          hydrated.contrastScale = targetSpec.contrastScale;
-          hydrated.primarySwatches = targetSpec.primarySwatches;
-          hydrated.secondarySwatches = targetSpec.secondarySwatches;
-          hydrated.avoidColors = targetSpec.avoidColors;
-          hydrated.beautyMap = targetSpec.beautyMap;
-          hydrated.fabrication = targetSpec.fabrication;
-          hydrated.accessories = targetSpec.accessories;
-          hydrated.denimRegistry = targetSpec.denimRegistry;
-          hydrated.fullPalette = SEASON_HEX_MATRIX[targetSeason];
-
-          hydrated.confidenceScore = 100;
-          hydrated.confidenceLabel = "100% (Studio Calibrated)";
-          hydrated.detectedLighting = "Backlit Window Glare / Ambient Noise Detected";
-          hydrated.stylistNote = leansCool
-            ? "Our studio sensors detected intense background glare and lens reflections. The system successfully bypassed the camera noise to isolate your soft, elegant cool-neutral undertone and unlock your true Summer Muted palette flawlessly."
-            : "Our studio sensors detected intense background glare and lens reflections. The system bypassed the camera sensor noise to calibrate and unlock your authentic, delicate Spring Light palette flawlessly.";
-        }
-
-        const parsed = StudioColorProfileSchema.safeParse(hydrated);
-        if (!parsed.success) {
-          console.error(
-            "[analyzePersonalColor] Hydrated profile schema mismatch",
-            parsed.error.flatten(),
-          );
-          return { success: false, error: "ANALYSIS_PARSING_FAILED", detail: parsed.error.message };
-        }
-        const telemetry = {
-          pass1Raw: {
-            ambientLighting: pass1Raw.ambientLighting,
-            biologicalUndertone: pass1Raw.biologicalUndertone,
-            computedContrast: pass1Raw.computedContrast,
-          },
-          interceptTriggered: calibration.sensorClippingEvent,
-          gatekeeperNotes: calibration.notes,
-          pass2OverrideInputs: {
-            ambientLighting: calibration.ambientLighting,
-            biologicalUndertone: calibration.biologicalUndertone,
-            computedContrast: calibration.computedContrast,
-            sensorClippingEvent: calibration.sensorClippingEvent,
-          },
-          forcedDiagnostic: Boolean(forced),
-        };
-        try {
-          const { supabase, userId } = context;
-          const { error: persistError } = await supabase.from("profiles").upsert(
-            {
-              id: userId,
-              skin_undertone: parsed.data.toneType.startsWith("Warm") ? "Warm" : "Cool",
-              color_season: parsed.data.season,
-              color_profile: parsed.data as never,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "id" },
-          );
-          if (persistError) {
-            console.error("[analyzePersonalColor] profiles upsert failed:", persistError);
-          }
-        } catch (persistEx) {
-          console.error("[analyzePersonalColor] profiles upsert threw:", persistEx);
-        }
-
-        return { success: true, profile: parsed.data, telemetry };
-      } catch (error) {
-        console.error("[analyzePersonalColor] Unhandled gateway exception:", error);
-        return {
-          success: false,
-          error: "SERVER_GATEWAY_TIMEOUT",
-          detail: error instanceof Error ? error.message : String(error),
-        };
+        throw err;
       }
-    },
-  );
+    } catch (error) {
+      console.error("[analyzePersonalColor] Unhandled gateway exception:", error);
+      return {
+        success: false,
+        error: "SERVER_GATEWAY_TIMEOUT",
+        detail: error instanceof Error ? error.message : String(error),
+      };
+    }
+  });

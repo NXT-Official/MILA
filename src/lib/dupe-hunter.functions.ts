@@ -6,7 +6,7 @@ import {
   CLOTHING_CATEGORIES as CATEGORIES,
   CLOTHING_UNDERTONES as UNDERTONES,
 } from "@/constants/wardrobe";
-import { consumeAiCredit } from "./credits.server";
+import { withAiCredit } from "./credits.server";
 import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import type { ClothingAttributes } from "./analyze-clothing.functions";
@@ -131,79 +131,81 @@ export const findDupes = createServerFn({ method: "POST" })
       if (err instanceof RateLimitExceededError) throw new Error(err.message);
       throw err;
     }
-    await consumeAiCredit(context.supabase, context.userId);
-    const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
+    return withAiCredit(context.supabase, context.userId, async () => {
+      const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
 
-    const systemPrompt =
-      "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract precise structural silhouette and color attributes so we can match budget dupes. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match. Always call the report_clothing_attributes tool.";
+      const systemPrompt =
+        "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract precise structural silhouette and color attributes so we can match budget dupes. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match. Always call the report_clothing_attributes tool.";
 
-    const aiRes = await aiChatCompletion({
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Extract the structural attributes for dupe hunting." },
-            { type: "image_url", image_url: { url: imageUrl } },
-          ],
-        },
-      ],
-      tools: [tool],
-      tool_choice: { type: "function", function: { name: "report_clothing_attributes" } },
+      const aiRes = await aiChatCompletion({
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extract the structural attributes for dupe hunting." },
+              { type: "image_url", image_url: { url: imageUrl } },
+            ],
+          },
+        ],
+        tools: [tool],
+        tool_choice: { type: "function", function: { name: "report_clothing_attributes" } },
+      });
+
+      if (aiRes.status === 429)
+        throw new Error("Rate limit reached. Please try again in a moment.");
+      if (aiRes.status === 402) throw new Error("AI credits exhausted. Please try again later.");
+      if (!aiRes.ok) {
+        const t = await aiRes.text();
+        console.error("AI provider error", aiRes.status, t);
+        throw new Error("Dupe extraction failed.");
+      }
+
+      const json = await aiRes.json();
+      const call = json.choices?.[0]?.message?.tool_calls?.[0];
+      if (!call) throw new Error("AI did not return attributes.");
+      const inspiration = JSON.parse(call.function.arguments) as ClothingAttributes;
+
+      const { data: candidates, error } = await context.supabase
+        .from("products")
+        .select(
+          "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes",
+        )
+        .ilike("category", inspiration.category)
+        .limit(200);
+
+      if (error) {
+        console.error("Product query failed", error);
+        throw new Error("Couldn't search the dupe catalog.");
+      }
+
+      const ranked = (candidates ?? [])
+        .filter((p) => !!p.affiliate_link)
+        .map((p) => {
+          const { score, reasons } = scoreCandidate(inspiration, p);
+          return { product: p, score, reasons };
+        })
+        .filter((r) => r.score > 0)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return a.product.price - b.product.price;
+        })
+        .slice(0, data.maxResults);
+
+      const dupes: DupeMatch[] = ranked.map(({ product, score, reasons }) => ({
+        id: product.id,
+        title: product.title,
+        brand_id: product.brand_id,
+        category: product.category,
+        price: product.price,
+        currency: product.currency,
+        image_url: product.image_url,
+        affiliate_link: product.affiliate_link,
+        description: product.description,
+        match_score: score,
+        match_reasons: reasons,
+      }));
+
+      return { inspiration, dupes };
     });
-
-    if (aiRes.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-    if (aiRes.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-    if (!aiRes.ok) {
-      const t = await aiRes.text();
-      console.error("AI provider error", aiRes.status, t);
-      throw new Error("Dupe extraction failed.");
-    }
-
-    const json = await aiRes.json();
-    const call = json.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call) throw new Error("AI did not return attributes.");
-    const inspiration = JSON.parse(call.function.arguments) as ClothingAttributes;
-
-    const { data: candidates, error } = await context.supabase
-      .from("products")
-      .select(
-        "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes",
-      )
-      .ilike("category", inspiration.category)
-      .limit(200);
-
-    if (error) {
-      console.error("Product query failed", error);
-      throw new Error("Couldn't search the dupe catalog.");
-    }
-
-    const ranked = (candidates ?? [])
-      .filter((p) => !!p.affiliate_link)
-      .map((p) => {
-        const { score, reasons } = scoreCandidate(inspiration, p);
-        return { product: p, score, reasons };
-      })
-      .filter((r) => r.score > 0)
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return a.product.price - b.product.price;
-      })
-      .slice(0, data.maxResults);
-
-    const dupes: DupeMatch[] = ranked.map(({ product, score, reasons }) => ({
-      id: product.id,
-      title: product.title,
-      brand_id: product.brand_id,
-      category: product.category,
-      price: product.price,
-      currency: product.currency,
-      image_url: product.image_url,
-      affiliate_link: product.affiliate_link,
-      description: product.description,
-      match_score: score,
-      match_reasons: reasons,
-    }));
-
-    return { inspiration, dupes };
   });
