@@ -22,6 +22,7 @@ import { DEFAULT_AI_CREDITS } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.functions";
+import { deleteMyAccount } from "@/lib/account.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
 
 interface StudioMembershipDrawerProps {
@@ -55,6 +56,31 @@ export function StudioMembershipDrawer({
   });
   const cancelSubscription = useServerFn(cancelMySubscription);
   const resumeSubscription = useServerFn(resumeMySubscription);
+  const deleteAccount = useServerFn(deleteMyAccount);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const deleteEmailMatches =
+    !!authUser?.email && deleteEmail.trim().toLowerCase() === authUser.email.toLowerCase();
+
+  async function handleDeleteAccount() {
+    if (!deleteEmailMatches) return;
+    setDeleting(true);
+    try {
+      const result = await deleteAccount({ data: { email: deleteEmail.trim() } });
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Your account and all of its data have been deleted.");
+      // The user row is gone, so the session is already dead — signOut just
+      // clears the local copy and sends them home.
+      await signOut();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "We couldn't delete your account.");
+    } finally {
+      setDeleting(false);
+    }
+  }
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [resuming, setResuming] = useState(false);
@@ -568,6 +594,37 @@ export function StudioMembershipDrawer({
                   {passwordSubmitting ? "Updating…" : "Update Password"}
                 </button>
               </form>
+
+              <div className="space-y-3 pt-6 border-t border-destructive/20">
+                <p className="text-[10px] uppercase tracking-[0.25em] text-destructive">
+                  Delete account
+                </p>
+                <p className="text-xs text-stone leading-relaxed">
+                  This erases your profile, looks, posts, favorites and uploaded photos for good.
+                  Any active membership is canceled at once. This cannot be undone.
+                </p>
+                <label htmlFor="delete-confirm-email" className="block text-[11px] text-stone">
+                  Type <span className="text-ink font-medium">{authUser?.email}</span> to confirm.
+                </label>
+                <Input
+                  id="delete-confirm-email"
+                  type="email"
+                  autoComplete="off"
+                  placeholder={authUser?.email ?? "your@email.com"}
+                  value={deleteEmail}
+                  onChange={(e) => setDeleteEmail(e.target.value)}
+                  className="h-10"
+                />
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={!deleteEmailMatches || deleting}
+                  className="w-full py-3 rounded-lg border border-destructive/30 text-destructive text-[11px] uppercase tracking-[0.25em] hover:bg-destructive/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {deleting && <Loader2 className="size-3.5 animate-spin" />}
+                  {deleting ? "Deleting…" : "Delete My Account"}
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-8">
@@ -600,9 +657,15 @@ export function StudioMembershipDrawer({
                   Account removal
                 </p>
                 <p className="text-[10px] text-stone leading-relaxed">
-                  To permanently delete your account and all associated data, contact the concierge
-                  from your registered email address.
+                  You can permanently delete your account and all associated data yourself, under
+                  Email &amp; Security.
                 </p>
+                <button
+                  onClick={() => setView("security")}
+                  className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
+                >
+                  Go to Email &amp; Security
+                </button>
               </div>
             </div>
           )}

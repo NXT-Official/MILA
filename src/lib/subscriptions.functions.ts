@@ -105,8 +105,9 @@ export async function resumeSubscriptionForUser(
   return { success: true, renewsAt: result.renewsAt };
 }
 
-async function cancelViaPaddleApi(
+export async function cancelViaPaddleApi(
   paddleSubscriptionId: string,
+  effectiveFrom: "next_billing_period" | "immediately" = "next_billing_period",
 ): Promise<{ endsAt: string } | { error: unknown }> {
   const { PADDLE_SANDBOX_API_KEY } = requireEnv({
     PADDLE_SANDBOX_API_KEY: process.env.PADDLE_SANDBOX_API_KEY,
@@ -120,7 +121,7 @@ async function cancelViaPaddleApi(
         Authorization: `Bearer ${PADDLE_SANDBOX_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ effective_from: "next_billing_period" }),
+      body: JSON.stringify({ effective_from: effectiveFrom }),
     },
   );
   const json = await res.json();
@@ -129,8 +130,12 @@ async function cancelViaPaddleApi(
     return { error: json };
   }
 
+  // An immediate cancel comes back already `canceled` with no scheduled change,
+  // so canceled_at is the only date left to report.
   const endsAt: string | undefined =
-    json.data?.scheduled_change?.effective_at ?? json.data?.current_billing_period?.ends_at;
+    json.data?.scheduled_change?.effective_at ??
+    json.data?.current_billing_period?.ends_at ??
+    json.data?.canceled_at;
   if (!endsAt) {
     console.error("[cancelMySubscription] Paddle response missing an end date", json);
     return { error: json };
