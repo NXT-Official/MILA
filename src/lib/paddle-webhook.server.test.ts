@@ -91,7 +91,9 @@ function fakeDb(config: { plan: Terminal; existingSubscription?: Terminal }) {
   return { db: { from } as never, subscriptionUpserts, profileUpdates, entitlementUpdates };
 }
 
-function baseEvent(overrides: Partial<PaddleSubscriptionWebhookEvent["data"]>): PaddleSubscriptionWebhookEvent {
+function baseEvent(
+  overrides: Partial<PaddleSubscriptionWebhookEvent["data"]>,
+): PaddleSubscriptionWebhookEvent {
   return {
     event_type: "subscription.created",
     data: {
@@ -147,7 +149,10 @@ describe("applyPaddleSubscriptionEvent", () => {
       plan: { data: { id: "plan-1", credits_included: 500 }, error: null },
       existingSubscription: { data: { current_period_end: "2026-08-24T00:00:00Z" }, error: null },
     });
-    await applyPaddleSubscriptionEvent(db, baseEvent({ status: "canceled", current_billing_period: null }));
+    await applyPaddleSubscriptionEvent(
+      db,
+      baseEvent({ status: "canceled", current_billing_period: null }),
+    );
 
     expect(entitlementUpdates).toEqual([{ ads_removed: false }]);
   });
@@ -159,7 +164,10 @@ describe("applyPaddleSubscriptionEvent", () => {
     });
     await applyPaddleSubscriptionEvent(
       db,
-      baseEvent({ status: "past_due", current_billing_period: { ends_at: "2026-08-24T00:00:00Z" } }),
+      baseEvent({
+        status: "past_due",
+        current_billing_period: { ends_at: "2026-08-24T00:00:00Z" },
+      }),
     );
 
     expect(entitlementUpdates).toEqual([{ ads_removed: true }]);

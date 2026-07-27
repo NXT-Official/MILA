@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_AI_CREDITS, InsufficientCreditsError, isInsufficientCreditsError } from "./credits";
+import {
+  DEFAULT_AI_CREDITS,
+  InsufficientCreditsError,
+  isInsufficientCreditsError,
+} from "./credits";
 
 describe("credit error contract", () => {
   test("DEFAULT_AI_CREDITS is the free-tier daily allowance", () => {
