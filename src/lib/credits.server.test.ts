@@ -49,6 +49,34 @@ describe("consumeAiCredit", () => {
     );
   });
 
+  test("purchased credits survive the daily reset", async () => {
+    const supabase = fakeSupabase(null, null); // free tier: 0 allowance
+    let today = "2026-07-24";
+    const store = new MemoryCreditStore(() => today);
+    store.seed("user-1", 0, today, 3); // bought a 3-credit pack
+
+    expect(await consumeAiCredit(supabase, "user-1", store.consume)).toBe(2);
+    today = "2026-07-25";
+    expect(await consumeAiCredit(supabase, "user-1", store.consume)).toBe(1);
+    expect(await consumeAiCredit(supabase, "user-1", store.consume)).toBe(0);
+    await expect(consumeAiCredit(supabase, "user-1", store.consume)).rejects.toBeInstanceOf(
+      InsufficientCreditsError,
+    );
+  });
+
+  test("spends the expiring allowance before purchased credits", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 2);
+    let today = "2026-07-24";
+    const store = new MemoryCreditStore(() => today);
+    store.seed("user-1", 2, today, 5);
+
+    await consumeAiCredit(supabase, "user-1", store.consume);
+    await consumeAiCredit(supabase, "user-1", store.consume);
+    // Allowance gone, pack untouched — tomorrow's reset restores 2 on top of 5.
+    today = "2026-07-25";
+    expect(await consumeAiCredit(supabase, "user-1", store.consume)).toBe(6);
+  });
+
   test("resets to the daily allowance on a new day", async () => {
     const supabase = fakeSupabase({ plan_id: "plan-1" }, 100);
     let today = "2026-07-24";
