@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Check, MapPin } from "lucide-react";
 import { HUBS } from "@/constants/climate";
+import { queryKeys } from "@/constants/query-keys";
 import { saveDefaultHubId } from "@/lib/default-hub";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,7 @@ export function LocationStep({
   onSaved: () => void;
 }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string | null>(value);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +28,10 @@ export function LocationStep({
     setError(null);
     try {
       await saveDefaultHubId(user?.id, selected);
+      // saveDefaultHubId writes straight to the row, so unlike the steps that
+      // go through useUpdateStyleProfile nothing refreshes the cached profile —
+      // without this the review step still reads "Not set".
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profile(user?.id) });
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "We couldn't save this step.");
