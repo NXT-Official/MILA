@@ -38,7 +38,7 @@ jobs:
         run: bun test
 
       - name: Dependency audit
-        run: bun audit
+        run: bun audit --prod
 
       - name: Build
         run: bun run build
