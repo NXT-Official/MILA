@@ -9,15 +9,19 @@ export function CreditsUsageMeter({ remaining, total }: { remaining: number; tot
     return () => clearInterval(id);
   }, []);
 
-  const clampedRemaining = Math.max(0, Math.min(remaining, total));
-  const percentUsed = total > 0 ? Math.round(((total - clampedRemaining) / total) * 100) : 0;
+  // Purchased credits push the balance above the plan's daily allowance, so the
+  // bar has to grow with it rather than clamp — otherwise a bought pack reads
+  // as "0 of 0 left today".
+  const clampedRemaining = Math.max(0, remaining);
+  const scale = Math.max(total, clampedRemaining);
+  const percentUsed = scale > 0 ? Math.round(((scale - clampedRemaining) / scale) * 100) : 0;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs">
         <span className="uppercase tracking-[0.2em] text-[10px] text-stone">Styling Credits</span>
         <span className="font-semibold text-ink tabular-nums">
-          {clampedRemaining} of {total} left today
+          {clampedRemaining} of {scale} left today
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-porcelain/60">

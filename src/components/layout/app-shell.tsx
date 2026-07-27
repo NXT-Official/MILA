@@ -41,10 +41,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (!user) return null;
       const { data } = await supabase
         .from("user_entitlements")
-        .select("ai_credits")
+        .select("ai_credits, purchased_credits")
         .eq("user_id", user.id)
         .maybeSingle();
-      return data?.ai_credits ?? 0;
+      // Daily allowance + what they've bought: one spendable number.
+      return (data?.ai_credits ?? 0) + (data?.purchased_credits ?? 0);
     },
     enabled: !!user,
   });
