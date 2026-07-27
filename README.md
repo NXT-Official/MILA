@@ -467,7 +467,8 @@ Copy `.env.example` to `.env` and fill in real values — never commit `.env`.
 | `AI_API_KEY`                             | Yes (for AI features) | Server, **secret**       | Gemini API key                                                                                |
 | `AI_MODEL`                               | Yes (for AI features) | Server                   | Gemini model name/ID sent with every request                                                  |
 | `VITE_HCAPTCHA_SITEKEY`                  |                   Yes | Client                   | hCaptcha site key rendered on the login/signup form                                           |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`         |                    No | Local documentation only | Not read by any application code — a convention for the manual admin-bootstrap SQL step below |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`         |                    No | Local documentation only | Not read by application code — the credentials the schema migration seeds (see below)          |
+| `USER_EMAIL` / `USER_PASSWORD`           |                    No | Local documentation only | Same as above; the plain member test account                                                   |
 | `MODERATOR_EMAIL` / `MODERATOR_PASSWORD` |                    No | Local documentation only | Same as above; the moderator role has no authorization logic yet                              |
 
 Any variable prefixed `VITE_` is compiled into the client bundle and is visible to anyone using
@@ -477,10 +478,29 @@ must stay server-only.
 `.env.example` exists and is kept in sync with the variables above; if a new variable is ever
 needed, add it there too.
 
-### Bootstrapping an admin account
+### Bootstrapping accounts
 
-New signups get the `user` role automatically. To grant `admin`, create the account normally
-(sign-up, or the Supabase dashboard), then run in the Supabase SQL editor:
+New signups get the `user` role automatically. The schema migration also seeds three staff/test
+accounts, so a fresh `npx supabase db reset --linked` comes up ready to sign in:
+
+| Account                   | Roles              |
+| ------------------------- | ------------------ |
+| `milaadmin@gmail.com`     | `admin`, `user`    |
+| `milamoderator@gmail.com` | `moderator`, `user`|
+| `milauser@gmail.com`      | `user`             |
+
+Their passwords are the `ADMIN_PASSWORD` / `MODERATOR_PASSWORD` / `USER_PASSWORD` values in
+`.env`; the migration stores only the bcrypt hashes, so no plaintext is committed. Accounts that
+already exist are left untouched — the seed only adds missing ones and tops up missing roles.
+
+Changing a password in `.env` does **not** change the database. Re-hash it and replace the
+matching literal in the migration:
+
+```bash
+bun -e 'console.log(Bun.password.hashSync("<new-password>", { algorithm: "bcrypt", cost: 10 }).replace("\$2b\$", "\$2a\$"))'
+```
+
+To grant `admin` to any other account, run in the Supabase SQL editor:
 
 ```sql
 INSERT INTO public.user_roles (user_id, role)
