@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import { cancelSubscriptionForUser } from "./subscriptions.functions";
+import { cancelSubscriptionForUser, resumeSubscriptionForUser } from "./subscriptions.functions";
 
 function fakeDb(row: { paddle_subscription_id: string } | null) {
   const chain = {
@@ -27,19 +27,59 @@ describe("cancelSubscriptionForUser", () => {
   test("cancels the user's subscription and returns the scheduled end date", async () => {
     const db = fakeDb({ paddle_subscription_id: "sub_123" });
     const cancelViaPaddle = mock(async () => ({ endsAt: "2026-09-01" }));
+    const markFlag = mock(async () => {});
 
-    const result = await cancelSubscriptionForUser(db, cancelViaPaddle, "user-1");
+    const result = await cancelSubscriptionForUser(db, cancelViaPaddle, "user-1", markFlag);
 
     expect(result).toEqual({ success: true, endsAt: "2026-09-01" });
     expect(cancelViaPaddle).toHaveBeenCalledWith("sub_123");
+    // Without this the drawer keeps offering Cancel until the webhook lands.
+    expect(markFlag).toHaveBeenCalledWith("sub_123", true);
   });
 
   test("surfaces a generic error when Paddle's cancel call fails", async () => {
     const db = fakeDb({ paddle_subscription_id: "sub_123" });
     const cancelViaPaddle = mock(async () => ({ error: { status: 500 } }));
+    const markFlag = mock(async () => {});
 
-    const result = await cancelSubscriptionForUser(db, cancelViaPaddle, "user-1");
+    const result = await cancelSubscriptionForUser(db, cancelViaPaddle, "user-1", markFlag);
 
     expect(result).toEqual({ error: "Couldn't cancel your membership. Try again in a moment." });
+    expect(markFlag).not.toHaveBeenCalled();
+  });
+});
+
+describe("resumeSubscriptionForUser", () => {
+  test("returns an error when the user has no membership to renew", async () => {
+    const db = fakeDb(null);
+    const resumeViaPaddle = mock(async () => ({ renewsAt: "2026-09-01" }));
+
+    const result = await resumeSubscriptionForUser(db, resumeViaPaddle, "user-1");
+
+    expect(result).toEqual({ error: "No membership to renew" });
+    expect(resumeViaPaddle).not.toHaveBeenCalled();
+  });
+
+  test("clears the scheduled cancel and returns the next renewal date", async () => {
+    const db = fakeDb({ paddle_subscription_id: "sub_123" });
+    const resumeViaPaddle = mock(async () => ({ renewsAt: "2026-09-01" }));
+    const markFlag = mock(async () => {});
+
+    const result = await resumeSubscriptionForUser(db, resumeViaPaddle, "user-1", markFlag);
+
+    expect(result).toEqual({ success: true, renewsAt: "2026-09-01" });
+    expect(resumeViaPaddle).toHaveBeenCalledWith("sub_123");
+    expect(markFlag).toHaveBeenCalledWith("sub_123", false);
+  });
+
+  test("surfaces a generic error when Paddle's update call fails", async () => {
+    const db = fakeDb({ paddle_subscription_id: "sub_123" });
+    const resumeViaPaddle = mock(async () => ({ error: { status: 500 } }));
+    const markFlag = mock(async () => {});
+
+    const result = await resumeSubscriptionForUser(db, resumeViaPaddle, "user-1", markFlag);
+
+    expect(result).toEqual({ error: "Couldn't renew your membership. Try again in a moment." });
+    expect(markFlag).not.toHaveBeenCalled();
   });
 });

@@ -21,7 +21,7 @@ import { CreditsUsageMeter } from "@/components/account/credits-usage-meter";
 import { DEFAULT_AI_CREDITS } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
-import { cancelMySubscription } from "@/lib/subscriptions.functions";
+import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
 
 interface StudioMembershipDrawerProps {
@@ -54,8 +54,27 @@ export function StudioMembershipDrawer({
     enabled: !!authUser,
   });
   const cancelSubscription = useServerFn(cancelMySubscription);
+  const resumeSubscription = useServerFn(resumeMySubscription);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [canceling, setCanceling] = useState(false);
+  const [resuming, setResuming] = useState(false);
+
+  // No confirm dialog: keeping a membership you already pay for isn't a
+  // destructive act, and the button is only reachable while one is winding down.
+  async function handleResume() {
+    setResuming(true);
+    try {
+      const result = await resumeSubscription();
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`Your membership renews on ${new Date(result.renewsAt).toLocaleDateString()}.`);
+      queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
+    } finally {
+      setResuming(false);
+    }
+  }
 
   async function handleConfirmCancel() {
     setCanceling(true);
@@ -67,9 +86,9 @@ export function StudioMembershipDrawer({
       }
       toast.success(`Your membership ends on ${new Date(result.endsAt).toLocaleDateString()}.`);
       setCancelDialogOpen(false);
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
-      }, 4000);
+      // The server mirrors cancel_at_period_end before it answers, so this no
+      // longer has to race the webhook — the refetch already sees "Ends".
+      queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
     } finally {
       setCanceling(false);
     }
@@ -303,7 +322,16 @@ export function StudioMembershipDrawer({
                               : "—"}
                           </span>
                         </div>
-                        {!subscription.cancel_at_period_end && (
+                        {subscription.cancel_at_period_end ? (
+                          <button
+                            type="button"
+                            onClick={handleResume}
+                            disabled={resuming}
+                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors disabled:opacity-60"
+                          >
+                            {resuming ? "Renewing…" : "Renew Membership"}
+                          </button>
+                        ) : (
                           <button
                             type="button"
                             onClick={() => setCancelDialogOpen(true)}
