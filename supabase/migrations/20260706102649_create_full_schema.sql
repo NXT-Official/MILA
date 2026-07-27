@@ -1086,27 +1086,29 @@ SELECT u.id, s.role FROM seed s JOIN auth.users u ON u.email = s.email
 ON CONFLICT (user_id, role) DO NOTHING;
 
 -- Catalog seed. paddle_*_id values are sandbox ids; re-point them when a
--- production Paddle account exists. credits_included is a DAILY allowance.
+-- production Paddle account exists. Every plan unlocks the same studio — the
+-- only difference is credits_included, a DAILY allowance the pricing card
+-- renders as its own bullet, so description and features are identical here.
 INSERT INTO public.subscription_plans (
   slug, title, description, price_amount, billing_interval, credits_included,
   features, is_active, is_featured, sort_order, paddle_product_id, paddle_price_id
 ) VALUES
   ('starter', 'Starter',
-   'Daily styling with your personal color and body profile.',
+   'Full access to the Mila studio. Plans differ only in your daily credits.',
    999, 'monthly', 10,
-   ARRAY['10 styling credits per day', 'Color & body profile', 'Outfit analysis', 'Ad-free studio'],
+   ARRAY['Color & body profile', 'Outfit analysis', 'Concierge chat', 'Look image generation', 'Ad-free studio'],
    true, false, 1,
    'pro_01ky95cejdnzf8jv1k6tn13qhz', 'pri_01ky95cewyx235schggy6esrma'),
   ('style-pro', 'Style Pro',
-   'Triple the credits, plus the full concierge wardrobe workflow.',
+   'Full access to the Mila studio. Plans differ only in your daily credits.',
    1999, 'monthly', 30,
-   ARRAY['30 styling credits per day', 'Everything in Starter', 'Concierge chat', 'Look image generation', 'Priority styling queue'],
+   ARRAY['Color & body profile', 'Outfit analysis', 'Concierge chat', 'Look image generation', 'Ad-free studio'],
    true, true, 2,
    'pro_01ky95cfqgyr6h5tsnkffk5cr4', 'pri_01ky95cg0v8zkc8r6bsfa59378'),
   ('atelier-elite', 'Atelier Elite',
-   'A full year of unlimited-feel styling at the lowest per-day rate.',
+   'Full access to the Mila studio. Plans differ only in your daily credits.',
    14999, 'yearly', 100,
-   ARRAY['100 styling credits per day', 'Everything in Style Pro', 'Full look archive', 'Early access to new tools'],
+   ARRAY['Color & body profile', 'Outfit analysis', 'Concierge chat', 'Look image generation', 'Ad-free studio'],
    true, false, 3,
    'pro_01ky95cgb0a11ghkee1tx9mnsb', 'pri_01ky95cgkemj469nn9djdczah9')
 ON CONFLICT (slug) DO UPDATE SET
