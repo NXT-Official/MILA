@@ -385,10 +385,15 @@ export function StudioMembershipDrawer({
                     )}
                   </div>
 
-                  <CreditsUsageMeter
-                    remaining={credits ?? DEFAULT_AI_CREDITS}
-                    total={subscription?.credits_included ?? DEFAULT_AI_CREDITS}
-                  />
+                  {/* A free member has no daily allowance to meter. Only show
+                      this once there's a plan behind it — or a purchased pack,
+                      which spends without one. */}
+                  {(subscription || (credits ?? 0) > 0) && (
+                    <CreditsUsageMeter
+                      remaining={credits ?? DEFAULT_AI_CREDITS}
+                      total={subscription?.credits_included ?? DEFAULT_AI_CREDITS}
+                    />
+                  )}
                 </div>
               </div>
 
