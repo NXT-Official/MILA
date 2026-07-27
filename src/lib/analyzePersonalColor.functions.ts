@@ -3,6 +3,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
 import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+import { consumeAiCredit } from "./credits.server";
+import { INSUFFICIENT_CREDITS, isInsufficientCreditsError } from "./credits";
 import {
   SEASON_HEX_MATRIX,
   SEASON_KEYS,
@@ -270,6 +272,19 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
         } catch (err) {
           if (err instanceof RateLimitExceededError) {
             return { success: false, error: "ANALYSIS_RATE_LIMITED" };
+          }
+          throw err;
+        }
+
+        // Balance gate. This handler answers with error codes rather than
+        // throwing (the outer catch would flatten a throw into
+        // SERVER_GATEWAY_TIMEOUT), and the viewfinder toasts `error` verbatim —
+        // so hand back the human sentence, not a code.
+        try {
+          await consumeAiCredit(context.supabase, context.userId);
+        } catch (err) {
+          if (isInsufficientCreditsError(err)) {
+            return { success: false, error: INSUFFICIENT_CREDITS };
           }
           throw err;
         }

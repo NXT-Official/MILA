@@ -4,6 +4,7 @@ import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+import { consumeAiCredit } from "./credits.server";
 
 const ANALYZE_OUTFIT_LIMIT = 15;
 const ANALYZE_OUTFIT_WINDOW_SECONDS = 60 * 60;
@@ -62,6 +63,10 @@ export const analyzeOutfit = createServerFn({ method: "POST" })
       if (err instanceof RateLimitExceededError) throw new Error(err.message);
       throw err;
     }
+    // The hourly cap above throttles bursts; this is what actually gates on
+    // balance. Callers turn InsufficientCreditsError into the paywall.
+    await consumeAiCredit(context.supabase, context.userId);
+
     const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
 
     const systemPrompt = `You are an expert fashion stylist and color analyst. You are evaluating an outfit for a user with a ${data.bodyType} body type and a ${data.colorSeason} color profile. Look at the attached image. Does the silhouette flatter their specific body type? Do the colors harmonize with their season? Be candid but encouraging. Always call the report_outfit_analysis tool with your findings.`;
