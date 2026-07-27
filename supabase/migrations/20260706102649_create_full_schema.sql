@@ -1,11 +1,5 @@
--- ============================================================================
--- 1. Types
--- ============================================================================
 CREATE TYPE public.app_role AS ENUM ('admin', 'moderator', 'user');
 
--- ============================================================================
--- 2. Shared trigger function: updated_at maintenance
--- ============================================================================
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -14,29 +8,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
 
--- ============================================================================
--- 3. Tables (dependency order)
--- ============================================================================
-
--- ---------- profiles -------------------------------------------------------
 CREATE TABLE public.profiles (
   id UUID NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT,
   username TEXT,
   skin_undertone TEXT CHECK (skin_undertone IN ('Cool','Warm','Neutral')),
-  -- Base season only; the detailed 16-season data lives inside color_profile
   color_season TEXT CHECK (color_season IN ('Spring','Summer','Autumn','Winter')),
   body_type TEXT CHECK (body_type IN ('Hourglass','Rectangle','Pear','Inverted Triangle','Apple')),
   color_profile JSONB,
   face_shape TEXT,
   hair_type TEXT,
-  -- The app saves arrays of preference tags; readers tolerate objects too
   beauty_preferences JSONB NOT NULL DEFAULT '[]'::jsonb,
-  -- Default Climate Sync Hub id slug (e.g. 'manila') from the app's HUBS
-  -- constant; label/coords derive client-side. Lenient length guard on
-  -- purpose — not an enum/FK, invalid values are simply ignored in the app.
   default_location TEXT CHECK (default_location IS NULL OR length(default_location) <= 64),
-  -- Admin-controlled; column grants below prevent users from clearing it
+  paddle_customer_id TEXT UNIQUE,
   suspended BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -44,16 +28,11 @@ CREATE TABLE public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Case-insensitive uniqueness ("Anna" and "anna" cannot coexist).
--- This is the only username unique index; it raises unique_violation
--- just like a plain UNIQUE constraint would.
 CREATE UNIQUE INDEX profiles_username_lower_idx ON public.profiles (lower(username));
 
--- ---------- outfits ---------------------------------------------------------
 CREATE TABLE public.outfits (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  -- Public URL into the outfits bucket (AI providers fetch it; see storage)
   image_url TEXT NOT NULL,
   analysis_result JSONB,
   match_score INTEGER,
@@ -62,27 +41,23 @@ CREATE TABLE public.outfits (
 
 ALTER TABLE public.outfits ENABLE ROW LEVEL SECURITY;
 
--- Serves the history view: filter by user, newest first
 CREATE INDEX outfits_user_created_idx ON public.outfits(user_id, created_at DESC);
 
--- ---------- user_entitlements ----------------------------------------------
 CREATE TABLE public.user_entitlements (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   ads_removed BOOLEAN NOT NULL DEFAULT false,
-  ai_credits INTEGER NOT NULL DEFAULT 5 CHECK (ai_credits >= 0),
+  ai_credits INTEGER NOT NULL DEFAULT 0 CHECK (ai_credits >= 0),
+  purchased_credits INTEGER NOT NULL DEFAULT 0 CHECK (purchased_credits >= 0),
+  credits_reset_at DATE,
+  look_image_pending BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.user_entitlements ENABLE ROW LEVEL SECURITY;
 
--- ---------- purchases -------------------------------------------------------
 CREATE TABLE public.purchases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  -- Financial retention: nullable + ON DELETE SET NULL so purchase records
-  -- survive account deletion (a RESTRICT FK would block auth.admin.deleteUser;
-  -- CASCADE would destroy accounting history). The user link is severed,
-  -- the record kept.
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   product_id TEXT NOT NULL,
   amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
@@ -96,7 +71,6 @@ ALTER TABLE public.purchases ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX idx_purchases_user ON public.purchases(user_id, created_at DESC);
 
--- ---------- ad_events -------------------------------------------------------
 CREATE TABLE public.ad_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -113,7 +87,6 @@ ALTER TABLE public.ad_events ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX idx_ad_events_user ON public.ad_events(user_id, created_at DESC);
 
--- ---------- brands ----------------------------------------------------------
 CREATE TABLE public.brands (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
@@ -128,7 +101,6 @@ CREATE TABLE public.brands (
 
 ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
 
--- ---------- products --------------------------------------------------------
 CREATE TABLE public.products (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   brand_id UUID NOT NULL REFERENCES public.brands(id) ON DELETE CASCADE,
@@ -148,36 +120,28 @@ ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX idx_products_brand ON public.products(brand_id);
 CREATE INDEX idx_products_category ON public.products(category);
--- GIN indexes serve the dupe-hunter's palette/shape array matching
 CREATE INDEX idx_products_palettes ON public.products USING GIN(seasonal_palettes);
 CREATE INDEX idx_products_shapes ON public.products USING GIN(body_shapes);
 
--- ---------- user_favorites --------------------------------------------------
 CREATE TABLE public.user_favorites (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  -- Also serves user_id lookups (leading column), so no separate user index
   UNIQUE (user_id, product_id)
 );
 
 ALTER TABLE public.user_favorites ENABLE ROW LEVEL SECURITY;
 
--- FK support: product deletes cascade into favorites
 CREATE INDEX idx_favorites_product ON public.user_favorites(product_id);
 
--- ---------- posts -----------------------------------------------------------
 CREATE TABLE public.posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  -- Storage PATHS into the private posts bucket (signed at read time),
-  -- not URLs. getFeed depends on this.
   image_url_front TEXT NOT NULL,
   image_url_back TEXT NOT NULL,
   caption TEXT,
   generated_look_id UUID REFERENCES public.outfits(id) ON DELETE SET NULL,
-  -- Moderation (admin-only writes; hidden posts invisible to normal users)
   hidden BOOLEAN NOT NULL DEFAULT false,
   hidden_reason TEXT,
   hidden_at TIMESTAMPTZ,
@@ -189,7 +153,6 @@ ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 CREATE INDEX idx_posts_user_id ON public.posts(user_id);
 CREATE INDEX idx_posts_created_at ON public.posts(created_at DESC);
 
--- ---------- user_roles ------------------------------------------------------
 CREATE TABLE public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -200,18 +163,168 @@ CREATE TABLE public.user_roles (
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
--- ============================================================================
--- 4. has_role — the single authorization primitive.
---    SECURITY DEFINER is required: RLS policies on user_roles itself call it,
---    and an invoker-rights version would recurse into RLS. It is safe because:
---    search_path is pinned, it only reads, and EXECUTE is revoked from anon
---    (Postgres grants EXECUTE to PUBLIC by default on new functions).
---    Signature must stay (_user_id, _role): admin.functions.ts calls it by
---    name via supabase.rpc("has_role", { _user_id, _role }).
---    Self-scoped: signed-in users get a real answer only for their own uid
---    (prevents probing who the admins are via /rest/v1/rpc/has_role); the
---    service role (auth.uid() IS NULL) may query anyone.
--- ============================================================================
+CREATE TABLE public.support_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  kind TEXT NOT NULL CHECK (kind IN ('help', 'feedback')),
+  message TEXT NOT NULL CHECK (length(trim(message)) > 0 AND length(message) <= 2000),
+  resolved BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.support_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX support_messages_created_at_idx ON public.support_messages(created_at DESC);
+
+CREATE TABLE public.staff_audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_user_id UUID NOT NULL REFERENCES auth.users(id),
+  action TEXT NOT NULL,
+  target_user_id UUID REFERENCES auth.users(id),
+  target_type TEXT NOT NULL,
+  target_id TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.staff_audit_log ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX staff_audit_log_actor_created_idx
+  ON public.staff_audit_log(actor_user_id, created_at DESC);
+
+CREATE TABLE public.subscription_plans (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug TEXT NOT NULL UNIQUE
+    CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(slug) BETWEEN 2 AND 60),
+  title TEXT NOT NULL CHECK (length(trim(title)) > 0 AND length(title) <= 80),
+  description TEXT NOT NULL DEFAULT '' CHECK (length(description) <= 280),
+  price_amount INTEGER NOT NULL DEFAULT 0 CHECK (price_amount >= 0),
+  currency TEXT NOT NULL DEFAULT 'usd' CHECK (currency ~ '^[a-z]{3}$'),
+  billing_interval TEXT NOT NULL DEFAULT 'monthly'
+    CHECK (billing_interval IN ('monthly', 'yearly', 'one_time')),
+  credits_included INTEGER NOT NULL DEFAULT 0 CHECK (credits_included >= 0),
+  features TEXT[] NOT NULL DEFAULT '{}',
+  is_active BOOLEAN NOT NULL DEFAULT false,
+  is_featured BOOLEAN NOT NULL DEFAULT false,
+  sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order >= 0),
+  paddle_product_id TEXT,
+  paddle_price_id TEXT,
+  archived_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX idx_subscription_plans_active_sort
+  ON public.subscription_plans (is_active, sort_order);
+
+CREATE UNIQUE INDEX subscription_plans_single_featured_idx
+  ON public.subscription_plans ((true))
+  WHERE is_featured AND archived_at IS NULL;
+
+CREATE UNIQUE INDEX subscription_plans_paddle_price_id_idx
+  ON public.subscription_plans (paddle_price_id)
+  WHERE paddle_price_id IS NOT NULL;
+
+CREATE TABLE public.subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  plan_id UUID NOT NULL REFERENCES public.subscription_plans(id),
+  paddle_subscription_id TEXT NOT NULL UNIQUE,
+  paddle_customer_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  current_period_end TIMESTAMPTZ,
+  cancel_at_period_end BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX idx_subscriptions_user ON public.subscriptions(user_id, updated_at DESC);
+
+CREATE TABLE public.credit_packs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug TEXT NOT NULL UNIQUE
+    CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(slug) BETWEEN 2 AND 60),
+  title TEXT NOT NULL CHECK (length(trim(title)) > 0 AND length(title) <= 80),
+  description TEXT NOT NULL DEFAULT '' CHECK (length(description) <= 280),
+  price_amount INTEGER NOT NULL DEFAULT 0 CHECK (price_amount >= 0),
+  currency TEXT NOT NULL DEFAULT 'usd' CHECK (currency ~ '^[a-z]{3}$'),
+  credits INTEGER NOT NULL CHECK (credits > 0),
+  is_active BOOLEAN NOT NULL DEFAULT false,
+  sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order >= 0),
+  paddle_product_id TEXT,
+  paddle_price_id TEXT,
+  archived_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.credit_packs ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX idx_credit_packs_active_sort
+  ON public.credit_packs (is_active, sort_order);
+
+CREATE UNIQUE INDEX credit_packs_paddle_price_id_idx
+  ON public.credit_packs (paddle_price_id)
+  WHERE paddle_price_id IS NOT NULL;
+
+CREATE TABLE public.credit_pack_purchases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  credit_pack_id UUID NOT NULL REFERENCES public.credit_packs(id),
+  paddle_transaction_id TEXT NOT NULL UNIQUE,
+  credits_granted INTEGER NOT NULL CHECK (credits_granted > 0),
+  granted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.credit_pack_purchases ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX idx_credit_pack_purchases_user ON public.credit_pack_purchases (user_id);
+
+CREATE INDEX idx_credit_pack_purchases_ungranted
+  ON public.credit_pack_purchases (created_at)
+  WHERE granted_at IS NULL;
+
+CREATE TABLE public.concierge_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  title TEXT NOT NULL CHECK (length(trim(title)) > 0 AND length(title) <= 120),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.concierge_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES public.concierge_conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  content TEXT NOT NULL CHECK (length(content) > 0 AND length(content) <= 8000),
+  image_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.concierge_conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.concierge_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX concierge_conversations_user_updated_idx
+  ON public.concierge_conversations(user_id, updated_at DESC);
+CREATE INDEX concierge_messages_conversation_created_idx
+  ON public.concierge_messages(conversation_id, created_at);
+
+CREATE TABLE public.rate_limit_buckets (
+  key TEXT PRIMARY KEY,
+  window_start TIMESTAMPTZ NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  expires_at TIMESTAMPTZ
+);
+
+ALTER TABLE public.rate_limit_buckets ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX rate_limit_buckets_window_start_idx ON public.rate_limit_buckets (window_start);
+
 CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
 RETURNS boolean
 LANGUAGE sql
@@ -231,12 +344,6 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role;
 
--- ============================================================================
--- 5. handle_new_user — one trigger provisions everything a new account needs:
---    profile (with validated username from signup metadata), default 'user'
---    role, and an entitlements row. SECURITY DEFINER + pinned search_path;
---    EXECUTE revoked from clients (only the auth.users trigger fires it).
--- ============================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -245,8 +352,6 @@ AS $$
 DECLARE
   candidate text := NEW.raw_user_meta_data->>'username';
 BEGIN
-  -- username metadata is user-supplied: enforce the same rules as the RLS
-  -- insert policy; drop it (rather than fail signup) if invalid or taken
   IF candidate IS NULL
      OR length(trim(candidate)) < 3
      OR length(trim(candidate)) > 30
@@ -259,7 +364,6 @@ BEGIN
     INSERT INTO public.profiles (id, full_name, username)
     VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', ''), candidate);
   EXCEPTION WHEN unique_violation THEN
-    -- username race between the check above and the insert: never break signup
     INSERT INTO public.profiles (id, full_name)
     VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', ''))
     ON CONFLICT (id) DO NOTHING;
@@ -283,9 +387,290 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ============================================================================
--- 6. updated_at triggers
--- ============================================================================
+CREATE OR REPLACE FUNCTION public.manage_user_role(
+  _actor_user_id UUID,
+  _target_user_id UUID,
+  _role public.app_role,
+  _grant BOOLEAN
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  _changed BOOLEAN;
+BEGIN
+  IF _role NOT IN ('admin'::public.app_role, 'moderator'::public.app_role) THEN
+    RAISE EXCEPTION 'invalid_staff_role';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.user_roles r
+    JOIN public.profiles p ON p.id = r.user_id
+    WHERE r.user_id = _actor_user_id AND r.role = 'admin' AND NOT p.suspended
+  ) THEN
+    RAISE EXCEPTION 'actor_not_admin';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = _target_user_id) THEN
+    RAISE EXCEPTION 'target_not_found';
+  END IF;
+
+  IF _grant AND EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = _target_user_id AND suspended
+  ) THEN
+    RAISE EXCEPTION 'target_suspended';
+  END IF;
+
+  LOCK TABLE public.user_roles IN SHARE ROW EXCLUSIVE MODE;
+
+  IF _grant THEN
+    INSERT INTO public.user_roles (user_id, role)
+    VALUES (_target_user_id, _role)
+    ON CONFLICT (user_id, role) DO NOTHING;
+    _changed := FOUND;
+  ELSE
+    IF _role = 'admin' AND EXISTS (
+      SELECT 1
+      FROM public.user_roles r
+      JOIN public.profiles p ON p.id = r.user_id
+      WHERE r.user_id = _target_user_id AND r.role = 'admin' AND NOT p.suspended
+    ) AND (
+      SELECT count(*)
+      FROM public.user_roles r
+      JOIN public.profiles p ON p.id = r.user_id
+      WHERE r.role = 'admin' AND NOT p.suspended
+    ) <= 1 THEN
+      RAISE EXCEPTION 'last_active_steward';
+    END IF;
+
+    DELETE FROM public.user_roles
+    WHERE user_id = _target_user_id AND role = _role;
+    _changed := FOUND;
+  END IF;
+
+  INSERT INTO public.staff_audit_log (
+    actor_user_id, action, target_user_id, target_type, target_id, metadata
+  ) VALUES (
+    _actor_user_id,
+    CASE WHEN _grant THEN 'role.granted' ELSE 'role.revoked' END,
+    _target_user_id,
+    'user_role',
+    _target_user_id::text,
+    jsonb_build_object('role', _role, 'changed', _changed)
+  );
+
+  RETURN CASE
+    WHEN _changed THEN 'changed'
+    WHEN _grant THEN 'already_assigned'
+    ELSE 'not_assigned'
+  END;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.manage_user_role(UUID, UUID, public.app_role, BOOLEAN)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.manage_user_role(UUID, UUID, public.app_role, BOOLEAN)
+  TO service_role;
+
+CREATE OR REPLACE FUNCTION public.set_user_suspended(
+  _actor_user_id UUID,
+  _target_user_id UUID,
+  _suspended BOOLEAN
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.user_roles r
+    JOIN public.profiles p ON p.id = r.user_id
+    WHERE r.user_id = _actor_user_id AND r.role = 'admin' AND NOT p.suspended
+  ) THEN
+    RAISE EXCEPTION 'actor_not_admin';
+  END IF;
+
+  LOCK TABLE public.user_roles IN SHARE ROW EXCLUSIVE MODE;
+  PERFORM 1 FROM public.profiles WHERE id = _target_user_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'target_not_found'; END IF;
+
+  IF _suspended AND EXISTS (
+    SELECT 1 FROM public.user_roles WHERE user_id = _target_user_id AND role = 'admin'
+  ) AND (
+    SELECT count(*)
+    FROM public.user_roles r
+    JOIN public.profiles p ON p.id = r.user_id
+    WHERE r.role = 'admin' AND NOT p.suspended
+  ) <= 1 THEN
+    RAISE EXCEPTION 'last_active_steward';
+  END IF;
+
+  UPDATE public.profiles SET suspended = _suspended WHERE id = _target_user_id;
+  INSERT INTO public.staff_audit_log (
+    actor_user_id, action, target_user_id, target_type, target_id
+  ) VALUES (
+    _actor_user_id,
+    CASE WHEN _suspended THEN 'member.suspended' ELSE 'member.reinstated' END,
+    _target_user_id,
+    'member',
+    _target_user_id::text
+  );
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.set_user_suspended(UUID, UUID, BOOLEAN)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.set_user_suspended(UUID, UUID, BOOLEAN)
+  TO service_role;
+
+CREATE OR REPLACE FUNCTION public.check_rate_limit(
+  _key TEXT, _limit INTEGER, _window_seconds INTEGER, _cost INTEGER DEFAULT 1
+)
+RETURNS TABLE(allowed BOOLEAN, remaining INTEGER, reset_at TIMESTAMPTZ, retry_after_seconds INTEGER)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  _now TIMESTAMPTZ := clock_timestamp();
+  _window_start TIMESTAMPTZ;
+  _count INTEGER;
+BEGIN
+  IF _key IS NULL OR length(_key) = 0 OR length(_key) > 512 OR _limit <= 0 OR _window_seconds <= 0 OR _cost <= 0 THEN
+    RAISE EXCEPTION 'invalid_rate_limit_params';
+  END IF;
+
+  INSERT INTO public.rate_limit_buckets AS rl (key, window_start, count, expires_at)
+  VALUES (_key, _now, _cost, _now + make_interval(secs => _window_seconds))
+  ON CONFLICT (key) DO UPDATE SET
+    window_start = CASE WHEN rl.window_start <= _now - make_interval(secs => _window_seconds) THEN _now ELSE rl.window_start END,
+    count = CASE WHEN rl.window_start <= _now - make_interval(secs => _window_seconds) THEN _cost ELSE rl.count + _cost END,
+    expires_at = CASE WHEN rl.window_start <= _now - make_interval(secs => _window_seconds) THEN _now + make_interval(secs => _window_seconds) ELSE rl.expires_at END
+  RETURNING window_start, count INTO _window_start, _count;
+
+  RETURN QUERY SELECT _count <= _limit, GREATEST(0, _limit - _count),
+    _window_start + make_interval(secs => _window_seconds),
+    CASE WHEN _count > _limit THEN GREATEST(1, CEIL(EXTRACT(EPOCH FROM (_window_start + make_interval(secs => _window_seconds) - _now)))::int) ELSE 0 END;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.check_rate_limit(TEXT, INTEGER, INTEGER, INTEGER)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.check_rate_limit(TEXT, INTEGER, INTEGER, INTEGER) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.consume_ai_credit(
+  _user_id UUID,
+  _daily_allowance INTEGER
+)
+RETURNS TABLE(allowed BOOLEAN, remaining INTEGER)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  _today DATE := CURRENT_DATE;
+  _daily INTEGER;
+  _purchased INTEGER;
+  _reset_at DATE;
+BEGIN
+  IF _daily_allowance IS NULL OR _daily_allowance < 0 THEN
+    RAISE EXCEPTION 'invalid_daily_allowance';
+  END IF;
+
+  SELECT ai_credits, purchased_credits, credits_reset_at
+    INTO _daily, _purchased, _reset_at
+  FROM public.user_entitlements
+  WHERE user_id = _user_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'entitlements_not_found';
+  END IF;
+
+  IF _reset_at IS DISTINCT FROM _today THEN
+    _daily := _daily_allowance;
+  END IF;
+
+  IF _daily > 0 THEN
+    _daily := _daily - 1;
+  ELSIF _purchased > 0 THEN
+    _purchased := _purchased - 1;
+  ELSE
+    UPDATE public.user_entitlements
+    SET ai_credits = _daily, credits_reset_at = _today
+    WHERE user_id = _user_id;
+    RETURN QUERY SELECT false, 0;
+    RETURN;
+  END IF;
+
+  UPDATE public.user_entitlements
+  SET ai_credits = _daily, purchased_credits = _purchased, credits_reset_at = _today
+  WHERE user_id = _user_id;
+
+  RETURN QUERY SELECT true, _daily + _purchased;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.consume_ai_credit(UUID, INTEGER)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consume_ai_credit(UUID, INTEGER) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.grant_ai_credits(
+  _user_id UUID,
+  _daily_allowance INTEGER,
+  _amount INTEGER
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  _today DATE := CURRENT_DATE;
+  _daily INTEGER;
+  _purchased INTEGER;
+  _reset_at DATE;
+BEGIN
+  IF _daily_allowance IS NULL OR _daily_allowance < 0 THEN
+    RAISE EXCEPTION 'invalid_daily_allowance';
+  END IF;
+  IF _amount IS NULL OR _amount <= 0 THEN
+    RAISE EXCEPTION 'invalid_amount';
+  END IF;
+
+  SELECT ai_credits, purchased_credits, credits_reset_at
+    INTO _daily, _purchased, _reset_at
+  FROM public.user_entitlements
+  WHERE user_id = _user_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'entitlements_not_found';
+  END IF;
+
+  IF _reset_at IS DISTINCT FROM _today THEN
+    _daily := _daily_allowance;
+  END IF;
+
+  _purchased := _purchased + _amount;
+
+  UPDATE public.user_entitlements
+  SET ai_credits = _daily, purchased_credits = _purchased, credits_reset_at = _today
+  WHERE user_id = _user_id;
+
+  RETURN _daily + _purchased;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.grant_ai_credits(UUID, INTEGER, INTEGER)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.grant_ai_credits(UUID, INTEGER, INTEGER) TO service_role;
+
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
@@ -298,37 +683,49 @@ CREATE TRIGGER update_brands_updated_at
   BEFORE UPDATE ON public.brands
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- ============================================================================
--- 7. Grants — defense in depth beneath RLS.
---    Supabase's default privileges hand ALL to anon/authenticated on new
---    tables; shape them explicitly instead. anon gets nothing (the app has
---    no unauthenticated data access). service_role keeps its defaults and
---    bypasses RLS.
--- ============================================================================
+CREATE TRIGGER update_subscription_plans_updated_at
+  BEFORE UPDATE ON public.subscription_plans
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_subscriptions_updated_at
+  BEFORE UPDATE ON public.subscriptions
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_credit_packs_updated_at
+  BEFORE UPDATE ON public.credit_packs
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 
--- Read-only for clients (writes are service-role only)
-REVOKE ALL ON public.user_roles         FROM authenticated;
-REVOKE ALL ON public.user_entitlements  FROM authenticated;
-REVOKE ALL ON public.purchases          FROM authenticated;
-REVOKE ALL ON public.ad_events          FROM authenticated;
-REVOKE ALL ON public.brands             FROM authenticated;
-REVOKE ALL ON public.products           FROM authenticated;
+REVOKE ALL ON public.user_roles             FROM authenticated;
+REVOKE ALL ON public.user_entitlements      FROM authenticated;
+REVOKE ALL ON public.purchases              FROM authenticated;
+REVOKE ALL ON public.ad_events              FROM authenticated;
+REVOKE ALL ON public.brands                 FROM authenticated;
+REVOKE ALL ON public.products               FROM authenticated;
+REVOKE ALL ON public.subscription_plans     FROM authenticated;
+REVOKE ALL ON public.subscriptions          FROM authenticated;
+REVOKE ALL ON public.credit_packs           FROM authenticated;
+REVOKE ALL ON public.credit_pack_purchases  FROM authenticated;
+REVOKE ALL ON public.support_messages       FROM authenticated;
+REVOKE ALL ON public.staff_audit_log        FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.rate_limit_buckets     FROM PUBLIC, anon, authenticated;
+
 GRANT SELECT ON public.user_roles, public.user_entitlements, public.purchases,
-                public.ad_events, public.brands, public.products
+                public.ad_events, public.brands, public.products,
+                public.subscription_plans, public.subscriptions, public.credit_packs
   TO authenticated;
 
--- User-owned content: full DML, row-scoped by RLS
+GRANT SELECT, UPDATE (resolved) ON public.support_messages TO authenticated;
+
 REVOKE ALL ON public.outfits, public.user_favorites, public.posts FROM authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE
   ON public.outfits, public.user_favorites, public.posts TO authenticated;
 
--- profiles: column-level write grants. Without this a suspended user could
--- `update profiles set suspended = false` (the RLS WITH CHECK only validates
--- ownership + username). suspended and created_at are service-role/admin
--- only. id stays in the UPDATE grant because PostgREST upserts SET every
--- payload column including the PK; WITH CHECK (auth.uid() = id) prevents
--- actually changing it.
+REVOKE ALL ON public.concierge_conversations, public.concierge_messages FROM anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.concierge_conversations TO authenticated;
+GRANT SELECT, INSERT, DELETE ON public.concierge_messages TO authenticated;
+
 REVOKE ALL ON public.profiles FROM authenticated;
 GRANT SELECT ON public.profiles TO authenticated;
 GRANT INSERT (id, full_name, username, skin_undertone, color_season, body_type,
@@ -339,13 +736,11 @@ GRANT INSERT (id, full_name, username, skin_undertone, color_season, body_type,
               default_location, updated_at)
   ON public.profiles TO authenticated;
 
--- ============================================================================
--- 8. RLS policies. Conventions: explicit TO authenticated, explicit
---    WITH CHECK on writes, and (select auth.uid()) / (select has_role(...))
---    so Postgres evaluates them once per query (initplan) instead of per row.
--- ============================================================================
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
 
--- ---------- profiles: own row only; admins may read all ---------------------
 CREATE POLICY "Users view own profile" ON public.profiles
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = id);
@@ -379,7 +774,6 @@ CREATE POLICY "Users update own profile" ON public.profiles
     )
   );
 
--- ---------- outfits: owner-only CRUD ----------------------------------------
 CREATE POLICY "Users view own outfits" ON public.outfits
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = user_id);
@@ -397,26 +791,18 @@ CREATE POLICY "Users delete own outfits" ON public.outfits
   FOR DELETE TO authenticated
   USING ((select auth.uid()) = user_id);
 
--- ---------- user_entitlements: read own; ALL writes via service role --------
--- No INSERT/UPDATE policies on purpose: credits and ads_removed are money.
 CREATE POLICY "Users view own entitlements" ON public.user_entitlements
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = user_id);
 
--- ---------- purchases: read own; created only by payment webhook ------------
--- No INSERT policy on purpose: client-created purchases = spoofing.
 CREATE POLICY "Users view own purchases" ON public.purchases
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = user_id);
 
--- ---------- ad_events: read own; written only by trusted ad callbacks -------
--- No INSERT policy on purpose: clients could otherwise mint
--- event='reward_granted' rows with arbitrary reward_amount.
 CREATE POLICY "Users view own ad events" ON public.ad_events
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = user_id);
 
--- ---------- brands / products: read-only catalog ----------------------------
 CREATE POLICY "Authenticated can view active brands" ON public.brands
   FOR SELECT TO authenticated
   USING (status = 'active');
@@ -425,7 +811,6 @@ CREATE POLICY "Authenticated can view products" ON public.products
   FOR SELECT TO authenticated
   USING (true);
 
--- ---------- user_favorites: owner-only --------------------------------------
 CREATE POLICY "Users view own favorites" ON public.user_favorites
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = user_id);
@@ -438,9 +823,6 @@ CREATE POLICY "Users delete own favorites" ON public.user_favorites
   FOR DELETE TO authenticated
   USING ((select auth.uid()) = user_id);
 
--- ---------- posts: social feed with moderation ------------------------------
--- Hidden posts are invisible to normal users; owners still see their own
--- (so "you posted today" checks and self-views keep working).
 CREATE POLICY "Users can view everyone's posts" ON public.posts
   FOR SELECT TO authenticated
   USING (hidden = false OR (select auth.uid()) = user_id);
@@ -455,31 +837,91 @@ CREATE POLICY "Admins manage all posts" ON public.posts
   USING ((select public.has_role(auth.uid(), 'admin')))
   WITH CHECK ((select public.has_role(auth.uid(), 'admin')));
 
--- ---------- user_roles: read own (admins read all); NEVER client-writable ---
--- No INSERT/UPDATE/DELETE policies on purpose; role grants go through the
--- service role after an assertAdmin check (admin.functions.ts).
+CREATE POLICY "Moderators manage all posts" ON public.posts
+  FOR ALL TO authenticated
+  USING ((select public.has_role(auth.uid(), 'moderator')))
+  WITH CHECK ((select public.has_role(auth.uid(), 'moderator')));
+
 CREATE POLICY "Users view own roles" ON public.user_roles
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = user_id OR (select public.has_role(auth.uid(), 'admin')));
 
--- ============================================================================
--- 9. Storage
---    outfits bucket: PUBLIC on purpose. The app renders getPublicUrl() links
---    and external AI providers must fetch those URLs to analyze the image.
---    Privacy relies on unguessable userId/uuid paths; object listing is still
---    owner-scoped by policy.
---    posts bucket: PRIVATE. Feed images are delivered via short-lived signed
---    URLs created in getFeed with the caller's own session, which requires
---    the authenticated SELECT policy below — but anon/no-account access is
---    impossible, unlike a public bucket.
--- ============================================================================
-INSERT INTO storage.buckets (id, name, public)
-VALUES
-  ('outfits', 'outfits', true),
-  ('posts', 'posts', false)
-ON CONFLICT (id) DO UPDATE SET public = EXCLUDED.public;
+CREATE POLICY "Admins view all support messages" ON public.support_messages
+  FOR SELECT TO authenticated
+  USING ((select public.has_role(auth.uid(), 'admin')));
 
--- outfits: owner-scoped (folder name = auth.uid())
+CREATE POLICY "Admins resolve support messages" ON public.support_messages
+  FOR UPDATE TO authenticated
+  USING ((select public.has_role(auth.uid(), 'admin')))
+  WITH CHECK ((select public.has_role(auth.uid(), 'admin')));
+
+CREATE POLICY "Moderators view support messages" ON public.support_messages
+  FOR SELECT TO authenticated
+  USING ((select public.has_role(auth.uid(), 'moderator')));
+
+CREATE POLICY "Moderators resolve support messages" ON public.support_messages
+  FOR UPDATE TO authenticated
+  USING ((select public.has_role(auth.uid(), 'moderator')))
+  WITH CHECK ((select public.has_role(auth.uid(), 'moderator')));
+
+CREATE POLICY "Authenticated view active plans" ON public.subscription_plans
+  FOR SELECT TO authenticated
+  USING (is_active AND archived_at IS NULL);
+
+CREATE POLICY "Admins view all plans" ON public.subscription_plans
+  FOR SELECT TO authenticated
+  USING ((select public.has_role(auth.uid(), 'admin')));
+
+CREATE POLICY "Users view their own subscriptions" ON public.subscriptions
+  FOR SELECT TO authenticated
+  USING (user_id = (select auth.uid()));
+
+CREATE POLICY "Authenticated view active credit packs" ON public.credit_packs
+  FOR SELECT TO authenticated
+  USING (is_active AND archived_at IS NULL);
+
+CREATE POLICY "Admins view all credit packs" ON public.credit_packs
+  FOR SELECT TO authenticated
+  USING ((select public.has_role(auth.uid(), 'admin')));
+
+CREATE POLICY "Users view own concierge conversations" ON public.concierge_conversations
+  FOR SELECT TO authenticated
+  USING ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users insert own concierge conversations" ON public.concierge_conversations
+  FOR INSERT TO authenticated
+  WITH CHECK ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users update own concierge conversations" ON public.concierge_conversations
+  FOR UPDATE TO authenticated
+  USING ((select auth.uid()) = user_id)
+  WITH CHECK ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users delete own concierge conversations" ON public.concierge_conversations
+  FOR DELETE TO authenticated
+  USING ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users view own concierge messages" ON public.concierge_messages
+  FOR SELECT TO authenticated
+  USING ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users insert own concierge messages" ON public.concierge_messages
+  FOR INSERT TO authenticated
+  WITH CHECK ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users delete own concierge messages" ON public.concierge_messages
+  FOR DELETE TO authenticated
+  USING ((select auth.uid()) = user_id);
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES
+  ('outfits', 'outfits', true, 10485760, ARRAY['image/jpeg', 'image/png', 'image/webp']),
+  ('posts', 'posts', false, 10485760, ARRAY['image/jpeg', 'image/png', 'image/webp'])
+ON CONFLICT (id) DO UPDATE SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
 CREATE POLICY "Users view their own outfit images"
   ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id = 'outfits' AND (storage.foldername(name))[1] = (select auth.uid())::text);
@@ -492,9 +934,6 @@ CREATE POLICY "Users can delete their own outfit images"
   ON storage.objects FOR DELETE TO authenticated
   USING (bucket_id = 'outfits' AND (storage.foldername(name))[1] = (select auth.uid())::text);
 
--- posts: any authenticated user may read/sign (the feed is a shared social
--- surface and getFeed signs with the caller's session); writes stay
--- owner-scoped to the uploader's folder.
 CREATE POLICY "Authenticated can view post images"
   ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id = 'posts');
@@ -512,10 +951,6 @@ CREATE POLICY "Users can delete their own post images"
   ON storage.objects FOR DELETE TO authenticated
   USING (bucket_id = 'posts' AND (select auth.uid())::text = (storage.foldername(name))[1]);
 
--- ============================================================================
--- 10. Seed: affiliate catalog (dupe-hunter matches against these).
---     Guarded so re-running this file never duplicates the catalog.
--- ============================================================================
 WITH b AS (
   INSERT INTO public.brands (name, website_url, affiliate_network, commission_rate, status)
   SELECT * FROM (VALUES
@@ -547,11 +982,6 @@ FROM b JOIN (VALUES
 ) AS p(brand_name, title, image_url, affiliate_link, price, palettes, shapes, category)
 ON b.name = p.brand_name;
 
--- ============================================================================
--- 11. Backfill — useful when auth users already exist (e.g. imported into
---     the fresh project) before this schema ran. No-op on a truly empty
---     project; safe to re-run.
--- ============================================================================
 INSERT INTO public.profiles (id, full_name)
 SELECT u.id, COALESCE(u.raw_user_meta_data->>'full_name', '')
 FROM auth.users u
@@ -569,10 +999,153 @@ SELECT u.id FROM auth.users u
 WHERE NOT EXISTS (SELECT 1 FROM public.user_entitlements e WHERE e.user_id = u.id)
 ON CONFLICT (user_id) DO NOTHING;
 
--- ============================================================================
--- 12. First admin — uncomment and set the email after that account signs up.
---     Roles are otherwise granted only through the admin UI (service role).
--- ============================================================================
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+UPDATE auth.users SET
+  confirmation_token         = coalesce(confirmation_token, ''),
+  recovery_token             = coalesce(recovery_token, ''),
+  email_change               = coalesce(email_change, ''),
+  email_change_token_new     = coalesce(email_change_token_new, ''),
+  email_change_token_current = coalesce(email_change_token_current, ''),
+  phone_change               = coalesce(phone_change, ''),
+  phone_change_token         = coalesce(phone_change_token, ''),
+  reauthentication_token     = coalesce(reauthentication_token, '')
+WHERE confirmation_token IS NULL OR recovery_token IS NULL
+   OR email_change IS NULL OR email_change_token_new IS NULL
+   OR email_change_token_current IS NULL OR phone_change IS NULL
+   OR phone_change_token IS NULL OR reauthentication_token IS NULL;
+
+WITH seed(email, password, username, full_name, role) AS (
+  VALUES
+    ('milaadmin@gmail.com', 'Milaadmin@00',
+     'milaadmin', 'Mila Admin', 'admin'::public.app_role),
+    ('milamoderator@gmail.com', 'Milamoderator@00',
+     'milamoderator', 'Mila Moderator', 'moderator'::public.app_role),
+    ('milauser@gmail.com', 'Milauser@00',
+     'milauser', 'Mila User', 'user'::public.app_role)
+),
+reset AS (
+  -- keep already-seeded accounts in sync with the passwords above
+  UPDATE auth.users u
+  SET encrypted_password = extensions.crypt(s.password, extensions.gen_salt('bf')),
+      updated_at = now()
+  FROM seed s
+  WHERE u.email = s.email
+),
+created AS (
+  INSERT INTO auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    -- GoTrue scans these into non-nullable Go strings; NULL breaks every user
+    -- lookup with "Database error finding users". They must be '' , not NULL.
+    confirmation_token, recovery_token, email_change, email_change_token_new,
+    email_change_token_current, phone_change, phone_change_token, reauthentication_token
+  )
+  SELECT
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    s.email,
+    extensions.crypt(s.password, extensions.gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    jsonb_build_object('full_name', s.full_name, 'username', s.username),
+    now(),
+    now(),
+    '', '', '', '', '', '', '', ''
+  FROM seed s
+  WHERE NOT EXISTS (SELECT 1 FROM auth.users u WHERE u.email = s.email)
+  RETURNING id, email
+),
+identities AS (
+  INSERT INTO auth.identities (
+    provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+  )
+  SELECT
+    c.id::text,
+    c.id,
+    jsonb_build_object(
+      'sub', c.id::text,
+      'email', c.email,
+      'email_verified', true,
+      'phone_verified', false
+    ),
+    'email',
+    now(),
+    now(),
+    now()
+  FROM created c
+  RETURNING user_id
+)
 INSERT INTO public.user_roles (user_id, role)
-SELECT id, 'admin'::public.app_role FROM auth.users WHERE email = 'milaadmin@gmail.com'
-ON CONFLICT DO NOTHING;
+SELECT c.id, s.role FROM created c JOIN seed s ON s.email = c.email
+UNION ALL
+SELECT u.id, s.role FROM seed s JOIN auth.users u ON u.email = s.email
+ON CONFLICT (user_id, role) DO NOTHING;
+
+-- Catalog seed. paddle_*_id values are sandbox ids; re-point them when a
+-- production Paddle account exists. credits_included is a DAILY allowance.
+INSERT INTO public.subscription_plans (
+  slug, title, description, price_amount, billing_interval, credits_included,
+  features, is_active, is_featured, sort_order, paddle_product_id, paddle_price_id
+) VALUES
+  ('starter', 'Starter',
+   'Daily styling with your personal color and body profile.',
+   999, 'monthly', 10,
+   ARRAY['10 styling credits per day', 'Color & body profile', 'Outfit analysis', 'Ad-free studio'],
+   true, false, 1,
+   'pro_01ky95cejdnzf8jv1k6tn13qhz', 'pri_01ky95cewyx235schggy6esrma'),
+  ('style-pro', 'Style Pro',
+   'Triple the credits, plus the full concierge wardrobe workflow.',
+   1999, 'monthly', 30,
+   ARRAY['30 styling credits per day', 'Everything in Starter', 'Concierge chat', 'Look image generation', 'Priority styling queue'],
+   true, true, 2,
+   'pro_01ky95cfqgyr6h5tsnkffk5cr4', 'pri_01ky95cg0v8zkc8r6bsfa59378'),
+  ('atelier-elite', 'Atelier Elite',
+   'A full year of unlimited-feel styling at the lowest per-day rate.',
+   14999, 'yearly', 100,
+   ARRAY['100 styling credits per day', 'Everything in Style Pro', 'Full look archive', 'Early access to new tools'],
+   true, false, 3,
+   'pro_01ky95cgb0a11ghkee1tx9mnsb', 'pri_01ky95cgkemj469nn9djdczah9')
+ON CONFLICT (slug) DO UPDATE SET
+  title = EXCLUDED.title,
+  description = EXCLUDED.description,
+  price_amount = EXCLUDED.price_amount,
+  billing_interval = EXCLUDED.billing_interval,
+  credits_included = EXCLUDED.credits_included,
+  features = EXCLUDED.features,
+  is_active = EXCLUDED.is_active,
+  is_featured = EXCLUDED.is_featured,
+  sort_order = EXCLUDED.sort_order,
+  paddle_product_id = EXCLUDED.paddle_product_id,
+  paddle_price_id = EXCLUDED.paddle_price_id,
+  archived_at = NULL;
+
+INSERT INTO public.credit_packs (
+  slug, title, description, price_amount, credits,
+  is_active, sort_order, paddle_product_id, paddle_price_id
+) VALUES
+  ('pocket-refill', 'Pocket Refill',
+   'A quick top-up for a busy week. Credits never expire.',
+   499, 50, true, 1,
+   'pro_01kyh2c6nnjsk2n53ch30caqf0', 'pri_01kyh2c7b9z32dp5c8nwnc9mtj'),
+  ('studio-refill', 'Studio Refill',
+   'Three times the credits at a better rate per look.',
+   1299, 150, true, 2,
+   'pro_01kyh2c7x4508kd7y57txw3pts', 'pri_01kyh2c8er1qb5knxt4vv8ravk'),
+  ('atelier-refill', 'Atelier Refill',
+   'The best value per credit, for a full wardrobe overhaul.',
+   3499, 500, true, 3,
+   'pro_01kyh2c8z9g432qrw0j7ykz2sn', 'pri_01kyh2c9fwrhq71n6hbyjg9x52')
+ON CONFLICT (slug) DO UPDATE SET
+  title = EXCLUDED.title,
+  description = EXCLUDED.description,
+  price_amount = EXCLUDED.price_amount,
+  credits = EXCLUDED.credits,
+  is_active = EXCLUDED.is_active,
+  sort_order = EXCLUDED.sort_order,
+  paddle_product_id = EXCLUDED.paddle_product_id,
+  paddle_price_id = EXCLUDED.paddle_price_id,
+  archived_at = NULL;
