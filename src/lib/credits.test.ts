@@ -6,8 +6,8 @@ import {
 } from "./credits";
 
 describe("credit error contract", () => {
-  test("DEFAULT_AI_CREDITS is the free-tier daily allowance", () => {
-    expect(DEFAULT_AI_CREDITS).toBe(5);
+  test("the free tier has no daily allowance — credits are paid for", () => {
+    expect(DEFAULT_AI_CREDITS).toBe(0);
   });
 
   test("recognizes InsufficientCreditsError", () => {

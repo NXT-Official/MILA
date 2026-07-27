@@ -32,11 +32,12 @@ describe("consumeAiCredit", () => {
     expect(remaining).toBe(99);
   });
 
-  test("falls back to DEFAULT_AI_CREDITS with no in-force subscription", async () => {
+  test("a user with no in-force subscription has nothing to spend", async () => {
     const supabase = fakeSupabase(null, null);
     const store = new MemoryCreditStore(() => "2026-07-24");
-    const remaining = await consumeAiCredit(supabase, "user-1", store.consume);
-    expect(remaining).toBe(4);
+    await expect(consumeAiCredit(supabase, "user-1", store.consume)).rejects.toBeInstanceOf(
+      InsufficientCreditsError,
+    );
   });
 
   test("throws InsufficientCreditsError at zero and does not go negative", async () => {
@@ -142,6 +143,6 @@ describe("grantAiCredits", () => {
     const supabase = fakeSupabase(null, null);
     const store = new MemoryCreditStore(() => "2026-07-24");
     const remaining = await grantAiCredits(supabase, "user-1", 10, store.grant);
-    expect(remaining).toBe(15); // DEFAULT_AI_CREDITS (5) + 10
+    expect(remaining).toBe(10); // free tier grants nothing of its own
   });
 });
