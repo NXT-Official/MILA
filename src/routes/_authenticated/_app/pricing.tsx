@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Lock, ScrollText, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,6 @@ import { PricingCard } from "@/components/pricing/pricing-card";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
 import { publicCreditPacksQueryOptions } from "@/lib/queries/credit-packs";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
-import { formatPlanPrice } from "@/lib/subscription-plans";
-import type { PublicCreditPack } from "@/lib/credit-packs";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 
@@ -74,89 +72,36 @@ function PricingPage() {
       )}
 
       {!!packs?.length && (
-        <section className="mx-auto mt-16 max-w-5xl sm:mt-20">
-          <header className="text-center">
-            <p className="atelier-kicker mb-3">Credit packs</p>
-            <h2 className="font-serif text-2xl text-ink sm:text-3xl">
-              {subscribed ? "Out of credits before the day resets?" : "A membership extra"}
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted">
-              {subscribed
-                ? "Top up with a pack and keep styling with Mila today. Pack credits are used after your daily allowance runs out, and they never expire."
-                : "Credit packs top up your balance on days you run through your allowance. They're available to members only — choose a membership above to unlock them."}
-            </p>
-          </header>
+        <section className="atelier-card mx-auto mt-16 max-w-3xl p-8 text-center sm:mt-20 sm:p-10">
+          <p className="atelier-kicker mb-3">Credit packs</p>
+          <h2 className="font-serif text-2xl text-ink sm:text-3xl">
+            {subscribed ? "Out of credits before the day resets?" : "A membership extra"}
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted">
+            {subscribed
+              ? "Top up with a pack and keep styling with Mila today. Pack credits are used after your daily allowance runs out, and they never expire."
+              : "Credit packs top up your balance on days you run through your allowance. They're available to members only — choose a membership above to unlock them."}
+          </p>
 
-          <ul className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {packs.map((pack) => (
-              <CreditPackCard
-                key={pack.id}
-                pack={pack}
-                locked={!subscribed}
-                disabled={!ready}
-                onBuy={
-                  user && subscribed
-                    ? () => openCheckout(pack, { id: user.id, email: user.email })
-                    : undefined
-                }
-              />
-            ))}
-          </ul>
+          <div className="mt-6 flex justify-center">
+            {subscribed ? (
+              <Button asChild variant="secondary" className="min-w-56">
+                <Link to="/credit-packs">
+                  <Zap className="size-4" aria-hidden="true" strokeWidth={1.75} />
+                  Browse Credit Packs
+                </Link>
+              </Button>
+            ) : (
+              // Cosmetic half of the gate; the page itself re-checks on the server.
+              <Button type="button" variant="secondary" className="min-w-56" disabled>
+                <Lock className="size-4" aria-hidden="true" strokeWidth={1.75} />
+                Members only
+              </Button>
+            )}
+          </div>
         </section>
       )}
     </div>
-  );
-}
-
-function CreditPackCard({
-  pack,
-  locked,
-  disabled,
-  onBuy,
-}: {
-  pack: PublicCreditPack;
-  locked: boolean;
-  disabled?: boolean;
-  onBuy?: () => void;
-}) {
-  // A pack with no Paddle price can't open a checkout — say so rather than
-  // handing over a button that silently does nothing.
-  const unavailable = !pack.paddle_price_id;
-
-  return (
-    <li className="atelier-card flex flex-col p-6">
-      <div className="flex items-center gap-2">
-        {locked ? (
-          <Lock className="size-4 text-muted" aria-hidden="true" strokeWidth={1.75} />
-        ) : (
-          <Zap className="size-4 text-accent" aria-hidden="true" strokeWidth={1.75} />
-        )}
-        <h3 className="font-serif text-xl text-ink">{pack.title}</h3>
-      </div>
-
-      <p className="mt-3 text-sm text-ink tabular-nums">
-        {pack.credits} styling {pack.credits === 1 ? "credit" : "credits"}
-      </p>
-      {pack.description && (
-        <p className="mt-2 text-sm leading-relaxed text-muted">{pack.description}</p>
-      )}
-
-      <p className="mt-5 font-display text-3xl font-bold tracking-tight text-ink tabular-nums">
-        {formatPlanPrice(pack.price_amount, pack.currency)}
-      </p>
-
-      <div className="mt-auto pt-6">
-        <Button
-          type="button"
-          onClick={onBuy}
-          disabled={disabled || locked || unavailable || !onBuy}
-          variant="secondary"
-          className="w-full"
-        >
-          {locked ? "Members only" : unavailable ? "Coming soon" : "Buy Pack"}
-        </Button>
-      </div>
-    </li>
   );
 }
 

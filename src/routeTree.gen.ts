@@ -29,6 +29,7 @@ import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
 import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
+import { Route as AuthenticatedAppCreditPacksRouteImport } from './routes/_authenticated/_app/credit-packs'
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
 import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_authenticated/_app/profile.$userId'
 
@@ -138,6 +139,12 @@ const AuthenticatedAppDashboardRoute =
     path: '/dashboard',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppCreditPacksRoute =
+  AuthenticatedAppCreditPacksRouteImport.update({
+    id: '/credit-packs',
+    path: '/credit-packs',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppConciergeRoute =
   AuthenticatedAppConciergeRouteImport.update({
     id: '/concierge',
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
+  '/credit-packs': typeof AuthenticatedAppCreditPacksRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
   '/history': typeof AuthenticatedAppHistoryRoute
@@ -179,6 +187,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
+  '/credit-packs': typeof AuthenticatedAppCreditPacksRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
   '/history': typeof AuthenticatedAppHistoryRoute
@@ -204,6 +213,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/_app/concierge': typeof AuthenticatedAppConciergeRoute
+  '/_authenticated/_app/credit-packs': typeof AuthenticatedAppCreditPacksRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/feed': typeof AuthenticatedAppFeedRoute
   '/_authenticated/_app/history': typeof AuthenticatedAppHistoryRoute
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/auth/callback'
     | '/concierge'
+    | '/credit-packs'
     | '/dashboard'
     | '/feed'
     | '/history'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/auth/callback'
     | '/concierge'
+    | '/credit-packs'
     | '/dashboard'
     | '/feed'
     | '/history'
@@ -273,6 +285,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/auth/callback'
     | '/_authenticated/_app/concierge'
+    | '/_authenticated/_app/credit-packs'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/feed'
     | '/_authenticated/_app/history'
@@ -439,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppDashboardRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/credit-packs': {
+      id: '/_authenticated/_app/credit-packs'
+      path: '/credit-packs'
+      fullPath: '/credit-packs'
+      preLoaderRoute: typeof AuthenticatedAppCreditPacksRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/concierge': {
       id: '/_authenticated/_app/concierge'
       path: '/concierge'
@@ -458,6 +478,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppConciergeRoute: typeof AuthenticatedAppConciergeRoute
+  AuthenticatedAppCreditPacksRoute: typeof AuthenticatedAppCreditPacksRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppFeedRoute: typeof AuthenticatedAppFeedRoute
   AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
@@ -468,6 +489,7 @@ interface AuthenticatedAppRouteChildren {
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppConciergeRoute: AuthenticatedAppConciergeRoute,
+  AuthenticatedAppCreditPacksRoute: AuthenticatedAppCreditPacksRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppFeedRoute: AuthenticatedAppFeedRoute,
   AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,

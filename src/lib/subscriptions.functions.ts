@@ -175,6 +175,17 @@ async function resumeViaPaddleApi(
   return { renewsAt };
 }
 
+/**
+ * Server-checked membership gate for routes that are members-only. The client
+ * can lie about a cached query; it can't lie about this.
+ */
+export const myMembershipStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ active: boolean }> => {
+    const subscriptionId = await findInForceSubscriptionId(context.supabase, context.userId);
+    return { active: !!subscriptionId };
+  });
+
 export const resumeMySubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ResumeSubscriptionResult> => {

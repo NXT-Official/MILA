@@ -18,6 +18,7 @@ import { HUBS } from "@/constants/climate";
 import { passwordChecks } from "@/constants/password";
 import { fetchDefaultHubId, localDefaultHubId, saveDefaultHubId } from "@/lib/default-hub";
 import { CreditsUsageMeter } from "@/components/account/credits-usage-meter";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { DEFAULT_AI_CREDITS } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
@@ -268,7 +269,10 @@ export function StudioMembershipDrawer({
                     {(user.fullName[0] || user.username[0] || "M").toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate font-serif text-lg text-ink">{user.fullName}</p>
+                    <p className="flex items-center gap-1.5 font-serif text-lg text-ink">
+                      <span className="truncate">{user.fullName}</span>
+                      {subscription && <VerifiedBadge className="size-4" />}
+                    </p>
                     <p className="truncate text-[11px] text-stone">@{user.username}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] uppercase tracking-[0.16em]">
                       <span className="rounded-full border border-porcelain/70 bg-background/60 px-2 py-1 text-ink">
@@ -393,6 +397,22 @@ export function StudioMembershipDrawer({
                       remaining={credits ?? DEFAULT_AI_CREDITS}
                       total={subscription?.credits_included ?? DEFAULT_AI_CREDITS}
                     />
+                  )}
+
+                  {subscription && (
+                    <p className="text-[10px] text-center leading-relaxed text-stone">
+                      {(credits ?? 0) === 0
+                        ? "You're out of credits for today — "
+                        : "Run out before the day resets? "}
+                      <Link
+                        to="/pricing"
+                        onClick={onClose}
+                        className="text-ink underline underline-offset-2 hover:text-accent"
+                      >
+                        buy a credit pack
+                      </Link>{" "}
+                      to keep styling with Mila.
+                    </p>
                   )}
                 </div>
               </div>

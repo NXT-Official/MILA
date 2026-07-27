@@ -1,6 +1,7 @@
 import { Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { cn } from "@/lib/utils";
 import {
   BILLING_INTERVAL_SUFFIX,
@@ -48,16 +49,21 @@ export function PricingCard({
         <span className="ml-2 text-xs uppercase tracking-[0.18em] text-muted">{interval}</span>
       </p>
 
-      {(plan.credits_included > 0 || plan.features.length > 0) && (
-        <ul className="mt-6 space-y-2.5 border-t border-line pt-6">
-          {plan.credits_included > 0 && (
-            <PlanFeature text={`${plan.credits_included} styling credits per day`} />
-          )}
-          {plan.features.map((feature) => (
-            <PlanFeature key={feature} text={feature} />
-          ))}
-        </ul>
-      )}
+      <ul className="mt-6 space-y-2.5 border-t border-line pt-6">
+        {plan.credits_included > 0 && (
+          <PlanFeature text={`${plan.credits_included} styling credits per day`} />
+        )}
+        {plan.features.map((feature) => (
+          <PlanFeature key={feature} text={feature} />
+        ))}
+        {/* Every membership unlocks packs and the badge, so both are rendered
+            rather than stored on each plan's editable feature list. */}
+        <PlanFeature text="Credit packs to top up any day" />
+        <li className="flex items-start gap-2.5 text-sm leading-relaxed text-ink">
+          <VerifiedBadge className="mt-0.5" />
+          <span className="min-w-0 wrap-break-words">Verified badge on your profile and posts</span>
+        </li>
+      </ul>
 
       <div className="mt-auto pt-8">
         <Button

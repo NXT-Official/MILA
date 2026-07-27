@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, EyeOff, Images } from "lucide-react";
 import { PostCanvas } from "@/components/feed/post-canvas";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { queryKeys } from "@/constants/query-keys";
 import { getMemberProfile } from "@/lib/posts.functions";
@@ -41,7 +42,10 @@ function MemberProfilePage() {
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-serif text-3xl text-ink">{name}</h1>
+            <span className="flex items-center gap-1.5">
+              <h1 className="truncate font-serif text-3xl text-ink">{name}</h1>
+              {data.profile.verified && <VerifiedBadge className="size-5" />}
+            </span>
             {data.profile.username && (
               <p className="mt-1 text-sm text-stone">@{data.profile.username}</p>
             )}

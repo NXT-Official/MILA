@@ -20,9 +20,38 @@ export interface FeedPost {
   image_url_back: string;
   image_url_front: string;
   author_name: string | null;
+  /** Author holds an in-force membership — drives the verified badge. */
+  author_verified: boolean;
   is_self: boolean;
   hidden?: boolean;
   hidden_reason?: string | null;
+}
+
+const IN_FORCE_STATUSES = ["active", "trialing", "past_due"];
+
+/**
+ * Author names and membership both live behind RLS that only exposes your own
+ * row, so this reads them with the admin client — the feed is server-rendered
+ * and only ever returns the two public bits.
+ */
+async function loadAuthorDetails(userIds: string[]) {
+  const names = new Map<string, string | null>();
+  const verified = new Set<string>();
+  if (!userIds.length) return { names, verified };
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [profiles, subscriptions] = await Promise.all([
+    supabaseAdmin.from("profiles").select("id,full_name").in("id", userIds),
+    supabaseAdmin
+      .from("subscriptions")
+      .select("user_id")
+      .in("user_id", userIds)
+      .in("status", IN_FORCE_STATUSES),
+  ]);
+
+  for (const profile of profiles.data ?? []) names.set(profile.id, profile.full_name ?? null);
+  for (const row of subscriptions.data ?? []) verified.add(row.user_id);
+  return { names, verified };
 }
 
 export interface FeedResponse {
@@ -97,14 +126,7 @@ export const getFeed = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     const userIds = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
-    let nameMap = new Map<string, string | null>();
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id,full_name")
-        .in("id", userIds);
-      nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name ?? null]));
-    }
+    const { names: nameMap, verified } = await loadAuthorDetails(userIds);
 
     const paths = (rows ?? []).flatMap((r) => [r.image_url_back, r.image_url_front]);
     const signed = paths.length
@@ -125,6 +147,7 @@ export const getFeed = createServerFn({ method: "GET" })
       image_url_back: urlMap.get(r.image_url_back) ?? "",
       image_url_front: urlMap.get(r.image_url_front) ?? "",
       author_name: nameMap.get(r.user_id) ?? null,
+      author_verified: verified.has(r.user_id),
       is_self: r.user_id === userId,
     }));
 
@@ -142,6 +165,7 @@ export interface MemberProfileResponse {
     face_shape: string | null;
     hair_type: string | null;
     created_at: string;
+    verified: boolean;
   };
   posts: FeedPost[];
   can_view_hidden: boolean;
@@ -162,6 +186,8 @@ export const getMemberProfile = createServerFn({ method: "GET" })
       .maybeSingle();
     if (profileResult.error || !profileResult.data) throw new Error("Member not found.");
     const profile = profileResult.data;
+    const { verified } = await loadAuthorDetails([profile.id]);
+    const isVerified = verified.has(profile.id);
 
     let postsQuery = supabaseAdmin
       .from("posts")
@@ -186,13 +212,14 @@ export const getMemberProfile = createServerFn({ method: "GET" })
     }
 
     return {
-      profile,
+      profile: { ...profile, verified: isVerified },
       can_view_hidden: canViewHidden,
       posts: (posts ?? []).map((post) => ({
         ...post,
         image_url_back: urlMap.get(post.image_url_back) ?? "",
         image_url_front: urlMap.get(post.image_url_front) ?? "",
         author_name: profile.full_name,
+        author_verified: isVerified,
         is_self: post.user_id === context.userId,
       })),
     };

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import type { FeedPost } from "@/lib/posts.functions";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
@@ -26,13 +27,16 @@ export function PostCanvas({ post }: { post: FeedPost }) {
             {initial}
           </div>
           <div className="min-w-0">
-            <Link
-              to="/profile/$userId"
-              params={{ userId: post.user_id }}
-              className="font-serif text-sm text-ink truncate transition-colors hover:text-accent"
-            >
-              {author}
-            </Link>
+            <span className="flex items-center gap-1">
+              <Link
+                to="/profile/$userId"
+                params={{ userId: post.user_id }}
+                className="font-serif text-sm text-ink truncate transition-colors hover:text-accent"
+              >
+                {author}
+              </Link>
+              {post.author_verified && <VerifiedBadge />}
+            </span>
             <p className="text-[9px] uppercase tracking-[0.3em] text-stone">
               {relativeTime(post.created_at)}
             </p>
