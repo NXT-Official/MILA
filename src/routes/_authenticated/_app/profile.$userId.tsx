@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, EyeOff, Images } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarDays, EyeOff, Images, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { PostCanvas } from "@/components/feed/post-canvas";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/constants/query-keys";
-import { getMemberProfile } from "@/lib/posts.functions";
+import { deletePost, getMemberProfile, updatePostCaption } from "@/lib/posts.functions";
 
 export const Route = createFileRoute("/_authenticated/_app/profile/$userId")({
   component: MemberProfilePage,
@@ -16,11 +18,52 @@ export const Route = createFileRoute("/_authenticated/_app/profile/$userId")({
 function MemberProfilePage() {
   const { userId } = Route.useParams();
   const fetchProfile = useServerFn(getMemberProfile);
+  const saveCaption = useServerFn(updatePostCaption);
+  const removePost = useServerFn(deletePost);
+  const queryClient = useQueryClient();
   const [tab, setTab] = useState<"feed" | "hidden">("feed");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
   const { data, isLoading, isError } = useQuery({
     queryKey: queryKeys.memberProfile(userId),
     queryFn: () => fetchProfile({ data: { user_id: userId } }),
   });
+
+  async function refresh() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.memberProfile(userId) }),
+      queryClient.invalidateQueries({ queryKey: ["feed"] }),
+    ]);
+  }
+
+  async function handleSaveCaption(postId: string) {
+    setBusy(true);
+    try {
+      await saveCaption({ data: { post_id: postId, caption: draft.trim() || null } });
+      setEditingId(null);
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save the caption.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete(postId: string) {
+    // ponytail: native confirm — swap for a dialog if the flow needs more than yes/no.
+    if (!window.confirm("Delete this post? This can't be undone.")) return;
+    setBusy(true);
+    try {
+      await removePost({ data: { post_id: postId } });
+      toast.success("Post deleted.");
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't delete the post.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (isLoading)
     return <div className="py-20 text-center text-sm text-stone">Loading profile…</div>;
@@ -96,6 +139,61 @@ function MemberProfilePage() {
                 </div>
               )}
               <PostCanvas post={post} />
+
+              {post.is_self &&
+                (editingId === post.id ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={draft}
+                      onChange={(event) => setDraft(event.target.value)}
+                      maxLength={500}
+                      rows={3}
+                      placeholder="Caption…"
+                    />
+                    <div className="flex justify-end gap-4 text-[10px] uppercase tracking-[0.28em]">
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        disabled={busy}
+                        className="text-stone transition-colors hover:text-ink disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveCaption(post.id)}
+                        disabled={busy}
+                        className="text-ink transition-colors hover:text-accent disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-end gap-4 text-[10px] uppercase tracking-[0.28em]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(post.id);
+                        setDraft(post.caption ?? "");
+                      }}
+                      disabled={busy}
+                      className="inline-flex items-center gap-1.5 text-stone transition-colors hover:text-ink disabled:opacity-50"
+                    >
+                      <Pencil className="size-3" strokeWidth={1.75} aria-hidden="true" />
+                      Edit caption
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(post.id)}
+                      disabled={busy}
+                      className="inline-flex items-center gap-1.5 text-destructive transition-colors hover:text-destructive/80 disabled:opacity-50"
+                    >
+                      <Trash2 className="size-3" strokeWidth={1.75} aria-hidden="true" />
+                      Delete
+                    </button>
+                  </div>
+                ))}
             </div>
           ))}
         </div>

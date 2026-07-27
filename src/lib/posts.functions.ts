@@ -87,6 +87,52 @@ export const createPost = createServerFn({ method: "POST" })
     return { id: row.id };
   });
 
+const UpdateCaptionInput = z.object({
+  post_id: z.string().uuid(),
+  caption: z.string().max(500).nullable(),
+});
+
+/** Ownership is enforced by the "Users can manage their own posts" RLS policy. */
+export const updatePostCaption = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => UpdateCaptionInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("posts")
+      .update({ caption: data.caption })
+      .eq("id", data.post_id)
+      .eq("user_id", context.userId);
+    if (error) throw new Error(error.message);
+    return { id: data.post_id };
+  });
+
+const DeletePostInput = z.object({ post_id: z.string().uuid() });
+
+export const deletePost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => DeletePostInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: row, error: readErr } = await supabase
+      .from("posts")
+      .select("image_url_back,image_url_front")
+      .eq("id", data.post_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!row) throw new Error("Post not found.");
+
+    const { error } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", data.post_id)
+      .eq("user_id", userId);
+    if (error) throw new Error(error.message);
+
+    await supabase.storage.from("posts").remove([row.image_url_back, row.image_url_front]);
+    return { id: data.post_id };
+  });
+
 export const getTodayPostStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -113,9 +159,6 @@ export const getFeed = createServerFn({ method: "GET" })
     if (todayErr) throw new Error(todayErr.message);
 
     const hasPostedToday = (todayCount ?? 0) > 0;
-    if (!hasPostedToday) {
-      return { has_posted_today: false, posts: [] };
-    }
 
     const { data: rows, error } = await supabase
       .from("posts")
@@ -151,7 +194,7 @@ export const getFeed = createServerFn({ method: "GET" })
       is_self: r.user_id === userId,
     }));
 
-    return { has_posted_today: true, posts };
+    return { has_posted_today: hasPostedToday, posts };
   });
 
 const MemberProfileInput = z.object({ user_id: z.string().uuid() });

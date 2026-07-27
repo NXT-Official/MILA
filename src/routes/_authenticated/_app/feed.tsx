@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, Lock } from "lucide-react";
+import { Camera } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -37,7 +37,6 @@ function FeedPage() {
     staleTime: 30_000,
   });
 
-  const locked = !isLoading && data && !data.has_posted_today;
   const posts = data?.posts ?? [];
 
   async function handleSubmit(back: File, front: File, caption: string) {
@@ -63,7 +62,7 @@ function FeedPage() {
           caption: caption || null,
         },
       });
-      toast.success("Today's OOTD posted — feed unlocked.");
+      toast.success("Today's OOTD posted.");
       setIsPostOpen(false);
       await queryClient.invalidateQueries({ queryKey: queryKeys.feed(user.id) });
     } catch (e) {
@@ -86,6 +85,14 @@ function FeedPage() {
           <p className="text-sm text-stone max-w-md mx-auto">
             One outfit, one mirror, one mood — your community's daily blueprints.
           </p>
+          <button
+            type="button"
+            onClick={() => setIsPostOpen(true)}
+            className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-ink text-atelier-ivory text-[10px] uppercase tracking-[0.32em] hover:bg-ink/90 transition-colors shadow-atelier-soft"
+          >
+            <Camera className="size-4" strokeWidth={1.75} />
+            Post Today's OOTD
+          </button>
         </header>
 
         {isLoading && (
@@ -114,7 +121,7 @@ function FeedPage() {
           </div>
         )}
 
-        {!isLoading && data?.has_posted_today && posts.length === 0 && (
+        {!isLoading && !isError && posts.length === 0 && (
           <div className="rounded-3xl border border-dashed border-porcelain/70 p-10 text-center">
             <p className="font-serif text-xl text-ink">You're first to the mirror today.</p>
             <p className="mt-2 text-sm text-stone">
@@ -123,57 +130,12 @@ function FeedPage() {
           </div>
         )}
 
-        {!isLoading && data?.has_posted_today && posts.length > 0 && (
+        {!isLoading && posts.length > 0 && (
           <div className="space-y-6">
             {posts.map((p) => (
               <PostCanvas key={p.id} post={p} />
             ))}
           </div>
-        )}
-
-        {locked && (
-          <>
-            <div className="space-y-6 pointer-events-none select-none blur-sm opacity-60">
-              {[0, 1].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-3xl border border-porcelain/60 bg-background/70 overflow-hidden"
-                >
-                  <div className="h-16 bg-porcelain/40" />
-                  <div className="aspect-3/4 bg-linear-to-br from-porcelain/40 via-atelier-ivory/60 to-porcelain/30" />
-                </div>
-              ))}
-            </div>
-
-            <div className="fixed inset-x-0 bottom-0 top-16 z-30 flex items-center justify-center px-6">
-              <div className="pointer-events-none absolute inset-0 backdrop-blur-xl bg-background/40" />
-              <div className="relative max-w-md w-full rounded-overlay border border-porcelain/70 bg-background/80 backdrop-blur-2xl shadow-atelier-float p-8 md:p-10 text-center space-y-6">
-                <div className="mx-auto size-14 rounded-full border border-porcelain/70 bg-atelier-ivory/70 flex items-center justify-center">
-                  <Lock className="size-5 text-ink" strokeWidth={1.25} />
-                </div>
-                <div className="space-y-3">
-                  <p className="text-[10px] uppercase tracking-[0.42em] text-muted-foreground">
-                    Anti-Lurker Gate
-                  </p>
-                  <h2 className="font-serif text-3xl md:text-4xl text-ink leading-tight">
-                    Your friends' looks are locked.
-                  </h2>
-                  <p className="text-sm text-stone max-w-sm mx-auto leading-relaxed">
-                    Reveal your Atelier Blueprint to unlock today's stream. One mirror selfie, one
-                    face, one moment — and the feed is yours.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPostOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-ink text-atelier-ivory text-[10px] uppercase tracking-[0.32em] hover:bg-ink/90 transition-colors shadow-atelier-soft"
-                >
-                  <Camera className="size-4" strokeWidth={1.75} />
-                  Post Today's OOTD
-                </button>
-              </div>
-            </div>
-          </>
         )}
       </section>
 
