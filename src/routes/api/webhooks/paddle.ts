@@ -37,10 +37,18 @@ export const Route = createFileRoute("/api/webhooks/paddle")({
             event as unknown as PaddleSubscriptionWebhookEvent,
           );
         } else if (TRANSACTION_EVENT_TYPES.has(event.event_type)) {
-          await applyPaddleCreditPackEvent(
-            supabaseAdmin,
-            event as unknown as PaddleTransactionWebhookEvent,
-          );
+          try {
+            await applyPaddleCreditPackEvent(
+              supabaseAdmin,
+              event as unknown as PaddleTransactionWebhookEvent,
+            );
+          } catch (err) {
+            // 5xx is the retry signal: Paddle re-delivers on its own schedule
+            // and surfaces the failure in the dashboard. Money already taken —
+            // never answer 200 for a top-up we haven't applied.
+            console.error("[paddle-webhook] credit pack event failed", err);
+            return new Response("credit pack event failed", { status: 500 });
+          }
         }
 
         return Response.json({ ok: true });

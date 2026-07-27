@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
+import { syncPaddlePurchase } from "@/lib/paddle-sync.functions";
 import type { PublicSubscriptionPlan } from "@/lib/subscription-plans";
 
 type CheckoutOpenOptions = Parameters<Paddle["Checkout"]["open"]>[0];
-type PaddleEvent = { name?: string };
+type PaddleEvent = { name?: string; data?: { transaction_id?: string } };
 
 export function buildCheckoutOptions(
   plan: Pick<PublicSubscriptionPlan, "paddle_price_id">,
@@ -40,6 +42,7 @@ function getPaddle(): Promise<Paddle | null> {
 export function usePaddleCheckout(userId: string | undefined) {
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const queryClient = useQueryClient();
+  const syncPurchase = useServerFn(syncPaddlePurchase);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,12 +55,32 @@ export function usePaddleCheckout(userId: string | undefined) {
   }, []);
 
   useEffect(() => {
+    function refresh() {
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(userId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(userId) });
+    }
+
     activeEventHandler = (event: PaddleEvent) => {
       if (event.name === "checkout.completed") {
-        toast.success("Payment received — activating your plan…");
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.credits(userId) });
-        }, 4000);
+        const transactionId = event.data?.transaction_id;
+        const toastId = toast.loading("Payment received — activating your plan…");
+        // Apply the purchase now instead of waiting on webhook delivery, then
+        // dismiss the Paddle overlay so the user lands back in the app.
+        (transactionId
+          ? syncPurchase({ data: { transactionId } })
+          : Promise.reject(new Error("no transaction id"))
+        )
+          .then(() => {
+            refresh();
+            void getPaddle().then((p) => p?.Checkout.close());
+            toast.success("Your plan is active.", { id: toastId });
+          })
+          .catch(() => {
+            // The webhook is still coming; refetch a couple of times for it.
+            refresh();
+            setTimeout(refresh, 5000);
+            toast.success("Payment received — your plan will appear shortly.", { id: toastId });
+          });
       }
       if (event.name === "checkout.error") {
         toast.error("Checkout couldn't load — try again in a moment.");
@@ -66,7 +89,7 @@ export function usePaddleCheckout(userId: string | undefined) {
     return () => {
       activeEventHandler = null;
     };
-  }, [queryClient, userId]);
+  }, [queryClient, userId, syncPurchase]);
 
   const openCheckout = useCallback(
     (

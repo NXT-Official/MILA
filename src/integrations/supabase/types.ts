@@ -163,6 +163,7 @@ export type Database = {
           paddle_transaction_id: string;
           credits_granted: number;
           created_at: string;
+          granted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -171,6 +172,7 @@ export type Database = {
           paddle_transaction_id: string;
           credits_granted: number;
           created_at?: string;
+          granted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -179,6 +181,7 @@ export type Database = {
           paddle_transaction_id?: string;
           credits_granted?: number;
           created_at?: string;
+          granted_at?: string | null;
         };
         Relationships: [
           {

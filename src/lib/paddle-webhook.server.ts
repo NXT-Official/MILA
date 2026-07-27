@@ -140,35 +140,59 @@ export async function applyPaddleCreditPackEvent(
     .select("id, credits")
     .eq("paddle_price_id", priceId ?? "")
     .maybeSingle();
-  if (packError || !pack) return;
+  // A lookup that failed is not the same as a price that isn't a pack: the
+  // first must be retried, the second is just a subscription renewal passing by.
+  if (packError) {
+    console.error("[paddle-webhook] credit pack lookup failed", packError);
+    throw new Error("credit pack lookup failed");
+  }
+  if (!pack) return;
 
   const userId = data.custom_data?.user_id;
   if (!userId) {
+    // Unretryable — the payload will never gain a user_id. Log and drop.
     console.error("[paddle-webhook] missing custom_data.user_id", { transactionId: data.id });
     return;
   }
 
-  const { data: insertedRows, error: insertError } = await db
-    .from("credit_pack_purchases")
-    .upsert(
-      {
-        user_id: userId,
-        credit_pack_id: pack.id,
-        paddle_transaction_id: data.id,
-        credits_granted: pack.credits,
-      },
-      { onConflict: "paddle_transaction_id", ignoreDuplicates: true },
-    )
-    .select("id");
+  const { error: insertError } = await db.from("credit_pack_purchases").upsert(
+    {
+      user_id: userId,
+      credit_pack_id: pack.id,
+      paddle_transaction_id: data.id,
+      credits_granted: pack.credits,
+    },
+    { onConflict: "paddle_transaction_id", ignoreDuplicates: true },
+  );
   if (insertError) {
     console.error("[paddle-webhook] failed to record credit pack purchase", insertError);
-    return;
+    throw new Error("credit pack purchase not recorded");
   }
-  if (!insertedRows || insertedRows.length === 0) return;
+
+  // Claim the grant in one conditional update: concurrent deliveries can't both
+  // win, and a delivery that finds granted_at already set is a true duplicate.
+  const { data: claimed, error: claimError } = await db
+    .from("credit_pack_purchases")
+    .update({ granted_at: new Date().toISOString() })
+    .eq("paddle_transaction_id", data.id)
+    .is("granted_at", null)
+    .select("id");
+  if (claimError) {
+    console.error("[paddle-webhook] failed to claim credit grant", claimError);
+    throw new Error("credit grant not claimed");
+  }
+  if (!claimed || claimed.length === 0) return;
 
   try {
     await grant(db, userId, pack.credits);
   } catch (err) {
+    // Hand the grant back so the next delivery retries it, then fail the
+    // webhook so Paddle actually sends one.
+    await db
+      .from("credit_pack_purchases")
+      .update({ granted_at: null })
+      .eq("paddle_transaction_id", data.id);
     console.error("[paddle-webhook] failed to grant ai credits", err);
+    throw err;
   }
 }
