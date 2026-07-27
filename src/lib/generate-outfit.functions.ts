@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
-import { consumeAiCredit } from "./credits.server";
+import { consumeAiCredit, markLookImagePending, payForLookImage } from "./credits.server";
 import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
 import { generateOutfitImage, isCloudflareRateLimitError } from "./cloudflare-image.server";
 
@@ -299,6 +299,9 @@ Always call the report_daily_look tool.`;
     if (!look.success) {
       throw new Error("Mila couldn't compose a look this time. Please try again.");
     }
+    // The credit charged above covers this look's first visual, rendered by the
+    // separate regenerateOutfitImage call the client makes next.
+    await markLookImagePending(context.userId);
     return look.data;
   });
 
@@ -312,4 +315,6 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
     }
     return parsed.data;
   })
-  .handler(async ({ data }) => tryGenerateOutfitImage(data));
+  .handler(async ({ data, context }) =>
+    payForLookImage(context.supabase, context.userId, () => tryGenerateOutfitImage(data)),
+  );

@@ -83,3 +83,62 @@ export async function grantAiCredits(
   const dailyAllowance = await resolveDailyCreditAllowance(supabase, userId);
   return store(userId, dailyAllowance, amount);
 }
+
+export type LookImageDeps = {
+  claim: (userId: string) => Promise<boolean>;
+  mark: (userId: string) => Promise<void>;
+  consume?: ConsumeCreditStore;
+  grant?: GrantCreditStore;
+};
+
+/** Single conditional UPDATE: two racing renders can never both claim it. */
+async function supabaseClaimLookImage(userId: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("user_entitlements")
+    .update({ look_image_pending: false })
+    .eq("user_id", userId)
+    .eq("look_image_pending", true)
+    .select("user_id");
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
+}
+
+/** Arms the one free image that comes with a just-charged look. */
+export async function markLookImagePending(userId: string): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin
+    .from("user_entitlements")
+    .update({ look_image_pending: true })
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
+const supabaseLookImageDeps: LookImageDeps = {
+  claim: supabaseClaimLookImage,
+  mark: markLookImagePending,
+};
+
+/**
+ * The first visual for a freshly generated look is covered by the credit that
+ * look already cost; every render after it costs one. A render that comes back
+ * without an image costs nothing — whichever way it was paid for is put back,
+ * since Cloudflare failing is exactly why the Retry button exists.
+ */
+export async function payForLookImage<T extends { imageDataUri: string | null }>(
+  supabase: SupabaseClient,
+  userId: string,
+  produce: () => Promise<T>,
+  deps: LookImageDeps = supabaseLookImageDeps,
+): Promise<T> {
+  const free = await deps.claim(userId);
+  if (!free) await consumeAiCredit(supabase, userId, deps.consume);
+
+  const result = await produce();
+
+  if (!result.imageDataUri) {
+    if (free) await deps.mark(userId);
+    else await grantAiCredits(supabase, userId, 1, deps.grant);
+  }
+  return result;
+}
