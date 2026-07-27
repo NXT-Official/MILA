@@ -16,6 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { conciergeChat } from "@/lib/concierge-chat.functions";
+import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
+import { isInsufficientCreditsError } from "@/lib/credits";
 import type { ConciergeLook } from "@/hooks/use-concierge";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,6 +122,7 @@ export function ConciergeChat({
   const conversationIdRef = useRef<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevLookIdRef = useRef<string | null>(look?.lookId ?? null);
   const chat = useServerFn(conciergeChat);
@@ -333,7 +336,10 @@ export function ConciergeChat({
       void persistExchange(trimmed, uploadedUrl, res.reply);
     } catch (e) {
       setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, failed: true } : m)));
-      toast.error(e instanceof Error ? e.message : "Mila couldn't respond just now.");
+      // Out of credits is an upsell, not an error. Retry on the message still
+      // works once they top up.
+      if (isInsufficientCreditsError(e)) setCreditPaywallOpen(true);
+      else toast.error(e instanceof Error ? e.message : "Mila couldn't respond just now.");
     } finally {
       setSending(false);
     }
@@ -341,6 +347,12 @@ export function ConciergeChat({
 
   return (
     <>
+      <UpgradeSlotsDialog
+        open={creditPaywallOpen}
+        onOpenChange={setCreditPaywallOpen}
+        user={user}
+      />
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 sm:px-7 py-6">
         <div className="mx-auto w-full max-w-3xl space-y-6">
           {messages.length === 0 && (
