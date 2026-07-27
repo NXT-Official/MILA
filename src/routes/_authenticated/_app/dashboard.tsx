@@ -124,6 +124,12 @@ function Dashboard() {
       setLook((prev) => (prev ? { ...prev, ...res } : prev));
       return res;
     } catch (e) {
+      // Out of credits gets the paywall, not a toast — same as generateLook.
+      if (isInsufficientCreditsError(e)) {
+        setCreditPaywallOpen(true);
+        setLook((prev) => (prev ? { ...prev, imageDataUri: null } : prev));
+        return { imageDataUri: null, imageGenerationError: undefined };
+      }
       const message =
         e instanceof Error
           ? e.message
@@ -134,6 +140,8 @@ function Dashboard() {
       return { imageDataUri: null, imageGenerationError: message };
     } finally {
       setImageLoading(false);
+      // Renders past the look's free first one cost a credit.
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
 

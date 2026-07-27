@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import { consumeAiCredit, grantAiCredits } from "./credits.server";
+import { consumeAiCredit, grantAiCredits, payForLookImage } from "./credits.server";
 import { InsufficientCreditsError } from "./credits";
 import { MemoryCreditStore } from "../../tests/helpers/memory-credit-store";
 
@@ -59,6 +59,65 @@ describe("consumeAiCredit", () => {
     today = "2026-07-25";
     const remaining = await consumeAiCredit(supabase, "user-1", store.consume);
     expect(remaining).toBe(99);
+  });
+});
+
+describe("payForLookImage", () => {
+  function lookImageDeps(store: MemoryCreditStore, pending: boolean) {
+    return {
+      claim: async () => {
+        const wasPending = pending;
+        pending = false;
+        return wasPending;
+      },
+      mark: async () => {
+        pending = true;
+      },
+      consume: store.consume,
+      grant: store.grant,
+      isPending: () => pending,
+    };
+  }
+  const image = async () => ({ imageDataUri: "data:image/png;base64,x" });
+  const noImage = async () => ({ imageDataUri: null });
+
+  test("the look's first visual is free, every render after it costs a credit", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 10);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 10, "2026-07-24");
+    const deps = lookImageDeps(store, true);
+
+    await payForLookImage(supabase, "user-1", image, deps);
+    expect(await store.consume("user-1", 10)).toEqual({ allowed: true, remaining: 9 });
+
+    await payForLookImage(supabase, "user-1", image, deps);
+    await payForLookImage(supabase, "user-1", image, deps);
+    expect(await store.consume("user-1", 10)).toEqual({ allowed: true, remaining: 6 });
+  });
+
+  test("a render that produces no image costs nothing", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 10);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 10, "2026-07-24");
+    const deps = lookImageDeps(store, true);
+
+    // Free render fails → the entitlement is re-armed, so retrying is still free.
+    await payForLookImage(supabase, "user-1", noImage, deps);
+    expect(deps.isPending()).toBe(true);
+
+    // Paid render fails → the credit comes back.
+    await payForLookImage(supabase, "user-1", image, deps); // spends the free one
+    await payForLookImage(supabase, "user-1", noImage, deps);
+    expect(await store.consume("user-1", 10)).toEqual({ allowed: true, remaining: 9 });
+  });
+
+  test("a depleted user is refused a paid render", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 10);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    store.seed("user-1", 0, "2026-07-24");
+    await expect(
+      payForLookImage(supabase, "user-1", image, lookImageDeps(store, false)),
+    ).rejects.toBeInstanceOf(InsufficientCreditsError);
   });
 });
 
