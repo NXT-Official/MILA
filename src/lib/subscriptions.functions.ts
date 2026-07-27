@@ -12,7 +12,9 @@ export type CancelSubscriptionResult = { success: true; endsAt: string } | { err
 
 export async function cancelSubscriptionForUser(
   db: MilaSupabaseClient,
-  cancelViaPaddle: (paddleSubscriptionId: string) => Promise<{ endsAt: string } | { error: unknown }>,
+  cancelViaPaddle: (
+    paddleSubscriptionId: string,
+  ) => Promise<{ endsAt: string } | { error: unknown }>,
   userId: string,
 ): Promise<CancelSubscriptionResult> {
   const { data: subscription, error } = await db
@@ -46,7 +48,10 @@ async function cancelViaPaddleApi(
     `https://sandbox-api.paddle.com/subscriptions/${paddleSubscriptionId}/cancel`,
     {
       method: "POST",
-      headers: { Authorization: `Bearer ${PADDLE_SANDBOX_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${PADDLE_SANDBOX_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ effective_from: "next_billing_period" }),
     },
   );

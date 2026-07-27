@@ -12,7 +12,11 @@ function parseSignatureHeader(header: string): { ts?: string; h1?: string } {
   return parsed;
 }
 
-export function verifyPaddleSignature(rawBody: string, header: string | null, secret: string): boolean {
+export function verifyPaddleSignature(
+  rawBody: string,
+  header: string | null,
+  secret: string,
+): boolean {
   if (!header) return false;
   const { ts, h1 } = parseSignatureHeader(header);
   if (!ts || !h1) return false;

@@ -69,7 +69,10 @@ export function usePaddleCheckout(userId: string | undefined) {
   }, [queryClient, userId]);
 
   const openCheckout = useCallback(
-    (plan: Pick<PublicSubscriptionPlan, "paddle_price_id">, user: { id: string; email?: string }) => {
+    (
+      plan: Pick<PublicSubscriptionPlan, "paddle_price_id">,
+      user: { id: string; email?: string },
+    ) => {
       if (!paddle || !plan.paddle_price_id) return;
       paddle.Checkout.open(buildCheckoutOptions(plan, user));
     },
