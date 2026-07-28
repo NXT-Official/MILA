@@ -18,7 +18,7 @@ describe("cancelSubscriptionForUser", () => {
     const db = fakeDb(null);
     const cancelViaPaddle = mock(async () => ({ endsAt: "2026-09-01" }));
 
-    const result = await cancelSubscriptionForUser(db, cancelViaPaddle, "user-1");
+    const result = await cancelSubscriptionForUser(db, cancelViaPaddle, "user-1", async () => {});
 
     expect(result).toEqual({ error: "No active membership to cancel" });
     expect(cancelViaPaddle).not.toHaveBeenCalled();
@@ -54,7 +54,7 @@ describe("resumeSubscriptionForUser", () => {
     const db = fakeDb(null);
     const resumeViaPaddle = mock(async () => ({ renewsAt: "2026-09-01" }));
 
-    const result = await resumeSubscriptionForUser(db, resumeViaPaddle, "user-1");
+    const result = await resumeSubscriptionForUser(db, resumeViaPaddle, "user-1", async () => {});
 
     expect(result).toEqual({ error: "No membership to renew" });
     expect(resumeViaPaddle).not.toHaveBeenCalled();

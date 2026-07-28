@@ -9,7 +9,6 @@ type MilaSupabaseClient = SupabaseClient<Database>;
 const IN_FORCE_STATUSES = ["active", "trialing", "past_due"];
 
 export type CancelSubscriptionResult = { success: true; endsAt: string } | { error: string };
-
 export type ResumeSubscriptionResult = { success: true; renewsAt: string } | { error: string };
 
 export type MarkCancelAtPeriodEndStore = (
@@ -17,30 +16,6 @@ export type MarkCancelAtPeriodEndStore = (
   cancelAtPeriodEnd: boolean,
 ) => Promise<void>;
 
-/**
- * The subscription.updated webhook is the source of truth for this flag and
- * will set it again with the same value — but it arrives whenever it arrives
- * (never, without a tunnel in local dev), and until it does the drawer keeps
- * saying "Renews" and offering a Cancel button for a membership Paddle has
- * already scheduled for cancellation. Writing it here makes the UI honest the
- * moment Paddle confirms. Only the flag: current_period_end stays the
- * webhook's business.
- */
-const supabaseMarkCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = async (
-  paddleSubscriptionId,
-  cancelAtPeriodEnd,
-) => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error } = await supabaseAdmin
-    .from("subscriptions")
-    .update({ cancel_at_period_end: cancelAtPeriodEnd })
-    .eq("paddle_subscription_id", paddleSubscriptionId);
-  // Paddle already accepted the change — don't fail the user's request over a
-  // mirror write the webhook will redo anyway.
-  if (error) console.error("[subscriptions] failed to mirror cancel_at_period_end", error);
-};
-
-/** The membership a cancel or renew acts on: newest row that's still in force. */
 async function findInForceSubscriptionId(
   db: MilaSupabaseClient,
   userId: string,
@@ -63,7 +38,7 @@ export async function cancelSubscriptionForUser(
     paddleSubscriptionId: string,
   ) => Promise<{ endsAt: string } | { error: unknown }>,
   userId: string,
-  markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = supabaseMarkCancelAtPeriodEnd,
+  markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore,
 ): Promise<CancelSubscriptionResult> {
   const subscriptionId = await findInForceSubscriptionId(db, userId);
   if (!subscriptionId) {
@@ -78,19 +53,13 @@ export async function cancelSubscriptionForUser(
   return { success: true, endsAt: result.endsAt };
 }
 
-/**
- * Undoes a scheduled cancellation. A subscription winding down is still
- * `active` with a scheduled_change, so this is not Paddle's "resume" operation
- * (that one is for `paused` subscriptions) — it's an update that clears the
- * scheduled change, which is the only value that field accepts.
- */
 export async function resumeSubscriptionForUser(
   db: MilaSupabaseClient,
   resumeViaPaddle: (
     paddleSubscriptionId: string,
   ) => Promise<{ renewsAt: string } | { error: unknown }>,
   userId: string,
-  markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = supabaseMarkCancelAtPeriodEnd,
+  markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore,
 ): Promise<ResumeSubscriptionResult> {
   const subscriptionId = await findInForceSubscriptionId(db, userId);
   if (!subscriptionId) {
@@ -130,8 +99,6 @@ export async function cancelViaPaddleApi(
     return { error: json };
   }
 
-  // An immediate cancel comes back already `canceled` with no scheduled change,
-  // so canceled_at is the only date left to report.
   const endsAt: string | undefined =
     json.data?.scheduled_change?.effective_at ??
     json.data?.current_billing_period?.ends_at ??
@@ -156,8 +123,6 @@ async function resumeViaPaddleApi(
       Authorization: `Bearer ${PADDLE_SANDBOX_API_KEY}`,
       "Content-Type": "application/json",
     },
-    // null is the only value this field accepts on update, and it means
-    // "drop the pending cancellation".
     body: JSON.stringify({ scheduled_change: null }),
   });
   const json = await res.json();
@@ -175,10 +140,6 @@ async function resumeViaPaddleApi(
   return { renewsAt };
 }
 
-/**
- * Server-checked membership gate for routes that are members-only. The client
- * can lie about a cached query; it can't lie about this.
- */
 export const myMembershipStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ active: boolean }> => {
@@ -189,11 +150,23 @@ export const myMembershipStatus = createServerFn({ method: "GET" })
 export const resumeMySubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ResumeSubscriptionResult> => {
-    return resumeSubscriptionForUser(context.supabase, resumeViaPaddleApi, context.userId);
+    const { markCancelAtPeriodEnd } = await import("./subscriptions.server");
+    return resumeSubscriptionForUser(
+      context.supabase,
+      resumeViaPaddleApi,
+      context.userId,
+      markCancelAtPeriodEnd,
+    );
   });
 
 export const cancelMySubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<CancelSubscriptionResult> => {
-    return cancelSubscriptionForUser(context.supabase, cancelViaPaddleApi, context.userId);
+    const { markCancelAtPeriodEnd } = await import("./subscriptions.server");
+    return cancelSubscriptionForUser(
+      context.supabase,
+      cancelViaPaddleApi,
+      context.userId,
+      markCancelAtPeriodEnd,
+    );
   });
