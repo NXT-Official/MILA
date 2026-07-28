@@ -133,19 +133,6 @@ export const deletePost = createServerFn({ method: "POST" })
     return { id: data.post_id };
   });
 
-export const getTodayPostStatus = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { count, error } = await supabase
-      .from("posts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .gte("created_at", startOfTodayIso());
-    if (error) throw new Error(error.message);
-    return { has_posted_today: (count ?? 0) > 0 };
-  });
-
 export const getFeed = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<FeedResponse> => {

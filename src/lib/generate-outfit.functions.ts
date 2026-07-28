@@ -5,6 +5,7 @@ import { aiChatCompletion } from "./ai.server";
 import { withAiCredit, markLookImagePending, payForLookImage } from "./credits.server";
 import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
 import { generateOutfitImage, isCloudflareRateLimitError } from "./cloudflare-image.server";
+import { errorMessage } from "@/lib/utils";
 
 const Input = z.object({
   bodyType: z.string().min(1).max(64),
@@ -139,10 +140,7 @@ async function tryGenerateOutfitImage(
     const imageDataUri = await generateOutfitImage(outfit);
     return { imageDataUri };
   } catch (error) {
-    console.error(
-      "[generateOutfitImage] failed:",
-      error instanceof Error ? error.message : "Unknown error",
-    );
+    console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
     return { imageDataUri: null, imageGenerationError: friendlyImageError(error) };
   }
 }
