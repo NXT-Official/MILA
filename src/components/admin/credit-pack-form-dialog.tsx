@@ -20,41 +20,18 @@ import { FormField } from "@/components/ui/form-field";
 import { Label } from "@/components/ui/label";
 import { adminCreateCreditPack, adminUpdateCreditPack } from "@/lib/credit-packs.functions";
 import {
-  planSlugSchema,
+  catalogFormShape,
   slugifyPlanTitle,
   centsToPriceInput,
   parsePriceToCents,
+  wholeNumberField,
 } from "@/lib/subscription-plans";
 import type { CreditPack } from "@/lib/credit-packs";
+import { errorMessage } from "@/lib/utils";
 
 const formSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(1, "Title is required.")
-    .max(80, "Keep the title under 80 characters."),
-  slug: planSlugSchema,
-  description: z.string().trim().max(280, "Keep the description under 280 characters."),
-  price: z
-    .string()
-    .trim()
-    .refine((v) => parsePriceToCents(v) !== null, "Enter a price like 1.99 (max 9,999,999)."),
-  currency: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z]{3}$/, "Use a 3-letter currency code, e.g. usd."),
-  credits: z.coerce
-    .number({ invalid_type_error: "Enter a whole number." })
-    .int("Enter a whole number.")
-    .min(1, "Credits must be at least 1.")
-    .max(1_000_000),
-  sort_order: z.coerce
-    .number({ invalid_type_error: "Enter a whole number." })
-    .int("Enter a whole number.")
-    .min(0, "Sort order can't be negative.")
-    .max(9999),
-  is_active: z.boolean(),
+  ...catalogFormShape("1.99"),
+  credits: wholeNumberField().min(1, "Credits must be at least 1.").max(1_000_000),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -135,7 +112,7 @@ export function CreditPackFormDialog({
       onOpenChange(false);
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't save the pack.");
+      toast.error(errorMessage(err, "Couldn't save the pack."));
     }
   };
 

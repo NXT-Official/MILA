@@ -25,6 +25,7 @@ import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.functions";
 import { deleteMyAccount } from "@/lib/account.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
+import { errorMessage } from "@/lib/utils";
 
 interface StudioMembershipDrawerProps {
   isOpen: boolean;
@@ -74,7 +75,7 @@ export function StudioMembershipDrawer({
       toast.success("Your account and all of its data have been deleted.");
       await signOut();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "We couldn't delete your account.");
+      toast.error(errorMessage(err, "We couldn't delete your account."));
     } finally {
       setDeleting(false);
     }
@@ -145,7 +146,7 @@ export function StudioMembershipDrawer({
       toast.success("Check both your old and new inbox to confirm the email change.");
       setNewEmail("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't update email.");
+      toast.error(errorMessage(err, "Couldn't update email."));
     } finally {
       setEmailSubmitting(false);
     }
@@ -168,7 +169,7 @@ export function StudioMembershipDrawer({
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't update password.");
+      toast.error(errorMessage(err, "Couldn't update password."));
     } finally {
       setPasswordSubmitting(false);
     }

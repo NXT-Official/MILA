@@ -1,15 +1,12 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { Archive, ArchiveRestore, Ellipsis, Pencil, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Pencil, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  ActionItem,
+  CatalogTitleCell,
+  RowActionsMenu,
+  ToggleCell,
+} from "@/components/admin/table-cells";
 import { formatPlanPrice } from "@/lib/subscription-plans";
 import type { CreditPack } from "@/lib/credit-packs";
 
@@ -31,22 +28,11 @@ export function getCreditPackColumns({
       accessorKey: "title",
       header: () => <span>Pack</span>,
       cell: ({ row }) => (
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-serif text-sm text-ink truncate">{row.original.title}</span>
-            {row.original.archived_at && (
-              <Badge
-                variant="outline"
-                className="border-stone/40 text-stone text-[9px] uppercase tracking-[0.18em]"
-              >
-                Archived
-              </Badge>
-            )}
-          </div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-stone mt-0.5 truncate">
-            {row.original.slug}
-          </div>
-        </div>
+        <CatalogTitleCell
+          title={row.original.title}
+          slug={row.original.slug}
+          archived={!!row.original.archived_at}
+        />
       ),
     },
     {
@@ -69,14 +55,12 @@ export function getCreditPackColumns({
       id: "active",
       header: () => <div className="text-center">Active</div>,
       cell: ({ row }) => (
-        <div className="flex justify-center">
-          <Switch
-            checked={row.original.is_active}
-            disabled={!!row.original.archived_at}
-            aria-label={`${row.original.title} active`}
-            onCheckedChange={(v) => onToggleActive(row.original, v)}
-          />
-        </div>
+        <ToggleCell
+          checked={row.original.is_active}
+          disabled={!!row.original.archived_at}
+          label={`${row.original.title} active`}
+          onCheckedChange={(v) => onToggleActive(row.original, v)}
+        />
       ),
     },
     {
@@ -95,46 +79,15 @@ export function getCreditPackColumns({
         const pack = row.original;
         const archived = !!pack.archived_at;
         return (
-          <div className="flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="ghost" className="size-8 p-0 text-stone hover:text-ink">
-                  <Ellipsis className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                  <span className="sr-only">Actions for {pack.title}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(pack)}>
-                  <Pencil className="mr-2 size-4" strokeWidth={1.75} aria-hidden="true" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onArchive(pack, !archived)}>
-                  {archived ? (
-                    <>
-                      <ArchiveRestore
-                        className="mr-2 size-4"
-                        strokeWidth={1.75}
-                        aria-hidden="true"
-                      />
-                      Restore
-                    </>
-                  ) : (
-                    <>
-                      <Archive className="mr-2 size-4" strokeWidth={1.75} aria-hidden="true" />
-                      Archive
-                    </>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(pack)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 size-4" strokeWidth={1.75} aria-hidden="true" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <RowActionsMenu label={`Actions for ${pack.title}`}>
+            <ActionItem icon={Pencil} label="Edit" onClick={() => onEdit(pack)} />
+            <ActionItem
+              icon={archived ? ArchiveRestore : Archive}
+              label={archived ? "Restore" : "Archive"}
+              onClick={() => onArchive(pack, !archived)}
+            />
+            <ActionItem icon={Trash2} label="Delete" destructive onClick={() => onDelete(pack)} />
+          </RowActionsMenu>
         );
       },
     },
