@@ -1,5 +1,5 @@
 import { Moon, Sun, SunMoon } from "lucide-react";
-import { useTheme, type Theme } from "@/components/layout/theme-provider";
+import { useTheme, type Theme } from "@/hooks/use-theme";
 import { IconButton } from "@/components/ui/icon-button";
 
 const NEXT: Record<Theme, Theme> = { light: "dark", dark: "system", system: "light" };
