@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { climateForWeatherCode } from "@/constants/climate";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
@@ -180,17 +181,7 @@ export const generateDailyLook = createServerFn({ method: "POST" })
           const wind = Math.round(j?.current?.wind_speed_10m ?? 0);
           tempC = tempC ?? c;
           tempF = tempF ?? Math.round((c * 9) / 5 + 32);
-          if (!condition) {
-            if ([71, 73, 75, 77, 85, 86].includes(code)) condition = "Snow";
-            else if (
-              [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(code)
-            )
-              condition = "Rain";
-            else if (code === 0 || code === 1) condition = "Sunny";
-            else if (wind >= 25) condition = "Windy";
-            else if (code === 3 || [45, 48].includes(code)) condition = "Overcast";
-            else condition = "Cloudy";
-          }
+          condition ??= climateForWeatherCode(code, wind).condition;
         } catch (err) {
           console.warn("Open-Meteo fetch failed; falling back to label only.", err);
         }

@@ -9,51 +9,12 @@ import {
 } from "@/components/ui/select";
 import {
   HUBS,
+  climateForWeatherCode,
   type ClimateIcon,
   type ClimateState,
-  type ClimateCondition,
 } from "@/constants/climate";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchDefaultHubId, localDefaultHubId } from "@/lib/default-hub";
-
-function iconFor(code: number): ClimateIcon {
-  if (code === 0 || code === 1) return "sun";
-  if (code === 2 || code === 3) return "cloud";
-  if ([45, 48].includes(code)) return "cloud";
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(code))
-    return "rain";
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return "snow";
-  return "cloud";
-}
-
-function conditionFor(code: number, windKph: number): ClimateCondition {
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(code))
-    return "Rain";
-  if (code === 0 || code === 1) return "Sunny";
-  if (windKph >= 25) return "Windy";
-  if (code === 3 || [45, 48].includes(code)) return "Overcast";
-  return "Cloudy";
-}
-
-function describe(code: number): string {
-  if (code === 0) return "Clear sky";
-  if (code === 1) return "Mainly clear";
-  if (code === 2) return "Partly cloudy";
-  if (code === 3) return "Overcast";
-  if ([45, 48].includes(code)) return "Foggy";
-  if ([51, 53, 55].includes(code)) return "Light drizzle";
-  if ([56, 57].includes(code)) return "Freezing drizzle";
-  if ([61, 63, 65].includes(code)) return "Rain";
-  if ([66, 67].includes(code)) return "Freezing rain";
-  if ([71, 73, 75].includes(code)) return "Snow";
-  if (code === 77) return "Snow grains";
-  if ([80, 81, 82].includes(code)) return "Rain showers";
-  if ([85, 86].includes(code)) return "Snow showers";
-  if (code === 95) return "Thunderstorm";
-  if ([96, 99].includes(code)) return "Thunderstorm with hail";
-  return "Mild";
-}
 
 async function fetchClimate(lat: number, lon: number, location: string): Promise<ClimateState> {
   const r = await fetch(
@@ -63,15 +24,15 @@ async function fetchClimate(lat: number, lon: number, location: string): Promise
   const temp = Math.round(j?.current?.temperature_2m ?? 20);
   const wind = Math.round(j?.current?.wind_speed_10m ?? 0);
   const code = j?.current?.weather_code ?? 2;
-  const ic = iconFor(code);
+  const weather = climateForWeatherCode(code, wind);
   const windy = wind >= 25 ? " & Windy" : "";
   return {
-    label: `${temp}°C ${describe(code)}${windy}`,
+    label: `${temp}°C ${weather.description}${windy}`,
     location,
-    icon: wind >= 25 && ic === "cloud" ? "wind" : ic,
+    icon: weather.icon,
     tempC: temp,
     tempF: Math.round((temp * 9) / 5 + 32),
-    condition: conditionFor(code, wind),
+    condition: weather.condition,
   };
 }
 
