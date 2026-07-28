@@ -75,12 +75,6 @@ export function sanitizeOnboardingStep(value: unknown): OnboardingStepId | undef
     : undefined;
 }
 
-export function getOnboardingStep(id: OnboardingStepId): OnboardingStep {
-  const step = ONBOARDING_STEPS.find((s) => s.id === id);
-  if (!step) throw new Error(`Unknown onboarding step "${id}"`);
-  return step;
-}
-
 export function getOnboardingStepIndex(id: OnboardingStepId): number {
   return COUNTED_STEPS.findIndex((s) => s.id === id);
 }
@@ -165,20 +159,6 @@ export function getFirstIncompleteOnboardingStep(
   if (!hasFaceShape(profile)) return "face-shape";
   if (!hasHairType(profile)) return "hair-type";
   return "beauty-preferences";
-}
-
-export function getNextOnboardingStep(current: OnboardingStepId): OnboardingStepId | null {
-  const steps = ONBOARDING_STEPS;
-  const index = steps.findIndex((s) => s.id === current);
-  if (index === -1 || index === steps.length - 1) return null;
-  return steps[index + 1].id;
-}
-
-export function getPreviousOnboardingStep(current: OnboardingStepId): OnboardingStepId | null {
-  const steps = ONBOARDING_STEPS;
-  const index = steps.findIndex((s) => s.id === current);
-  if (index <= 0) return null;
-  return steps[index - 1].id;
 }
 
 export function isOnboardingStepReachable(

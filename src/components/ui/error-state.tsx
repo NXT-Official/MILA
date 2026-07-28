@@ -2,6 +2,21 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** In-page fetch failure for a catalog listing — the page keeps its own header. */
+export function LoadErrorPanel({ title, onRetry }: { title: string; onRetry: () => void }) {
+  return (
+    <div role="alert" className="atelier-card mx-auto max-w-xl p-10 text-center sm:p-14">
+      <p className="mb-2 font-serif text-2xl text-ink">{title}</p>
+      <p className="text-sm text-muted">
+        Something went wrong on our side. Please try again in a moment.
+      </p>
+      <Button variant="secondary" className="mt-6" onClick={onRetry}>
+        Try Again
+      </Button>
+    </div>
+  );
+}
+
 export interface ErrorStateProps {
   title: React.ReactNode;
   description?: React.ReactNode;

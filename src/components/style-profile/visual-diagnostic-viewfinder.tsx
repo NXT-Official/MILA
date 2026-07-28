@@ -39,7 +39,7 @@ const DRAPE_LABELS = [
   "STUDYING THE CONTRAST IN YOUR FEATURES…",
 ] as const;
 
-export function BriefingRule({
+function BriefingRule({
   icon,
   title,
   body,
