@@ -16,16 +16,25 @@ test("password auth stays server-side and delegates abuse limits to Supabase Aut
   expect(auth).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
 });
 
-test("all hCaptcha forms clear expired/error tokens and reset after attempts", () => {
+test("the shared captcha hook clears expired/error tokens and resets after attempts", () => {
+  const hook = source("../components/login/use-captcha.tsx");
+  expect(hook).toContain("onExpire={clear}");
+  expect(hook).toContain("onError={clear}");
+  expect(hook).toContain("ref.current?.resetCaptcha()");
+  expect(hook).toContain("setToken(null)");
+});
+
+test("every hCaptcha form goes through that hook rather than mounting its own widget", () => {
   for (const path of [
     "../components/login/login-form.tsx",
     "../components/login/signup-form.tsx",
     "../components/login/support-dialog.tsx",
   ]) {
     const component = source(path);
-    expect(component).toContain("onExpire={() => setCaptchaToken(null)}");
-    expect(component).toContain("onError={() => setCaptchaToken(null)}");
-    expect(component).toContain("captchaRef.current?.resetCaptcha()");
-    expect(component).toContain("setCaptchaToken(null)");
+    expect(component).toContain("useCaptcha()");
+    expect(component).toContain("captcha.reset()");
+    // A form that renders its own <HCaptcha> would bypass the reset above and
+    // silently reuse a spent, single-use token on the next attempt.
+    expect(component).not.toContain("<HCaptcha");
   }
 });
