@@ -13,6 +13,7 @@ import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio
 import { StepFooter } from "@/components/onboarding/step-shell";
 import { useUpdateStyleProfile } from "@/lib/queries/profile-mutations";
 import type { Json } from "@/integrations/supabase/types";
+import { errorMessage } from "@/lib/utils";
 
 export function ColorResultStep({
   candidate,
@@ -66,7 +67,7 @@ export function ColorResultStep({
       });
       onConfirmed();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "We couldn't save this step.");
+      setError(errorMessage(err, "We couldn't save this step."));
     }
   }
 

@@ -4,6 +4,7 @@ import { BEAUTY_PREFERENCE_TAGS } from "@/constants/style-profile";
 import { StepFooter } from "@/components/onboarding/step-shell";
 import { useUpdateStyleProfile } from "@/lib/queries/profile-mutations";
 import type { Json } from "@/integrations/supabase/types";
+import { errorMessage } from "@/lib/utils";
 
 export function BeautyPreferencesStep({
   value,
@@ -28,7 +29,7 @@ export function BeautyPreferencesStep({
       await mutation.mutateAsync({ beauty_preferences: selected as unknown as Json });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "We couldn't save this step.");
+      setError(errorMessage(err, "We couldn't save this step."));
     }
   }
 

@@ -27,6 +27,7 @@ import { HairTypeStep } from "./steps/hair-type-step";
 import { BeautyPreferencesStep } from "./steps/beauty-preferences-step";
 import { LocationStep } from "./steps/location-step";
 import { ReviewStep } from "./steps/review-step";
+import { errorMessage } from "@/lib/utils";
 
 export function StyleProfileOnboarding({
   step,
@@ -109,9 +110,7 @@ export function StyleProfileOnboarding({
       }
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
-      setCompletionError(
-        err instanceof Error ? err.message : "We couldn't confirm your profile. Please try again.",
-      );
+      setCompletionError(errorMessage(err, "We couldn't confirm your profile. Please try again."));
     } finally {
       setCompleting(false);
     }
