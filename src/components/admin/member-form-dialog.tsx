@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { adminCreateMember, adminUpdateMember, type AdminUserRow } from "@/lib/admin.functions";
+import { errorMessage } from "@/lib/utils";
 
 interface MemberFormDialogProps {
   open: boolean;
@@ -63,7 +64,7 @@ export function MemberFormDialog({ open, onOpenChange, member, onSaved }: Member
       onOpenChange(false);
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't save member.");
+      toast.error(errorMessage(err, "Couldn't save member."));
     } finally {
       setSubmitting(false);
     }

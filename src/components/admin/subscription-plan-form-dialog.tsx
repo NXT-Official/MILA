@@ -32,41 +32,19 @@ import {
 import {
   BILLING_INTERVALS,
   BILLING_INTERVAL_LABELS,
+  catalogFormShape,
   centsToPriceInput,
   parsePriceToCents,
-  planSlugSchema,
   slugifyPlanTitle,
+  wholeNumberField,
   type SubscriptionPlan,
 } from "@/lib/subscription-plans";
+import { errorMessage } from "@/lib/utils";
 
 const formSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(1, "Title is required.")
-    .max(80, "Keep the title under 80 characters."),
-  slug: planSlugSchema,
-  description: z.string().trim().max(280, "Keep the description under 280 characters."),
-  price: z
-    .string()
-    .trim()
-    .refine((v) => parsePriceToCents(v) !== null, "Enter a price like 14.99 (max 9,999,999)."),
-  currency: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z]{3}$/, "Use a 3-letter currency code, e.g. usd."),
+  ...catalogFormShape("14.99"),
   billing_interval: z.enum(BILLING_INTERVALS),
-  credits_included: z.coerce
-    .number({ invalid_type_error: "Enter a whole number." })
-    .int("Enter a whole number.")
-    .min(0, "Credits can't be negative.")
-    .max(1_000_000),
-  sort_order: z.coerce
-    .number({ invalid_type_error: "Enter a whole number." })
-    .int("Enter a whole number.")
-    .min(0, "Sort order can't be negative.")
-    .max(9999),
+  credits_included: wholeNumberField().min(0, "Credits can't be negative.").max(1_000_000),
   features: z
     .string()
     .refine((v) => splitFeatures(v).length <= 12, "At most 12 features.")
@@ -169,7 +147,7 @@ export function SubscriptionPlanFormDialog({
       onOpenChange(false);
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't save the plan.");
+      toast.error(errorMessage(err, "Couldn't save the plan."));
     }
   };
 

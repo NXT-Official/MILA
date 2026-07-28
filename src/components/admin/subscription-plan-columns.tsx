@@ -1,23 +1,12 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-  Archive,
-  ArchiveRestore,
-  ChevronDown,
-  ChevronUp,
-  Ellipsis,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { Archive, ArchiveRestore, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  ActionItem,
+  CatalogTitleCell,
+  RowActionsMenu,
+  ToggleCell,
+} from "@/components/admin/table-cells";
 import {
   BILLING_INTERVAL_LABELS,
   formatPlanPrice,
@@ -78,22 +67,11 @@ export function getSubscriptionPlanColumns({
       accessorKey: "title",
       header: () => <span>Plan</span>,
       cell: ({ row }) => (
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-serif text-sm text-ink truncate">{row.original.title}</span>
-            {row.original.archived_at && (
-              <Badge
-                variant="outline"
-                className="border-stone/40 text-stone text-[9px] uppercase tracking-[0.18em]"
-              >
-                Archived
-              </Badge>
-            )}
-          </div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-stone mt-0.5 truncate">
-            {row.original.slug}
-          </div>
-        </div>
+        <CatalogTitleCell
+          title={row.original.title}
+          slug={row.original.slug}
+          archived={!!row.original.archived_at}
+        />
       ),
     },
     {
@@ -123,28 +101,24 @@ export function getSubscriptionPlanColumns({
       id: "active",
       header: () => <div className="text-center">Active</div>,
       cell: ({ row }) => (
-        <div className="flex justify-center">
-          <Switch
-            checked={row.original.is_active}
-            disabled={!!row.original.archived_at}
-            aria-label={`${row.original.title} active`}
-            onCheckedChange={(v) => onToggleActive(row.original, v)}
-          />
-        </div>
+        <ToggleCell
+          checked={row.original.is_active}
+          disabled={!!row.original.archived_at}
+          label={`${row.original.title} active`}
+          onCheckedChange={(v) => onToggleActive(row.original, v)}
+        />
       ),
     },
     {
       id: "featured",
       header: () => <div className="text-center">Featured</div>,
       cell: ({ row }) => (
-        <div className="flex justify-center">
-          <Switch
-            checked={row.original.is_featured}
-            disabled={!!row.original.archived_at}
-            aria-label={`${row.original.title} featured`}
-            onCheckedChange={(v) => onToggleFeatured(row.original, v)}
-          />
-        </div>
+        <ToggleCell
+          checked={row.original.is_featured}
+          disabled={!!row.original.archived_at}
+          label={`${row.original.title} featured`}
+          onCheckedChange={(v) => onToggleFeatured(row.original, v)}
+        />
       ),
     },
     {
@@ -163,46 +137,15 @@ export function getSubscriptionPlanColumns({
         const plan = row.original;
         const archived = !!plan.archived_at;
         return (
-          <div className="flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="ghost" className="size-8 p-0 text-stone hover:text-ink">
-                  <Ellipsis className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                  <span className="sr-only">Actions for {plan.title}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(plan)}>
-                  <Pencil className="mr-2 size-4" strokeWidth={1.75} aria-hidden="true" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onArchive(plan, !archived)}>
-                  {archived ? (
-                    <>
-                      <ArchiveRestore
-                        className="mr-2 size-4"
-                        strokeWidth={1.75}
-                        aria-hidden="true"
-                      />
-                      Restore
-                    </>
-                  ) : (
-                    <>
-                      <Archive className="mr-2 size-4" strokeWidth={1.75} aria-hidden="true" />
-                      Archive
-                    </>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(plan)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="mr-2 size-4" strokeWidth={1.75} aria-hidden="true" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <RowActionsMenu label={`Actions for ${plan.title}`}>
+            <ActionItem icon={Pencil} label="Edit" onClick={() => onEdit(plan)} />
+            <ActionItem
+              icon={archived ? ArchiveRestore : Archive}
+              label={archived ? "Restore" : "Archive"}
+              onClick={() => onArchive(plan, !archived)}
+            />
+            <ActionItem icon={Trash2} label="Delete" destructive onClick={() => onDelete(plan)} />
+          </RowActionsMenu>
         );
       },
     },
