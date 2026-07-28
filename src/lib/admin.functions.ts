@@ -78,28 +78,31 @@ export const adminListUsers = createServerFn({ method: "GET" })
         .in("user_id", ids),
     ]);
 
-    const pMap = new Map((profilesRes.data ?? []).map((p: any) => [p.id, p]));
+    const pMap = new Map((profilesRes.data ?? []).map((profile) => [profile.id, profile]));
     const adminSet = new Set(
-      (rolesRes.data ?? []).filter((r: any) => r.role === "admin").map((r: any) => r.user_id),
+      (rolesRes.data ?? []).filter((role) => role.role === "admin").map((role) => role.user_id),
     );
     const moderatorSet = new Set(
       (rolesRes.data ?? []).filter((r) => r.role === "moderator").map((r) => r.user_id),
     );
     const credMap = new Map(
-      (entRes.data ?? []).map((e: any) => [e.user_id, e.ai_credits + e.purchased_credits]),
+      (entRes.data ?? []).map((entitlement) => [
+        entitlement.user_id,
+        entitlement.ai_credits + entitlement.purchased_credits,
+      ]),
     );
 
     return users.map((u) => {
-      const p: any = pMap.get(u.id) ?? {};
+      const profile = pMap.get(u.id);
       return {
         id: u.id,
         email: u.email ?? null,
-        full_name: p.full_name ?? null,
-        username: p.username ?? null,
+        full_name: profile?.full_name ?? null,
+        username: profile?.username ?? null,
         created_at: u.created_at,
         is_admin: adminSet.has(u.id),
         is_moderator: moderatorSet.has(u.id),
-        suspended: !!p.suspended,
+        suspended: !!profile?.suspended,
         ai_credits: credMap.get(u.id) ?? 0,
       };
     });
@@ -245,11 +248,11 @@ export const adminListPosts = createServerFn({ method: "GET" })
       .limit(200);
     if (error) throw new Error("Couldn't load the moderation queue.");
 
-    const ids = Array.from(new Set((rows ?? []).map((r: any) => r.user_id)));
+    const ids = Array.from(new Set((rows ?? []).map((row) => row.user_id)));
     const [profilesRes, usersRes] = await Promise.all([
       ids.length
         ? supabaseAdmin.from("profiles").select("id,full_name").in("id", ids)
-        : Promise.resolve({ data: [] as any[], error: null }),
+        : Promise.resolve({ data: [], error: null }),
       roles.includes("admin")
         ? supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 })
         : Promise.resolve({ data: { users: [] }, error: null }),
@@ -257,30 +260,32 @@ export const adminListPosts = createServerFn({ method: "GET" })
     if (profilesRes.error || usersRes.error) {
       throw new Error("Couldn't load member context for the moderation queue.");
     }
-    const nameMap = new Map((profilesRes.data ?? []).map((p: any) => [p.id, p.full_name]));
-    const emailMap = new Map(usersRes.data.users.map((u: any) => [u.id, u.email ?? null]));
+    const nameMap = new Map(
+      (profilesRes.data ?? []).map((profile) => [profile.id, profile.full_name]),
+    );
+    const emailMap = new Map(usersRes.data.users.map((user) => [user.id, user.email ?? null]));
 
-    const paths = (rows ?? []).flatMap((r: any) => [r.image_url_back, r.image_url_front]);
+    const paths = (rows ?? []).flatMap((row) => [row.image_url_back, row.image_url_front]);
     const signed = paths.length
       ? await supabaseAdmin.storage.from("posts").createSignedUrls(paths, 3600)
-      : { data: [] as any[], error: null };
+      : { data: [], error: null };
     if (signed.error) throw new Error("Couldn't load moderation images.");
     const urlMap = new Map<string, string>();
-    (signed.data ?? []).forEach((s: any) => {
-      if (s.path && s.signedUrl) urlMap.set(s.path, s.signedUrl);
+    (signed.data ?? []).forEach((item) => {
+      if (item.path && item.signedUrl) urlMap.set(item.path, item.signedUrl);
     });
 
-    return (rows ?? []).map((r: any) => ({
-      id: r.id,
-      user_id: r.user_id,
-      caption: r.caption,
-      created_at: r.created_at,
-      hidden: r.hidden,
-      hidden_reason: r.hidden_reason,
-      image_url_back: urlMap.get(r.image_url_back) ?? "",
-      image_url_front: urlMap.get(r.image_url_front) ?? "",
-      author_name: nameMap.get(r.user_id) ?? null,
-      author_email: emailMap.get(r.user_id) ?? null,
+    return (rows ?? []).map((row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      caption: row.caption,
+      created_at: row.created_at,
+      hidden: row.hidden,
+      hidden_reason: row.hidden_reason,
+      image_url_back: urlMap.get(row.image_url_back) ?? "",
+      image_url_front: urlMap.get(row.image_url_front) ?? "",
+      author_name: nameMap.get(row.user_id) ?? null,
+      author_email: emailMap.get(row.user_id) ?? null,
     }));
   });
 
@@ -454,17 +459,20 @@ export const adminDashboardStats = createServerFn({ method: "GET" })
     ]);
 
     const aiCreditsAvailable = (entitlements.data ?? []).reduce(
-      (sum: number, e: any) => sum + (e.ai_credits ?? 0) + (e.purchased_credits ?? 0),
+      (sum, entitlement) =>
+        sum + (entitlement.ai_credits ?? 0) + (entitlement.purchased_credits ?? 0),
       0,
     );
 
     const recentPostUserIds = Array.from(
-      new Set((recentPostsRes.data ?? []).map((p: any) => p.user_id)),
+      new Set((recentPostsRes.data ?? []).map((post) => post.user_id)),
     );
     const authorNames = recentPostUserIds.length
       ? await supabaseAdmin.from("profiles").select("id,full_name").in("id", recentPostUserIds)
-      : { data: [] as any[] };
-    const nameMap = new Map((authorNames.data ?? []).map((p: any) => [p.id, p.full_name]));
+      : { data: [] };
+    const nameMap = new Map(
+      (authorNames.data ?? []).map((profile) => [profile.id, profile.full_name]),
+    );
 
     return {
       totalMembers: membersCount.count ?? 0,
@@ -474,12 +482,12 @@ export const adminDashboardStats = createServerFn({ method: "GET" })
       hiddenPosts: hiddenPostsCount.count ?? 0,
       openSupportMessages: openSupportCount.count ?? 0,
       recentMembers: (recentMembersRes.data ?? []) as AdminDashboardStats["recentMembers"],
-      recentPosts: (recentPostsRes.data ?? []).map((p: any) => ({
-        id: p.id,
-        author_name: nameMap.get(p.user_id) ?? null,
-        caption: p.caption,
-        hidden: p.hidden,
-        created_at: p.created_at,
+      recentPosts: (recentPostsRes.data ?? []).map((post) => ({
+        id: post.id,
+        author_name: nameMap.get(post.user_id) ?? null,
+        caption: post.caption,
+        hidden: post.hidden,
+        created_at: post.created_at,
       })),
     };
   });

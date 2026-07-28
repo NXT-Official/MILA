@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import type { Database } from "@/integrations/supabase/types";
 import { grantAiCredits } from "@/lib/credits.server";
 
@@ -43,8 +44,6 @@ export type PaddleSubscriptionWebhookEvent = {
     custom_data: { user_id?: string } | null;
   };
 };
-
-const IN_FORCE_STATUSES = new Set(["active", "trialing", "past_due"]);
 
 export async function applyPaddleSubscriptionEvent(
   db: MilaSupabaseClient,
@@ -103,7 +102,7 @@ export async function applyPaddleSubscriptionEvent(
     .eq("id", userId)
     .is("paddle_customer_id", null);
 
-  const inForce = IN_FORCE_STATUSES.has(data.status);
+  const inForce = IN_FORCE_SUBSCRIPTION_STATUSES.includes(data.status);
   const entitlementUpdate: { ads_removed: boolean; ai_credits?: number } = {
     ads_removed: inForce,
   };

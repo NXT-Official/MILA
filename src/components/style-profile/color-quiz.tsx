@@ -3,20 +3,22 @@ import { ArrowLeft, Sun, ShieldCheck, X as XIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
-  Season,
+  type Season,
+  type Swatch,
   type Tone,
   SEASON_PALETTES,
   SEASON_EDUCATION,
   SEASON_DETAIL,
   AESTHETIC_MOODS,
 } from "@/constants/style-profile";
+import type { Json } from "@/integrations/supabase/types";
 
 type Hue = "Warm" | "Cool";
-export type Value = "Light" | "Deep";
-export type Chroma = "Bright" | "Muted";
+type Value = "Light" | "Deep";
+type Chroma = "Bright" | "Muted";
 type AestheticPersona = string;
 type SubModifier = "Deep" | "Light" | "Bright" | "Soft" | "Warm" | "Cool" | null;
-export type DetailedColorProfile = {
+type DetailedColorProfile = {
   season: Season;
   subSeason: string;
   modifier: SubModifier;
@@ -29,9 +31,9 @@ export type DetailedColorProfile = {
     eyeBrightness: string;
     lightingConfirmed: boolean;
   };
-  primary: any[];
-  secondary: any[];
-  accent: any[];
+  primary: Swatch[];
+  secondary: Swatch[];
+  accent: Swatch[];
   avoid: string[];
   tagline: string;
   education: string;
@@ -39,13 +41,23 @@ export type DetailedColorProfile = {
   stylistNote?: string;
   aiConfidence?: number;
 };
+
+type ColorQuizResult = {
+  hue: Hue;
+  value: Value;
+  chroma: Chroma;
+  season: Season;
+  undertone: Tone;
+  profile: DetailedColorProfile;
+};
+
 export function ColorQuiz({
   onClose,
   onComplete,
   userId,
 }: {
   onClose: () => void;
-  onComplete: (r: any) => void;
+  onComplete: (result: ColorQuizResult) => void;
   userId?: string;
 }) {
   const [step, setStep] = useState(0);
@@ -56,7 +68,6 @@ export function ColorQuiz({
   const [hairDepth, setHairDepth] = useState<string | null>(null);
   const [eyeBrightness, setEyeBrightness] = useState<string | null>(null);
   const [chroma, setChroma] = useState<Chroma | null>(null);
-  const [, setSelectedAesthetic] = useState<AestheticPersona | null>(null);
   const [result, setResult] = useState<DetailedColorProfile | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -93,12 +104,11 @@ export function ColorQuiz({
         id: userId,
         skin_undertone: hue,
         color_season: season,
-        color_profile: profile as any,
+        color_profile: profile as unknown as Json,
         updated_at: new Date().toISOString(),
-      } as any);
+      });
       setSaving(false);
     }
-    setSelectedAesthetic(finalAesthetic);
     setResult(profile);
     onComplete({ hue, value, chroma, season, undertone: hue, profile });
   }
@@ -376,13 +386,10 @@ export function ColorQuiz({
                   <button
                     key={m.id}
                     disabled={saving}
-                    onClick={() => {
-                      setSelectedAesthetic(m.id);
-                      complete(m.id);
-                    }}
+                    onClick={() => complete(m.id)}
                     className="border-[0.5px] border-border p-3 flex gap-4 items-center text-left rounded-none hover:border-foreground/40 transition-all"
                   >
-                    <img src={m.img} className="h-14 w-11 object-cover filter grayscale" />
+                    <img src={m.img} alt="" className="h-14 w-11 object-cover filter grayscale" />
                     <div>
                       <p className="text-xs uppercase font-medium tracking-wider">{m.name}</p>
                       <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">

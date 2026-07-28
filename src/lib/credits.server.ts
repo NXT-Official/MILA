@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import { DEFAULT_AI_CREDITS, InsufficientCreditsError } from "./credits";
-
-const IN_FORCE_STATUSES = ["active", "trialing", "past_due"];
 
 export type ConsumeCreditStore = (
   userId: string,
@@ -16,7 +15,7 @@ async function resolveDailyCreditAllowance(
     .from("subscriptions")
     .select("plan_id")
     .eq("user_id", userId)
-    .in("status", IN_FORCE_STATUSES)
+    .in("status", IN_FORCE_SUBSCRIPTION_STATUSES)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();

@@ -206,11 +206,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onInsufficientCredits={() => setCreditPaywallOpen(true)}
         />
 
-        <UpgradeSlotsDialog
-          open={creditPaywallOpen}
-          onOpenChange={setCreditPaywallOpen}
-          user={user}
-        />
+        <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
 
         <input
           ref={fileInputRef}

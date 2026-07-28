@@ -45,19 +45,6 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
   --color-atelier-ivory: var(--canvas);
   --color-atelier-porcelain: var(--card);
   --color-atelier-ink: var(--ink);
@@ -120,19 +107,6 @@
   --border: #e8d5b0;
   --input: oklch(0.879 0.053 84); /* Gold Muted #E8D5B0 */
   --ring: oklch(0.75 0.085 82.1); /* Champagne Gold #C9A96E */
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.98 0.005 75);
-  --sidebar-foreground: oklch(0.22 0.015 50);
-  --sidebar-primary: oklch(0.22 0.015 50);
-  --sidebar-primary-foreground: oklch(0.98 0.005 75);
-  --sidebar-accent: oklch(0.94 0.01 70);
-  --sidebar-accent-foreground: oklch(0.22 0.015 50);
-  --sidebar-border: oklch(0.9 0.01 70);
-  --sidebar-ring: oklch(0.72 0.08 40);
   --font-display-family: "Playfair Display", "Times New Roman", Georgia, serif;
   --font-sans-family: "Inter", Helvetica, Arial, sans-serif;
   --font-serif: var(--font-display-family); /* back-compat for .font-serif usages */
@@ -144,9 +118,6 @@
     0 4px 10px oklch(0.264 0.013 41.6 / 0.06), 0 20px 50px oklch(0.264 0.013 41.6 / 0.1);
   --shadow-nav-value: 0 12px 40px oklch(0.1 0.01 55 / 0.2);
   --ease-editorial-value: cubic-bezier(0.22, 1, 0.36, 1);
-  --atelier-gold: #c9a96e;
-  --atelier-gold-light: #f5ecd9;
-  --atelier-gold-muted: #e8d5b0;
   --body-foreground: #6b6259;
 }
 
@@ -178,27 +149,11 @@
   --border: oklch(0.95 0.01 70 / 12%);
   --input: oklch(0.95 0.01 70 / 16%);
   --ring: oklch(0.75 0.085 82.1); /* Champagne Gold #C9A96E */
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0.012 60);
-  --sidebar-foreground: oklch(0.93 0.008 75);
-  --sidebar-primary: oklch(0.72 0.08 40);
-  --sidebar-primary-foreground: oklch(0.98 0.005 75);
-  --sidebar-accent: oklch(0.26 0.012 60);
-  --sidebar-accent-foreground: oklch(0.93 0.008 75);
-  --sidebar-border: oklch(0.95 0.01 70 / 12%);
-  --sidebar-ring: oklch(0.72 0.08 40);
   --rose: oklch(0.68 0.055 25);
   --atelier-panel: oklch(0.2 0.012 55 / 78%);
   --shadow-paper-value: 0 1px 2px oklch(0 0 0 / 0.3), 0 10px 30px oklch(0 0 0 / 0.35);
   --shadow-raised-value: 0 4px 10px oklch(0 0 0 / 0.35), 0 20px 50px oklch(0 0 0 / 0.45);
   --shadow-nav-value: 0 12px 40px oklch(0 0 0 / 0.5);
-  --atelier-gold: #c9a96e;
-  --atelier-gold-light: rgb(201 169 110 / 14%);
-  --atelier-gold-muted: rgb(201 169 110 / 40%);
   --body-foreground: oklch(0.74 0.015 70);
 }
 
@@ -297,25 +252,18 @@
     @apply mx-auto w-full max-w-content px-5 sm:px-8 lg:px-10;
   }
 
-  .mila-section {
-    @apply py-14 md:py-20 lg:py-24;
-  }
-
   .atelier-page {
     @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-14;
   }
 
-  .mila-card,
   .atelier-card,
   .atelier-hairline-card {
     @apply rounded-card border border-line bg-surface shadow-paper;
   }
 
-  .mila-hero-wash,
   .atelier-hero-card {
     background: linear-gradient(145deg, #f0e6d3 0%, #faf8f5 60%, #f5f0e8 100%);
   }
-  .dark .mila-hero-wash,
   .dark .atelier-hero-card {
     background: linear-gradient(
       145deg,
@@ -329,22 +277,16 @@
     @apply rounded-panel border border-line/80 bg-accent-soft/45;
   }
 
-  .mila-eyebrow,
   .atelier-kicker {
     @apply text-xs font-semibold uppercase tracking-[0.16em] text-accent;
   }
 
-  .mila-title,
   .atelier-title {
     font-family: var(--font-display);
     font-size: clamp(2.25rem, 6vw, 3rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1;
-  }
-
-  .mila-editorial-divider {
-    @apply h-px w-full bg-line;
   }
 
   .mila-focus-ring {

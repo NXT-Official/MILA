@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { getCurrentUserRoles } from "@/lib/admin.functions";
@@ -27,8 +28,6 @@ export interface FeedPost {
   hidden_reason?: string | null;
 }
 
-const IN_FORCE_STATUSES = ["active", "trialing", "past_due"];
-
 /**
  * Author names and membership both live behind RLS that only exposes your own
  * row, so this reads them with the admin client — the feed is server-rendered
@@ -46,7 +45,7 @@ async function loadAuthorDetails(userIds: string[]) {
       .from("subscriptions")
       .select("user_id")
       .in("user_id", userIds)
-      .in("status", IN_FORCE_STATUSES),
+      .in("status", IN_FORCE_SUBSCRIPTION_STATUSES),
   ]);
 
   for (const profile of profiles.data ?? []) names.set(profile.id, profile.full_name ?? null);

@@ -3,11 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import { cancelViaPaddleApi } from "./subscriptions.functions";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
-
-const IN_FORCE_STATUSES = ["active", "trialing", "past_due"];
 
 /** Every user upload lives under a `<userId>/` prefix in one of these. */
 const USER_BUCKETS = ["outfits", "posts"] as const;
@@ -44,7 +43,7 @@ export async function deleteAccountForUser(
     .from("subscriptions")
     .select("paddle_subscription_id")
     .eq("user_id", userId)
-    .in("status", IN_FORCE_STATUSES)
+    .in("status", IN_FORCE_SUBSCRIPTION_STATUSES)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();

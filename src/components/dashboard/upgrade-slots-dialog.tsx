@@ -12,11 +12,9 @@ import { Button } from "@/components/ui/button";
 export function UpgradeSlotsDialog({
   open,
   onOpenChange,
-  user,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  user: { id: string; email?: string } | null | undefined;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

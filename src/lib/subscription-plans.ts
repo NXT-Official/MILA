@@ -90,12 +90,10 @@ export const createPlanInputSchema = z.object({
   features: z.array(z.string().trim().min(1).max(120)).max(12).default([]),
   is_featured: z.boolean().default(false),
 });
-export type CreatePlanInput = z.infer<typeof createPlanInputSchema>;
 
 export const updatePlanInputSchema = createPlanInputSchema.partial().extend({
   id: z.string().uuid(),
 });
-export type UpdatePlanInput = z.infer<typeof updatePlanInputSchema>;
 
 /** Number inputs arrive from the admin forms as strings, hence the coercion. */
 export function wholeNumberField() {

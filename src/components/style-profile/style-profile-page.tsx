@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type StudioColorProfile } from "@/lib/analyzePersonalColor.functions";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -69,6 +70,10 @@ import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-di
 import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio-view";
 import { studioToDossier, normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
 
+function readString(value: Json | undefined): string | null {
+  return typeof value === "string" ? value : null;
+}
+
 export function StyleProfile() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -116,19 +121,27 @@ export function StyleProfile() {
       .then(({ data }) => {
         if (cancelled) return;
         if (data) {
-          const json = (data as any).color_profile as any;
+          const json =
+            data.color_profile &&
+            typeof data.color_profile === "object" &&
+            !Array.isArray(data.color_profile)
+              ? data.color_profile
+              : {};
           setForm({
             full_name: data.full_name ?? "",
             skin_undertone:
-              json?.undertone ?? json?.calculatedUndertone ?? data.skin_undertone ?? "",
-            color_season: json?.season ?? data.color_season ?? "",
-            body_type: json?.bodyType ?? data.body_type ?? "",
-            selected_aesthetic: json?.selectedAesthetic ?? "",
+              readString(json.undertone) ??
+              readString(json.calculatedUndertone) ??
+              data.skin_undertone ??
+              "",
+            color_season: readString(json.season) ?? data.color_season ?? "",
+            body_type: readString(json.bodyType) ?? data.body_type ?? "",
+            selected_aesthetic: readString(json.selectedAesthetic) ?? "",
           });
-          const topFace = (data as any).face_shape as string | null;
-          const topHair = (data as any).hair_type as string | null;
-          const jbFaceRaw = (json?.faceShape ?? null) as string | null;
-          const jbHairRaw = (json?.hairType ?? json?.hair_type ?? null) as string | null;
+          const topFace = data.face_shape;
+          const topHair = data.hair_type;
+          const jbFaceRaw = readString(json.faceShape);
+          const jbHairRaw = readString(json.hairType) ?? readString(json.hair_type);
           const FACE_ENUM = ["Oval", "Round", "Square", "Heart", "Diamond", "Oblong"] as const;
           const HAIR_ENUM = ["Straight/Fine", "Wavy", "Curly", "Coily/Textured"] as const;
           const normFace = (raw: string | null): string | null => {
@@ -161,7 +174,7 @@ export function StyleProfile() {
             face_shape: resolvedFace,
             hair_type: resolvedHair,
           });
-          const bp = (data as any).beauty_preferences;
+          const bp = data.beauty_preferences;
           if (Array.isArray(bp))
             setBeautyPrefs(bp.filter((x): x is string => typeof x === "string"));
           const normalized = normalizeStoredProfile(json);
@@ -174,10 +187,12 @@ export function StyleProfile() {
             );
             setKnownTileId(matchedTile?.id ?? null);
           }
-          const persistedSeason = (json?.season ?? data.color_season) || null;
+          const persistedSeason = readString(json.season) ?? data.color_season;
           lastSavedRef.current = JSON.stringify({
             skin_undertone:
-              (json?.undertone ?? json?.calculatedUndertone ?? data.skin_undertone) || null,
+              readString(json.undertone) ??
+              readString(json.calculatedUndertone) ??
+              data.skin_undertone,
             color_season: persistedSeason,
             body_type: (json?.bodyType ?? data.body_type) || null,
             face_shape: resolvedFace,
@@ -253,9 +268,9 @@ export function StyleProfile() {
         color_season: season,
         skin_undertone: undertone,
         body_type: bodyType,
-        color_profile: next as any,
+        color_profile: next as unknown as Json,
         updated_at: new Date().toISOString(),
-      } as any)
+      })
       .eq("id", user.id);
     if (error) {
       toast.error(error.message);
@@ -347,9 +362,9 @@ export function StyleProfile() {
         color_season: next.season,
         skin_undertone: undertone,
         body_type: next.bodyType,
-        color_profile: next as any,
+        color_profile: next as unknown as Json,
         updated_at: new Date().toISOString(),
-      } as any)
+      })
       .eq("id", user.id);
 
     if (error) {

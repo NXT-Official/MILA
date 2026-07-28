@@ -53,16 +53,6 @@ export type StaticSeasonSpec = Pick<
   | "denimRegistry"
 >;
 
-export interface SeasonalPaletteSpec {
-  key: string;
-  season: Season;
-  label: string;
-  characteristics: string;
-  palette: string[];
-  makeup: string;
-  styling: string;
-}
-
 export type StudioTelemetry = {
   pass1Raw: { ambientLighting: string; biologicalUndertone: string; computedContrast: string };
   interceptTriggered: boolean;

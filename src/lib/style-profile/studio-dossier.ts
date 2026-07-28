@@ -35,20 +35,26 @@ export function studioToDossier(p: StudioColorProfile, prev?: StudioDossier): St
     accessories: p.accessories,
     denimRegistry: p.denimRegistry,
     stylistNote: p.stylistNote,
-    fullPalette: (p as any).fullPalette ?? matrixForSubSeason(season, p.subSeason),
+    fullPalette: p.fullPalette ?? matrixForSubSeason(season, p.subSeason),
     calibrationSource:
       p.detectedLighting === "Manual Studio Calibration" ? "Studio Calibrated" : "AI Vision",
     confidenceScore: typeof p.confidenceScore === "number" ? p.confidenceScore : undefined,
-    confidenceLabel:
-      typeof (p as any).confidenceLabel === "string" ? (p as any).confidenceLabel : undefined,
+    confidenceLabel: p.confidenceLabel,
   };
 }
 
-export function normalizeStoredProfile(raw: any): StudioDossier | null {
+export function normalizeStoredProfile(raw: unknown): StudioDossier | null {
   if (!raw || typeof raw !== "object") return null;
-  if (Array.isArray(raw.primarySwatches) && Array.isArray(raw.fabrication) && raw.stylistNote) {
-    return studioToDossier(raw as StudioColorProfile);
+  const profile = raw as Partial<StudioColorProfile> & Partial<StudioDossier>;
+  if (
+    Array.isArray(profile.primarySwatches) &&
+    Array.isArray(profile.fabrication) &&
+    profile.stylistNote
+  ) {
+    return studioToDossier(profile as StudioColorProfile);
   }
-  if (Array.isArray(raw.primarySwatches) && raw.beautyMap) return raw as StudioDossier;
+  if (Array.isArray(profile.primarySwatches) && profile.beautyMap) {
+    return profile as StudioDossier;
+  }
   return null;
 }

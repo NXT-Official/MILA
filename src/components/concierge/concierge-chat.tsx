@@ -343,11 +343,7 @@ export function ConciergeChat({
 
   return (
     <>
-      <UpgradeSlotsDialog
-        open={creditPaywallOpen}
-        onOpenChange={setCreditPaywallOpen}
-        user={user}
-      />
+      <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 sm:px-7 py-6">
         <div className="mx-auto w-full max-w-3xl space-y-6">

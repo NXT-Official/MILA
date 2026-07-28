@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Sun, Cloud, CloudRain, CloudSnow, Wind, MapPin, Loader2 } from "lucide-react";
 import {
   Select,
@@ -57,23 +57,27 @@ export function ClimateWidget({
   const [error, setError] = useState(false);
   const [hubId, setHubId] = useState<string>("manila");
   const seq = useRef(0);
+  const userId = user?.id;
 
-  async function selectHub(id: string) {
-    const hub = HUBS.find((h) => h.id === id);
-    if (!hub) return;
-    const req = ++seq.current;
-    setHubId(id);
-    setLoading(true);
-    setError(false);
-    try {
-      const live = await fetchClimate(hub.lat, hub.lon, hub.city);
-      if (req === seq.current) onChange(live);
-    } catch {
-      if (req === seq.current) setError(true);
-    } finally {
-      if (req === seq.current) setLoading(false);
-    }
-  }
+  const selectHub = useCallback(
+    async (id: string) => {
+      const hub = HUBS.find((h) => h.id === id);
+      if (!hub) return;
+      const req = ++seq.current;
+      setHubId(id);
+      setLoading(true);
+      setError(false);
+      try {
+        const live = await fetchClimate(hub.lat, hub.lon, hub.city);
+        if (req === seq.current) onChange(live);
+      } catch {
+        if (req === seq.current) setError(true);
+      } finally {
+        if (req === seq.current) setLoading(false);
+      }
+    },
+    [onChange],
+  );
 
   async function detect() {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
@@ -108,13 +112,13 @@ export function ClimateWidget({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const remote = user ? await fetchDefaultHubId(user.id) : null;
+      const remote = userId ? await fetchDefaultHubId(userId) : null;
       if (!cancelled) selectHub(remote ?? localDefaultHubId() ?? HUBS[0].id);
     })();
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [userId, selectHub]);
 
   const statusLabel = loading
     ? "Detecting weather…"

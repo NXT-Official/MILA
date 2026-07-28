@@ -37,9 +37,7 @@ export const createCreditPackInputSchema = z.object({
   ...catalogItemInputShape,
   credits: z.number().int().min(1).max(1_000_000),
 });
-export type CreateCreditPackInput = z.infer<typeof createCreditPackInputSchema>;
 
 export const updateCreditPackInputSchema = createCreditPackInputSchema.partial().extend({
   id: z.string().uuid(),
 });
-export type UpdateCreditPackInput = z.infer<typeof updateCreditPackInputSchema>;

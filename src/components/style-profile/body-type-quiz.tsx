@@ -58,7 +58,7 @@ export function BodyTypeQuiz({
       setSaving(true);
       await supabase
         .from("profiles")
-        .upsert({ id: userId, body_type: result, updated_at: new Date().toISOString() } as any);
+        .upsert({ id: userId, body_type: result, updated_at: new Date().toISOString() });
       setSaving(false);
     }
     onComplete(result);

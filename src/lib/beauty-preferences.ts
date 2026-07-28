@@ -1,8 +1,3 @@
-import { z } from "zod";
-
-export const BeautyPreferencesSchema = z.array(z.string().trim().min(1)).default([]);
-export type BeautyPreferences = z.infer<typeof BeautyPreferencesSchema>;
-
 function legacyKeyToLabel(key: string): string {
   const spaced = key
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")

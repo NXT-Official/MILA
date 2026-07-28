@@ -31,6 +31,7 @@ import {
   SEASON_HEX_MATRIX,
   SEASONS_MASTER_DATA,
 } from "@/constants/style-profile";
+import { errorMessage } from "@/lib/utils";
 
 const DRAPE_COLORS = ["#FFB347", "#94A3B8", "#1E3A8A", "#F7B7A3", "#C2410C"] as const;
 const DRAPE_LABELS = [
@@ -139,8 +140,8 @@ export function VisualDiagnosticViewfinder({
           await videoRef.current.play().catch(() => {});
         }
         pushLog("Camera is on. Let's see you.");
-      } catch (e: any) {
-        const name = e?.name || "";
+      } catch (error) {
+        const name = error instanceof Error ? error.name : "";
         if (
           name === "NotAllowedError" ||
           name === "SecurityError" ||
@@ -152,7 +153,7 @@ export function VisualDiagnosticViewfinder({
         } else if (name === "NotFoundError" || name === "OverconstrainedError") {
           setStreamErr("No compatible camera was detected on this device.");
         } else {
-          setStreamErr(e?.message || "Camera unavailable. Please grant permission.");
+          setStreamErr(errorMessage(error, "Camera unavailable. Please grant permission."));
         }
         pushLog(`Couldn't open the camera (${name || "unknown"}).`);
       }
@@ -245,13 +246,14 @@ export function VisualDiagnosticViewfinder({
       pushLog(`Got it — you're a ${profile.subSeason}.`);
       stopCamera();
       await onComplete(profile, telemetry);
-    } catch (e: any) {
-      console.error("Studio error details:", e);
-      toast.error(
-        e?.message ||
-          "Let's try that again. Make sure the lighting is clear so I can catch the right tones.",
+    } catch (error) {
+      console.error("Studio error details:", error);
+      const message = errorMessage(
+        error,
+        "Let's try that again. Make sure the lighting is clear so I can catch the right tones.",
       );
-      pushLog(`Something went wrong: ${e?.message || "unknown"}.`);
+      toast.error(message);
+      pushLog(`Something went wrong: ${message}.`);
       setAnalyzing(false);
     } finally {
       // A reading costs a credit (refunded if it failed) — resync the badge.

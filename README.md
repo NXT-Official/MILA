@@ -66,22 +66,22 @@ combination of:
 
 Status reflects what was confirmed by reading the code, not the product's ambitions.
 
-| Area                                                  | Status           | Description                                                                                                                                                                                                     |
-| ----------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Email/password + Google sign-in                       | Implemented      | Supabase Auth; see [Authentication](#authentication-and-authorization)                                                                                                                                          |
-| Style profile / colour-season quiz                    | Implemented      | Body type, face shape, hair, beauty preferences, 16-season colour dossier (`/style-profile`)                                                                                                                    |
-| Daily look generation                                 | Implemented      | Outfit + hair + makeup, weather- and vibe-aware, via `generate-outfit.functions.ts`                                                                                                                             |
-| Outfit history                                        | Implemented      | Past generated looks, stored in `outfits` (`/history`)                                                                                                                                                          |
-| Wardrobe/outfit photo analysis                        | Implemented      | `analyze-clothing.functions.ts`, `analyze-outfit.functions.ts`                                                                                                                                                  |
-| Dupe hunter                                           | Implemented      | Photo → AI read → matched against a seeded affiliate `products`/`brands` catalog                                                                                                                                |
-| Stylist chat                                          | Implemented      | `fix-outfit-chat.functions.ts` — conversational outfit-fixing chat                                                                                                                                              |
-| Community feed                                        | Implemented      | Members post outfit photos (`posts`); moderation-aware visibility                                                                                                                                               |
-| Admin dashboard, member/moderation/support management | Implemented      | See [Admin System](#admin-system)                                                                                                                                                                               |
-| Credits / paywall                                     | **Mocked**       | `consumeAiCredit` is a stub that always returns `999`; the real gate is disabled with a `TODO: Re-enable premium gate before production launch`                                                                 |
-| In-app purchases                                      | **Planned only** | `purchases` table and `CREDIT_PACKS` pricing copy exist; no payment processor, webhook, or IAP code was found                                                                                                   |
-| Ad rewards                                            | **Planned only** | `ad_events` table exists in the schema; no ad SDK or event-recording code was found in the application                                                                                                          |
-| Moderator role                                        | **Partial**      | `app_role` enum includes `moderator` and `.env.example` documents a dev moderator account, but `admin.functions.ts` only ever checks for the `admin` role — no moderator-specific authorization path exists yet |
-| Password reset                                        | **Not found**    | No `resetPasswordForEmail` call or reset-password route exists                                                                                                                                                  |
+| Area                                                  | Status           | Description                                                                                                                  |
+| ----------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Email/password + Google sign-in                       | Implemented      | Supabase Auth; see [Authentication](#authentication-and-authorization)                                                       |
+| Style profile / colour-season quiz                    | Implemented      | Body type, face shape, hair, beauty preferences, 16-season colour dossier (`/style-profile`)                                 |
+| Daily look generation                                 | Implemented      | Outfit + hair + makeup, weather- and vibe-aware, via `generate-outfit.functions.ts`                                          |
+| Outfit history                                        | Implemented      | Past generated looks, stored in `outfits` (`/history`)                                                                       |
+| Wardrobe/outfit photo analysis                        | Implemented      | `analyze-clothing.functions.ts`, `analyze-outfit.functions.ts`                                                               |
+| Dupe hunter                                           | Implemented      | Photo → AI read → matched against a seeded affiliate `products`/`brands` catalog                                             |
+| Stylist chat                                          | Implemented      | `concierge-chat.functions.ts` — conversational styling chat with optional look/photo context                                 |
+| Community feed                                        | Implemented      | Members post outfit photos (`posts`); moderation-aware visibility                                                            |
+| Admin dashboard, member/moderation/support management | Implemented      | See [Admin System](#admin-system)                                                                                            |
+| Credits / paywall                                     | Implemented      | Daily subscription allowances, purchased-credit balances, atomic consumption/refunds, and the out-of-credit upgrade flow     |
+| Subscriptions and credit packs                        | Implemented      | Paddle sandbox checkout, webhook synchronization, cancellation/resume, one-off credit packs, and idempotent credit grants    |
+| Ad rewards                                            | **Planned only** | `ad_events` table exists in the schema; no ad SDK or event-recording code was found in the application                       |
+| Moderator role                                        | Implemented      | Permission-based access to moderation and support, with admin-only member, role, plan, credit-pack, and dashboard operations |
+| Password reset                                        | **Not found**    | No `resetPasswordForEmail` call or reset-password route exists                                                               |
 
 ## How the System Works
 
@@ -127,7 +127,7 @@ flowchart LR
 
 React 19 + TypeScript render the whole interface. Shared UI primitives live in
 `src/components/ui/` (Radix UI underneath, styled with Tailwind and `class-variance-authority`).
-Client state is minimal: a `use-auth.tsx` context wraps Supabase's session, and a handful of
+Client state is minimal: a `use-auth.ts` context wraps Supabase's session, and a handful of
 `useState` hooks drive local UI (dialogs, drawers, form toggles). Framer Motion provides page
 and reveal animation on the marketing site and a few interactive surfaces.
 
@@ -266,7 +266,7 @@ different layers.
 - Signup sends a confirmation email (`email_confirm` is not force-enabled by the client call —
   the "Check your inbox to confirm" toast implies Supabase's default confirmation flow is active
   on the project).
-- Session state lives client-side in `src/hooks/use-auth.tsx`, backed by
+- Session state lives client-side in `src/hooks/use-auth.ts`, backed by
   `supabase.auth.onAuthStateChange` + `getSession()`, persisted to `localStorage` by the
   Supabase client (`src/integrations/supabase/client.ts`).
 - **No password-reset flow exists** in the current codebase (no `resetPasswordForEmail` call, no
@@ -289,11 +289,11 @@ a route redirect.
 
 ### Server-side enforcement
 
-Every admin server function (`src/lib/admin.functions.ts`) independently calls an `assertAdmin`
-helper that queries the `has_role` Postgres RPC before doing anything — this re-check happens
-regardless of what the client UI shows, so a non-admin cannot read or mutate admin data even if
-the client-side "Restricted" screen were bypassed. Every server function in the app (admin or
-not) runs behind the `requireSupabaseAuth` middleware
+Every staff server function (`src/lib/admin.functions.ts`) independently calls `assertAdmin` or
+`assertPermission` before accessing privileged data — this re-check happens regardless of what
+the client UI shows, so an unauthorized user cannot read or mutate staff data even if the
+client-side route guard were bypassed. Every server function in the app (staff or not) runs
+behind the `requireSupabaseAuth` middleware
 (`src/integrations/supabase/auth-middleware.ts`), which verifies the bearer JWT via
 `supabase.auth.getClaims()` and additionally re-checks `profiles.suspended` on every call —
 suspended accounts are rejected server-side even if a stale client session is still active.
@@ -302,10 +302,9 @@ suspended accounts are rejected server-side even if a stale client session is st
 
 Roles live in `public.user_roles` (`app_role` enum: `admin`, `moderator`, `user`) and are
 assigned by the `handle_new_user()` database trigger (every new signup gets `user`
-automatically) or, for `admin`, by another admin through `/admin/members`. The `moderator` role
-exists in the schema and in `.env.example` but no code path currently checks for it — see
-[Product Capabilities](#product-capabilities). Suspension (`profiles.suspended`) is
-service-role-only to write (enforced by column-level Postgres grants, not just RLS) and is
+automatically), with admin and moderator roles managed by an admin through `/admin/members`.
+Moderators receive only moderation and support permissions. Suspension (`profiles.suspended`)
+is service-role-only to write (enforced by column-level Postgres grants, not just RLS) and is
 checked both client-side (a full-screen "Membership Suspended" notice) and server-side (rejected
 by the auth middleware).
 
@@ -328,7 +327,7 @@ the codebase.
 4. Form state is owned by React Hook Form; validation schemas are Zod, and in several server
    functions the _same shape of validation_ is re-applied server-side via `.validator()` — the
    client form and the server input boundary are not just trusting each other.
-5. Auth/session state is a separate React context (`use-auth.tsx`), not part of the Query cache.
+5. Auth/session state is a separate React context (`use-auth.ts`), not part of the Query cache.
 6. There is no URL-based filter/search state and no persisted client state beyond the Supabase
    session in `localStorage` and the theme preference (`localStorage`, key `mila-theme`).
 
@@ -345,22 +344,26 @@ Supabase provides Postgres, Auth, and Storage. Two clients exist:
   server-function call, authenticated as the _caller_ (not service-role), used specifically so
   Row Level Security applies where a function doesn't need to bypass it.
 
-Migrations live in `supabase/migrations/` (4 files, most recent 2026-07-10) and are the source
+Migrations live in `supabase/migrations/` (2 files, most recent 2026-07-27) and are the source
 of truth for the schema below — generated TypeScript types are in
 `src/integrations/supabase/types.ts`.
 
-| Table                 | Purpose                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------ |
-| `profiles`            | One row per user: name, username, colour/body/beauty profile, suspension flag                    |
-| `outfits`             | Generated/analyzed looks, stored per user (powers `/history`)                                    |
-| `user_entitlements`   | AI credit balance and `ads_removed` flag, service-role write only                                |
-| `purchases`           | Schema for payment history — **not read or written by any application code found**               |
-| `ad_events`           | Schema for ad impression/reward tracking — **not read or written by any application code found** |
-| `brands` / `products` | Seeded affiliate catalog matched against by the dupe hunter                                      |
-| `user_favorites`      | Saved products                                                                                   |
-| `posts`               | Community feed posts, with `hidden`/`hidden_reason` moderation columns                           |
-| `user_roles`          | `app_role` role grants (`admin` / `moderator` / `user`)                                          |
-| `support_messages`    | Help-desk and feedback submissions (separate migration; admin-only reads)                        |
+| Table                   | Purpose                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| `profiles`              | One row per user: name, username, colour/body/beauty profile, suspension flag                    |
+| `outfits`               | Generated/analyzed looks, stored per user (powers `/history`)                                    |
+| `user_entitlements`     | AI credit balance and `ads_removed` flag, service-role write only                                |
+| `purchases`             | Schema for payment history — **not read or written by any application code found**               |
+| `subscriptions`         | Paddle subscription state, billing period, and scheduled cancellation                            |
+| `subscription_plans`    | Admin-managed membership catalog and Paddle price mapping                                        |
+| `credit_packs`          | Admin-managed one-off credit catalog and Paddle price mapping                                    |
+| `credit_pack_purchases` | Idempotent ledger for completed Paddle credit-pack grants                                        |
+| `ad_events`             | Schema for ad impression/reward tracking — **not read or written by any application code found** |
+| `brands` / `products`   | Seeded affiliate catalog matched against by the dupe hunter                                      |
+| `user_favorites`        | Saved products                                                                                   |
+| `posts`                 | Community feed posts, with `hidden`/`hidden_reason` moderation columns                           |
+| `user_roles`            | `app_role` role grants (`admin` / `moderator` / `user`)                                          |
+| `support_messages`      | Help-desk and feedback submissions (separate migration; admin-only reads)                        |
 
 Every table has Row Level Security enabled. Authorization inside policies is centralized in one
 `SECURITY DEFINER` SQL function, `has_role(_user_id, _role)`, rather than repeated per policy.
@@ -430,15 +433,15 @@ using Tailwind v4's `@theme`, with parallel `:root`/`.dark` values for light/dar
 
 Radius is a five-step hierarchy (`rounded-control` → `rounded-panel` → `rounded-card` →
 `rounded-overlay` → `rounded-pill`) mapped to control size rather than used arbitrarily; shadows
-follow a matching `shadow-paper`/`shadow-raised`/`shadow-nav` scale. A `mila-*` set of
-`@layer components` classes (`mila-page`, `mila-container`, `mila-section`, `mila-card`,
-`mila-focus-ring`, `mila-dark-glass`, and others) covers cross-cutting patterns that aren't
-better expressed as a React component.
+follow a matching `shadow-paper`/`shadow-raised`/`shadow-nav` scale. A small `mila-*` set of
+`@layer components` classes (`mila-page`, `mila-container`, `mila-panel`, `mila-focus-ring`,
+`mila-dark-glass`) covers cross-cutting patterns that aren't better expressed as a React
+component.
 
 Shared React primitives live in `src/components/ui/`: `Button`, `IconButton`, `Card`, `Input`
 (with optional leading/trailing icon slots), `Dialog`, `Sheet`, `Select`, `Tabs`, `Accordion`,
-`DropdownMenu`, `Popover`, `Switch`, `Badge`, `Avatar`, `DataTable`, `EmptyState`,
-`LoadingState`, `ErrorState`, `PageHeader`, `SectionHeader`, `FormField`, and
+`DropdownMenu`, `Popover`, `Switch`, `Badge`, `DataTable`, `EmptyState`, `LoadingState`,
+`ErrorState`, `FormField`, and
 `PasswordVisibilityButton`. Components with real variants use `class-variance-authority`; the
 `cn()` helper (`src/lib/utils.ts`, `clsx` + `tailwind-merge`) is the only class-merging utility
 in the codebase. Radix UI backs every primitive that needs real accessibility behavior (focus
@@ -457,19 +460,28 @@ navigation, `size-5`–`size-6` for buttons and empty states) with a default `st
 
 Copy `.env.example` to `.env` and fill in real values — never commit `.env`.
 
-| Variable                                 |              Required | Scope                    | Description                                                                                   |
-| ---------------------------------------- | --------------------: | ------------------------ | --------------------------------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`                      |                   Yes | Client                   | Supabase project URL, shipped to the browser                                                  |
-| `VITE_SUPABASE_PUBLISHABLE_KEY`          |                   Yes | Client                   | Supabase anon/publishable key, shipped to the browser                                         |
-| `SUPABASE_URL`                           |                   Yes | Server                   | Same project URL, read by server functions                                                    |
-| `SUPABASE_PUBLISHABLE_KEY`               |                   Yes | Server                   | Anon key used by the request-scoped RLS client in `auth-middleware.ts`                        |
-| `SUPABASE_SERVICE_ROLE_KEY`              |                   Yes | Server, **secret**       | Bypasses RLS; used only by `client.server.ts` inside server functions                         |
-| `AI_API_KEY`                             | Yes (for AI features) | Server, **secret**       | Gemini API key                                                                                |
-| `AI_MODEL`                               | Yes (for AI features) | Server                   | Gemini model name/ID sent with every request                                                  |
-| `VITE_HCAPTCHA_SITEKEY`                  |                   Yes | Client                   | hCaptcha site key rendered on the login/signup form                                           |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`         |                    No | Local documentation only | Not read by application code — the credentials the schema migration seeds (see below)          |
-| `USER_EMAIL` / `USER_PASSWORD`           |                    No | Local documentation only | Same as above; the plain member test account                                                   |
-| `MODERATOR_EMAIL` / `MODERATOR_PASSWORD` |                    No | Local documentation only | Same as above; the moderator role has no authorization logic yet                              |
+| Variable                                 |              Required | Scope                    | Description                                                                           |
+| ---------------------------------------- | --------------------: | ------------------------ | ------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`                      |                   Yes | Client                   | Supabase project URL, shipped to the browser                                          |
+| `VITE_SUPABASE_PUBLISHABLE_KEY`          |                   Yes | Client                   | Supabase anon/publishable key, shipped to the browser                                 |
+| `SUPABASE_URL`                           |                   Yes | Server                   | Same project URL, read by server functions                                            |
+| `SUPABASE_PUBLISHABLE_KEY`               |                   Yes | Server                   | Anon key used by the request-scoped RLS client in `auth-middleware.ts`                |
+| `SUPABASE_SERVICE_ROLE_KEY`              |                   Yes | Server, **secret**       | Bypasses RLS; used only by `client.server.ts` inside server functions                 |
+| `AI_API_KEY`                             | Yes (for AI features) | Server, **secret**       | Gemini API key                                                                        |
+| `AI_MODEL`                               | Yes (for AI features) | Server                   | Gemini model name/ID sent with every request                                          |
+| `VITE_HCAPTCHA_SITEKEY`                  |                   Yes | Client                   | hCaptcha site key rendered on the login/signup form                                   |
+| `HCAPTCHA_SECRET`                        |                   Yes | Server, **secret**       | Verifies support-form CAPTCHA tokens                                                  |
+| `CLOUDFLARE_ACCOUNT_ID`                  |   Yes (for AI images) | Server                   | Cloudflare account used for outfit-image generation                                   |
+| `CLOUDFLARE_API_TOKEN`                   |   Yes (for AI images) | Server, **secret**       | Cloudflare Workers AI token                                                           |
+| `IMAGE_MODEL`                            |                    No | Server                   | Overrides the default Cloudflare image model                                          |
+| `VITE_PADDLE_CLIENT_TOKEN`               |    Yes (for checkout) | Client                   | Paddle.js client token                                                                |
+| `VITE_PADDLE_ENV`                        |                    No | Client                   | Paddle.js environment (`sandbox` or `production`)                                     |
+| `PADDLE_SANDBOX_API_KEY`                 |     Yes (for billing) | Server, **secret**       | Paddle sandbox subscription and transaction API key                                   |
+| `PADDLE_SANDBOX_WEBHOOK_SECRET`          |     Yes (for billing) | Server, **secret**       | Verifies Paddle webhook signatures                                                    |
+| `RATE_LIMIT_TRUSTED_IP_HEADER`           |                    No | Server                   | Exact deployment-provided client-IP header trusted by support rate limiting           |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`         |                    No | Local documentation only | Not read by application code — the credentials the schema migration seeds (see below) |
+| `USER_EMAIL` / `USER_PASSWORD`           |                    No | Local documentation only | Same as above; the plain member test account                                          |
+| `MODERATOR_EMAIL` / `MODERATOR_PASSWORD` |                    No | Local documentation only | Same as above; the moderator test account                                             |
 
 Any variable prefixed `VITE_` is compiled into the client bundle and is visible to anyone using
 the app — never put a secret behind a `VITE_` name. `SUPABASE_SERVICE_ROLE_KEY` and `AI_API_KEY`
@@ -483,15 +495,15 @@ needed, add it there too.
 New signups get the `user` role automatically. The schema migration also seeds three staff/test
 accounts, so a fresh `npx supabase db reset --linked` comes up ready to sign in:
 
-| Account                   | Roles              |
-| ------------------------- | ------------------ |
-| `milaadmin@gmail.com`     | `admin`, `user`    |
-| `milamoderator@gmail.com` | `moderator`, `user`|
-| `milauser@gmail.com`      | `user`             |
+| Account                   | Roles               |
+| ------------------------- | ------------------- |
+| `milaadmin@gmail.com`     | `admin`, `user`     |
+| `milamoderator@gmail.com` | `moderator`, `user` |
+| `milauser@gmail.com`      | `user`              |
 
-Their passwords are the `ADMIN_PASSWORD` / `MODERATOR_PASSWORD` / `USER_PASSWORD` values in
-`.env`; the migration stores only the bcrypt hashes, so no plaintext is committed. Accounts that
-already exist are left untouched — the seed only adds missing ones and tops up missing roles.
+The migration contains fixed local seed credentials; the matching `.env` values are documentation
+for local sign-in and are not read by SQL. Accounts that already exist are left untouched — the
+seed only adds missing ones and tops up missing roles.
 
 Changing a password in `.env` does **not** change the database. Re-hash it and replace the
 matching literal in the migration:
@@ -702,21 +714,16 @@ quiz and colour-season engine, daily look generation, outfit history, wardrobe/o
 dupe hunter, stylist chat, the community feed with moderation, and the full admin suite
 (dashboard, members, moderation, support).
 
-**Partial**: the `moderator` role exists in the schema but has no authorization logic yet;
-admin-route access is only gated client-side (server functions independently enforce it, but
-there is no route-level redirect).
+**Implemented**: moderator permissions and route guards, atomic AI-credit accounting, Paddle
+sandbox subscriptions, credit-pack checkout, webhook synchronization, cancellation, and resume.
 
-**Mocked / not production-ready**: the AI-credit paywall is disabled by design
-(`consumeAiCredit` always returns `999`); in-app purchases and ad-reward tracking have database
-tables but no application code exercising them.
+**Planned / not production-ready**: ad-reward tracking has database tables but no application
+code exercising it; Paddle still uses sandbox credentials and endpoints.
 
 **Missing**: a license file and deployment automation/config.
 
 ### Potential improvements
 
-- Add a route-level `beforeLoad` admin check on `/admin` in addition to the existing server-side
-  enforcement, so non-admins never see even the "Restricted" shell render
-- Decide and implement the `moderator` role's actual permissions, or remove it from the schema
 - Add a CI workflow running `format --check`, `lint`, and `build` on pull requests
 
 ## License

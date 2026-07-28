@@ -14,7 +14,6 @@ const ANALYZE_CLOTHING_LIMIT = 20;
 const ANALYZE_CLOTHING_WINDOW_SECONDS = 60 * 60;
 
 const MODES = ["catalog", "dupe-hunt"] as const;
-export type AnalyzeClothingMode = (typeof MODES)[number];
 
 const ClothingAttributesSchema = z.object({
   name: z.string().max(100),
