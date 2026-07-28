@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/constants/query-keys";
 import { STEWARD_EMAIL } from "@/constants/app";
+import { AtelierSplash } from "@/components/layout/atelier-splash";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
@@ -41,13 +42,7 @@ function AuthLayout() {
   }, [loading, session, signingOut, navigate]);
 
   if (loading || !session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="font-serif text-2xl tracking-[0.2em] text-muted-foreground animate-pulse">
-          ATELIER
-        </div>
-      </div>
-    );
+    return <AtelierSplash />;
   }
 
   if (suspended) {

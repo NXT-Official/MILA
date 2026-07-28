@@ -12,6 +12,7 @@ import { DupeHunterSection } from "@/components/landing/dupe-hunter-section";
 import { CommunitySection } from "@/components/landing/community-section";
 import { FinalCtaSection } from "@/components/landing/final-cta-section";
 import { SiteFooter } from "@/components/landing/site-footer";
+import { AtelierSplash } from "@/components/layout/atelier-splash";
 
 export const Route = createFileRoute("/")({
   beforeLoad: async ({ context }) => {
@@ -35,13 +36,7 @@ function LandingPage() {
   }, [loading, session, viewer.isLoading, viewer.destination, navigate]);
 
   if (session && (loading || viewer.isLoading)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="font-serif text-2xl tracking-[0.2em] text-muted-foreground animate-pulse">
-          ATELIER
-        </div>
-      </div>
-    );
+    return <AtelierSplash />;
   }
 
   return (

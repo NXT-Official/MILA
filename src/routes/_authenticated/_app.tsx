@@ -10,6 +10,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthenticatedViewerState, loadAuthenticatedViewerState } from "@/lib/queries/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { AtelierSplash } from "@/components/layout/atelier-splash";
 
 export const Route = createFileRoute("/_authenticated/_app")({
   beforeLoad: async ({ context, location }) => {
@@ -60,13 +61,7 @@ function AppLayout() {
     (viewer.canAccessStaffArea && !isProfileRoute) ||
     (!viewer.isStyleProfileComplete && !isProfileRoute)
   ) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="font-serif text-2xl tracking-[0.2em] text-muted-foreground animate-pulse">
-          ATELIER
-        </div>
-      </div>
-    );
+    return <AtelierSplash />;
   }
 
   return (
