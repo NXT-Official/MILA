@@ -395,7 +395,7 @@ export function StudioMembershipDrawer({
                         ? "You're out of credits for today — "
                         : "Run out before the day resets? "}
                       <Link
-                        to="/pricing"
+                        to="/credit-packs"
                         onClick={onClose}
                         className="text-ink underline underline-offset-2 hover:text-accent"
                       >
