@@ -54,7 +54,7 @@ export function StyleProfileOnboarding({
     if (!step || !isOnboardingStepReachable(step, profile)) {
       onStepChange(getFirstIncompleteOnboardingStep(profile), { replace: true });
     }
-  }, [profile, step]);
+  }, [profile, step, onStepChange]);
 
   useEffect(() => {
     if (!step) return;
