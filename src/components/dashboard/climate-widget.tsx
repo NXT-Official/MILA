@@ -145,7 +145,6 @@ export function ClimateWidget({
   }
 
   useEffect(() => {
-    // Profile value wins; localStorage covers pre-auth render and offline.
     let cancelled = false;
     (async () => {
       const remote = user ? await fetchDefaultHubId(user.id) : null;
@@ -154,7 +153,6 @@ export function ClimateWidget({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const statusLabel = loading

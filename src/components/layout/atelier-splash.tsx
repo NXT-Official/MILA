@@ -1,4 +1,3 @@
-/** Full-screen hold shown while a route resolves who the viewer is. */
 export function AtelierSplash() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
