@@ -183,7 +183,7 @@ export function PillRow({
   );
 }
 
-export const DISRUPTIVE_TONE_HEX: Record<string, string> = {
+const DISRUPTIVE_TONE_HEX: Record<string, string> = {
   "High-Contrast Black": "#0B0B0F",
   "Bleached White": "#F4F4F0",
   "Vivid Primaries": "#D72638",
@@ -197,7 +197,7 @@ export const DISRUPTIVE_TONE_HEX: Record<string, string> = {
   "Pure White": "#F4F4F0",
 };
 
-export function hexForTone(name: string): string {
+function hexForTone(name: string): string {
   if (DISRUPTIVE_TONE_HEX[name]) return DISRUPTIVE_TONE_HEX[name];
   const lower = name.toLowerCase();
   for (const [k, v] of Object.entries(DISRUPTIVE_TONE_HEX)) {

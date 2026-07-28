@@ -11,11 +11,11 @@ import {
   AESTHETIC_MOODS,
 } from "@/constants/style-profile";
 
-export type Hue = "Warm" | "Cool";
+type Hue = "Warm" | "Cool";
 export type Value = "Light" | "Deep";
 export type Chroma = "Bright" | "Muted";
-export type AestheticPersona = string;
-export type SubModifier = "Deep" | "Light" | "Bright" | "Soft" | "Warm" | "Cool" | null;
+type AestheticPersona = string;
+type SubModifier = "Deep" | "Light" | "Bright" | "Soft" | "Warm" | "Cool" | null;
 export type DetailedColorProfile = {
   season: Season;
   subSeason: string;
@@ -410,7 +410,7 @@ export function ColorQuiz({
   );
 }
 
-export function LightingStep({ onConfirm }: { onConfirm: () => void }) {
+function LightingStep({ onConfirm }: { onConfirm: () => void }) {
   const [confirmed, setConfirmed] = useState(false);
   return (
     <div className="space-y-5">
@@ -452,7 +452,7 @@ export function LightingStep({ onConfirm }: { onConfirm: () => void }) {
   );
 }
 
-export function DetailedColorResultView({
+function DetailedColorResultView({
   profile,
   onClose,
 }: {

@@ -560,7 +560,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
   );
 }
 
-export function DossierCell({
+function DossierCell({
   label,
   value,
   last,
@@ -582,7 +582,7 @@ export function DossierCell({
   );
 }
 
-export function SectionBlock({
+function SectionBlock({
   numeral,
   title,
   children,
@@ -618,13 +618,7 @@ export function SectionBlock({
   );
 }
 
-export function InfoDot({
-  text,
-  tone = "default",
-}: {
-  text: string;
-  tone?: "default" | "destructive";
-}) {
+function InfoDot({ text, tone = "default" }: { text: string; tone?: "default" | "destructive" }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -647,7 +641,7 @@ export function InfoDot({
   );
 }
 
-export function PaletteCard({
+function PaletteCard({
   title,
   swatches,
   fullPalette,
@@ -695,7 +689,7 @@ export function PaletteCard({
   );
 }
 
-export function readableInk(hex: string): "#ffffff" | "#0a0a0a" {
+function readableInk(hex: string): "#ffffff" | "#0a0a0a" {
   const m = hex.replace("#", "");
   if (m.length !== 6) return "#0a0a0a";
   const r = parseInt(m.slice(0, 2), 16);
@@ -705,7 +699,7 @@ export function readableInk(hex: string): "#ffffff" | "#0a0a0a" {
   return lum > 0.62 ? "#0a0a0a" : "#ffffff";
 }
 
-export function ContrastGauge({ value }: { value: string }) {
+function ContrastGauge({ value }: { value: string }) {
   const v = (value || "").toLowerCase();
   let raw = 50;
   if (/very high|striking|block|maximal|dramatic/.test(v)) raw = 92;
