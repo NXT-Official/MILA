@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { profileQueryOptions } from "@/lib/queries/profile";
-import { isStyleProfileComplete } from "@/lib/style-profile/completion";
+import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 import { normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
 import { type StudioColorProfile } from "@/lib/analyzePersonalColor.functions";
 import {
@@ -92,14 +92,7 @@ export function StyleProfileOnboarding({
       const options = profileQueryOptions(user.id);
       await queryClient.invalidateQueries({ queryKey: options.queryKey });
       const fresh = queryClient.getQueryData(options.queryKey) ?? profile;
-      const complete = isStyleProfileComplete({
-        skin_undertone: fresh?.skin_undertone ?? null,
-        color_season: fresh?.color_season_base ?? null,
-        body_type: fresh?.body_type ?? null,
-        face_shape: fresh?.face_shape ?? null,
-        hair_type: fresh?.hair_type ?? null,
-        color_profile: fresh?.color_profile ?? null,
-      });
+      const complete = isStyleProfileComplete(toStyleProfileRow(fresh));
       if (!complete) {
         const firstIncomplete = getFirstIncompleteOnboardingStep(fresh);
         setCompletionError(
