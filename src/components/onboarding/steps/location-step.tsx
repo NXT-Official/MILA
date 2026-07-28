@@ -6,6 +6,7 @@ import { queryKeys } from "@/constants/query-keys";
 import { saveDefaultHubId } from "@/lib/default-hub";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { errorMessage } from "@/lib/utils";
 
 export function LocationStep({
   value,
@@ -31,7 +32,7 @@ export function LocationStep({
       await queryClient.invalidateQueries({ queryKey: queryKeys.profile(user?.id) });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "We couldn't save this step.");
+      setError(errorMessage(err, "We couldn't save this step."));
     } finally {
       setSaving(false);
     }

@@ -7,7 +7,7 @@ import { type BodyType, BODY_TYPE_INFO } from "@/constants/style-profile";
 export type Drape = "structured" | "waist" | "relaxed";
 export type Balance = "aligned" | "hips" | "upper";
 
-export function resolveBodyFromQuiz(drape: Drape, balance: Balance): BodyType {
+function resolveBodyFromQuiz(drape: Drape, balance: Balance): BodyType {
   if (drape === "waist") {
     if (balance === "hips") return "Pear";
     return "Hourglass";
@@ -20,7 +20,7 @@ export function resolveBodyFromQuiz(drape: Drape, balance: Balance): BodyType {
   return "Rectangle";
 }
 
-export const DRAPE_CHOICES: { value: Drape; label: string; hint: string }[] = [
+const DRAPE_CHOICES: { value: Drape; label: string; hint: string }[] = [
   {
     value: "structured",
     label: "Structured at the shoulders",
@@ -30,7 +30,7 @@ export const DRAPE_CHOICES: { value: Drape; label: string; hint: string }[] = [
   { value: "relaxed", label: "Relaxed all over", hint: "It falls in a straight, easy line." },
 ];
 
-export const BALANCE_CHOICES: { value: Balance; label: string; hint: string }[] = [
+const BALANCE_CHOICES: { value: Balance; label: string; hint: string }[] = [
   { value: "aligned", label: "Shoulders and hips align", hint: "Mirrored top and bottom." },
   { value: "hips", label: "Curving at the hips", hint: "More softness through the lower half." },
   { value: "upper", label: "Stronger upper frame", hint: "Presence sits across the shoulders." },

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { CardMatrix } from "@/components/style-profile/shared";
 import { StepFooter } from "@/components/onboarding/step-shell";
 import type { MatrixOption } from "@/constants/style-profile";
+import { errorMessage } from "@/lib/utils";
 
 export function SingleSelectStep({
   fieldLabel,
@@ -43,7 +44,7 @@ export function SingleSelectStep({
       await save(data.value);
       onSaved();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "We couldn't save this step.");
+      setSaveError(errorMessage(err, "We couldn't save this step."));
     } finally {
       setSaving(false);
     }
