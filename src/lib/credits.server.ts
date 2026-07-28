@@ -84,23 +84,11 @@ export async function grantAiCredits(
 }
 
 export type WithAiCreditOptions<T> = {
-  /** For handlers that report failure by returning rather than throwing. */
   refundIf?: (result: T) => boolean;
   consume?: ConsumeCreditStore;
   grant?: GrantCreditStore;
 };
 
-/**
- * Charge a credit, run the AI work, put the credit back if the work failed —
- * a provider 5xx, a missing tool_call, a bad lookId. Every AI entry point goes
- * through this: all of those failures tell the client "please try again", so
- * billing for them means a retry loop costs a credit per attempt and returns
- * nothing.
- *
- * ponytail: the refund lands in purchased_credits (grant_ai_credits' only
- * bucket), so a refunded daily credit stops expiring. Harmless at this failure
- * rate; if it ever needs to be exact, give the SQL function a _bucket arg.
- */
 export async function withAiCredit<T>(
   supabase: SupabaseClient,
   userId: string,
@@ -110,7 +98,6 @@ export async function withAiCredit<T>(
   await consumeAiCredit(supabase, userId, opts.consume);
   const refund = () =>
     grantAiCredits(supabase, userId, 1, opts.grant).catch((err) =>
-      // Never let a failed refund mask the failure the caller is reporting.
       console.error("[withAiCredit] refund failed", err),
     );
 
@@ -132,7 +119,6 @@ export type LookImageDeps = {
   grant?: GrantCreditStore;
 };
 
-/** Single conditional UPDATE: two racing renders can never both claim it. */
 async function supabaseClaimLookImage(userId: string): Promise<boolean> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
@@ -145,7 +131,6 @@ async function supabaseClaimLookImage(userId: string): Promise<boolean> {
   return (data?.length ?? 0) > 0;
 }
 
-/** Arms the one free image that comes with a just-charged look. */
 export async function markLookImagePending(userId: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error } = await supabaseAdmin
@@ -160,12 +145,6 @@ const supabaseLookImageDeps: LookImageDeps = {
   mark: markLookImagePending,
 };
 
-/**
- * The first visual for a freshly generated look is covered by the credit that
- * look already cost; every render after it costs one. A render that comes back
- * without an image costs nothing — whichever way it was paid for is put back,
- * since Cloudflare failing is exactly why the Retry button exists.
- */
 export async function payForLookImage<T extends { imageDataUri: string | null }>(
   supabase: SupabaseClient,
   userId: string,

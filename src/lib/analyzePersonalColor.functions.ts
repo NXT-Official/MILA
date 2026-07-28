@@ -208,8 +208,6 @@ const slimTool = {
   },
 };
 
-// Named so the credit-wrapped body below keeps its literal `success` types —
-// an unannotated closure would widen them to boolean and stop matching.
 type ColorAnalysisResult =
   | {
       success: true;
@@ -273,11 +271,6 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
         throw err;
       }
 
-      // Balance gate. This handler answers with error codes rather than
-      // throwing (the outer catch would flatten a throw into
-      // SERVER_GATEWAY_TIMEOUT), and the viewfinder toasts `error` verbatim —
-      // so hand back the human sentence, not a code. Two vision passes ride
-      // on the one credit, and every failure exit below refunds it.
       try {
         return await withAiCredit<ColorAnalysisResult>(
           context.supabase,

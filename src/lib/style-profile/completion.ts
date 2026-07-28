@@ -9,11 +9,6 @@ export interface StyleProfileRow {
   color_profile: unknown;
 }
 
-/**
- * The dashboard profile keeps the raw season in `color_season_base` — the
- * derived `color_season` can be a narrowed variant — so completion is always
- * judged against the base column.
- */
 export function toStyleProfileRow(
   profile:
     | (Omit<StyleProfileRow, "color_season"> & { color_season_base: string | null })

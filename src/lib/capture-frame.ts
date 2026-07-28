@@ -1,10 +1,3 @@
-/**
- * Grabs the current frame of a live camera preview as a JPEG File.
- *
- * Resolves null when there is nothing to capture yet — a video element that
- * has not reported dimensions is still negotiating with the camera, and
- * drawing it would produce a blank frame.
- */
 export function captureVideoFrame(
   video: HTMLVideoElement | null,
   filename: string,

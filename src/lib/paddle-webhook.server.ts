@@ -139,8 +139,6 @@ export async function applyPaddleCreditPackEvent(
     .select("id, credits")
     .eq("paddle_price_id", priceId ?? "")
     .maybeSingle();
-  // A lookup that failed is not the same as a price that isn't a pack: the
-  // first must be retried, the second is just a subscription renewal passing by.
   if (packError) {
     console.error("[paddle-webhook] credit pack lookup failed", packError);
     throw new Error("credit pack lookup failed");
@@ -149,7 +147,6 @@ export async function applyPaddleCreditPackEvent(
 
   const userId = data.custom_data?.user_id;
   if (!userId) {
-    // Unretryable — the payload will never gain a user_id. Log and drop.
     console.error("[paddle-webhook] missing custom_data.user_id", { transactionId: data.id });
     return;
   }
@@ -168,8 +165,6 @@ export async function applyPaddleCreditPackEvent(
     throw new Error("credit pack purchase not recorded");
   }
 
-  // Claim the grant in one conditional update: concurrent deliveries can't both
-  // win, and a delivery that finds granted_at already set is a true duplicate.
   const { data: claimed, error: claimError } = await db
     .from("credit_pack_purchases")
     .update({ granted_at: new Date().toISOString() })
@@ -185,8 +180,6 @@ export async function applyPaddleCreditPackEvent(
   try {
     await grant(db, userId, pack.credits);
   } catch (err) {
-    // Hand the grant back so the next delivery retries it, then fail the
-    // webhook so Paddle actually sends one.
     await db
       .from("credit_pack_purchases")
       .update({ granted_at: null })

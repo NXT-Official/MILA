@@ -12,8 +12,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 
 export const Route = createFileRoute("/_authenticated/_app/credit-packs")({
-  // Members-only, checked on the server. A cached client query can be tampered
-  // with; this asks the database who's actually subscribed.
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
     const { active } = await myMembershipStatus();
@@ -95,8 +93,6 @@ function CreditPackCard({
   disabled?: boolean;
   onBuy?: () => void;
 }) {
-  // A pack with no Paddle price can't open a checkout — say so rather than
-  // handing over a button that silently does nothing.
   const unavailable = !pack.paddle_price_id;
 
   return (

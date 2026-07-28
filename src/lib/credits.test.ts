@@ -15,10 +15,6 @@ describe("credit error contract", () => {
   });
 
   test("still recognizes it after a message-only round trip (server-fn boundary)", () => {
-    // TanStack Start's ShallowErrorPlugin reconstructs thrown server errors as
-    // `new Error(originalError.message)` — .name is never preserved. Anything
-    // isInsufficientCreditsError checks besides .message would silently break
-    // for every real call site, which all go through a server function.
     const reconstructed = new Error(new InsufficientCreditsError().message);
     expect(isInsufficientCreditsError(reconstructed)).toBe(true);
   });

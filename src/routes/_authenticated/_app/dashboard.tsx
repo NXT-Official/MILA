@@ -106,7 +106,6 @@ function Dashboard() {
   const regenerateImage = useServerFn(regenerateOutfitImage);
   const saveOutfit = useServerFn(saveOutfitToHistory);
 
-  /** Cloudflare-only step, shared by the initial post-text fetch and Retry visual. */
   async function fetchImage(outfit: DailyLook) {
     setImageLoading(true);
     try {
@@ -114,7 +113,6 @@ function Dashboard() {
       setLook((prev) => (prev ? { ...prev, ...res } : prev));
       return res;
     } catch (e) {
-      // Out of credits gets the paywall, not a toast — same as generateLook.
       if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
         setLook((prev) => (prev ? { ...prev, imageDataUri: null } : prev));
@@ -130,7 +128,6 @@ function Dashboard() {
       return { imageDataUri: null, imageGenerationError: message };
     } finally {
       setImageLoading(false);
-      // Renders past the look's free first one cost a credit.
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
@@ -155,8 +152,6 @@ function Dashboard() {
         skinUndertone: profile.skin_undertone ?? null,
         faceShape: profile.face_shape ?? null,
         hairType: profile.hair_type ?? null,
-        // beautyPreferences is intentionally omitted — the server loads it
-        // itself from the authenticated user's profile.
         weather: `${climate.label} (in ${climate.location})`,
         tempF: climate.tempF,
         tempC: climate.tempC,
@@ -176,8 +171,6 @@ function Dashboard() {
       }
       return;
     }
-    // The written outfit is ready — show it immediately rather than making
-    // the user wait on the (separate) Cloudflare visual too.
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
     await fetchImage(outfit);

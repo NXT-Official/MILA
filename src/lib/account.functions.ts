@@ -8,7 +8,6 @@ import { cancelViaPaddleApi } from "./subscriptions.functions";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
-/** Every user upload lives under a `<userId>/` prefix in one of these. */
 const USER_BUCKETS = ["outfits", "posts"] as const;
 
 export type DeleteAccountResult = { success: true } | { error: string };
@@ -20,12 +19,6 @@ export type DeleteAccountDeps = {
   deleteUser: (userId: string) => Promise<boolean>;
 };
 
-/**
- * Order matters: billing dies first. If Paddle refuses, the account survives —
- * the alternative is a deleted user whose card keeps getting charged with no
- * way left to log in and stop it. Storage next (nothing cascades to buckets),
- * then the auth user, which every table hangs off via ON DELETE CASCADE.
- */
 export async function deleteAccountForUser(
   db: MilaSupabaseClient,
   userId: string,
@@ -33,8 +26,6 @@ export async function deleteAccountForUser(
   deps: DeleteAccountDeps,
 ): Promise<DeleteAccountResult> {
   const email = await deps.getEmail(userId);
-  // Re-checked server-side: the client's matching input is a UX affordance, not
-  // the gate. Case and whitespace are the user's typing, not their intent.
   if (!email || typedEmail.trim().toLowerCase() !== email.trim().toLowerCase()) {
     return { error: "That email doesn't match the account you're signed in to." };
   }
@@ -78,8 +69,6 @@ const supabaseDeleteAccountDeps: DeleteAccountDeps = {
   },
 
   cancelSubscription: async (paddleSubscriptionId) => {
-    // Immediately, not next_billing_period: there'll be no account left to
-    // serve the rest of the period to. Paddle prorates the refund.
     const result = await cancelViaPaddleApi(paddleSubscriptionId, "immediately");
     return !("error" in result);
   },
@@ -87,8 +76,6 @@ const supabaseDeleteAccountDeps: DeleteAccountDeps = {
   purgeStorage: async (userId) => {
     const supabaseAdmin = await admin();
     for (const bucket of USER_BUCKETS) {
-      // ponytail: one page of 1000 per bucket, uploads are flat under the
-      // user's folder. Loop on `next` if anyone ever stores more than that.
       const { data: files, error } = await supabaseAdmin.storage
         .from(bucket)
         .list(userId, { limit: 1000 });
@@ -100,7 +87,6 @@ const supabaseDeleteAccountDeps: DeleteAccountDeps = {
       const { error: removeError } = await supabaseAdmin.storage
         .from(bucket)
         .remove(files.map((f) => `${userId}/${f.name}`));
-      // Orphaned images are worth logging, not worth aborting a deletion over.
       if (removeError) console.error(`[deleteMyAccount] couldn't purge ${bucket}`, removeError);
     }
   },

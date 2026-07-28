@@ -68,7 +68,6 @@ export const planSlugSchema = z
   .max(60, "Slug must be at most 60 characters.")
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Lowercase letters, numbers, and single hyphens only.");
 
-/** Fields every purchasable catalog item carries — shared by plans and credit packs. */
 export const catalogItemInputShape = {
   slug: planSlugSchema,
   title: z.string().trim().min(1, "Title is required.").max(80),
@@ -95,17 +94,12 @@ export const updatePlanInputSchema = createPlanInputSchema.partial().extend({
   id: z.string().uuid(),
 });
 
-/** Number inputs arrive from the admin forms as strings, hence the coercion. */
 export function wholeNumberField() {
   return z.coerce
     .number({ invalid_type_error: "Enter a whole number." })
     .int("Enter a whole number.");
 }
 
-/**
- * The admin create/edit dialogs bind to raw input strings, so they need a
- * looser shape than `catalogItemInputShape` (price as text, no defaults).
- */
 export function catalogFormShape(priceExample: string) {
   return {
     title: z

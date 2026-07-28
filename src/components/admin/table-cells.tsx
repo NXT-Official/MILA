@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-/** Name over slug, with the archived marker — the identity column of both catalog tables. */
 export function CatalogTitleCell({
   title,
   slug,

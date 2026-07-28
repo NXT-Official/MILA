@@ -160,8 +160,6 @@ export function ConciergeChat({
   useEffect(() => () => recognitionRef.current?.stop(), []);
 
   useEffect(() => {
-    // Skip when this component itself just created the conversation — the
-    // messages are already on screen and don't need re-hydrating.
     if (!initialConversationId || conversationIdRef.current === initialConversationId) return;
     let cancelled = false;
     supabase
@@ -172,8 +170,6 @@ export function ConciergeChat({
       .order("role", { ascending: false })
       .then(({ data }) => {
         if (cancelled || !data) return;
-        // Committed only on delivery so a double-invoked (dev StrictMode)
-        // first run, whose result is discarded, doesn't block the re-fetch.
         conversationIdRef.current = initialConversationId;
         setMessages(
           data.map((m) => ({
@@ -330,13 +326,10 @@ export function ConciergeChat({
       void persistExchange(trimmed, uploadedUrl, res.reply);
     } catch (e) {
       setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, failed: true } : m)));
-      // Out of credits is an upsell, not an error. Retry on the message still
-      // works once they top up.
       if (isInsufficientCreditsError(e)) setCreditPaywallOpen(true);
       else toast.error(errorMessage(e, "Mila couldn't respond just now."));
     } finally {
       setSending(false);
-      // Every message costs a credit — keep the shell's badge honest.
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }

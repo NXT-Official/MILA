@@ -256,7 +256,6 @@ function History() {
   const [selected, setSelected] = useState<OutfitRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // ponytail: deletes the row only; the storage image is left orphaned — clean up server-side if it matters
   async function deleteOutfit(item: OutfitRow) {
     if (!user) return;
     if (!window.confirm("Delete this look from your archive? This can't be undone.")) return;

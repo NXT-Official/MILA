@@ -31,11 +31,6 @@ export function mySubscriptionQueryOptions(userId: string | undefined) {
         .maybeSingle();
       if (subError || !sub) return null;
 
-      // ponytail: if an admin deactivates/archives a plan a user is still
-      // subscribed to, RLS hides it here and the drawer falls back to
-      // "Free" even though the subscription is real. Low-probability in a
-      // 3-plan sandbox catalog; revisit if plan lifecycle management
-      // becomes a real feature.
       const { data: plan, error: planError } = await supabase
         .from("subscription_plans")
         .select("title, credits_included, price_amount, currency, billing_interval")

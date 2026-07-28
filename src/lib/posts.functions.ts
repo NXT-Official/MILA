@@ -21,18 +21,12 @@ export interface FeedPost {
   image_url_back: string;
   image_url_front: string;
   author_name: string | null;
-  /** Author holds an in-force membership — drives the verified badge. */
   author_verified: boolean;
   is_self: boolean;
   hidden?: boolean;
   hidden_reason?: string | null;
 }
 
-/**
- * Author names and membership both live behind RLS that only exposes your own
- * row, so this reads them with the admin client — the feed is server-rendered
- * and only ever returns the two public bits.
- */
 async function loadAuthorDetails(userIds: string[]) {
   const names = new Map<string, string | null>();
   const verified = new Set<string>();
@@ -91,7 +85,6 @@ const UpdateCaptionInput = z.object({
   caption: z.string().max(500).nullable(),
 });
 
-/** Ownership is enforced by the "Users can manage their own posts" RLS policy. */
 export const updatePostCaption = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => UpdateCaptionInput.parse(input))
