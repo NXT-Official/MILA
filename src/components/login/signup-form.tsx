@@ -1,5 +1,4 @@
-import { useRef, useState } from "react";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordVisibilityButton } from "@/components/ui/password-visibility-button";
+import { useCaptcha } from "@/components/login/use-captcha";
 import { passwordChecks } from "@/constants/password";
 import { signUpWithPassword } from "@/lib/auth.functions";
+import { errorMessage } from "@/lib/utils";
 
 const signupSchema = z.object({
   username: z
@@ -39,8 +40,7 @@ export function SignupForm({
   onToggleShowPassword,
 }: SignupFormProps) {
   const [busy, setBusy] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HCaptcha>(null);
+  const captcha = useCaptcha();
 
   const {
     register,
@@ -64,7 +64,7 @@ export function SignupForm({
         : { label: "Strong", bar: "bg-emerald-500", text: "text-emerald-600" };
 
   const onSubmit = async (data: SignupFormValues) => {
-    if (!captchaToken) {
+    if (!captcha.token) {
       toast.error("Please complete the captcha challenge.");
       return;
     }
@@ -79,16 +79,15 @@ export function SignupForm({
           email: data.email,
           password: data.password,
           username: data.username,
-          captchaToken,
+          captchaToken: captcha.token,
         },
       });
       if (session) await supabase.auth.setSession(session);
       toast.success("Studio profile created. Check your inbox to confirm.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Authentication failed");
+      toast.error(errorMessage(err, "Authentication failed"));
     } finally {
-      captchaRef.current?.resetCaptcha();
-      setCaptchaToken(null);
+      captcha.reset();
       setBusy(false);
     }
   };
@@ -175,19 +174,11 @@ export function SignupForm({
         </div>
       )}
 
-      <div className="flex justify-center">
-        <HCaptcha
-          ref={captchaRef}
-          sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
-          onVerify={setCaptchaToken}
-          onExpire={() => setCaptchaToken(null)}
-          onError={() => setCaptchaToken(null)}
-        />
-      </div>
+      {captcha.field}
 
       <Button
         type="submit"
-        disabled={busy || !captchaToken || !passwordOk}
+        disabled={busy || !captcha.token || !passwordOk}
         className="w-full h-10 gap-2"
       >
         {busy ? "Please wait…" : "Create Atelier Account"}

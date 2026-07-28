@@ -1,5 +1,4 @@
-import { useRef, useState } from "react";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordVisibilityButton } from "@/components/ui/password-visibility-button";
+import { useCaptcha } from "@/components/login/use-captcha";
+import { errorMessage } from "@/lib/utils";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid studio email address." }),
@@ -33,8 +34,7 @@ export function LoginForm({
   onToggleShowPassword,
 }: LoginFormProps) {
   const [busy, setBusy] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HCaptcha>(null);
+  const captcha = useCaptcha();
 
   const {
     register,
@@ -47,7 +47,7 @@ export function LoginForm({
   const emailField = register("email");
 
   const onSubmit = async (data: LoginFormValues) => {
-    if (!captchaToken) {
+    if (!captcha.token) {
       toast.error("Please complete the captcha challenge.");
       return;
     }
@@ -57,15 +57,14 @@ export function LoginForm({
         data: {
           email: data.email,
           password: data.password,
-          captchaToken,
+          captchaToken: captcha.token,
         },
       });
       if (session) await supabase.auth.setSession(session);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Authentication failed");
+      toast.error(errorMessage(err, "Authentication failed"));
     } finally {
-      captchaRef.current?.resetCaptcha();
-      setCaptchaToken(null);
+      captcha.reset();
       setBusy(false);
     }
   };
@@ -107,17 +106,9 @@ export function LoginForm({
         {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
       </div>
 
-      <div className="flex justify-center">
-        <HCaptcha
-          ref={captchaRef}
-          sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
-          onVerify={setCaptchaToken}
-          onExpire={() => setCaptchaToken(null)}
-          onError={() => setCaptchaToken(null)}
-        />
-      </div>
+      {captcha.field}
 
-      <Button type="submit" disabled={busy || !captchaToken} className="w-full h-10 gap-2">
+      <Button type="submit" disabled={busy || !captcha.token} className="w-full h-10 gap-2">
         {busy ? "Please wait…" : "Enter Mila Studio"}
         <ArrowRight className="size-4" />
       </Button>

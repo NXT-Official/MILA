@@ -1,6 +1,5 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { HelpCircle, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -15,26 +14,29 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { submitSupportMessage } from "@/lib/support.functions";
+import { useCaptcha } from "@/components/login/use-captcha";
+import { errorMessage } from "@/lib/utils";
 
 export function SupportDialog() {
   const [feedbackType, setFeedbackType] = useState<"help" | "feedback">("help");
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const captchaRef = useRef<HCaptcha>(null);
+  const captcha = useCaptcha();
   const submitSupport = useServerFn(submitSupportMessage);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
-    if (!captchaToken) {
+    if (!captcha.token) {
       toast.error("Please complete the captcha challenge.");
       return;
     }
     setSubmitting(true);
     try {
-      await submitSupport({ data: { kind: feedbackType, message: message.trim(), captchaToken } });
+      await submitSupport({
+        data: { kind: feedbackType, message: message.trim(), captchaToken: captcha.token },
+      });
       toast.success(
         feedbackType === "help"
           ? "Help request received. Someone from the Mila team will look into it shortly."
@@ -43,10 +45,9 @@ export function SupportDialog() {
       setMessage("");
       setOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't send that. Please try again.");
+      toast.error(errorMessage(err, "Couldn't send that. Please try again."));
     } finally {
-      captchaRef.current?.resetCaptcha();
-      setCaptchaToken(null);
+      captcha.reset();
       setSubmitting(false);
     }
   };
@@ -101,19 +102,11 @@ export function SupportDialog() {
               required
             />
           </div>
-          <div className="flex justify-center">
-            <HCaptcha
-              ref={captchaRef}
-              sitekey={import.meta.env.VITE_HCAPTCHA_SITEKEY!}
-              onVerify={setCaptchaToken}
-              onExpire={() => setCaptchaToken(null)}
-              onError={() => setCaptchaToken(null)}
-            />
-          </div>
+          {captcha.field}
           <div className="flex justify-end gap-2 pt-1">
             <Button
               type="submit"
-              disabled={submitting || !message.trim() || !captchaToken}
+              disabled={submitting || !message.trim() || !captcha.token}
               className="h-9 text-xs px-4"
             >
               {submitting ? "Sending…" : "Send"}
