@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { staffGateQueryOptions } from "@/lib/queries/admin";
 import { hasPermission, type AppPermission, type AppRole } from "@/lib/authorization";
 import { profileQueryOptions } from "@/lib/queries/profile";
-import { isStyleProfileComplete } from "@/lib/style-profile/completion";
+import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 
 export type AuthenticatedDestination = "/admin" | "/onboarding/style-profile" | "/dashboard";
 
@@ -15,13 +15,6 @@ export interface AuthenticatedViewerState {
   permissions: AppPermission[];
   isStyleProfileComplete: boolean;
   destination: AuthenticatedDestination;
-}
-
-export function viewerHasPermission(
-  viewer: Pick<AuthenticatedViewerState, "roles">,
-  permission: AppPermission,
-) {
-  return hasPermission(viewer.roles, permission);
 }
 
 export function resolveAuthenticatedDestination(input: {
@@ -46,14 +39,7 @@ export async function loadAuthenticatedViewerState(
   const roles = gate?.roles ?? [];
   const permissions = gate?.permissions ?? [];
   const canAccessStaffArea = !!gate?.can_access_staff_area;
-  const complete = isStyleProfileComplete({
-    skin_undertone: profile.skin_undertone,
-    color_season: profile.color_season_base,
-    body_type: profile.body_type,
-    face_shape: profile.face_shape,
-    hair_type: profile.hair_type,
-    color_profile: profile.color_profile,
-  });
+  const complete = isStyleProfileComplete(toStyleProfileRow(profile));
   return {
     isAdmin,
     isModerator: !!gate?.is_moderator,
@@ -76,18 +62,7 @@ export function useAuthenticatedViewerState(userId: string | undefined) {
   const roles = gateQuery.data?.roles ?? [];
   const permissions = gateQuery.data?.permissions ?? [];
   const canAccessStaffArea = !!gateQuery.data?.can_access_staff_area;
-  const complete = isStyleProfileComplete(
-    profileQuery.data
-      ? {
-          skin_undertone: profileQuery.data.skin_undertone,
-          color_season: profileQuery.data.color_season_base,
-          body_type: profileQuery.data.body_type,
-          face_shape: profileQuery.data.face_shape,
-          hair_type: profileQuery.data.hair_type,
-          color_profile: profileQuery.data.color_profile,
-        }
-      : null,
-  );
+  const complete = isStyleProfileComplete(toStyleProfileRow(profileQuery.data));
   return {
     isLoading: gateQuery.isLoading || profileQuery.isLoading,
     isAdmin,

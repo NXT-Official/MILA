@@ -68,7 +68,8 @@ export const planSlugSchema = z
   .max(60, "Slug must be at most 60 characters.")
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Lowercase letters, numbers, and single hyphens only.");
 
-export const createPlanInputSchema = z.object({
+/** Fields every purchasable catalog item carries — shared by plans and credit packs. */
+export const catalogItemInputShape = {
   slug: planSlugSchema,
   title: z.string().trim().min(1, "Title is required.").max(80),
   description: z.string().trim().max(280).default(""),
@@ -78,12 +79,16 @@ export const createPlanInputSchema = z.object({
     .trim()
     .toLowerCase()
     .regex(/^[a-z]{3}$/, "Use a 3-letter currency code, e.g. usd."),
+  is_active: z.boolean().default(false),
+  sort_order: z.number().int().min(0).max(9999).default(0),
+};
+
+export const createPlanInputSchema = z.object({
+  ...catalogItemInputShape,
   billing_interval: z.enum(BILLING_INTERVALS),
   credits_included: z.number().int().min(0).max(1_000_000),
   features: z.array(z.string().trim().min(1).max(120)).max(12).default([]),
-  is_active: z.boolean().default(false),
   is_featured: z.boolean().default(false),
-  sort_order: z.number().int().min(0).max(9999).default(0),
 });
 export type CreatePlanInput = z.infer<typeof createPlanInputSchema>;
 
@@ -91,6 +96,43 @@ export const updatePlanInputSchema = createPlanInputSchema.partial().extend({
   id: z.string().uuid(),
 });
 export type UpdatePlanInput = z.infer<typeof updatePlanInputSchema>;
+
+/** Number inputs arrive from the admin forms as strings, hence the coercion. */
+export function wholeNumberField() {
+  return z.coerce
+    .number({ invalid_type_error: "Enter a whole number." })
+    .int("Enter a whole number.");
+}
+
+/**
+ * The admin create/edit dialogs bind to raw input strings, so they need a
+ * looser shape than `catalogItemInputShape` (price as text, no defaults).
+ */
+export function catalogFormShape(priceExample: string) {
+  return {
+    title: z
+      .string()
+      .trim()
+      .min(1, "Title is required.")
+      .max(80, "Keep the title under 80 characters."),
+    slug: planSlugSchema,
+    description: z.string().trim().max(280, "Keep the description under 280 characters."),
+    price: z
+      .string()
+      .trim()
+      .refine(
+        (v) => parsePriceToCents(v) !== null,
+        `Enter a price like ${priceExample} (max 9,999,999).`,
+      ),
+    currency: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^[a-z]{3}$/, "Use a 3-letter currency code, e.g. usd."),
+    sort_order: wholeNumberField().min(0, "Sort order can't be negative.").max(9999),
+    is_active: z.boolean(),
+  };
+}
 
 export function slugifyPlanTitle(title: string): string {
   return title

@@ -9,6 +9,28 @@ export interface StyleProfileRow {
   color_profile: unknown;
 }
 
+/**
+ * The dashboard profile keeps the raw season in `color_season_base` — the
+ * derived `color_season` can be a narrowed variant — so completion is always
+ * judged against the base column.
+ */
+export function toStyleProfileRow(
+  profile:
+    | (Omit<StyleProfileRow, "color_season"> & { color_season_base: string | null })
+    | null
+    | undefined,
+): StyleProfileRow | null {
+  if (!profile) return null;
+  return {
+    skin_undertone: profile.skin_undertone,
+    color_season: profile.color_season_base,
+    body_type: profile.body_type,
+    face_shape: profile.face_shape,
+    hair_type: profile.hair_type,
+    color_profile: profile.color_profile,
+  };
+}
+
 export function isNonEmptyColorProfile(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const obj = value as Record<string, unknown>;
