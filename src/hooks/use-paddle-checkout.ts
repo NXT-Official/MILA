@@ -64,8 +64,6 @@ export function usePaddleCheckout(userId: string | undefined) {
       if (event.name === "checkout.completed") {
         const transactionId = event.data?.transaction_id;
         const toastId = toast.loading("Payment received — activating your plan…");
-        // Apply the purchase now instead of waiting on webhook delivery, then
-        // dismiss the Paddle overlay so the user lands back in the app.
         (transactionId
           ? syncPurchase({ data: { transactionId } })
           : Promise.reject(new Error("no transaction id"))
@@ -76,7 +74,6 @@ export function usePaddleCheckout(userId: string | undefined) {
             toast.success("Your plan is active.", { id: toastId });
           })
           .catch(() => {
-            // The webhook is still coming; refetch a couple of times for it.
             refresh();
             setTimeout(refresh, 5000);
             toast.success("Payment received — your plan will appear shortly.", { id: toastId });

@@ -26,10 +26,6 @@ export function AdminShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [sidebarOpen]);
 
-  // SSR can't resolve admin status (session lives in localStorage), so this
-  // component-level check — not admin.tsx's beforeLoad — is what actually
-  // protects this route tree once hydrated. See _app.tsx for the same
-  // pattern and why beforeLoad alone isn't sufficient in this SSR app.
   useEffect(() => {
     if (!user || viewer.isLoading || viewer.canAccessStaffArea) return;
     navigate({ to: viewer.destination, replace: true });

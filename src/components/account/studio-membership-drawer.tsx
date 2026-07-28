@@ -29,7 +29,6 @@ import { CancelMembershipDialog } from "@/components/account/cancel-membership-d
 interface StudioMembershipDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Current AI credit balance from the app shell; null while unknown. */
   credits: number | null;
   user: {
     fullName: string;
@@ -73,8 +72,6 @@ export function StudioMembershipDrawer({
         return;
       }
       toast.success("Your account and all of its data have been deleted.");
-      // The user row is gone, so the session is already dead — signOut just
-      // clears the local copy and sends them home.
       await signOut();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "We couldn't delete your account.");
@@ -86,8 +83,6 @@ export function StudioMembershipDrawer({
   const [canceling, setCanceling] = useState(false);
   const [resuming, setResuming] = useState(false);
 
-  // No confirm dialog: keeping a membership you already pay for isn't a
-  // destructive act, and the button is only reachable while one is winding down.
   async function handleResume() {
     setResuming(true);
     try {
@@ -113,8 +108,6 @@ export function StudioMembershipDrawer({
       }
       toast.success(`Your membership ends on ${new Date(result.endsAt).toLocaleDateString()}.`);
       setCancelDialogOpen(false);
-      // The server mirrors cancel_at_period_end before it answers, so this no
-      // longer has to race the webhook — the refetch already sees "Ends".
       queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
     } finally {
       setCanceling(false);
@@ -123,7 +116,6 @@ export function StudioMembershipDrawer({
   const [defaultHubId, setDefaultHubId] = useState<string>(() => localDefaultHubId() ?? HUBS[0].id);
 
   useEffect(() => {
-    // Profile is the cross-device source of truth; refresh when the drawer opens.
     if (!isOpen || !authUser) return;
     let cancelled = false;
     fetchDefaultHubId(authUser.id).then((id) => {
@@ -389,9 +381,6 @@ export function StudioMembershipDrawer({
                     )}
                   </div>
 
-                  {/* A free member has no daily allowance to meter. Only show
-                      this once there's a plan behind it — or a purchased pack,
-                      which spends without one. */}
                   {(subscription || (credits ?? 0) > 0) && (
                     <CreditsUsageMeter
                       remaining={credits ?? DEFAULT_AI_CREDITS}

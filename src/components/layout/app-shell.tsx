@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         .select("ai_credits, purchased_credits")
         .eq("user_id", user.id)
         .maybeSingle();
-      // Daily allowance + what they've bought: one spendable number.
+
       return (data?.ai_credits ?? 0) + (data?.purchased_credits ?? 0);
     },
     enabled: !!user,

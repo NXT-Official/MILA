@@ -86,7 +86,6 @@ const SpeechRecognitionCtor =
         (new () => SpeechRecognitionLike) | undefined))
     : undefined;
 
-// ponytail: minimal title extraction; history.tsx has the full normalizer if shapes grow
 function outfitTitle(raw: unknown): string {
   try {
     const v = typeof raw === "string" ? JSON.parse(raw) : raw;
@@ -102,18 +101,10 @@ let nextMsgId = 1;
 interface ConciergeChatProps {
   look: ConciergeLook | null;
   onSelectLook: (look: ConciergeLook) => void;
-  /** Resume a saved conversation: its messages load on mount and new turns append to it. */
   initialConversationId?: string | null;
-  /** Fired once when a fresh chat persists its first exchange. */
   onConversationCreated?: (id: string) => void;
 }
 
-/**
- * The full concierge conversation column: message list plus the footer form
- * (quick prompts, archive strip, attachment, dictation, input). Renders as a
- * fragment of flex children — hosts wrap it in a `flex flex-col` container.
- * Remount with a new `key` to start a fresh chat.
- */
 export function ConciergeChat({
   look,
   onSelectLook,

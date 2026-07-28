@@ -28,9 +28,6 @@ export function LocationStep({
     setError(null);
     try {
       await saveDefaultHubId(user?.id, selected);
-      // saveDefaultHubId writes straight to the row, so unlike the steps that
-      // go through useUpdateStyleProfile nothing refreshes the cached profile —
-      // without this the review step still reads "Not set".
       await queryClient.invalidateQueries({ queryKey: queryKeys.profile(user?.id) });
       onSaved();
     } catch (err) {

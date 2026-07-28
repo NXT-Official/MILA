@@ -9,14 +9,9 @@ export function CreditsUsageMeter({ remaining, total }: { remaining: number; tot
     return () => clearInterval(id);
   }, []);
 
-  // Purchased credits push the balance above the plan's daily allowance, so the
-  // bar has to grow with it rather than clamp — otherwise a bought pack reads
-  // as "0 of 0 left today".
   const clampedRemaining = Math.max(0, remaining);
   const scale = Math.max(total, clampedRemaining);
   const percentUsed = scale > 0 ? Math.round(((scale - clampedRemaining) / scale) * 100) : 0;
-  // No daily allowance means nothing is replenished at midnight — whatever is
-  // left came from a purchased pack, so drop the "today"/reset framing.
   const daily = total > 0;
 
   return (

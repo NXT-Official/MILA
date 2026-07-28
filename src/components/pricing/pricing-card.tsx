@@ -56,8 +56,6 @@ export function PricingCard({
         {plan.features.map((feature) => (
           <PlanFeature key={feature} text={feature} />
         ))}
-        {/* Every membership unlocks packs and the badge, so both are rendered
-            rather than stored on each plan's editable feature list. */}
         <PlanFeature text="Credit packs to top up any day" />
         <li className="flex items-start gap-2.5 text-sm leading-relaxed text-ink">
           <VerifiedBadge className="mt-0.5" />

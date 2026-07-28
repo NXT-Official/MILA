@@ -127,7 +127,6 @@ export function ClimateWidget({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [hubId, setHubId] = useState<string>("manila");
-  // ponytail: seq guard so a slow response can't overwrite a newer selection
   const seq = useRef(0);
 
   async function selectHub(id: string) {
