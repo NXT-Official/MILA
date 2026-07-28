@@ -17,6 +17,7 @@ import {
 } from "@/lib/credit-packs.functions";
 import type { CreditPack } from "@/lib/credit-packs";
 import { requireStaffRoutePermission } from "@/lib/staff-route";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/credit-packs")({
   beforeLoad: ({ context }) =>
@@ -45,7 +46,7 @@ function CreditPacksPage() {
       await action();
       toast.success(successMessage);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't update the pack.");
+      toast.error(errorMessage(e, "Couldn't update the pack."));
     } finally {
       invalidate();
     }

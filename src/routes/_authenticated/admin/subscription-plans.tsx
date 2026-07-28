@@ -18,6 +18,7 @@ import {
 } from "@/lib/subscription-plans.functions";
 import type { SubscriptionPlan } from "@/lib/subscription-plans";
 import { requireStaffRoutePermission } from "@/lib/staff-route";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/subscription-plans")({
   beforeLoad: ({ context }) =>
@@ -47,7 +48,7 @@ function SubscriptionPlansPage() {
       await action();
       toast.success(successMessage);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't update the plan.");
+      toast.error(errorMessage(e, "Couldn't update the plan."));
     } finally {
       invalidate();
     }

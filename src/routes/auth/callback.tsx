@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthenticatedViewerState, loadAuthenticatedViewerState } from "@/lib/queries/auth";
+import { AtelierSplash } from "@/components/layout/atelier-splash";
 
 function sanitizeNext(next: unknown): string {
   return typeof next === "string" && /^\/(?!\/|\\)/.test(next) ? next : "/dashboard";
@@ -42,11 +43,5 @@ function AuthCallback() {
     navigate({ href: destination, replace: true });
   }, [loading, session, viewer.isLoading, viewer.destination, next, navigate]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="font-serif text-2xl tracking-[0.2em] text-muted-foreground animate-pulse">
-        ATELIER
-      </div>
-    </div>
-  );
+  return <AtelierSplash />;
 }

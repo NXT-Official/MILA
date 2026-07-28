@@ -9,6 +9,7 @@ import { queryKeys } from "@/constants/query-keys";
 import { adminResolveSupportMessage } from "@/lib/admin.functions";
 import { adminSupportQueryOptions } from "@/lib/queries/admin";
 import { requireStaffRoutePermission } from "@/lib/staff-route";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/support")({
   beforeLoad: ({ context }) => requireStaffRoutePermission(context.queryClient, "support.view"),
@@ -26,7 +27,7 @@ function SupportPage() {
       await resolve({ data: { message_id: id, resolved } });
       qc.invalidateQueries({ queryKey: queryKeys.adminSupportMessages });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't update message.");
+      toast.error(errorMessage(e, "Couldn't update message."));
     }
   }
 

@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/constants/query-keys";
 import { deletePost, getMemberProfile, updatePostCaption } from "@/lib/posts.functions";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/_app/profile/$userId")({
   component: MemberProfilePage,
@@ -44,7 +45,7 @@ function MemberProfilePage() {
       setEditingId(null);
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't save the caption.");
+      toast.error(errorMessage(e, "Couldn't save the caption."));
     } finally {
       setBusy(false);
     }
@@ -59,7 +60,7 @@ function MemberProfilePage() {
       toast.success("Post deleted.");
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't delete the post.");
+      toast.error(errorMessage(e, "Couldn't delete the post."));
     } finally {
       setBusy(false);
     }

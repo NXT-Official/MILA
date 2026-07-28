@@ -11,6 +11,7 @@ import { adminHidePost, adminDeletePost } from "@/lib/admin.functions";
 import { adminModerationQueryOptions } from "@/lib/queries/admin";
 import { requireStaffRoutePermission } from "@/lib/staff-route";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/moderation")({
   beforeLoad: ({ context }) => requireStaffRoutePermission(context.queryClient, "moderation.view"),
@@ -32,7 +33,7 @@ function ModerationPage() {
       toast.success(hidden ? "Post hidden from feed." : "Post restored.");
       qc.invalidateQueries({ queryKey: queryKeys.adminPosts });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't update post.");
+      toast.error(errorMessage(e, "Couldn't update post."));
     }
   }
 
@@ -43,7 +44,7 @@ function ModerationPage() {
       toast.success("Post deleted.");
       qc.invalidateQueries({ queryKey: queryKeys.adminPosts });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't delete.");
+      toast.error(errorMessage(e, "Couldn't delete."));
     }
   }
 

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Lock, ScrollText, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadErrorPanel } from "@/components/ui/error-state";
 import { PricingCard } from "@/components/pricing/pricing-card";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
 import { publicCreditPacksQueryOptions } from "@/lib/queries/credit-packs";
@@ -39,15 +40,7 @@ function PricingPage() {
       {isLoading ? (
         <PricingSkeleton />
       ) : isError ? (
-        <div role="alert" className="atelier-card mx-auto max-w-xl p-10 text-center sm:p-14">
-          <p className="mb-2 font-serif text-2xl text-ink">Couldn't load membership plans</p>
-          <p className="text-sm text-muted">
-            Something went wrong on our side. Please try again in a moment.
-          </p>
-          <Button variant="secondary" className="mt-6" onClick={() => refetch()}>
-            Try Again
-          </Button>
-        </div>
+        <LoadErrorPanel title="Couldn't load membership plans" onRetry={() => refetch()} />
       ) : !data?.length ? (
         <EmptyState
           role="status"

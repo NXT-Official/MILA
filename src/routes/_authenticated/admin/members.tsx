@@ -17,6 +17,7 @@ import {
   RoleConfirmationDialog,
   type PendingRoleChange,
 } from "@/components/admin/role-confirmation-dialog";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/members")({
   beforeLoad: ({ context }) => requireStaffRoutePermission(context.queryClient, "members.view"),
@@ -72,7 +73,7 @@ function MembersPage() {
       await qc.invalidateQueries({ queryKey: queryKeys.adminUsers });
       setRoleChange(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't update role.");
+      toast.error(errorMessage(e, "Couldn't update role."));
     } finally {
       setRolePending(false);
     }
@@ -84,7 +85,7 @@ function MembersPage() {
       toast.success(suspended ? "Member suspended." : "Member reinstated.");
       qc.invalidateQueries({ queryKey: queryKeys.adminUsers });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't update status.");
+      toast.error(errorMessage(e, "Couldn't update status."));
     }
   }
 
