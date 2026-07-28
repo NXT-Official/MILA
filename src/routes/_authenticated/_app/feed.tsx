@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
+import { errorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/_app/feed")({
   component: FeedPage,
@@ -66,7 +67,7 @@ function FeedPage() {
       setIsPostOpen(false);
       await queryClient.invalidateQueries({ queryKey: queryKeys.feed(user.id) });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't post today's OOTD.");
+      toast.error(errorMessage(e, "Couldn't post today's OOTD."));
     } finally {
       setSubmitting(false);
     }

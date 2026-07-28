@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ScrollText, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadErrorPanel } from "@/components/ui/error-state";
 import { publicCreditPacksQueryOptions } from "@/lib/queries/credit-packs";
 import { myMembershipStatus } from "@/lib/subscriptions.functions";
 import { formatPlanPrice } from "@/lib/subscription-plans";
@@ -48,15 +49,7 @@ function CreditPacksPage() {
           ))}
         </div>
       ) : isError ? (
-        <div role="alert" className="atelier-card mx-auto max-w-xl p-10 text-center sm:p-14">
-          <p className="mb-2 font-serif text-2xl text-ink">Couldn't load credit packs</p>
-          <p className="text-sm text-muted">
-            Something went wrong on our side. Please try again in a moment.
-          </p>
-          <Button variant="secondary" className="mt-6" onClick={() => refetch()}>
-            Try Again
-          </Button>
-        </div>
+        <LoadErrorPanel title="Couldn't load credit packs" onRetry={() => refetch()} />
       ) : !packs?.length ? (
         <EmptyState
           role="status"

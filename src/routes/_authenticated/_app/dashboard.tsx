@@ -29,10 +29,11 @@ import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog"
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { profileQueryOptions } from "@/lib/queries/profile";
 import { queryKeys } from "@/constants/query-keys";
-import { isStyleProfileComplete } from "@/lib/style-profile/completion";
+import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
 import { motion, type Variants } from "framer-motion";
+import { errorMessage } from "@/lib/utils";
 
 const VIBES = [
   "Everyday Casual",
@@ -88,18 +89,7 @@ function Dashboard() {
     enabled: !!user?.id,
   });
 
-  const profileComplete = isStyleProfileComplete(
-    profile
-      ? {
-          skin_undertone: profile.skin_undertone,
-          color_season: profile.color_season_base,
-          body_type: profile.body_type,
-          face_shape: profile.face_shape,
-          hair_type: profile.hair_type,
-          color_profile: profile.color_profile,
-        }
-      : null,
-  );
+  const profileComplete = isStyleProfileComplete(toStyleProfileRow(profile));
 
   const { openConcierge } = useConcierge();
   const [generating, setGenerating] = useState(false);
@@ -130,10 +120,10 @@ function Dashboard() {
         setLook((prev) => (prev ? { ...prev, imageDataUri: null } : prev));
         return { imageDataUri: null, imageGenerationError: undefined };
       }
-      const message =
-        e instanceof Error
-          ? e.message
-          : "The outfit is ready, but the visual could not be generated.";
+      const message = errorMessage(
+        e,
+        "The outfit is ready, but the visual could not be generated.",
+      );
       setLook((prev) =>
         prev ? { ...prev, imageDataUri: null, imageGenerationError: message } : prev,
       );
@@ -182,7 +172,7 @@ function Dashboard() {
       if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
       } else {
-        toast.error(e instanceof Error ? e.message : "Couldn't generate a look.");
+        toast.error(errorMessage(e, "Couldn't generate a look."));
       }
       return;
     }
@@ -226,9 +216,7 @@ function Dashboard() {
       setSavedLook({ id: row.id, imageUrl: row.image_url });
       toast.success("Saved to your history.");
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "The look could not be saved. Please try again.",
-      );
+      toast.error(errorMessage(e, "The look could not be saved. Please try again."));
     } finally {
       setSavingLook(false);
     }
