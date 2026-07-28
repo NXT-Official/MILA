@@ -1,16 +1,7 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
+import { useEffect, useState, type ReactNode } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-
-interface AuthCtx {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  signingOut: boolean;
-  signOut: () => Promise<void>;
-}
-
-const Ctx = createContext<AuthCtx | undefined>(undefined);
+import { AuthContext } from "@/hooks/use-auth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -32,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider
+    <AuthContext.Provider
       value={{
         user: session?.user ?? null,
         session,
@@ -46,12 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </Ctx.Provider>
+    </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const v = useContext(Ctx);
-  if (!v) throw new Error("useAuth must be used inside AuthProvider");
-  return v;
 }
