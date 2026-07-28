@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, RotateCcw, X, ImageIcon } from "lucide-react";
+import { errorMessage } from "@/lib/utils";
+import { captureVideoFrame } from "@/lib/capture-frame";
 
 interface Props {
   onCapture: (file: File) => void;
@@ -49,11 +51,7 @@ export function CameraCapture({
       }
       setActive(true);
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Camera unavailable. Allow camera permissions or use gallery.",
-      );
+      setError(errorMessage(e, "Camera unavailable. Allow camera permissions or use gallery."));
     } finally {
       setStarting(false);
     }
@@ -64,29 +62,12 @@ export function CameraCapture({
     setActive(false);
   }
 
-  function snap() {
-    const video = videoRef.current;
-    if (!video) return;
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-    if (!w || !h) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, w, h);
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
-        stopStream();
-        setActive(false);
-        onCapture(file);
-      },
-      "image/jpeg",
-      0.92,
-    );
+  async function snap() {
+    const file = await captureVideoFrame(videoRef.current, `capture-${Date.now()}.jpg`);
+    if (!file) return;
+    stopStream();
+    setActive(false);
+    onCapture(file);
   }
 
   if (frozenPreview) {

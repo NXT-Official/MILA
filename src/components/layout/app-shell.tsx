@@ -17,6 +17,7 @@ import { analyzeOutfit } from "@/lib/analyze-outfit.functions";
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { profileQueryOptions } from "@/lib/queries/profile";
 import { queryKeys } from "@/constants/query-keys";
+import { errorMessage } from "@/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -105,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         toast.dismiss(toastId);
         setCreditPaywallOpen(true);
       } else {
-        toast.error(e instanceof Error ? e.message : "Something went wrong.", { id: toastId });
+        toast.error(errorMessage(e, "Something went wrong."), { id: toastId });
       }
     }
   }

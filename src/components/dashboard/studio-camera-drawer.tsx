@@ -10,7 +10,7 @@ import {
 import { CameraCapture } from "@/components/capture/camera-capture";
 import { DualCapture } from "@/components/capture/dual-capture";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -120,7 +120,7 @@ export function StudioCameraDrawer({
       if (isInsufficientCreditsError(e)) {
         onInsufficientCredits?.();
       } else {
-        toast.error(e instanceof Error ? e.message : "Couldn't run the dupe hunter.");
+        toast.error(errorMessage(e, "Couldn't run the dupe hunter."));
       }
       resetDupeState();
     } finally {
@@ -156,7 +156,7 @@ export function StudioCameraDrawer({
       onClose();
       navigate({ to: "/feed" });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't post today's OOTD.");
+      toast.error(errorMessage(e, "Couldn't post today's OOTD."));
     } finally {
       setPostingSubmitting(false);
     }
