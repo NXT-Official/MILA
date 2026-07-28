@@ -36,25 +36,6 @@ function conditionFor(code: number, windKph: number): ClimateCondition {
   return "Cloudy";
 }
 
-function moodFor(tempF: number, condition: ClimateCondition): string {
-  if (condition === "Snow") return "frosted, hushed";
-  if (condition === "Rain") return "wet, moody";
-  if (tempF < 40) return "frosty";
-  if (tempF < 55)
-    return condition === "Overcast" || condition === "Cloudy" ? "cool, gray" : "crisp";
-  if (tempF < 65) return condition === "Sunny" ? "fresh, sunlit" : "cool, gray";
-  if (tempF < 75) return condition === "Sunny" ? "mild, sunlit" : "mild";
-  if (tempF < 85) return condition === "Sunny" ? "warm, golden" : "warm";
-  return "hot, radiant";
-}
-
-export function climateSyncLine(c: ClimateState): string {
-  const mood = moodFor(c.tempF, c.condition);
-  const loc =
-    c.location && c.location !== "—" && c.location !== "Your location" ? c.location : "Local";
-  return `${loc} · Mila Climate Sync: ${c.tempF}°F, ${c.condition}. Pulling tailored outfit ideas for a ${mood} day.`;
-}
-
 function describe(code: number): string {
   if (code === 0) return "Clear sky";
   if (code === 1) return "Mainly clear";
@@ -101,19 +82,6 @@ function ClimateGlyph({ icon, className }: { icon: ClimateIcon; className?: stri
   if (icon === "snow") return <CloudSnow className={cls} strokeWidth={1.75} />;
   if (icon === "wind") return <Wind className={cls} strokeWidth={1.75} />;
   return <Cloud className={cls} strokeWidth={1.75} />;
-}
-
-export function ClimateSyncChip({ value }: { value: ClimateState }) {
-  return (
-    <div className="inline-flex items-center gap-3 rounded-full border border-atelier-champagne/40 bg-linear-to-r from-atelier-ivory/70 via-background/60 to-atelier-champagne/20 backdrop-blur px-4 py-2 shadow-paper">
-      <span className="grid place-items-center size-7 rounded-full border border-atelier-champagne/50 bg-background/70 text-foreground">
-        <ClimateGlyph icon={value.icon} className="size-3.5" />
-      </span>
-      <p className="text-[11px] sm:text-xs font-medium tracking-[0.04em] text-foreground/85 leading-snug">
-        {climateSyncLine(value)}
-      </p>
-    </div>
-  );
 }
 
 export function ClimateWidget({

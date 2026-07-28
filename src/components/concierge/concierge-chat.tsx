@@ -24,7 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/constants/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 
 type Msg = {
   id: number;
@@ -333,7 +333,7 @@ export function ConciergeChat({
       // Out of credits is an upsell, not an error. Retry on the message still
       // works once they top up.
       if (isInsufficientCreditsError(e)) setCreditPaywallOpen(true);
-      else toast.error(e instanceof Error ? e.message : "Mila couldn't respond just now.");
+      else toast.error(errorMessage(e, "Mila couldn't respond just now."));
     } finally {
       setSending(false);
       // Every message costs a credit — keep the shell's badge honest.

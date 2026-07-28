@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, RotateCcw, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
+import { captureVideoFrame } from "@/lib/capture-frame";
 
 type Step = "back" | "front" | "review";
 
@@ -64,41 +65,24 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
       }
       setActive(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Camera unavailable. Allow camera access.");
+      setError(errorMessage(e, "Camera unavailable. Allow camera access."));
     } finally {
       setStarting(false);
     }
   }
 
-  function snap(label: Step) {
-    const video = videoRef.current;
-    if (!video) return;
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-    if (!w || !h) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, w, h);
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        const file = new File([blob], `${label}-${Date.now()}.jpg`, { type: "image/jpeg" });
-        stopStream();
-        setActive(false);
-        if (label === "back") {
-          setBack(file);
-          setStep("front");
-        } else {
-          setFront(file);
-          setStep("review");
-        }
-      },
-      "image/jpeg",
-      0.92,
-    );
+  async function snap(label: Step) {
+    const file = await captureVideoFrame(videoRef.current, `${label}-${Date.now()}.jpg`);
+    if (!file) return;
+    stopStream();
+    setActive(false);
+    if (label === "back") {
+      setBack(file);
+      setStep("front");
+    } else {
+      setFront(file);
+      setStep("review");
+    }
   }
 
   function retake(target: Step) {
