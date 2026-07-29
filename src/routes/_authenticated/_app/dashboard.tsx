@@ -341,7 +341,7 @@ function Dashboard() {
                     variant="outline"
                     onClick={saveLookToHistory}
                     disabled={savingLook || lookSaved || !look.imageDataUri}
-                    className="rounded-full h-10 px-5 uppercase tracking-label text-label"
+                    size="pill"
                   >
                     {lookSaved ? (
                       <>
@@ -361,7 +361,7 @@ function Dashboard() {
                     variant="ghost"
                     onClick={retryImage}
                     disabled={imageLoading || generating}
-                    className="rounded-full h-10 px-5 uppercase tracking-label text-label"
+                    size="pill"
                   >
                     {imageLoading ? (
                       <>
@@ -377,7 +377,7 @@ function Dashboard() {
                     variant="ghost"
                     onClick={generateLook}
                     disabled={imageLoading}
-                    className="rounded-full h-10 px-5 uppercase tracking-label text-label"
+                    size="pill"
                   >
                     <Sparkles className="size-4 mr-2 text-accent" /> Try another
                   </Button>
@@ -392,7 +392,7 @@ function Dashboard() {
                           source: "Today's look",
                         })
                       }
-                      className="rounded-full h-10 px-5 uppercase tracking-label text-label"
+                      size="pill"
                     >
                       <Sparkles className="size-4 mr-2 text-accent" /> Ask Mila about this look
                     </Button>

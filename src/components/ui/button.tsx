@@ -18,12 +18,17 @@ const buttonVariants = cva(
         editorial:
           "h-auto rounded-none bg-transparent p-0 text-ink underline decoration-line decoration-1 underline-offset-4 hover:decoration-accent",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        glass: "atelier-glass text-ink hover:border-porcelain",
       },
       size: {
         sm: "h-9 px-3.5 text-xs",
         md: "h-11 px-5",
         lg: "h-12 px-7 text-base",
         icon: "size-11 p-0",
+        // The pill is this design's real button; it was hand-pasted as a
+        // className override at every call site before living here.
+        pill: "h-10 rounded-full px-5 text-label uppercase tracking-label",
+        chip: "h-9 gap-1.5 rounded-full px-3 text-micro uppercase tracking-label-wide",
       },
     },
     defaultVariants: {

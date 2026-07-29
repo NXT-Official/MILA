@@ -6,6 +6,7 @@ import { Camera, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { StudioMembershipDrawer } from "@/components/account/studio-membership-drawer";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { DesktopNav } from "@/components/layout/desktop-nav";
@@ -137,25 +138,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div className="flex items-center gap-2">
               {credits != null && (
-                <Link
-                  to="/pricing"
-                  aria-label={`${credits} AI credits — view membership plans and credits`}
-                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full atelier-glass text-micro uppercase tracking-label-wide text-ink hover:border-porcelain transition-colors"
-                >
-                  <Coins className="size-3.5 text-accent" strokeWidth={1.75} aria-hidden="true" />
-                  {credits}
-                </Link>
+                <Button asChild variant="glass" size="chip">
+                  <Link
+                    to="/pricing"
+                    aria-label={`${credits} AI credits — view membership plans and credits`}
+                  >
+                    <Coins className="size-3.5 text-accent" strokeWidth={1.75} aria-hidden="true" />
+                    {credits}
+                  </Link>
+                </Button>
               )}
               <ThemeToggle />
-              <button
+              <Button
                 type="button"
+                variant="glass"
+                size="chip"
+                className="md:hidden"
                 onClick={() => setIsLensOpen(true)}
                 aria-label="Open the Studio Lens"
-                className="md:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-full atelier-glass text-micro uppercase tracking-label-wide text-ink hover:border-porcelain transition-colors"
               >
                 <Camera className="size-3.5" strokeWidth={1.75} />
                 Lens
-              </button>
+              </Button>
               <button
                 onClick={() => setIsMembershipOpen(true)}
                 aria-label="Open membership"

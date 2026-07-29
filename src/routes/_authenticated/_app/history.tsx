@@ -370,9 +370,10 @@ function History() {
             <div className="shrink-0 border-t border-border px-5 py-3 sm:px-6 flex flex-wrap items-center justify-between gap-3">
               <Button
                 variant="outline"
+                size="pill"
                 disabled={deleting}
                 onClick={() => deleteOutfit(selected)}
-                className="rounded-full h-10 px-5 uppercase tracking-label text-label text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
               >
                 {deleting ? (
                   <Loader2 className="size-4 mr-2 animate-spin" aria-hidden="true" />
@@ -384,7 +385,7 @@ function History() {
               {selectedAnalysis ? (
                 <Button
                   variant="outline"
-                  className="rounded-full h-10 px-5 uppercase tracking-label text-label"
+                  size="pill"
                   onClick={() => {
                     openConcierge({
                       lookId: selected.id,
