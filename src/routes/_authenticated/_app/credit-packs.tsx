@@ -11,6 +11,7 @@ import type { PublicCreditPack } from "@/lib/credit-packs";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const Route = createFileRoute("/_authenticated/_app/credit-packs")({
   beforeLoad: async () => {
@@ -28,14 +29,12 @@ function CreditPacksPage() {
 
   return (
     <div className="atelier-page max-w-5xl">
-      <header className="mb-10 text-center sm:mb-14">
-        <p className="atelier-kicker mb-3">Members only</p>
-        <h1 className="atelier-title">Credit Packs</h1>
-        <p className="mx-auto mt-4 max-w-xl text-muted">
-          Run out before the day resets? Top up and keep styling with Mila. Pack credits are spent
-          only after your daily allowance is gone, and they never expire.
-        </p>
-      </header>
+      <PageHeader
+        align="center"
+        kicker="Members only"
+        title="Credit Packs"
+        description="Run out before the day resets? Top up and keep styling with Mila. Pack credits are spent only after your daily allowance is gone, and they never expire."
+      />
 
       {isLoading ? (
         <div

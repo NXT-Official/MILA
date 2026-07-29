@@ -11,6 +11,7 @@ import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const Route = createFileRoute("/_authenticated/_app/pricing")({
   component: PricingPage,
@@ -29,14 +30,12 @@ function PricingPage() {
 
   return (
     <div className="atelier-page max-w-6xl">
-      <header className="mb-10 text-center sm:mb-14">
-        <p className="atelier-kicker mb-3">Membership</p>
-        <h1 className="atelier-title">Choose Your Atelier Access</h1>
-        <p className="mx-auto mt-4 max-w-xl text-muted">
-          Select the membership that best fits the way you want to style, explore, and create with
-          Mila.
-        </p>
-      </header>
+      <PageHeader
+        align="center"
+        kicker="Membership"
+        title="Choose Your Atelier Access"
+        description="Select the membership that best fits the way you want to style, explore, and create with Mila."
+      />
 
       {isLoading ? (
         <PricingSkeleton />

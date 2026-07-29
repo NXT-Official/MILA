@@ -11,6 +11,7 @@ import { useConcierge } from "@/hooks/use-concierge";
 import { cn } from "@/lib/utils";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const Route = createFileRoute("/_authenticated/_app/history")({
   validateSearch: (search: Record<string, unknown>): { look?: string } =>
@@ -313,13 +314,12 @@ function History() {
 
   return (
     <div className="atelier-page max-w-6xl">
-      <header className="mb-8 sm:mb-12">
-        <p className="atelier-kicker mb-3">History</p>
-        <h1 className="atelier-title">Your archive.</h1>
-        <p className="text-muted-foreground mt-3 max-w-xl">
-          Every outfit you've analyzed, scored, and saved.
-        </p>
-      </header>
+      <PageHeader
+        className="mb-8 sm:mb-12"
+        kicker="History"
+        title="Your archive."
+        description="Every outfit you've analyzed, scored, and saved."
+      />
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
