@@ -163,7 +163,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
                     className="relative rounded-2xl overflow-hidden flex shadow-sm border border-border"
                   >
                     <div
-                      className="w-1/3 h-25 self-stretch"
+                      className="w-1/3 h-full self-stretch"
                       style={{ backgroundColor: block.hex }}
                     />
                     <div className="w-2/3 bg-card p-5 flex flex-col justify-between">
@@ -186,20 +186,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
             </div>
           )}
 
-          {omitTones.length > 0 && (
-            <div className="space-y-3 pt-2">
-              <h3 className="text-micro uppercase tracking-label-xwide text-destructive font-medium">
-                Disruptive Tones
-              </h3>
-              <div className="flex flex-col gap-2">
-                {omitTones.map((name, idx) => (
-                  <DisruptiveToneCard key={`${name}-${idx}`} name={name} height={56} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 border-t-[0.5px] border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-3 border-y-[0.5px] border-border">
             <DossierCell label="Tone Type" value={profile.toneType} />
             <DossierCell
               label="Face Shape Structure"
@@ -507,19 +494,19 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
             );
           })}
         </div>
+
+        <div className="space-y-4 py-8 px-6 sm:px-10">
+          <div className="flex justify-between items-end mb-2">
+            <h3 className="atelier-section-label">Disruptive Tones</h3>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {omitTones.map((name, idx) => (
+              <DisruptiveToneCard key={`detailed-${name}-${idx}`} name={name} height={72} />
+            ))}
+          </div>
+        </div>
       </SectionBlock>
-
-      <div className="space-y-4 py-8 px-6 sm:px-10">
-        <div className="flex justify-between items-end mb-2">
-          <h3 className="atelier-section-label">Disruptive Tones</h3>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {omitTones.map((name, idx) => (
-            <DisruptiveToneCard key={`detailed-${name}-${idx}`} name={name} height={72} />
-          ))}
-        </div>
-      </div>
 
       <section className="px-6 sm:px-10 py-8 border-t-[0.5px] border-border">
         <p className="text-nano uppercase tracking-label-xwide text-accent">
@@ -703,7 +690,7 @@ function ContrastGauge({ value }: { value: string }) {
   else if (/low|muted|soft|tonal/.test(v)) raw = 22;
   const pct = Math.max(4, Math.min(96, raw));
   return (
-    <div className="mt-6 border-t-[0.5px] border-border pt-5">
+    <div className="bg-card border border-border shadow-paper p-6 sm:p-8 rounded-card">
       <div className="flex items-center justify-between mb-3">
         <p className="text-nano uppercase tracking-label-xwide text-accent">Contrast Spectrum</p>
         <p className="text-nano uppercase tracking-label-xwide text-foreground font-medium">
