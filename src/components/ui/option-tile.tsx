@@ -2,11 +2,6 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-/**
- * A pickable answer in a quiz or onboarding step. Padding stays at the call
- * site — it genuinely varies (p-3 through p-5) and tailwind-merge resolves it.
- * `selected` only affects the flat variant; nothing selects a card tile yet.
- */
 const optionTileVariants = cva("w-full text-left transition-all", {
   variants: {
     variant: {

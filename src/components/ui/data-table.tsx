@@ -25,16 +25,12 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  /** Enables the search input, filtering rows by their stringified values (or `searchText` if provided). */
   searchable?: boolean;
   searchPlaceholder?: string;
-  /** Custom text to search per row. Defaults to a stringified dump of the row. */
   searchText?: (row: TData) => string;
-  /** Noun shown next to the row count, e.g. "members". */
   countLabel?: string;
   isLoading?: boolean;
   emptyMessage?: string;
-  /** Replaces the row count with custom content, e.g. an "Add" button. */
   action?: React.ReactNode;
 }
 

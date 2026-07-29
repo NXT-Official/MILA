@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
-/** In-page fetch failure for a catalog listing — the page keeps its own header. */
 export function LoadErrorPanel({ title, onRetry }: { title: string; onRetry: () => void }) {
   return (
     <Card role="alert" className="mx-auto max-w-xl p-10 text-center sm:p-14">

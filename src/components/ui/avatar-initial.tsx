@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 
-/** The champagne initial disc. Size and any hover treatment come from className. */
 export function AvatarInitial({ name, className }: { name: string; className?: string }) {
   return (
     <span

@@ -25,8 +25,6 @@ const buttonVariants = cva(
         md: "h-11 px-5",
         lg: "h-12 px-7 text-base",
         icon: "size-11 p-0",
-        // The pill is this design's real button; it was hand-pasted as a
-        // className override at every call site before living here.
         pill: "h-10 rounded-full px-5 text-label uppercase tracking-label",
         chip: "h-9 gap-1.5 rounded-full px-3 text-micro uppercase tracking-label-wide",
       },

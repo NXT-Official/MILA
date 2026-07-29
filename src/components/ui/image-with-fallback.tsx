@@ -1,6 +1,5 @@
 import * as React from "react";
 
-/** Renders `fallback` when there is no src or the image fails to load. */
 export function ImageWithFallback({
   src,
   fallback,

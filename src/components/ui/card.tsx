@@ -3,11 +3,6 @@ import { Slot } from "@radix-ui/react-slot";
 
 import { cn } from "@/lib/utils";
 
-/**
- * The card surface itself lives in `.atelier-card` so the class and this
- * component can never drift apart. `asChild` lets semantic elements — figure,
- * section, li, button — wear the card without giving up their tag.
- */
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { asChild?: boolean }

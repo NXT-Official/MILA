@@ -1,7 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-/** Kicker + title + optional description, the standard top of a page. */
 export function PageHeader({
   kicker,
   title,
