@@ -41,8 +41,8 @@ function OnboardingLayout() {
   }
 
   return (
-    <div className="mila-page flex min-h-screen flex-col">
-      <header className="mila-container flex items-center justify-between py-6">
+    <div className="atelier-screen flex min-h-screen flex-col">
+      <header className="atelier-container flex items-center justify-between py-6">
         <Link
           to="/onboarding/style-profile"
           className="font-display text-xl tracking-label text-ink"
@@ -53,7 +53,7 @@ function OnboardingLayout() {
           <LogOut className="size-4.5" strokeWidth={1.75} aria-hidden="true" />
         </IconButton>
       </header>
-      <main className="mila-container flex-1 pb-16">
+      <main className="atelier-container flex-1 pb-16">
         <Outlet />
       </main>
     </div>

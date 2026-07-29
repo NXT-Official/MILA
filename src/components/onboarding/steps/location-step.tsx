@@ -54,7 +54,7 @@ export function LocationStep({
               role="radio"
               aria-checked={active}
               onClick={() => setSelected(hub.id)}
-              className={`mila-focus-ring flex items-center justify-between gap-2 rounded-control border px-4 py-3 text-left transition-colors ${
+              className={`atelier-focus-ring flex items-center justify-between gap-2 rounded-control border px-4 py-3 text-left transition-colors ${
                 active ? "border-ink bg-accent-soft/60" : "border-line hover:border-accent"
               }`}
             >
@@ -76,7 +76,7 @@ export function LocationStep({
         <button
           type="button"
           onClick={onSaved}
-          className="mila-focus-ring text-xs text-muted hover:text-ink hover:underline"
+          className="atelier-focus-ring text-xs text-muted hover:text-ink hover:underline"
         >
           I'll do this later
         </button>

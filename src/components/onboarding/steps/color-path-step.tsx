@@ -65,7 +65,7 @@ export function ColorPathStep({
           <button
             type="button"
             onClick={() => setShowKnown(true)}
-            className="mila-focus-ring rounded-card border border-line bg-surface p-5 text-left transition-colors hover:border-accent"
+            className="atelier-focus-ring rounded-card border border-line bg-surface p-5 text-left transition-colors hover:border-accent"
           >
             <Sparkles className="size-4 text-accent" aria-hidden="true" />
             <p className="mt-2 text-sm font-medium text-ink">I know my season</p>
@@ -76,7 +76,7 @@ export function ColorPathStep({
           <button
             type="button"
             onClick={() => setCameraOpen(true)}
-            className="mila-focus-ring rounded-card border border-line bg-surface p-5 text-left transition-colors hover:border-accent"
+            className="atelier-focus-ring rounded-card border border-line bg-surface p-5 text-left transition-colors hover:border-accent"
           >
             <Camera className="size-4 text-accent" aria-hidden="true" />
             <p className="mt-2 text-sm font-medium text-ink">Analyze my coloring</p>
@@ -92,7 +92,7 @@ export function ColorPathStep({
             <button
               type="button"
               onClick={() => setShowKnown(false)}
-              className="mila-focus-ring text-xs text-accent hover:underline"
+              className="atelier-focus-ring text-xs text-accent hover:underline"
             >
               Choose a different path
             </button>
@@ -113,7 +113,7 @@ export function ColorPathStep({
                         role="radio"
                         aria-checked={active}
                         onClick={() => setKnownTileId(tile.id)}
-                        className={`mila-focus-ring rounded-control border px-3 py-3 text-left transition-colors ${
+                        className={`atelier-focus-ring rounded-control border px-3 py-3 text-left transition-colors ${
                           active
                             ? "border-ink bg-accent-soft/60"
                             : "border-line hover:border-accent"

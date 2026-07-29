@@ -19,7 +19,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "mila-panel flex flex-col items-center gap-3 px-6 py-14 text-center",
+        "atelier-panel flex flex-col items-center gap-3 px-6 py-14 text-center",
         className,
       )}
       {...props}

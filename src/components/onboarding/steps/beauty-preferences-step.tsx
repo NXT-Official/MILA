@@ -48,7 +48,7 @@ export function BeautyPreferencesStep({
               type="button"
               aria-pressed={active}
               onClick={() => toggle(tag)}
-              className={`mila-focus-ring inline-flex items-center gap-1.5 rounded-pill border px-4 py-2.5 text-xs font-medium transition-colors ${
+              className={`atelier-focus-ring inline-flex items-center gap-1.5 rounded-pill border px-4 py-2.5 text-xs font-medium transition-colors ${
                 active
                   ? "border-ink bg-accent-soft text-ink"
                   : "border-line text-muted hover:border-accent hover:text-ink"

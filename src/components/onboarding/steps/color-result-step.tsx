@@ -102,7 +102,7 @@ export function ColorResultStep({
       <button
         type="button"
         onClick={onReviewAnother}
-        className="mila-focus-ring mt-4 block text-xs text-accent hover:underline"
+        className="atelier-focus-ring mt-4 block text-xs text-accent hover:underline"
       >
         Review another result
       </button>

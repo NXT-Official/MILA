@@ -257,11 +257,11 @@
 }
 
 @layer components {
-  .mila-page {
+  .atelier-screen {
     @apply min-h-screen bg-canvas text-ink;
   }
 
-  .mila-container {
+  .atelier-container {
     @apply mx-auto w-full max-w-content px-5 sm:px-8 lg:px-10;
   }
 
@@ -286,7 +286,7 @@
     );
   }
 
-  .mila-panel {
+  .atelier-panel {
     @apply rounded-panel border border-line/80 bg-accent-soft/45;
   }
 
@@ -302,12 +302,12 @@
     line-height: 1;
   }
 
-  .mila-focus-ring {
+  .atelier-focus-ring {
     @apply outline-none focus-visible:ring-2 focus-visible:ring-accent
       focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
   }
 
-  .mila-dark-glass {
+  .atelier-dark-glass {
     @apply border border-white/10 bg-ink/90 text-surface shadow-nav
       backdrop-blur-xl;
   }

@@ -37,7 +37,7 @@ export function SaveStatusIndicator({
         <button
           type="button"
           onClick={onRetry}
-          className="mila-focus-ring inline-flex items-center gap-1 rounded-control text-accent hover:underline"
+          className="atelier-focus-ring inline-flex items-center gap-1 rounded-control text-accent hover:underline"
         >
           <RotateCcw className="size-3" aria-hidden="true" />
           Retry

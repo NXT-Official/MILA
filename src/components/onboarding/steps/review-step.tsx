@@ -23,7 +23,7 @@ function ReviewSection({
       <button
         type="button"
         onClick={onEdit}
-        className="mila-focus-ring shrink-0 text-xs text-accent hover:underline"
+        className="atelier-focus-ring shrink-0 text-xs text-accent hover:underline"
       >
         Edit
       </button>

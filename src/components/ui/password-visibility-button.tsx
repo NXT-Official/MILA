@@ -19,7 +19,7 @@ export function PasswordVisibilityButton({
       aria-pressed={visible}
       onClick={onToggle}
       className={cn(
-        "mila-focus-ring absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-control text-muted transition-colors hover:bg-accent-soft hover:text-ink",
+        "atelier-focus-ring absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-control text-muted transition-colors hover:bg-accent-soft hover:text-ink",
         className,
       )}
     >

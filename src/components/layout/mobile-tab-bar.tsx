@@ -18,7 +18,7 @@ export function MobileTabBar({
 }) {
   return (
     <nav
-      className="mila-dark-glass md:hidden fixed left-3 right-3 z-50 flex items-center justify-around rounded-pill px-5 py-2.5"
+      className="atelier-dark-glass md:hidden fixed left-3 right-3 z-50 flex items-center justify-around rounded-pill px-5 py-2.5"
       style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
       {mobileTabItems.map((it) => {
