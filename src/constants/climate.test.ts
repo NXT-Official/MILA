@@ -6,7 +6,7 @@ describe("climateForWeatherCode", () => {
     expect(climateForWeatherCode(65)).toMatchObject({
       icon: "rain",
       condition: "Rain",
-      description: "Heavy rain",
+      description: "Heavy Rain",
     });
     expect(climateForWeatherCode(2, 25)).toMatchObject({ icon: "wind", condition: "Windy" });
     expect(climateForWeatherCode(71, 25)).toMatchObject({ icon: "snow", condition: "Snow" });
