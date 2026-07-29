@@ -2,19 +2,17 @@ import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import type { FeedPost } from "@/lib/posts.functions";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
+import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { relativeTime } from "@/lib/utils";
 
 export function PostCanvas({ post }: { post: FeedPost }) {
   const author = post.is_self ? "You" : post.author_name?.trim() || "Member";
-  const initial = (author[0] || "M").toUpperCase();
 
   return (
     <article className="rounded-3xl atelier-glass shadow-atelier-soft overflow-hidden">
       <header className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-full border border-porcelain/60 bg-linear-to-br from-atelier-champagne/30 to-porcelain/20 flex items-center justify-center font-serif text-sm text-ink">
-            {initial}
-          </div>
+          <AvatarInitial name={author} className="size-9" />
           <div className="min-w-0">
             <span className="flex items-center gap-1">
               <Link

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { StudioMembershipDrawer } from "@/components/account/studio-membership-drawer";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { DesktopNav } from "@/components/layout/desktop-nav";
@@ -108,7 +109,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const displayName = profile?.full_name?.trim() || user?.email?.split("@")[0] || "Member";
   const username = user?.email?.split("@")[0] ?? "member";
-  const initial = (displayName[0] ?? "M").toUpperCase();
 
   function openConcierge(look?: ConciergeLook | null) {
     setConciergeLook(look ?? null);
@@ -163,9 +163,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 onClick={() => setIsMembershipOpen(true)}
                 aria-label="Open membership"
-                className="size-10 rounded-full border border-porcelain/60 bg-linear-to-br from-atelier-champagne/30 to-porcelain/20 flex items-center justify-center font-serif text-sm text-ink tracking-wide transition-all duration-300 hover:shadow-atelier-soft hover:border-porcelain"
+                className="rounded-full"
               >
-                {initial}
+                <AvatarInitial
+                  name={displayName}
+                  className="size-10 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
+                />
               </button>
             </div>
           </div>
