@@ -16,4 +16,5 @@ export const queryKeys = {
   subscriptionPlans: ["subscription-plans"] as const,
   adminCreditPacks: ["admin:credit-packs"] as const,
   creditPacks: ["credit-packs"] as const,
+  savedPalettes: (userId: string | undefined) => ["saved-palettes", userId] as const,
 };
