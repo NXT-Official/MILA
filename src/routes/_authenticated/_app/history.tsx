@@ -10,6 +10,7 @@ import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detai
 import { useConcierge } from "@/hooks/use-concierge";
 import { cn } from "@/lib/utils";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/_app/history")({
   validateSearch: (search: Record<string, unknown>): { look?: string } =>
@@ -323,7 +324,7 @@ function History() {
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="aspect-square animate-pulse rounded-card bg-foreground/6" />
+            <Skeleton key={i} className="aspect-square rounded-card" />
           ))}
         </div>
       ) : loadError ? (

@@ -10,6 +10,7 @@ import { publicCreditPacksQueryOptions } from "@/lib/queries/credit-packs";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/_app/pricing")({
   component: PricingPage,
@@ -106,7 +107,7 @@ function PricingSkeleton() {
       className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8"
     >
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="atelier-card h-100 animate-pulse bg-foreground/6" />
+        <Skeleton key={i} className="atelier-card h-100" />
       ))}
     </div>
   );

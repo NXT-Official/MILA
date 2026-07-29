@@ -10,6 +10,7 @@ import { formatPlanPrice } from "@/lib/subscription-plans";
 import type { PublicCreditPack } from "@/lib/credit-packs";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/_app/credit-packs")({
   beforeLoad: async () => {
@@ -43,7 +44,7 @@ function CreditPacksPage() {
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="atelier-card h-64 animate-pulse bg-foreground/6" />
+            <Skeleton key={i} className="atelier-card h-64" />
           ))}
         </div>
       ) : isError ? (

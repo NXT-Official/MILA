@@ -1,5 +1,6 @@
 import { ImageOff, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function OutfitVisual({
   imageDataUri,
@@ -19,7 +20,7 @@ export function OutfitVisual({
   if (loading) {
     return (
       <div className="atelier-media-frame max-w-lg" role="status">
-        <div className="absolute inset-0 animate-pulse bg-accent-soft/50" />
+        <Skeleton className="absolute inset-0 bg-accent-soft/50" />
         <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
           <Loader2 className="size-5 animate-spin text-accent" aria-hidden="true" />
           <p className="font-serif text-lg text-foreground">Visualizing your look…</p>

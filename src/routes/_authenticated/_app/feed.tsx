@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
 import { errorMessage } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/_app/feed")({
   component: FeedPage,
@@ -101,7 +102,7 @@ function FeedPage() {
             {[0, 1].map((i) => (
               <div key={i} className="rounded-3xl atelier-glass overflow-hidden">
                 <div className="h-16 bg-porcelain/30" />
-                <div className="aspect-3/4 bg-porcelain/20 animate-pulse" />
+                <Skeleton className="aspect-3/4 bg-porcelain/20" />
               </div>
             ))}
           </div>
