@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
 
 export const Route = createFileRoute("/_authenticated/_app/history")({
+  validateSearch: (search: Record<string, unknown>): { look?: string } =>
+    typeof search.look === "string" ? { look: search.look } : {},
   component: History,
 });
 
@@ -249,6 +251,7 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
 
 function History() {
   const { user } = useAuth();
+  const { look } = Route.useSearch();
   const { openConcierge } = useConcierge();
   const [items, setItems] = useState<OutfitRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -296,6 +299,14 @@ function History() {
       cancelled = true;
     };
   }, [user]);
+
+  // ponytail: opens ?look=<id> once items land; closing the dialog won't reopen
+  // it because neither dep changes.
+  useEffect(() => {
+    if (!look) return;
+    const match = items.find((i) => i.id === look);
+    if (match) setSelected(match);
+  }, [items, look]);
 
   const selectedAnalysis = selected ? normalizeAnalysisResult(selected.analysis_result) : null;
 

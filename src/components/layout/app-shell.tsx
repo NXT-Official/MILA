@@ -90,14 +90,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         id: toastId,
         action: savedLook
           ? {
-              label: "Ask Mila",
-              onClick: () =>
-                openConcierge({
-                  lookId: savedLook.id,
-                  imageUrl: publicUrl,
-                  title: "Outfit analysis",
-                  source: "Studio Lens",
-                }),
+              label: "Go to History",
+              onClick: () => navigate({ to: "/history", search: { look: savedLook.id } }),
             }
           : undefined,
       });
