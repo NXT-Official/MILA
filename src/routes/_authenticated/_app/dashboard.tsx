@@ -263,7 +263,7 @@ function Dashboard() {
               <Button
                 onClick={generateLook}
                 disabled={generating || !profileComplete || !climate || imageLoading}
-                className="w-full sm:w-auto h-12 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90 uppercase tracking-label text-xs whitespace-normal text-center leading-snug"
+                className="w-full sm:w-auto h-11 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90 uppercase tracking-label text-xs whitespace-normal text-center leading-snug"
               >
                 {generating ? (
                   <>

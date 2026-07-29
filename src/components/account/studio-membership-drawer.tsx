@@ -9,7 +9,16 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Link } from "@tanstack/react-router";
-import { Archive, AlertCircle, ArrowRight, Check, Download, Loader2, X } from "lucide-react";
+import {
+  Archive,
+  AlertCircle,
+  ArrowRight,
+  Check,
+  Download,
+  Loader2,
+  X,
+  Palette,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -28,6 +37,7 @@ import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.
 import { deleteMyAccount } from "@/lib/account.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
 import { cn, errorMessage } from "@/lib/utils";
+import { AvatarInitial } from "../ui/avatar-initial";
 
 const drawerActionVariants = cva(
   "w-full rounded-lg py-3 text-label uppercase tracking-label-wide transition-colors disabled:opacity-60",
@@ -45,7 +55,6 @@ const drawerActionVariants = cva(
   },
 );
 
-/** Full-width action row used throughout this drawer. Local by design. */
 function DrawerAction({
   tone,
   className,
@@ -283,15 +292,21 @@ export function StudioMembershipDrawer({
             <div className="space-y-8">
               <div className="relative overflow-hidden rounded-2xl border border-porcelain/60 bg-linear-to-br from-atelier-champagne/25 via-background to-porcelain/20 p-4 shadow-atelier-soft">
                 <div className="relative grid grid-cols-[auto_1fr_auto] items-center gap-3">
-                  <div className="flex size-14 shrink-0 items-center justify-center rounded-full border border-white/70 bg-background/70 font-serif text-xl text-ink shadow-atelier-soft">
-                    {(user.fullName[0] || user.username[0] || "M").toUpperCase()}
-                  </div>
                   <div className="min-w-0">
-                    <p className="flex items-center gap-1.5 font-serif text-lg text-ink">
-                      <span className="truncate">{user.fullName}</span>
-                      {subscription && <VerifiedBadge className="size-4" />}
-                    </p>
-                    <p className="truncate text-label text-stone">@{user.username}</p>
+                    <div className="flex items-center gap-3">
+                      <AvatarInitial
+                        name={user.fullName || user.username}
+                        className="size-14 shrink-0"
+                      />
+
+                      <div className="min-w-0 flex flex-col">
+                        <p className="flex items-center gap-1.5 font-serif text-lg text-ink">
+                          <span className="truncate">{user.fullName}</span>
+                          {subscription && <VerifiedBadge className="size-4" />}
+                        </p>
+                        <p className="truncate text-label text-stone">@{user.username}</p>
+                      </div>
+                    </div>
                     <div className="mt-2 flex flex-wrap gap-1.5 text-pico uppercase tracking-label-tight">
                       <span className="rounded-full border border-porcelain/60 bg-background/60 px-2 py-1 text-ink">
                         Season · {user.season ?? "Unset"}
@@ -306,19 +321,19 @@ export function StudioMembershipDrawer({
                       >
                         Hair · {user.hairType ?? "—"}
                       </span>
+                      {authUser && (
+                        <Link
+                          to="/profile/$userId"
+                          params={{ userId: authUser.id }}
+                          onClick={onClose}
+                          className="rounded-full border border-porcelain/60 bg-background/60 px-2 py-1 text-ink flex items-center gap-1.5"
+                        >
+                          View Profile
+                          <ArrowRight className="size-3" aria-hidden="true" />
+                        </Link>
+                      )}
                     </div>
                   </div>
-                  {authUser && (
-                    <Link
-                      to="/profile/$userId"
-                      params={{ userId: authUser.id }}
-                      onClick={onClose}
-                      className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-porcelain/60 bg-background/60 px-3 text-pico uppercase tracking-label-tight text-ink transition-colors hover:bg-background"
-                    >
-                      View Profile
-                      <ArrowRight className="size-3" aria-hidden="true" />
-                    </Link>
-                  )}
                 </div>
                 {missing.length > 0 && (
                   <Link
@@ -336,18 +351,17 @@ export function StudioMembershipDrawer({
                   aria-hidden
                   className="absolute -top-16 -right-16 h-44 w-44 rounded-full bg-atelier-champagne/30 blur-3xl pointer-events-none"
                 />
-                <div className="relative space-y-6">
-                  <div className="flex items-end justify-between">
-                    <span className="atelier-label">Concierge Access</span>
-                    <div className="text-right">
-                      <div className="font-serif text-2xl text-ink leading-none">Atelier</div>
-                      <div className="text-micro uppercase tracking-label text-stone mt-1">
-                        Membership
+                <div className="relative">
+                  <div className="flex flex-col gap-2 mb-3">
+                    <div className="flex items-end justify-between">
+                      <span className="atelier-label">Concierge Access</span>
+                      <div className="text-right">
+                        <div className="font-serif text-2xl text-ink leading-none">Atelier</div>
+                        <div className="text-micro uppercase tracking-label text-stone mt-1">
+                          Membership
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="uppercase tracking-label text-stone text-micro">
                         Current Tier
@@ -356,6 +370,7 @@ export function StudioMembershipDrawer({
                         {subscription ? subscription.plan_title : "Free"}
                       </span>
                     </div>
+
                     {subscription ? (
                       <>
                         <div className="flex items-center justify-between text-xs">
@@ -373,7 +388,7 @@ export function StudioMembershipDrawer({
                             type="button"
                             onClick={handleResume}
                             disabled={resuming}
-                            tone="neutral"
+                            className="text-xs rounded-2xl"
                           >
                             {resuming ? "Renewing…" : "Renew Membership"}
                           </DrawerAction>
@@ -381,7 +396,7 @@ export function StudioMembershipDrawer({
                           <DrawerAction
                             type="button"
                             onClick={() => setCancelDialogOpen(true)}
-                            tone="neutral"
+                            className="text-xs rounded-2xl"
                           >
                             Cancel Membership
                           </DrawerAction>
@@ -436,21 +451,26 @@ export function StudioMembershipDrawer({
                   onClick={onClose}
                   className="flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors border-b border-porcelain/30"
                 >
-                  <span className="text-xs uppercase tracking-label text-ink">
+                  <span className="text-micro uppercase tracking-label text-ink flex items-center gap-2">
+                    <Palette className="size-3.5" strokeWidth={1.75} />
                     Review Color Dossier
                   </span>
-                  <span className="text-stone">→</span>
+                  <span className="text-stone">
+                    <ArrowRight className="size-3.5" strokeWidth={1.75} />
+                  </span>
                 </Link>
                 <Link
                   to="/history"
                   onClick={onClose}
                   className="flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors"
                 >
-                  <span className="text-xs uppercase tracking-label text-ink flex items-center gap-2">
+                  <span className="text-micro uppercase tracking-label text-ink flex items-center gap-2">
                     <Archive className="size-3.5" strokeWidth={1.75} />
                     Outfit Archive
                   </span>
-                  <span className="text-stone">→</span>
+                  <span className="text-stone">
+                    <ArrowRight className="size-3.5" strokeWidth={1.75} />
+                  </span>
                 </Link>
               </div>
             </div>
@@ -503,7 +523,7 @@ export function StudioMembershipDrawer({
                   onClick={() => signOut()}
                   disabled={signingOut}
                   tone="danger"
-                  className="flex items-center justify-center gap-2"
+                  className="flex items-center justify-center gap-2 text-xs rounded-xl"
                 >
                   {signingOut && <Loader2 className="size-3.5 animate-spin" />}
                   {signingOut ? "Signing Out…" : "Sign Out of Studio"}
@@ -555,8 +575,7 @@ export function StudioMembershipDrawer({
                 <DrawerAction
                   type="submit"
                   disabled={emailSubmitting || !newEmail.trim() || newEmail === authUser?.email}
-                  tone="primary"
-                  className="disabled:opacity-50"
+                  className="text-xs rounded-2xl"
                 >
                   {emailSubmitting ? "Sending confirmation…" : "Update Email"}
                 </DrawerAction>
@@ -617,8 +636,7 @@ export function StudioMembershipDrawer({
                     !newPasswordOk ||
                     newPassword !== confirmPassword
                   }
-                  tone="primary"
-                  className="disabled:opacity-50"
+                  className="text-xs rounded-2xl"
                 >
                   {passwordSubmitting ? "Updating…" : "Update Password"}
                 </DrawerAction>
@@ -649,7 +667,7 @@ export function StudioMembershipDrawer({
                   onClick={handleDeleteAccount}
                   disabled={!deleteEmailMatches || deleting}
                   tone="danger"
-                  className="flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 disabled:opacity-50 text-xs rounded-2xl"
                 >
                   {deleting && <Loader2 className="size-3.5 animate-spin" />}
                   {deleting ? "Deleting…" : "Delete My Account"}
@@ -668,8 +686,7 @@ export function StudioMembershipDrawer({
                 <DrawerAction
                   onClick={downloadData}
                   disabled={exporting}
-                  tone="neutral"
-                  className="flex items-center justify-center gap-3"
+                  className="flex items-center justify-center gap-3 text-xs rounded-2xl"
                 >
                   {exporting ? (
                     <Loader2 className="size-3.5 animate-spin" />
@@ -689,7 +706,7 @@ export function StudioMembershipDrawer({
                   You can permanently delete your account and all associated data yourself, under
                   Email &amp; Security.
                 </p>
-                <DrawerAction onClick={() => setView("security")} tone="neutral">
+                <DrawerAction onClick={() => setView("security")} className="text-xs rounded-2xl">
                   Go to Email &amp; Security
                 </DrawerAction>
               </div>
