@@ -6,6 +6,8 @@ import { Images, ImageOff, Sparkles, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadErrorPanel } from "@/components/ui/error-state";
 import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detail";
 import { useConcierge } from "@/hooks/use-concierge";
 import { cn } from "@/lib/utils";
@@ -257,6 +259,7 @@ function History() {
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState<OutfitRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
 
   async function deleteOutfit(item: OutfitRow) {
     if (!user) return;
@@ -280,6 +283,8 @@ function History() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
     supabase
       .from("outfits")
       .select("id,image_url,match_score,created_at,analysis_result")
@@ -297,7 +302,7 @@ function History() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, reloadToken]);
 
   // ponytail: opens ?look=<id> once items land; closing the dialog won't reopen
   // it because neither dep changes.
@@ -325,16 +330,18 @@ function History() {
           ))}
         </div>
       ) : loadError ? (
-        <div className="atelier-card p-10 sm:p-16 text-center">
-          <p className="font-serif text-2xl mb-2">Couldn't load your history</p>
-          <p className="text-sm text-muted-foreground">Please refresh and try again.</p>
-        </div>
+        <LoadErrorPanel
+          title="Couldn't load your history"
+          onRetry={() => setReloadToken((t) => t + 1)}
+        />
       ) : items.length === 0 ? (
-        <div className="atelier-card p-10 sm:p-16 text-center">
-          <Images className="size-8 mx-auto text-muted-foreground mb-4" strokeWidth={1.25} />
-          <p className="font-serif text-2xl mb-2">No outfits yet</p>
-          <p className="text-sm text-muted-foreground">Analyzed outfits will be collected here.</p>
-        </div>
+        <EmptyState
+          role="status"
+          className="mx-auto max-w-xl"
+          icon={<Images className="size-8" strokeWidth={1.25} />}
+          title="No outfits yet"
+          description="Analyzed outfits will be collected here."
+        />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {items.map((item) => (

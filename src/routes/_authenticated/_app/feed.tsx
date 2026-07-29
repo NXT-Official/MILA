@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera } from "lucide-react";
+import { Camera, Images } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
 import { errorMessage } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadErrorPanel } from "@/components/ui/error-state";
 
 export const Route = createFileRoute("/_authenticated/_app/feed")({
   component: FeedPage,
@@ -108,25 +110,16 @@ function FeedPage() {
           </div>
         )}
 
-        {isError && (
-          <div className="rounded-3xl border border-destructive/30 p-8 text-center">
-            <p className="font-serif text-lg text-ink">Feed couldn't load.</p>
-            <button
-              onClick={() => refetch()}
-              className="mt-3 text-micro uppercase tracking-label-xwide text-stone hover:text-ink"
-            >
-              Try again
-            </button>
-          </div>
-        )}
+        {isError && <LoadErrorPanel title="Feed couldn't load." onRetry={() => refetch()} />}
 
         {!isLoading && !isError && posts.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-porcelain/60 p-10 text-center">
-            <p className="font-serif text-xl text-ink">You're first to the mirror today.</p>
-            <p className="mt-2 text-sm text-stone">
-              As your circle posts, their looks will land here.
-            </p>
-          </div>
+          <EmptyState
+            role="status"
+            className="mx-auto max-w-xl"
+            icon={<Images className="size-8" strokeWidth={1.25} />}
+            title="You're first to the mirror today."
+            description="As your circle posts, their looks will land here."
+          />
         )}
 
         {!isLoading && posts.length > 0 && (
