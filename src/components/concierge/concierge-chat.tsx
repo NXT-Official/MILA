@@ -186,7 +186,6 @@ export function ConciergeChat({
     };
   }, [initialConversationId]);
 
-  // ponytail: history is best-effort — a failed save never blocks the chat
   async function persistExchange(userText: string, imageUrl: string | null, reply: string) {
     if (!user) return;
     try {
