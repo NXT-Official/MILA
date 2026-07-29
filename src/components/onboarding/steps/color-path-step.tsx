@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Camera, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OptionTile } from "@/components/ui/option-tile";
 import { type StudioColorProfile } from "@/lib/analyzePersonalColor.functions";
 import {
   SEASONS_MASTER_DATA,
@@ -62,28 +63,20 @@ export function ColorPathStep({
 
       {!showKnown ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setShowKnown(true)}
-            className="atelier-focus-ring rounded-card border border-line bg-surface p-5 text-left transition-colors hover:border-accent"
-          >
+          <OptionTile variant="card" onClick={() => setShowKnown(true)} className="p-5">
             <Sparkles className="size-4 text-accent" aria-hidden="true" />
             <p className="mt-2 text-sm font-medium text-ink">I know my season</p>
             <p className="mt-1 text-xs text-muted leading-relaxed">
               Pick your seasonal palette from our full sixteen-season library. No camera needed.
             </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCameraOpen(true)}
-            className="atelier-focus-ring rounded-card border border-line bg-surface p-5 text-left transition-colors hover:border-accent"
-          >
+          </OptionTile>
+          <OptionTile variant="card" onClick={() => setCameraOpen(true)} className="p-5">
             <Camera className="size-4 text-accent" aria-hidden="true" />
             <p className="mt-2 text-sm font-medium text-ink">Analyze my coloring</p>
             <p className="mt-1 text-xs text-muted leading-relaxed">
               Use your camera and Mila reads your true tones live, in good natural light.
             </p>
-          </button>
+          </OptionTile>
         </div>
       ) : (
         <div>

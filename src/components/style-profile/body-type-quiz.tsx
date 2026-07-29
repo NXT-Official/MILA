@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { OptionTile } from "@/components/ui/option-tile";
 import { type BodyType, BODY_TYPE_INFO } from "@/constants/style-profile";
 
 export type Drape = "structured" | "waist" | "relaxed";
@@ -94,16 +95,17 @@ export function BodyTypeQuiz({
               {DRAPE_CHOICES.map((c) => {
                 const active = drape === c.value;
                 return (
-                  <button
+                  <OptionTile
                     key={c.value}
+                    selected={active}
                     onClick={() => setDrape(c.value)}
-                    className={`w-full text-left border p-4 sm:p-5 rounded-none transition-all ${active ? "border-foreground bg-foreground/4" : "border-border hover:border-foreground/40"}`}
+                    className="border p-4 sm:p-5"
                   >
                     <p className="text-sm font-medium">{c.label}</p>
                     <p className="text-label text-muted-foreground mt-1 leading-relaxed">
                       {c.hint}
                     </p>
-                  </button>
+                  </OptionTile>
                 );
               })}
             </div>
@@ -133,16 +135,17 @@ export function BodyTypeQuiz({
               {BALANCE_CHOICES.map((c) => {
                 const active = balance === c.value;
                 return (
-                  <button
+                  <OptionTile
                     key={c.value}
+                    selected={active}
                     onClick={() => setBalance(c.value)}
-                    className={`w-full text-left border p-4 sm:p-5 rounded-none transition-all ${active ? "border-foreground bg-foreground/4" : "border-border hover:border-foreground/40"}`}
+                    className="border p-4 sm:p-5"
                   >
                     <p className="text-sm font-medium">{c.label}</p>
                     <p className="text-label text-muted-foreground mt-1 leading-relaxed">
                       {c.hint}
                     </p>
-                  </button>
+                  </OptionTile>
                 );
               })}
             </div>

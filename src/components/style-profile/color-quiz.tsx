@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Sun, ShieldCheck, X as XIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { OptionTile } from "@/components/ui/option-tile";
 import {
   type Season,
   type Swatch,
@@ -140,12 +141,12 @@ export function ColorQuiz({
                 Which colors feel most natural against your skin?
               </h3>
               <div className="flex flex-col gap-4">
-                <button
+                <OptionTile
                   onClick={() => {
                     setHue("Warm");
                     setStep(2);
                   }}
-                  className="w-full text-left border-[0.5px] border-border rounded-none overflow-hidden transition-all hover:border-foreground/40"
+                  className="overflow-hidden"
                 >
                   <div className="h-28 w-full flex">
                     <div className="h-full w-1/2 bg-[#D4A24C]" />
@@ -158,13 +159,13 @@ export function ColorQuiz({
                       life.
                     </p>
                   </div>
-                </button>
-                <button
+                </OptionTile>
+                <OptionTile
                   onClick={() => {
                     setHue("Cool");
                     setStep(2);
                   }}
-                  className="w-full text-left border-[0.5px] border-border rounded-none overflow-hidden transition-all hover:border-foreground/40"
+                  className="overflow-hidden"
                 >
                   <div className="h-28 w-full flex">
                     <div className="h-full w-1/2 bg-[#C0C0C0]" />
@@ -179,7 +180,7 @@ export function ColorQuiz({
                       and clear.
                     </p>
                   </div>
-                </button>
+                </OptionTile>
               </div>
             </div>
           ) : step === 2 ? (
@@ -190,12 +191,12 @@ export function ColorQuiz({
                 Which swatch softens shadows around your eyes?
               </h3>
               <div className="flex flex-col gap-4">
-                <button
+                <OptionTile
                   onClick={() => {
                     setDrape("Cool");
                     setStep(3);
                   }}
-                  className="w-full text-left border-[0.5px] border-border overflow-hidden rounded-none transition-all hover:border-foreground/40"
+                  className="overflow-hidden"
                 >
                   <div className="h-32 w-full bg-[#1E3A8A]" />
                   <div className="p-4">
@@ -206,13 +207,13 @@ export function ColorQuiz({
                       If this deep blue makes you look more rested and refreshed, you lean cool.
                     </p>
                   </div>
-                </button>
-                <button
+                </OptionTile>
+                <OptionTile
                   onClick={() => {
                     setDrape("Warm");
                     setStep(3);
                   }}
-                  className="w-full text-left border-[0.5px] border-border overflow-hidden rounded-none transition-all hover:border-foreground/40"
+                  className="overflow-hidden"
                 >
                   <div className="h-32 w-full bg-[#C2410C]" />
                   <div className="p-4">
@@ -223,7 +224,7 @@ export function ColorQuiz({
                       If this rich amber smooths and warms your skin, you lean warm.
                     </p>
                   </div>
-                </button>
+                </OptionTile>
               </div>
             </div>
           ) : step === 3 ? (
@@ -234,12 +235,12 @@ export function ColorQuiz({
                 How do your features sit against your skin?
               </h3>
               <div className="flex flex-col gap-3">
-                <button
+                <OptionTile
                   onClick={() => {
                     setValue("Light");
                     setStep(4);
                   }}
-                  className="atelier-tile"
+                  className="p-5"
                 >
                   <p className="text-xs uppercase font-medium tracking-widest">
                     Soft, low contrast
@@ -248,13 +249,13 @@ export function ColorQuiz({
                     Your hair, eyes and skin blend gently together, sitting within a softer overall
                     range.
                   </p>
-                </button>
-                <button
+                </OptionTile>
+                <OptionTile
                   onClick={() => {
                     setValue("Deep");
                     setStep(4);
                   }}
-                  className="atelier-tile"
+                  className="p-5"
                 >
                   <p className="text-xs uppercase font-medium tracking-widest">
                     Striking, high contrast
@@ -263,7 +264,7 @@ export function ColorQuiz({
                     Rich, darker eyes or hair stand out clearly and beautifully against your
                     complexion.
                   </p>
-                </button>
+                </OptionTile>
               </div>
             </div>
           ) : step === 4 ? (
@@ -298,12 +299,12 @@ export function ColorQuiz({
                 How would you describe your iris?
               </h3>
               <div className="grid grid-cols-1 gap-3">
-                <button
+                <OptionTile
                   onClick={() => {
                     setEyeBrightness("Bright");
                     setStep(6);
                   }}
-                  className="atelier-tile"
+                  className="p-5"
                 >
                   <p className="text-xs uppercase font-medium tracking-widest">
                     Glassy and jewel-like
@@ -312,13 +313,13 @@ export function ColorQuiz({
                     A clear contrast between the whites and the iris — luminous amber, crisp blue,
                     or vivid hazel.
                   </p>
-                </button>
-                <button
+                </OptionTile>
+                <OptionTile
                   onClick={() => {
                     setEyeBrightness("Soft");
                     setStep(6);
                   }}
-                  className="atelier-tile"
+                  className="p-5"
                 >
                   <p className="text-xs uppercase font-medium tracking-widest">
                     Smoky and softly blended
@@ -327,7 +328,7 @@ export function ColorQuiz({
                     Your iris blends gently — perhaps muted grey-blue, deep rich brown, or soft
                     dusty olive.
                   </p>
-                </button>
+                </OptionTile>
               </div>
             </div>
           ) : step === 6 ? (
@@ -338,12 +339,12 @@ export function ColorQuiz({
                 Which tones bring out your natural presence?
               </h3>
               <div className="flex flex-col gap-4">
-                <button
+                <OptionTile
                   onClick={() => {
                     setChroma("Bright");
                     setStep(7);
                   }}
-                  className="w-full text-left border-[0.5px] border-border rounded-none p-4 transition-all hover:border-foreground/40"
+                  className="p-4"
                 >
                   <div className="flex gap-1.5 mb-3">
                     <div className="h-6 w-full bg-[#E0144C]" />
@@ -354,13 +355,13 @@ export function ColorQuiz({
                   <p className="text-xs text-muted-foreground mt-1">
                     Pure, energetic, fully saturated colors make you stand out instantly.
                   </p>
-                </button>
-                <button
+                </OptionTile>
+                <OptionTile
                   onClick={() => {
                     setChroma("Muted");
                     setStep(7);
                   }}
-                  className="w-full text-left border-[0.5px] border-border rounded-none p-4 transition-all hover:border-foreground/40"
+                  className="p-4"
                 >
                   <div className="flex gap-1.5 mb-3">
                     <div className="h-6 w-full bg-[#7E97AB]" />
@@ -373,7 +374,7 @@ export function ColorQuiz({
                   <p className="text-xs text-muted-foreground mt-1">
                     Muted velvets, dusted sages, and smoke-kissed hues look quietly elevated on you.
                   </p>
-                </button>
+                </OptionTile>
               </div>
             </div>
           ) : (
@@ -383,11 +384,11 @@ export function ColorQuiz({
               </h3>
               <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto">
                 {AESTHETIC_MOODS.map((m) => (
-                  <button
+                  <OptionTile
                     key={m.id}
                     disabled={saving}
                     onClick={() => complete(m.id)}
-                    className="border-[0.5px] border-border p-3 flex gap-4 items-center text-left rounded-none hover:border-foreground/40 transition-all"
+                    className="flex items-center gap-4 p-3"
                   >
                     <img src={m.img} alt="" className="h-14 w-11 object-cover filter grayscale" />
                     <div>
@@ -396,7 +397,7 @@ export function ColorQuiz({
                         {m.desc}
                       </p>
                     </div>
-                  </button>
+                  </OptionTile>
                 ))}
               </div>
             </div>
