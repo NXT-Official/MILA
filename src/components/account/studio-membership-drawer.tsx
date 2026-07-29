@@ -1,4 +1,6 @@
+import * as React from "react";
 import { useEffect, useState } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import {
   Sheet,
   SheetContent,
@@ -25,7 +27,32 @@ import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.functions";
 import { deleteMyAccount } from "@/lib/account.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
-import { errorMessage } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
+
+const drawerActionVariants = cva(
+  "w-full rounded-lg py-3 text-label uppercase tracking-label-wide transition-colors disabled:opacity-60",
+  {
+    variants: {
+      tone: {
+        neutral:
+          "border border-stone/20 bg-background/60 text-ink hover:bg-accent-soft dark:hover:bg-white/10",
+        danger:
+          "border border-destructive/30 text-destructive hover:bg-destructive/5 disabled:cursor-not-allowed",
+        primary: "bg-ink font-semibold text-white hover:bg-ink/90",
+      },
+    },
+    defaultVariants: { tone: "neutral" },
+  },
+);
+
+/** Full-width action row used throughout this drawer. Local by design. */
+function DrawerAction({
+  tone,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof drawerActionVariants>) {
+  return <button className={cn(drawerActionVariants({ tone }), className)} {...props} />;
+}
 
 interface StudioMembershipDrawerProps {
   isOpen: boolean;
@@ -342,22 +369,22 @@ export function StudioMembershipDrawer({
                           </span>
                         </div>
                         {subscription.cancel_at_period_end ? (
-                          <button
+                          <DrawerAction
                             type="button"
                             onClick={handleResume}
                             disabled={resuming}
-                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors disabled:opacity-60"
+                            tone="neutral"
                           >
                             {resuming ? "Renewing…" : "Renew Membership"}
-                          </button>
+                          </DrawerAction>
                         ) : (
-                          <button
+                          <DrawerAction
                             type="button"
                             onClick={() => setCancelDialogOpen(true)}
-                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
+                            tone="neutral"
                           >
                             Cancel Membership
-                          </button>
+                          </DrawerAction>
                         )}
                       </>
                     ) : (
@@ -472,14 +499,15 @@ export function StudioMembershipDrawer({
               </div>
 
               <div className="pt-4 border-t border-porcelain/30">
-                <button
+                <DrawerAction
                   onClick={() => signOut()}
                   disabled={signingOut}
-                  className="w-full py-3 rounded-lg border border-destructive/30 text-destructive text-label uppercase tracking-label-wide hover:bg-destructive/5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  tone="danger"
+                  className="flex items-center justify-center gap-2"
                 >
                   {signingOut && <Loader2 className="size-3.5 animate-spin" />}
                   {signingOut ? "Signing Out…" : "Sign Out of Studio"}
-                </button>
+                </DrawerAction>
               </div>
             </div>
           ) : view === "location" ? (
@@ -524,13 +552,14 @@ export function StudioMembershipDrawer({
                   onChange={(e) => setNewEmail(e.target.value)}
                   className="h-10"
                 />
-                <button
+                <DrawerAction
                   type="submit"
                   disabled={emailSubmitting || !newEmail.trim() || newEmail === authUser?.email}
-                  className="w-full py-3 rounded-lg bg-ink text-white text-label uppercase tracking-label-wide font-semibold hover:bg-ink/90 transition-colors disabled:opacity-50"
+                  tone="primary"
+                  className="disabled:opacity-50"
                 >
                   {emailSubmitting ? "Sending confirmation…" : "Update Email"}
-                </button>
+                </DrawerAction>
               </form>
 
               <form
@@ -580,7 +609,7 @@ export function StudioMembershipDrawer({
                 {confirmPassword && newPassword !== confirmPassword && (
                   <p className="text-label text-destructive">Passwords don't match.</p>
                 )}
-                <button
+                <DrawerAction
                   type="submit"
                   disabled={
                     passwordSubmitting ||
@@ -588,10 +617,11 @@ export function StudioMembershipDrawer({
                     !newPasswordOk ||
                     newPassword !== confirmPassword
                   }
-                  className="w-full py-3 rounded-lg bg-ink text-white text-label uppercase tracking-label-wide font-semibold hover:bg-ink/90 transition-colors disabled:opacity-50"
+                  tone="primary"
+                  className="disabled:opacity-50"
                 >
                   {passwordSubmitting ? "Updating…" : "Update Password"}
-                </button>
+                </DrawerAction>
               </form>
 
               <div className="space-y-3 pt-6 border-t border-destructive/20">
@@ -614,15 +644,16 @@ export function StudioMembershipDrawer({
                   onChange={(e) => setDeleteEmail(e.target.value)}
                   className="h-10"
                 />
-                <button
+                <DrawerAction
                   type="button"
                   onClick={handleDeleteAccount}
                   disabled={!deleteEmailMatches || deleting}
-                  className="w-full py-3 rounded-lg border border-destructive/30 text-destructive text-label uppercase tracking-label-wide hover:bg-destructive/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  tone="danger"
+                  className="flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {deleting && <Loader2 className="size-3.5 animate-spin" />}
                   {deleting ? "Deleting…" : "Delete My Account"}
-                </button>
+                </DrawerAction>
               </div>
             </div>
           ) : (
@@ -634,10 +665,11 @@ export function StudioMembershipDrawer({
                   tailor your recommendations. Your data is never sold and is only used within the
                   studio.
                 </p>
-                <button
+                <DrawerAction
                   onClick={downloadData}
                   disabled={exporting}
-                  className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-3 disabled:opacity-60"
+                  tone="neutral"
+                  className="flex items-center justify-center gap-3"
                 >
                   {exporting ? (
                     <Loader2 className="size-3.5 animate-spin" />
@@ -645,7 +677,7 @@ export function StudioMembershipDrawer({
                     <Download className="size-3.5" strokeWidth={1.75} />
                   )}
                   <span>{exporting ? "Preparing export…" : "Download My Data"}</span>
-                </button>
+                </DrawerAction>
                 <p className="text-micro text-stone leading-relaxed">
                   Exports your profile, outfits, posts, and favorites as JSON.
                 </p>
@@ -657,12 +689,9 @@ export function StudioMembershipDrawer({
                   You can permanently delete your account and all associated data yourself, under
                   Email &amp; Security.
                 </p>
-                <button
-                  onClick={() => setView("security")}
-                  className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
-                >
+                <DrawerAction onClick={() => setView("security")} tone="neutral">
                   Go to Email &amp; Security
-                </button>
+                </DrawerAction>
               </div>
             </div>
           )}
