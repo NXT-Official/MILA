@@ -484,12 +484,10 @@ export function StudioMembershipDrawer({
                     className="w-full flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors border-b border-porcelain/30"
                   >
                     <span className="text-sm text-ink">Email &amp; Security</span>
-                    <span className="text-stone">→</span>
+                    <span className="text-stone">
+                      <ArrowRight className="size-3.5" strokeWidth={1.75} />
+                    </span>
                   </button>
-                  <div className="flex items-center justify-between px-5 py-4">
-                    <span className="text-sm text-ink">Membership Tier</span>
-                    <span className="text-micro uppercase tracking-label text-stone">Free</span>
-                  </div>
                 </div>
               </div>
 
@@ -507,13 +505,17 @@ export function StudioMembershipDrawer({
                     <span className="flex items-center gap-3">
                       <span className="text-micro uppercase tracking-label text-stone">
                         {HUBS.find((h) => h.id === defaultHubId)?.city}
+                      </span>{" "}
+                      <span className="text-stone">
+                        <ArrowRight className="size-3.5" strokeWidth={1.75} />
                       </span>
-                      <span className="text-stone">→</span>
                     </span>
                   </button>
                   <button onClick={() => setView("privacy")} className="atelier-row-action">
-                    <span className="text-sm text-ink">Privacy &amp; Data</span>
-                    <span className="text-stone">→</span>
+                    <span className="text-sm text-ink">Privacy &amp; Data</span>{" "}
+                    <span className="text-stone">
+                      <ArrowRight className="size-3.5" strokeWidth={1.75} />
+                    </span>
                   </button>
                 </div>
               </div>
