@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 
 export const Route = createFileRoute("/_authenticated/_app/history")({
   validateSearch: (search: Record<string, unknown>): { look?: string } =>
@@ -107,25 +108,21 @@ function HistoryImage({
   alt: string;
   frameClassName: string;
 }) {
-  const [broken, setBroken] = useState(false);
-  const showFallback = !src || broken;
   return (
     <div className={frameClassName}>
-      {showFallback ? (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
-          <ImageOff className="size-5 text-muted-foreground" aria-hidden="true" />
-          <p className="text-xs uppercase tracking-label-tight text-muted-foreground">
-            Visual unavailable
-          </p>
-        </div>
-      ) : (
-        <img
-          src={src}
-          alt={alt}
-          className="h-full w-full object-contain bg-foreground/4"
-          onError={() => setBroken(true)}
-        />
-      )}
+      <ImageWithFallback
+        src={src}
+        alt={alt}
+        className="h-full w-full object-contain bg-foreground/4"
+        fallback={
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
+            <ImageOff className="size-5 text-muted-foreground" aria-hidden="true" />
+            <p className="text-xs uppercase tracking-label-tight text-muted-foreground">
+              Visual unavailable
+            </p>
+          </div>
+        }
+      />
     </div>
   );
 }
@@ -138,7 +135,7 @@ function HistoryCard({ item, onOpen }: { item: OutfitRow; onOpen: () => void }) 
   return (
     <button
       onClick={onOpen}
-      className="atelier-hairline-card aspect-square relative overflow-hidden text-left cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="atelier-card aspect-square relative overflow-hidden text-left cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <HistoryImage
         src={item.image_url}

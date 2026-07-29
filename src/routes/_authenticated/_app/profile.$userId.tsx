@@ -94,15 +94,20 @@ function MemberProfilePage() {
               <p className="mt-1 text-sm text-stone">@{data.profile.username}</p>
             )}
             <div className="mt-3 flex flex-wrap gap-2 text-nano uppercase tracking-label text-ink">
-              <span className="rounded-full border border-porcelain/60 bg-background/60 px-2.5 py-1">
-                Season · {data.profile.color_season ?? "Unset"}
-              </span>
-              <span className="rounded-full border border-porcelain/60 bg-background/60 px-2.5 py-1">
-                Face · {data.profile.face_shape ?? "—"}
-              </span>
-              <span className="rounded-full border border-porcelain/60 bg-background/60 px-2.5 py-1">
-                Hair · {data.profile.hair_type ?? "—"}
-              </span>
+              {(
+                [
+                  ["Season", data.profile.color_season ?? "Unset"],
+                  ["Face", data.profile.face_shape ?? "—"],
+                  ["Hair", data.profile.hair_type ?? "—"],
+                ] as const
+              ).map(([label, value]) => (
+                <span
+                  key={label}
+                  className="rounded-full border border-porcelain/60 bg-background/60 px-2.5 py-1"
+                >
+                  {label} · {value}
+                </span>
+              ))}
             </div>
             <p className="mt-3 flex items-center gap-1.5 text-nano uppercase tracking-label text-stone">
               <CalendarDays className="size-3" aria-hidden="true" />

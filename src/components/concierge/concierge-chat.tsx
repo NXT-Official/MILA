@@ -25,6 +25,7 @@ import { queryKeys } from "@/constants/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn, errorMessage } from "@/lib/utils";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 
 type Msg = {
   id: number;
@@ -594,20 +595,16 @@ export function AnchoredLookCard({
 }
 
 function LookThumbnail({ imageUrl, title }: { imageUrl: string | null; title: string }) {
-  const [broken, setBroken] = useState(false);
-  if (!imageUrl || broken) {
-    return (
-      <div className="h-full w-full flex items-center justify-center text-muted-foreground">
-        <Shirt className="size-5" strokeWidth={1.25} aria-hidden="true" />
-      </div>
-    );
-  }
   return (
-    <img
+    <ImageWithFallback
       src={imageUrl}
       alt={`Anchored look: ${title}`}
       className="h-full w-full object-cover"
-      onError={() => setBroken(true)}
+      fallback={
+        <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+          <Shirt className="size-5" strokeWidth={1.25} aria-hidden="true" />
+        </div>
+      }
     />
   );
 }
