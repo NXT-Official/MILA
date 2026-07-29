@@ -1,6 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, ArchiveRestore, Pencil, Trash2 } from "lucide-react";
-
 import {
   ActionItem,
   CatalogTitleCell,

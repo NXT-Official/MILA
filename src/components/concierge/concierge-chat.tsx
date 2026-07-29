@@ -271,7 +271,6 @@ export function ConciergeChat({
     const trimmed = text.trim();
     if (!trimmed || sending) return;
 
-    // ponytail: retrying a failed message re-sends its text only, not its attachment
     const attached = retryId == null ? attachment : null;
 
     let userMsg: Msg;

@@ -1,6 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, ArchiveRestore, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
-
 import {
   ActionItem,
   CatalogTitleCell,
@@ -48,6 +47,7 @@ export function getSubscriptionPlanColumns({
               >
                 <ChevronUp className="size-3.5" aria-hidden="true" />
               </button>
+
               <button
                 type="button"
                 onClick={() => onMove(row.original, 1)}
@@ -82,6 +82,7 @@ export function getSubscriptionPlanColumns({
           <div className="text-sm text-ink tabular-nums">
             {formatPlanPrice(row.original.price_amount, row.original.currency)}
           </div>
+
           <div className="text-[10px] uppercase tracking-[0.18em] text-stone mt-0.5">
             {BILLING_INTERVAL_LABELS[row.original.billing_interval]}
           </div>

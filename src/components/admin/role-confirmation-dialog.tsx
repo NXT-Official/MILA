@@ -29,6 +29,7 @@ export function RoleConfirmationDialog({
   onConfirm: () => void;
 }) {
   const roleName = change?.role === "admin" ? "Steward" : "Moderator";
+
   return (
     <Dialog open={!!change} onOpenChange={onOpenChange}>
       <DialogContent>

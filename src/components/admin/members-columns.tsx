@@ -1,6 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { UserX, UserCheck, Pencil } from "lucide-react";
-
 import { Badge } from "@/components/ui/badge";
 import { ActionItem, RowActionsMenu, ToggleCell } from "@/components/admin/table-cells";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
