@@ -14,13 +14,11 @@ export function AdminStatCard({
   return (
     <div className="rounded-panel border border-porcelain/60 bg-atelier-panel/40 p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-[0.22em] text-stone">{label}</span>
+        <span className="text-nano uppercase tracking-label-wide text-stone">{label}</span>
         <Icon className="size-4 text-accent" strokeWidth={1.75} />
       </div>
       <div className="font-serif text-3xl text-ink">{value}</div>
-      {sublabel && (
-        <div className="text-[10px] uppercase tracking-[0.18em] text-stone">{sublabel}</div>
-      )}
+      {sublabel && <div className="text-micro uppercase tracking-label text-stone">{sublabel}</div>}
     </div>
   );
 }

@@ -57,7 +57,7 @@ export function OutfitVisual({
             size="sm"
             onClick={onRetry}
             disabled={retryDisabled}
-            className="rounded-full uppercase tracking-[0.18em] text-[11px]"
+            className="rounded-full uppercase tracking-label text-label"
           >
             <RotateCcw className="size-3.5 mr-2" aria-hidden="true" />
             Retry visual

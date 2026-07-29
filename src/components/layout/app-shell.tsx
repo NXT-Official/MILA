@@ -123,7 +123,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="max-w-7xl mx-auto h-16 px-5 md:px-8 flex items-center justify-between gap-6 relative">
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-2 font-serif text-xl md:text-2xl uppercase tracking-[0.32em] text-ink"
+              className="inline-flex items-center gap-2 font-serif text-xl md:text-2xl uppercase tracking-label-xwide text-ink"
             >
               <img src="/favicon.svg" alt="" className="size-6 md:h-7 md:w-7" />
               Mila
@@ -140,7 +140,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   to="/pricing"
                   aria-label={`${credits} AI credits — view membership plans and credits`}
-                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-porcelain/60 bg-background/60 backdrop-blur text-[10px] uppercase tracking-[0.22em] text-ink hover:border-porcelain transition-colors"
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-porcelain/60 bg-background/60 backdrop-blur text-micro uppercase tracking-label-wide text-ink hover:border-porcelain transition-colors"
                 >
                   <Coins className="size-3.5 text-accent" strokeWidth={1.75} aria-hidden="true" />
                   {credits}
@@ -151,7 +151,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 type="button"
                 onClick={() => setIsLensOpen(true)}
                 aria-label="Open the Studio Lens"
-                className="md:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-porcelain/60 bg-background/60 backdrop-blur text-[10px] uppercase tracking-[0.22em] text-ink hover:border-porcelain transition-colors"
+                className="md:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-porcelain/60 bg-background/60 backdrop-blur text-micro uppercase tracking-label-wide text-ink hover:border-porcelain transition-colors"
               >
                 <Camera className="size-3.5" strokeWidth={1.75} />
                 Lens

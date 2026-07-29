@@ -27,7 +27,7 @@ export function getSupportColumns({
       accessorKey: "created_at",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Received" />,
       cell: ({ row }) => (
-        <div className="text-[10px] uppercase tracking-[0.18em] text-stone whitespace-nowrap">
+        <div className="text-micro uppercase tracking-label text-stone whitespace-nowrap">
           {new Date(row.original.created_at).toLocaleString()}
         </div>
       ),

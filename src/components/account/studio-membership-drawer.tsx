@@ -228,7 +228,7 @@ export function StudioMembershipDrawer({
             <SheetTitle className="font-serif text-2xl text-ink tracking-wide">
               {heading.title}
             </SheetTitle>
-            <SheetDescription className="text-[10px] uppercase tracking-[0.25em] text-stone">
+            <SheetDescription className="text-micro uppercase tracking-label-wide text-stone">
               {heading.sub}
             </SheetDescription>
           </div>
@@ -243,7 +243,7 @@ export function StudioMembershipDrawer({
                     : "preferences",
               )
             }
-            className="text-[10px] uppercase tracking-[0.15em] text-stone hover:text-ink transition-colors underline underline-offset-4 pb-1"
+            className="text-micro uppercase tracking-label-tight text-stone hover:text-ink transition-colors underline underline-offset-4 pb-1"
           >
             {view === "membership"
               ? "Settings"
@@ -266,8 +266,8 @@ export function StudioMembershipDrawer({
                       <span className="truncate">{user.fullName}</span>
                       {subscription && <VerifiedBadge className="size-4" />}
                     </p>
-                    <p className="truncate text-[11px] text-stone">@{user.username}</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] uppercase tracking-[0.16em]">
+                    <p className="truncate text-label text-stone">@{user.username}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-pico uppercase tracking-label-tight">
                       <span className="rounded-full border border-porcelain/70 bg-background/60 px-2 py-1 text-ink">
                         Season · {user.season ?? "Unset"}
                       </span>
@@ -288,7 +288,7 @@ export function StudioMembershipDrawer({
                       to="/profile/$userId"
                       params={{ userId: authUser.id }}
                       onClick={onClose}
-                      className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-porcelain/70 bg-background/60 px-3 text-[8px] uppercase tracking-[0.16em] text-ink transition-colors hover:bg-background"
+                      className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-porcelain/70 bg-background/60 px-3 text-pico uppercase tracking-label-tight text-ink transition-colors hover:bg-background"
                     >
                       View Profile
                       <ArrowRight className="size-3" aria-hidden="true" />
@@ -299,7 +299,7 @@ export function StudioMembershipDrawer({
                   <Link
                     to="/style-profile"
                     onClick={onClose}
-                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-50/60 px-3 py-2 text-[9px] uppercase tracking-[0.18em] text-amber-800 transition-colors hover:bg-amber-50"
+                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-50/60 px-3 py-2 text-nano uppercase tracking-label text-amber-800 transition-colors hover:bg-amber-50"
                   >
                     <AlertCircle className="size-3" strokeWidth={1.6} />
                     Complete {missing.join(", ")} in the Studio
@@ -313,12 +313,12 @@ export function StudioMembershipDrawer({
                 />
                 <div className="relative space-y-6">
                   <div className="flex items-end justify-between">
-                    <span className="text-[10px] uppercase tracking-[0.25em] text-stone">
+                    <span className="text-micro uppercase tracking-label-wide text-stone">
                       Concierge Access
                     </span>
                     <div className="text-right">
                       <div className="font-serif text-2xl text-ink leading-none">Atelier</div>
-                      <div className="text-[10px] uppercase tracking-[0.2em] text-stone mt-1">
+                      <div className="text-micro uppercase tracking-label text-stone mt-1">
                         Membership
                       </div>
                     </div>
@@ -326,7 +326,7 @@ export function StudioMembershipDrawer({
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="uppercase tracking-[0.2em] text-stone text-[10px]">
+                      <span className="uppercase tracking-label text-stone text-micro">
                         Current Tier
                       </span>
                       <span className="font-semibold text-ink">
@@ -336,7 +336,7 @@ export function StudioMembershipDrawer({
                     {subscription ? (
                       <>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="uppercase tracking-[0.2em] text-[10px] text-stone">
+                          <span className="uppercase tracking-label text-micro text-stone">
                             {subscription.cancel_at_period_end ? "Ends" : "Renews"}
                           </span>
                           <span className="font-semibold text-ink">
@@ -350,7 +350,7 @@ export function StudioMembershipDrawer({
                             type="button"
                             onClick={handleResume}
                             disabled={resuming}
-                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors disabled:opacity-60"
+                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors disabled:opacity-60"
                           >
                             {resuming ? "Renewing…" : "Renew Membership"}
                           </button>
@@ -358,7 +358,7 @@ export function StudioMembershipDrawer({
                           <button
                             type="button"
                             onClick={() => setCancelDialogOpen(true)}
-                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
+                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
                           >
                             Cancel Membership
                           </button>
@@ -373,7 +373,7 @@ export function StudioMembershipDrawer({
                         <Link
                           to="/pricing"
                           onClick={onClose}
-                          className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                          className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
                         >
                           View Membership Plans
                           <span aria-hidden="true">→</span>
@@ -390,7 +390,7 @@ export function StudioMembershipDrawer({
                   )}
 
                   {subscription && (
-                    <p className="text-[10px] text-center leading-relaxed text-stone">
+                    <p className="text-micro text-center leading-relaxed text-stone">
                       {(credits ?? 0) === 0
                         ? "You're out of credits for today — "
                         : "Run out before the day resets? "}
@@ -413,7 +413,7 @@ export function StudioMembershipDrawer({
                   onClick={onClose}
                   className="flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors border-b border-porcelain/30"
                 >
-                  <span className="text-xs uppercase tracking-[0.2em] text-ink">
+                  <span className="text-xs uppercase tracking-label text-ink">
                     Review Color Dossier
                   </span>
                   <span className="text-stone">→</span>
@@ -423,7 +423,7 @@ export function StudioMembershipDrawer({
                   onClick={onClose}
                   className="flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors"
                 >
-                  <span className="text-xs uppercase tracking-[0.2em] text-ink flex items-center gap-2">
+                  <span className="text-xs uppercase tracking-label text-ink flex items-center gap-2">
                     <Archive className="size-3.5" strokeWidth={1.75} />
                     Outfit Archive
                   </span>
@@ -434,7 +434,7 @@ export function StudioMembershipDrawer({
           ) : view === "preferences" ? (
             <div className="space-y-8">
               <div className="space-y-3">
-                <p className="text-[10px] uppercase tracking-[0.25em] text-stone">
+                <p className="text-micro uppercase tracking-label-wide text-stone">
                   Account details
                 </p>
                 <div className="rounded-xl border border-porcelain/40 overflow-hidden">
@@ -447,19 +447,19 @@ export function StudioMembershipDrawer({
                   </button>
                   <div className="flex items-center justify-between px-5 py-4">
                     <span className="text-sm text-ink">Membership Tier</span>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-stone">Free</span>
+                    <span className="text-micro uppercase tracking-label text-stone">Free</span>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <p className="text-[10px] uppercase tracking-[0.25em] text-stone">
+                <p className="text-micro uppercase tracking-label-wide text-stone">
                   Styling parameters
                 </p>
                 <div className="rounded-xl border border-porcelain/40 overflow-hidden divide-y divide-porcelain/30">
                   <div className="flex items-center justify-between px-5 py-4">
                     <span className="text-sm text-ink">Climate Measurement</span>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-stone">
+                    <span className="text-micro uppercase tracking-label text-stone">
                       Celsius (°C)
                     </span>
                   </div>
@@ -469,7 +469,7 @@ export function StudioMembershipDrawer({
                   >
                     <span className="text-sm text-ink">Default Location</span>
                     <span className="flex items-center gap-3">
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-stone">
+                      <span className="text-micro uppercase tracking-label text-stone">
                         {HUBS.find((h) => h.id === defaultHubId)?.city}
                       </span>
                       <span className="text-stone">→</span>
@@ -489,7 +489,7 @@ export function StudioMembershipDrawer({
                 <button
                   onClick={() => signOut()}
                   disabled={signingOut}
-                  className="w-full py-3 rounded-lg border border-destructive/30 text-destructive text-[11px] uppercase tracking-[0.25em] hover:bg-destructive/5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-lg border border-destructive/30 text-destructive text-label uppercase tracking-label-wide hover:bg-destructive/5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {signingOut && <Loader2 className="size-3.5 animate-spin" />}
                   {signingOut ? "Signing Out…" : "Sign Out of Studio"}
@@ -498,7 +498,9 @@ export function StudioMembershipDrawer({
             </div>
           ) : view === "location" ? (
             <div className="space-y-3">
-              <p className="text-[10px] uppercase tracking-[0.25em] text-stone">Climate sync hub</p>
+              <p className="text-micro uppercase tracking-label-wide text-stone">
+                Climate sync hub
+              </p>
               <div className="rounded-xl border border-porcelain/40 overflow-hidden divide-y divide-porcelain/30">
                 {HUBS.map((h) => (
                   <button
@@ -511,7 +513,7 @@ export function StudioMembershipDrawer({
                     className="w-full flex items-center justify-between px-5 py-4 hover:bg-porcelain/20 transition-colors"
                   >
                     <span className="text-sm text-ink">{h.city}</span>
-                    <span className="flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-stone">
+                    <span className="flex items-center gap-3 text-micro uppercase tracking-label text-stone">
                       {h.tagline}
                       {defaultHubId === h.id && (
                         <Check className="size-3.5 text-ink" strokeWidth={1.6} />
@@ -520,14 +522,14 @@ export function StudioMembershipDrawer({
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-stone leading-relaxed px-1">
+              <p className="text-micro text-stone leading-relaxed px-1">
                 Your default hub sets the dashboard climate sync each time you open the studio.
               </p>
             </div>
           ) : view === "security" ? (
             <div className="space-y-8">
               <form onSubmit={changeEmail} className="space-y-3">
-                <p className="text-[10px] uppercase tracking-[0.25em] text-stone">Email address</p>
+                <p className="text-micro uppercase tracking-label-wide text-stone">Email address</p>
                 <p className="text-xs text-stone">
                   Current: <span className="text-ink">{authUser?.email}</span>
                 </p>
@@ -541,7 +543,7 @@ export function StudioMembershipDrawer({
                 <button
                   type="submit"
                   disabled={emailSubmitting || !newEmail.trim() || newEmail === authUser?.email}
-                  className="w-full py-3 rounded-lg bg-ink text-white text-[11px] uppercase tracking-[0.25em] font-semibold hover:bg-ink/90 transition-colors disabled:opacity-50"
+                  className="w-full py-3 rounded-lg bg-ink text-white text-label uppercase tracking-label-wide font-semibold hover:bg-ink/90 transition-colors disabled:opacity-50"
                 >
                   {emailSubmitting ? "Sending confirmation…" : "Update Email"}
                 </button>
@@ -551,7 +553,7 @@ export function StudioMembershipDrawer({
                 onSubmit={changePassword}
                 className="space-y-3 pt-6 border-t border-porcelain/30"
               >
-                <p className="text-[10px] uppercase tracking-[0.25em] text-stone">
+                <p className="text-micro uppercase tracking-label-wide text-stone">
                   Change password
                 </p>
                 <Input
@@ -582,7 +584,7 @@ export function StudioMembershipDrawer({
                       return (
                         <li
                           key={c.label}
-                          className={`flex items-center gap-1.5 text-[11px] ${
+                          className={`flex items-center gap-1.5 text-label ${
                             ok ? "text-emerald-600" : "text-stone"
                           }`}
                         >
@@ -594,7 +596,7 @@ export function StudioMembershipDrawer({
                   </ul>
                 )}
                 {confirmPassword && newPassword !== confirmPassword && (
-                  <p className="text-[11px] text-destructive">Passwords don't match.</p>
+                  <p className="text-label text-destructive">Passwords don't match.</p>
                 )}
                 <button
                   type="submit"
@@ -604,21 +606,21 @@ export function StudioMembershipDrawer({
                     !newPasswordOk ||
                     newPassword !== confirmPassword
                   }
-                  className="w-full py-3 rounded-lg bg-ink text-white text-[11px] uppercase tracking-[0.25em] font-semibold hover:bg-ink/90 transition-colors disabled:opacity-50"
+                  className="w-full py-3 rounded-lg bg-ink text-white text-label uppercase tracking-label-wide font-semibold hover:bg-ink/90 transition-colors disabled:opacity-50"
                 >
                   {passwordSubmitting ? "Updating…" : "Update Password"}
                 </button>
               </form>
 
               <div className="space-y-3 pt-6 border-t border-destructive/20">
-                <p className="text-[10px] uppercase tracking-[0.25em] text-destructive">
+                <p className="text-micro uppercase tracking-label-wide text-destructive">
                   Delete account
                 </p>
                 <p className="text-xs text-stone leading-relaxed">
                   This erases your profile, looks, posts, favorites and uploaded photos for good.
                   Any active membership is canceled at once. This cannot be undone.
                 </p>
-                <label htmlFor="delete-confirm-email" className="block text-[11px] text-stone">
+                <label htmlFor="delete-confirm-email" className="block text-label text-stone">
                   Type <span className="text-ink font-medium">{authUser?.email}</span> to confirm.
                 </label>
                 <Input
@@ -634,7 +636,7 @@ export function StudioMembershipDrawer({
                   type="button"
                   onClick={handleDeleteAccount}
                   disabled={!deleteEmailMatches || deleting}
-                  className="w-full py-3 rounded-lg border border-destructive/30 text-destructive text-[11px] uppercase tracking-[0.25em] hover:bg-destructive/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-lg border border-destructive/30 text-destructive text-label uppercase tracking-label-wide hover:bg-destructive/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {deleting && <Loader2 className="size-3.5 animate-spin" />}
                   {deleting ? "Deleting…" : "Delete My Account"}
@@ -644,7 +646,7 @@ export function StudioMembershipDrawer({
           ) : (
             <div className="space-y-8">
               <div className="space-y-3">
-                <p className="text-[10px] uppercase tracking-[0.25em] text-stone">Your data</p>
+                <p className="text-micro uppercase tracking-label-wide text-stone">Your data</p>
                 <p className="text-xs text-stone leading-relaxed">
                   Mila stores your style profile, outfit analyses, community posts, and favorites to
                   tailor your recommendations. Your data is never sold and is only used within the
@@ -653,7 +655,7 @@ export function StudioMembershipDrawer({
                 <button
                   onClick={downloadData}
                   disabled={exporting}
-                  className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-3 disabled:opacity-60"
+                  className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-3 disabled:opacity-60"
                 >
                   {exporting ? (
                     <Loader2 className="size-3.5 animate-spin" />
@@ -662,22 +664,22 @@ export function StudioMembershipDrawer({
                   )}
                   <span>{exporting ? "Preparing export…" : "Download My Data"}</span>
                 </button>
-                <p className="text-[10px] text-stone leading-relaxed">
+                <p className="text-micro text-stone leading-relaxed">
                   Exports your profile, outfits, posts, and favorites as JSON.
                 </p>
               </div>
 
               <div className="pt-4 border-t border-porcelain/30 space-y-3">
-                <p className="text-[10px] uppercase tracking-[0.25em] text-stone">
+                <p className="text-micro uppercase tracking-label-wide text-stone">
                   Account removal
                 </p>
-                <p className="text-[10px] text-stone leading-relaxed">
+                <p className="text-micro text-stone leading-relaxed">
                   You can permanently delete your account and all associated data yourself, under
                   Email &amp; Security.
                 </p>
                 <button
                   onClick={() => setView("security")}
-                  className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
+                  className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
                 >
                   Go to Email &amp; Security
                 </button>

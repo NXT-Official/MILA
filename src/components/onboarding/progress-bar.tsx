@@ -13,7 +13,7 @@ export function OnboardingProgressBar({ current }: { current: OnboardingStepId }
 
   return (
     <div className="mb-8">
-      <p className="text-xs uppercase tracking-[0.16em] text-accent font-semibold">
+      <p className="text-xs uppercase tracking-label-tight text-accent font-semibold">
         Step {index + 1} of {total}
         {step.optional ? (
           <span className="text-muted normal-case tracking-normal"> · Optional</span>

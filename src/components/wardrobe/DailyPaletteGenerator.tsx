@@ -55,7 +55,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
     <div className="bg-card rounded-card shadow-paper border border-border p-5 space-y-5">
       <div className="flex items-center justify-between">
         <span className="atelier-kicker">{today}</span>
-        <span className="inline-flex items-center rounded-pill bg-accent-soft px-2.5 py-0.5 text-[10px] uppercase tracking-[0.2em] text-accent">
+        <span className="inline-flex items-center rounded-pill bg-accent-soft px-2.5 py-0.5 text-micro uppercase tracking-label text-accent">
           {look.styleVibe}
         </span>
         <span className="atelier-kicker">Mix {String(mixCount).padStart(2, "0")}</span>
@@ -77,7 +77,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
               style={{ backgroundColor: s.hex }}
             />
             <div className="mt-2.5 space-y-0.5">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              <p className="text-micro uppercase tracking-widest text-muted-foreground">
                 {s.label}
               </p>
               <p className="text-sm font-medium leading-tight text-foreground">{s.name}</p>

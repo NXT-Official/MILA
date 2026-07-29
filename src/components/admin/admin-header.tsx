@@ -48,10 +48,10 @@ export function AdminHeader({
           </button>
 
           <div className="min-w-0">
-            <div className="text-[9px] uppercase tracking-[0.28em] text-stone lg:hidden">
+            <div className="text-nano uppercase tracking-label-xwide text-stone lg:hidden">
               Atelier · {roleLabel}
             </div>
-            <h1 className="mt-1 lg:mt-0 font-serif text-xl md:text-2xl tracking-[0.12em] uppercase text-ink truncate">
+            <h1 className="mt-1 lg:mt-0 font-serif text-xl md:text-2xl tracking-label-tight uppercase text-ink truncate">
               {meta.title}
             </h1>
             {meta.subtitle && (

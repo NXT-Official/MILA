@@ -17,7 +17,7 @@ export function CreditsUsageMeter({ remaining, total }: { remaining: number; tot
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs">
-        <span className="uppercase tracking-[0.2em] text-[10px] text-stone">Styling Credits</span>
+        <span className="uppercase tracking-label text-micro text-stone">Styling Credits</span>
         <span className="font-semibold text-ink tabular-nums">
           {daily ? `${clampedRemaining} of ${scale} left today` : `${clampedRemaining} left`}
         </span>
@@ -28,7 +28,7 @@ export function CreditsUsageMeter({ remaining, total }: { remaining: number; tot
           style={{ width: `${100 - percentUsed}%` }}
         />
       </div>
-      {daily && <p className="text-[10px] text-stone">Resets in {countdown}</p>}
+      {daily && <p className="text-micro text-stone">Resets in {countdown}</p>}
     </div>
   );
 }

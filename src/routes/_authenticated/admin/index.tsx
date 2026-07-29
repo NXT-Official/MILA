@@ -49,7 +49,7 @@ function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <section>
-          <h2 className="text-[10px] uppercase tracking-[0.22em] text-stone mb-4">
+          <h2 className="text-micro uppercase tracking-label-wide text-stone mb-4">
             Recent Members
           </h2>
           <div className="rounded-panel border border-porcelain/60 bg-atelier-panel/40 overflow-hidden">
@@ -62,11 +62,11 @@ function AdminDashboard() {
                   <div className="font-serif text-sm text-ink truncate">
                     {m.full_name || m.username || "Unnamed"}
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-stone">
+                  <div className="text-micro uppercase tracking-label text-stone">
                     {m.username ? `@${m.username}` : "—"}
                   </div>
                 </div>
-                <div className="text-[10px] text-stone shrink-0">
+                <div className="text-micro text-stone shrink-0">
                   {new Date(m.created_at).toLocaleDateString()}
                 </div>
               </div>
@@ -80,14 +80,14 @@ function AdminDashboard() {
           </div>
           <Link
             to="/admin/members"
-            className="mt-3 inline-block text-[10px] uppercase tracking-[0.22em] text-stone hover:text-ink"
+            className="mt-3 inline-block text-micro uppercase tracking-label-wide text-stone hover:text-ink"
           >
             View all members →
           </Link>
         </section>
 
         <section>
-          <h2 className="text-[10px] uppercase tracking-[0.22em] text-stone mb-4">
+          <h2 className="text-micro uppercase tracking-label-wide text-stone mb-4">
             Recent Activity
           </h2>
           <div className="rounded-panel border border-porcelain/60 bg-atelier-panel/40 overflow-hidden">
@@ -100,7 +100,7 @@ function AdminDashboard() {
                   <div className="font-serif text-sm text-ink truncate">
                     {p.author_name || "Unnamed"}
                     {p.hidden && (
-                      <span className="ml-2 text-[9px] uppercase tracking-[0.18em] text-destructive">
+                      <span className="ml-2 text-nano uppercase tracking-label text-destructive">
                         Hidden
                       </span>
                     )}
@@ -109,7 +109,7 @@ function AdminDashboard() {
                     <div className="text-xs text-stone truncate max-w-xs">{p.caption}</div>
                   )}
                 </div>
-                <div className="text-[10px] text-stone shrink-0">
+                <div className="text-micro text-stone shrink-0">
                   {new Date(p.created_at).toLocaleDateString()}
                 </div>
               </div>
@@ -123,7 +123,7 @@ function AdminDashboard() {
           </div>
           <Link
             to="/admin/moderation"
-            className="mt-3 inline-block text-[10px] uppercase tracking-[0.22em] text-stone hover:text-ink"
+            className="mt-3 inline-block text-micro uppercase tracking-label-wide text-stone hover:text-ink"
           >
             View moderation →
           </Link>

@@ -151,7 +151,7 @@ export function SignupForm({
                 style={{ width: `${(passedChecks / passwordChecks.length) * 100}%` }}
               />
             </div>
-            <span className={`text-[10px] font-medium uppercase tracking-wider ${strength.text}`}>
+            <span className={`text-micro font-medium uppercase tracking-wider ${strength.text}`}>
               {strength.label}
             </span>
           </div>
@@ -161,7 +161,7 @@ export function SignupForm({
               return (
                 <li
                   key={c.label}
-                  className={`flex items-center gap-1.5 text-[11px] ${
+                  className={`flex items-center gap-1.5 text-label ${
                     ok ? "text-emerald-600" : "text-muted-foreground"
                   }`}
                 >

@@ -46,7 +46,7 @@ export function PricingCard({
         <span className="font-display text-4xl font-bold tracking-tight text-ink tabular-nums">
           {price}
         </span>
-        <span className="ml-2 text-xs uppercase tracking-[0.18em] text-muted">{interval}</span>
+        <span className="ml-2 text-xs uppercase tracking-label text-muted">{interval}</span>
       </p>
 
       <ul className="mt-6 space-y-2.5 border-t border-line pt-6">

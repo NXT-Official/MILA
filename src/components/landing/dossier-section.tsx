@@ -34,7 +34,7 @@ export function DossierSection() {
         </div>
 
         <div className="mt-5">
-          <div className="flex justify-between text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="flex justify-between text-micro uppercase tracking-label text-muted-foreground">
             <span>Dossier completion</span>
             <span>80%</span>
           </div>

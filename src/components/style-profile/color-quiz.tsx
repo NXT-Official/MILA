@@ -117,7 +117,7 @@ export function ColorQuiz({
     <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-0 sm:p-4">
       <div className="bg-card w-full sm:border sm:border-border max-w-2xl h-full sm:h-auto sm:max-h-[92vh] overflow-y-auto flex flex-col shadow-2xl">
         <div className="px-6 py-4 border-b-[0.5px] border-border flex items-center justify-between shrink-0">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-accent">
+          <p className="text-micro uppercase tracking-label-wide text-accent">
             Color Quiz · Step {step + 1} of 8
           </p>
           <button
@@ -392,7 +392,7 @@ export function ColorQuiz({
                     <img src={m.img} alt="" className="h-14 w-11 object-cover filter grayscale" />
                     <div>
                       <p className="text-xs uppercase font-medium tracking-wider">{m.name}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                      <p className="text-label text-muted-foreground mt-0.5 line-clamp-1">
                         {m.desc}
                       </p>
                     </div>
@@ -440,7 +440,7 @@ function LightingStep({ onConfirm }: { onConfirm: () => void }) {
           I'm currently in soft, indirect natural daylight.
         </span>
       </label>
-      <p className="text-[10px] uppercase tracking-[0.22em] text-accent leading-relaxed">
+      <p className="text-micro uppercase tracking-label-wide text-accent leading-relaxed">
         Prefer a live AI scan? Close this quiz and tap{" "}
         <span className="text-foreground">Run Visual Diagnostic</span> on the studio dossier to
         launch the camera viewfinder.
@@ -470,21 +470,21 @@ function DetailedColorResultView({
   return (
     <div className="space-y-8 animate-fade-in text-left max-w-xl mx-auto">
       <div className="text-center border-b-[0.5px] border-border pb-6">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-foreground text-background text-[9px] uppercase tracking-widest font-medium">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-foreground text-background text-nano uppercase tracking-widest font-medium">
           <ShieldCheck className="size-3.5" /> SEOUL DIGITAL DIAGNOSTIC
         </div>
-        <p className="text-[10px] uppercase tracking-[0.25em] text-accent mt-5 mb-1">
+        <p className="text-micro uppercase tracking-label-wide text-accent mt-5 mb-1">
           Your Diagnostic Palette
         </p>
         <h3 className="font-serif text-3xl sm:text-4xl tracking-tight font-medium">
           {profile.subSeason}
         </h3>
-        <p className="text-[11px] font-sans tracking-wide text-muted-foreground mt-2 leading-relaxed">
+        <p className="text-label font-sans tracking-wide text-muted-foreground mt-2 leading-relaxed">
           {profile.education}
         </p>
         {profile.stylistNote && (
           <div className="mt-5 border-l-2 border-foreground/40 pl-3 text-left max-w-md mx-auto">
-            <p className="text-[9px] uppercase tracking-[0.25em] text-accent mb-1">
+            <p className="text-nano uppercase tracking-label-wide text-accent mb-1">
               Stylist Note
               {typeof profile.aiConfidence === "number"
                 ? ` · ${Math.round(profile.aiConfidence)}% confidence`
@@ -499,13 +499,13 @@ function DetailedColorResultView({
 
       <div className="grid grid-cols-2 gap-2">
         <div className="border-[0.5px] border-border p-3 bg-foreground/1">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Tone Type</p>
+          <p className="text-nano uppercase tracking-wider text-muted-foreground">Tone Type</p>
           <p className="font-medium text-xs uppercase mt-0.5">
             {profile.axes.chroma === "Muted" ? "Soft / Muted Tone" : "Clear / Vivid Tone"}
           </p>
         </div>
         <div className="border-[0.5px] border-border p-3 bg-foreground/1">
-          <p className="text-[9px] uppercase tracking-wider text-destructive">Color to Avoid</p>
+          <p className="text-nano uppercase tracking-wider text-destructive">Color to Avoid</p>
           <p className="font-medium text-xs uppercase mt-0.5 text-destructive/90">
             Avoid Next to Face
           </p>
@@ -513,7 +513,7 @@ function DetailedColorResultView({
       </div>
 
       <div>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-accent font-semibold mb-3">
+        <p className="text-micro uppercase tracking-label text-accent font-semibold mb-3">
           I. Best Draping Swatches
         </p>
         <div className="grid grid-cols-4 gap-2">
@@ -523,14 +523,14 @@ function DetailedColorResultView({
                 className="h-12 border-[0.5px] border-border"
                 style={{ backgroundColor: s.hex }}
               />
-              <p className="text-[9px] uppercase tracking-wide text-accent truncate">{s.name}</p>
+              <p className="text-nano uppercase tracking-wide text-accent truncate">{s.name}</p>
             </div>
           ))}
         </div>
       </div>
 
       <div className="border border-foreground/10 bg-foreground/2 p-5 space-y-3">
-        <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-foreground">
+        <p className="text-micro uppercase tracking-label font-semibold text-foreground">
           II. K-Beauty Studio Prescription
         </p>
         <ul className="space-y-2">
@@ -538,7 +538,7 @@ function DetailedColorResultView({
             const [label, text] = tip.split(": ");
             return (
               <li key={i} className="text-xs text-muted-foreground leading-relaxed">
-                <strong className="text-foreground font-medium uppercase text-[10px] tracking-wider block mb-0.5">
+                <strong className="text-foreground font-medium uppercase text-micro tracking-wider block mb-0.5">
                   {label}
                 </strong>
                 {text}
@@ -549,14 +549,14 @@ function DetailedColorResultView({
       </div>
 
       <div className="border border-destructive/10 bg-destructive/1 p-4">
-        <p className="text-[10px] uppercase text-destructive tracking-widest mb-2 flex items-center gap-1">
+        <p className="text-micro uppercase text-destructive tracking-widest mb-2 flex items-center gap-1">
           <XIcon className="size-3" /> Tones to Avoid
         </p>
         <div className="flex flex-col gap-1.5">
           {profile.avoid.map((a) => (
             <span
               key={a}
-              className="text-[11px] text-muted-foreground font-sans leading-relaxed flex items-center gap-2"
+              className="text-label text-muted-foreground font-sans leading-relaxed flex items-center gap-2"
             >
               <span className="h-1 w-1 bg-destructive/50 shrink-0" /> {a}
             </span>

@@ -45,7 +45,7 @@ function OnboardingLayout() {
       <header className="mila-container flex items-center justify-between py-6">
         <Link
           to="/onboarding/style-profile"
-          className="font-display text-xl tracking-[0.2em] text-ink"
+          className="font-display text-xl tracking-label text-ink"
         >
           MILA
         </Link>

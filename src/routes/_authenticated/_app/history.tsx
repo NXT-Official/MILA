@@ -112,7 +112,7 @@ function HistoryImage({
       {showFallback ? (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center">
           <ImageOff className="size-5 text-muted-foreground" aria-hidden="true" />
-          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-xs uppercase tracking-label-tight text-muted-foreground">
             Visual unavailable
           </p>
         </div>
@@ -146,10 +146,10 @@ function HistoryCard({ item, onOpen }: { item: OutfitRow; onOpen: () => void }) 
       <div className="absolute inset-0 bg-atelier-ink/0 group-hover:bg-atelier-ink/20 transition-colors pointer-events-none" />
       <div className="absolute bottom-0 inset-x-0 p-4 bg-linear-to-t from-atelier-ink/85 via-atelier-ink/40 to-transparent text-atelier-ivory pointer-events-none">
         {badge ? (
-          <p className="mb-1 text-[9px] uppercase tracking-[0.24em] opacity-80">{badge}</p>
+          <p className="mb-1 text-nano uppercase tracking-label-wide opacity-80">{badge}</p>
         ) : null}
         <p className="font-serif text-base leading-snug line-clamp-2">{title}</p>
-        <div className="mt-1 flex items-center gap-2 text-[10px] uppercase tracking-widest opacity-70">
+        <div className="mt-1 flex items-center gap-2 text-micro uppercase tracking-widest opacity-70">
           <span>{new Date(item.created_at).toLocaleDateString()}</span>
           {item.match_score != null ? (
             <>
@@ -170,7 +170,7 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
       <div className="space-y-6">
         {(vibe || vibe_alignment_score != null || weather) && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[10px] uppercase tracking-[0.22em]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-micro uppercase tracking-label-wide">
               {vibe ? <span className="text-muted-foreground">{vibe}</span> : null}
               {vibe_alignment_score != null ? (
                 <>
@@ -214,7 +214,7 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
         />
         {verdict ? (
           <div className="rounded-card border border-border bg-card p-6 shadow-paper">
-            <p className="mb-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            <p className="mb-3 text-micro uppercase tracking-label-wide text-muted-foreground">
               Stylist's Verdict
             </p>
             <p className="font-serif text-xl leading-relaxed">{verdict}</p>
@@ -223,7 +223,7 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
         <div className="grid gap-4 md:grid-cols-2">
           {color_match ? (
             <div className="rounded-card border border-border bg-card p-6 shadow-paper">
-              <p className="mb-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+              <p className="mb-2 text-micro uppercase tracking-label-wide text-muted-foreground">
                 Color Match
               </p>
               <p className="text-sm leading-relaxed">{color_match}</p>
@@ -231,7 +231,7 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
           ) : null}
           {silhouette ? (
             <div className="rounded-card border border-border bg-card p-6 shadow-paper">
-              <p className="mb-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+              <p className="mb-2 text-micro uppercase tracking-label-wide text-muted-foreground">
                 Silhouette
               </p>
               <p className="text-sm leading-relaxed">{silhouette}</p>
@@ -356,7 +356,7 @@ function History() {
               {selectedAnalysis ? historyItemTitle(selectedAnalysis) : "Saved Look"}
             </DialogTitle>
             {selected ? (
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              <p className="text-xs uppercase tracking-label text-muted-foreground">
                 {new Date(selected.created_at).toLocaleString()}
               </p>
             ) : null}
@@ -372,7 +372,7 @@ function History() {
                 variant="outline"
                 disabled={deleting}
                 onClick={() => deleteOutfit(selected)}
-                className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px] text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                className="rounded-full h-10 px-5 uppercase tracking-label text-label text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
               >
                 {deleting ? (
                   <Loader2 className="size-4 mr-2 animate-spin" aria-hidden="true" />
@@ -384,7 +384,7 @@ function History() {
               {selectedAnalysis ? (
                 <Button
                   variant="outline"
-                  className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"
+                  className="rounded-full h-10 px-5 uppercase tracking-label text-label"
                   onClick={() => {
                     openConcierge({
                       lookId: selected.id,

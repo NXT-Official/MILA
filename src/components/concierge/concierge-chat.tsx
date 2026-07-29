@@ -391,7 +391,7 @@ export function ConciergeChat({
                 type="button"
                 disabled={sending}
                 onClick={() => send(p)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 bg-background/70 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 bg-background/70 px-3 py-1.5 text-label text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
               >
                 <Wand2 className="size-3 text-accent" strokeWidth={1.75} aria-hidden="true" />
                 {p}
@@ -405,7 +405,7 @@ export function ConciergeChat({
                 type="button"
                 onClick={toggleArchive}
                 aria-expanded={archiveOpen}
-                className="flex w-full items-center justify-between text-[10px] uppercase tracking-[0.32em] text-muted-foreground hover:text-foreground transition-colors py-1"
+                className="flex w-full items-center justify-between text-micro uppercase tracking-label-xwide text-muted-foreground hover:text-foreground transition-colors py-1"
               >
                 Ask about a look from your archive
                 {archiveOpen ? (
@@ -433,7 +433,7 @@ export function ConciergeChat({
                       <div className="size-16 overflow-hidden rounded-xl bg-muted ring-1 ring-foreground/10 transition group-hover:ring-foreground/30">
                         <LookThumbnail imageUrl={o.image_url} title={o.title} />
                       </div>
-                      <p className="mt-1 text-[10px] leading-tight text-muted-foreground line-clamp-1">
+                      <p className="mt-1 text-micro leading-tight text-muted-foreground line-clamp-1">
                         {o.title}
                       </p>
                     </button>
@@ -450,7 +450,7 @@ export function ConciergeChat({
                 alt="Attached image preview"
                 className="size-10 rounded-lg object-cover"
               />
-              <p className="max-w-40 truncate text-[11px] text-muted-foreground">
+              <p className="max-w-40 truncate text-label text-muted-foreground">
                 {attachment.file.name}
               </p>
               <button
@@ -467,7 +467,7 @@ export function ConciergeChat({
           {listening && (
             <p
               role="status"
-              className="flex items-center gap-2 px-1 text-[10px] uppercase tracking-[0.32em] text-accent"
+              className="flex items-center gap-2 px-1 text-micro uppercase tracking-label-xwide text-accent"
             >
               <span className="relative flex size-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
@@ -577,7 +577,7 @@ export function AnchoredLookCard({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium leading-tight truncate">{look.title}</p>
-        <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mt-0.5 truncate">
+        <p className="text-micro uppercase tracking-label-wide text-muted-foreground mt-0.5 truncate">
           {look.source}
         </p>
       </div>
@@ -630,7 +630,7 @@ function MessageBubble({
         </div>
       )}
       <div className={cn("max-w-[80%] flex flex-col gap-1", isUser && "items-end")}>
-        <p className="text-[9px] uppercase tracking-[0.32em] text-muted-foreground">
+        <p className="text-nano uppercase tracking-label-xwide text-muted-foreground">
           {isUser ? "You" : "Mila"} · {formatTime(msg.ts)}
         </p>
         <div
@@ -651,7 +651,7 @@ function MessageBubble({
           {msg.content}
         </div>
         {msg.failed && (
-          <div role="alert" className="flex items-center gap-2 text-[11px] text-destructive">
+          <div role="alert" className="flex items-center gap-2 text-label text-destructive">
             Not sent.
             <button
               type="button"

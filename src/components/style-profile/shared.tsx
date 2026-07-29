@@ -23,7 +23,7 @@ export function SyncBadge({ status }: { status: "idle" | "syncing" | "synced" | 
   return (
     <div className="hidden sm:flex items-center gap-2 px-3 py-2 backdrop-blur-xl bg-white/40 dark:bg-white/5 border border-foreground/10 rounded-full shrink-0">
       <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-      <span className="text-[9px] uppercase tracking-[0.34em] text-foreground/75">{label}</span>
+      <span className="text-nano uppercase tracking-label-xwide text-foreground/75">{label}</span>
     </div>
   );
 }
@@ -48,7 +48,7 @@ export function PerspectiveSwitcher({
             key={o.id}
             type="button"
             onClick={() => onChange(o.id)}
-            className="relative px-5 sm:px-7 py-2.5 text-[10px] uppercase tracking-[0.34em] z-10"
+            className="relative px-5 sm:px-7 py-2.5 text-micro uppercase tracking-label-xwide z-10"
           >
             {active && (
               <motion.span
@@ -81,10 +81,10 @@ export function DossierField({
   return (
     <section className="space-y-4">
       <div className="space-y-1.5">
-        {eyebrow && <p className="text-[9px] uppercase tracking-[0.42em] text-accent">{eyebrow}</p>}
+        {eyebrow && <p className="text-nano uppercase tracking-label-max text-accent">{eyebrow}</p>}
         <h3 className="font-serif text-2xl tracking-tight text-foreground">{title}</h3>
         {caption && (
-          <p className="text-[12px] text-muted-foreground leading-relaxed max-w-xl">{caption}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">{caption}</p>
         )}
       </div>
       {children}
@@ -118,13 +118,13 @@ export function DossierAccordion({
       <AccordionTrigger className="py-6 hover:no-underline">
         <div className="flex items-center justify-between w-full gap-3">
           <div className="flex flex-col items-start text-left gap-1">
-            <p className="text-[10px] uppercase tracking-[0.42em] text-accent">
+            <p className="text-micro uppercase tracking-label-max text-accent">
               {eyebrow.split(" / ")[0]}
             </p>
             <h2 className="font-serif text-xl sm:text-2xl tracking-tight text-foreground">
               {eyebrow.split(" / ")[1] ?? eyebrow}
             </h2>
-            <p className="text-[11px] text-muted-foreground leading-relaxed max-w-md mt-1">
+            <p className="text-label text-muted-foreground leading-relaxed max-w-md mt-1">
               {caption}
             </p>
           </div>
@@ -137,7 +137,7 @@ export function DossierAccordion({
           {partial && (
             <span className="inline-flex items-center gap-1.5 text-muted-foreground shrink-0">
               <Circle className="size-4" />
-              <span className="text-[10px] uppercase tracking-[0.22em]">
+              <span className="text-micro uppercase tracking-label-wide">
                 {filled}/{total}
               </span>
             </span>
@@ -169,7 +169,7 @@ export function PillRow({
             onClick={() => onSelect(o)}
             className={[
               "group inline-flex items-center gap-2 px-4 py-2.5 border transition-all duration-200",
-              "text-[11px] uppercase tracking-[0.22em] rounded-full",
+              "text-label uppercase tracking-label-wide rounded-full",
               active
                 ? "bg-accent-soft border-accent text-ink"
                 : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-[#C9A96E]/40",
@@ -215,10 +215,10 @@ export function DisruptiveToneCard({ name, height = 56 }: { name: string; height
     >
       <div className="w-1/4 shrink-0" style={{ backgroundColor: hex }} />
       <div className="flex-1 flex items-center justify-between gap-3 px-4 py-3">
-        <span className="text-[11px] uppercase tracking-[0.22em] text-foreground font-medium leading-tight">
+        <span className="text-label uppercase tracking-label-wide text-foreground font-medium leading-tight">
           {name}
         </span>
-        <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-destructive/15 text-destructive text-[9px] uppercase tracking-[0.22em] font-semibold">
+        <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-destructive/15 text-destructive text-nano uppercase tracking-label-wide font-semibold">
           Avoid
         </span>
       </div>
@@ -244,7 +244,7 @@ export function BeautyPillTray({
             onClick={() => onToggle(tag)}
             className={[
               "inline-flex items-center gap-2 px-4 py-2.5 border rounded-full transition-all duration-200",
-              "text-[11px] uppercase tracking-[0.22em]",
+              "text-label uppercase tracking-label-wide",
               isActive
                 ? "bg-accent-soft border-accent text-ink"
                 : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-[#C9A96E]/40",
@@ -272,7 +272,7 @@ export function CardMatrix({
     <section className="space-y-5">
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
-        <p className="text-[10px] uppercase tracking-[0.42em] text-accent whitespace-nowrap">
+        <p className="text-micro uppercase tracking-label-max text-accent whitespace-nowrap">
           {label}
         </p>
         <span className="h-px flex-1 bg-border" />
@@ -295,7 +295,7 @@ export function CardMatrix({
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
                   <p
-                    className={`text-[12px] uppercase tracking-[0.26em] ${active ? "text-foreground" : "text-foreground/85"}`}
+                    className={`text-xs uppercase tracking-label-wide ${active ? "text-foreground" : "text-foreground/85"}`}
                   >
                     {o.title}
                   </p>

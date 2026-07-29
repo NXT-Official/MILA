@@ -27,15 +27,13 @@ export function CatalogTitleCell({
         {archived && (
           <Badge
             variant="outline"
-            className="border-stone/40 text-stone text-[9px] uppercase tracking-[0.18em]"
+            className="border-stone/40 text-stone text-nano uppercase tracking-label"
           >
             Archived
           </Badge>
         )}
       </div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-stone mt-0.5 truncate">
-        {slug}
-      </div>
+      <div className="text-micro uppercase tracking-label text-stone mt-0.5 truncate">{slug}</div>
     </div>
   );
 }

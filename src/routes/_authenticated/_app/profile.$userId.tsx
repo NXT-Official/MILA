@@ -93,7 +93,7 @@ function MemberProfilePage() {
             {data.profile.username && (
               <p className="mt-1 text-sm text-stone">@{data.profile.username}</p>
             )}
-            <div className="mt-3 flex flex-wrap gap-2 text-[9px] uppercase tracking-[0.18em] text-ink">
+            <div className="mt-3 flex flex-wrap gap-2 text-nano uppercase tracking-label text-ink">
               <span className="rounded-full border border-porcelain/70 bg-background/60 px-2.5 py-1">
                 Season · {data.profile.color_season ?? "Unset"}
               </span>
@@ -104,7 +104,7 @@ function MemberProfilePage() {
                 Hair · {data.profile.hair_type ?? "—"}
               </span>
             </div>
-            <p className="mt-3 flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-stone">
+            <p className="mt-3 flex items-center gap-1.5 text-nano uppercase tracking-label text-stone">
               <CalendarDays className="size-3" aria-hidden="true" />
               Joined {new Date(data.profile.created_at).toLocaleDateString()}
             </p>
@@ -114,11 +114,11 @@ function MemberProfilePage() {
 
       <Tabs value={tab} onValueChange={(value) => setTab(value as "feed" | "hidden")}>
         <TabsList className="h-10">
-          <TabsTrigger value="feed" className="gap-1.5 text-xs uppercase tracking-[0.18em]">
+          <TabsTrigger value="feed" className="gap-1.5 text-xs uppercase tracking-label">
             <Images className="size-3.5" aria-hidden="true" /> Feed ({visiblePosts.length})
           </TabsTrigger>
           {data.can_view_hidden && (
-            <TabsTrigger value="hidden" className="gap-1.5 text-xs uppercase tracking-[0.18em]">
+            <TabsTrigger value="hidden" className="gap-1.5 text-xs uppercase tracking-label">
               <EyeOff className="size-3.5" aria-hidden="true" /> Hidden Feed ({hiddenPosts.length})
             </TabsTrigger>
           )}
@@ -131,7 +131,7 @@ function MemberProfilePage() {
             <div key={post.id} className="space-y-3">
               {post.hidden && (
                 <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3">
-                  <p className="text-[9px] uppercase tracking-[0.22em] text-destructive">
+                  <p className="text-nano uppercase tracking-label-wide text-destructive">
                     Hidden post
                   </p>
                   <p className="mt-1 text-sm text-stone">
@@ -151,7 +151,7 @@ function MemberProfilePage() {
                       rows={3}
                       placeholder="Caption…"
                     />
-                    <div className="flex justify-end gap-4 text-[10px] uppercase tracking-[0.28em]">
+                    <div className="flex justify-end gap-4 text-micro uppercase tracking-label-xwide">
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
@@ -171,7 +171,7 @@ function MemberProfilePage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex justify-end gap-4 text-[10px] uppercase tracking-[0.28em]">
+                  <div className="flex justify-end gap-4 text-micro uppercase tracking-label-xwide">
                     <button
                       type="button"
                       onClick={() => {

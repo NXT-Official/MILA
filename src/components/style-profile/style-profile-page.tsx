@@ -435,7 +435,7 @@ export function StyleProfile() {
                 <p className="atelier-kicker">Digital Style Dossier · Atelier Record</p>
               </div>
               <h1 className="atelier-title mt-4">Your signature blueprint.</h1>
-              <p className="text-[11px] uppercase tracking-[0.32em] text-accent font-semibold mt-4">
+              <p className="text-label uppercase tracking-label-xwide text-accent font-semibold mt-4">
                 A living portrait — kept in sync, automatically.
               </p>
             </div>
@@ -599,7 +599,7 @@ export function StyleProfile() {
                     <div key={group.season}>
                       <div className="flex items-center gap-3">
                         <span className="h-px w-6 bg-foreground/30" />
-                        <p className="text-[10px] uppercase tracking-[0.42em] text-foreground/70">
+                        <p className="text-micro uppercase tracking-label-max text-foreground/70">
                           {group.season}
                         </p>
                         <span className="h-px flex-1 bg-foreground/10" />
@@ -627,11 +627,11 @@ export function StyleProfile() {
                                   : "border-border hover:border-foreground/40"
                               }`}
                             >
-                              <p className="text-[11px] uppercase tracking-[0.22em] text-foreground flex items-center justify-between gap-2">
+                              <p className="text-label uppercase tracking-label-wide text-foreground flex items-center justify-between gap-2">
                                 <span>{tile.label}</span>
                                 {active && <Check className="size-3" />}
                               </p>
-                              <p className="mt-1 text-[10px] text-muted-foreground leading-relaxed">
+                              <p className="mt-1 text-micro text-muted-foreground leading-relaxed">
                                 {SEASONS_MASTER_DATA[tile.key].subSeason}
                               </p>
                             </button>
@@ -666,7 +666,7 @@ export function StyleProfile() {
                     )}
                     Confirm Selection
                   </Button>
-                  <p className="mt-3 text-[10px] uppercase tracking-[0.28em] text-accent text-center">
+                  <p className="mt-3 text-micro uppercase tracking-label-xwide text-accent text-center">
                     {knownTileId
                       ? "Loads from our atelier library · Saved to your profile"
                       : "Select a season above to confirm."}
@@ -687,7 +687,7 @@ export function StyleProfile() {
                         <p className="font-serif text-lg sm:text-xl tracking-tight mt-1">
                           Not sure of your season? Let's find it together.
                         </p>
-                        <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                        <p className="text-label text-muted-foreground mt-1 leading-relaxed">
                           Find your light, then I'll read your true tones live.
                         </p>
                       </div>
@@ -703,7 +703,7 @@ export function StyleProfile() {
                         </Button>
                         <button
                           onClick={() => setManualOpen((v) => !v)}
-                          className="mt-4 text-[10px] uppercase tracking-[0.28em] text-accent hover:text-foreground transition-colors underline-offset-4 hover:underline"
+                          className="mt-4 text-micro uppercase tracking-label-xwide text-accent hover:text-foreground transition-colors underline-offset-4 hover:underline"
                         >
                           {manualOpen ? "Hide manual override" : "Or set your season by hand"}
                         </button>
@@ -712,7 +712,7 @@ export function StyleProfile() {
                         <div className="mt-6 animate-fade-in space-y-8 px-1 sm:px-2">
                           <div className="bg-card p-8 rounded-card border border-border shadow-paper max-w-2xl mx-auto space-y-8">
                             <div className="text-center space-y-2">
-                              <span className="text-[0.18em] uppercase tracking-[0.3em] text-stone text-xs block">
+                              <span className="text-[0.18em] uppercase tracking-label-xwide text-stone text-xs block">
                                 Private Consultation
                               </span>
                               <h3 className="font-serif text-2xl text-ink tracking-wide">
@@ -725,7 +725,7 @@ export function StyleProfile() {
                             </div>
                             <div className="space-y-6">
                               <div className="space-y-3">
-                                <label className="text-xs uppercase tracking-[0.2em] text-ink font-medium block">
+                                <label className="text-xs uppercase tracking-label text-ink font-medium block">
                                   Your Prevailing Season
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
@@ -771,7 +771,7 @@ export function StyleProfile() {
                                 </div>
                               </div>
                               <div className="space-y-3 pt-4 border-t border-porcelain/40">
-                                <label className="text-xs uppercase tracking-[0.2em] text-ink font-medium block">
+                                <label className="text-xs uppercase tracking-label text-ink font-medium block">
                                   The Depth of Contrast
                                 </label>
                                 <p className="text-xs text-stone mb-2">
@@ -807,7 +807,7 @@ export function StyleProfile() {
                                         <span className="text-xs uppercase tracking-wider font-semibold text-ink block">
                                           {contrast.name}
                                         </span>
-                                        <span className="text-[10px] text-stone mt-0.5 block">
+                                        <span className="text-micro text-stone mt-0.5 block">
                                           {contrast.sub}
                                         </span>
                                       </button>
@@ -875,7 +875,7 @@ export function StyleProfile() {
                 <button
                   type="button"
                   onClick={() => setDashCalibrateOpen(true)}
-                  className="text-[10px] uppercase tracking-[0.42em] text-accent hover:text-foreground transition-colors underline-offset-[6px] hover:underline"
+                  className="text-micro uppercase tracking-label-max text-accent hover:text-foreground transition-colors underline-offset-[6px] hover:underline"
                 >
                   Fine-tune your palette
                 </button>
@@ -888,13 +888,13 @@ export function StyleProfile() {
                 className="bg-ink text-surface border-t border-surface/10 rounded-t-2xl max-h-[85vh] overflow-y-auto"
               >
                 <SheetHeader className="text-left">
-                  <p className="text-[9px] uppercase tracking-[0.42em] text-surface/50">
+                  <p className="text-nano uppercase tracking-label-max text-surface/50">
                     Seoul Atelier
                   </p>
                   <SheetTitle className="font-serif text-2xl tracking-tight text-surface">
                     Already know your seasonal palette? Choose your look below.
                   </SheetTitle>
-                  <SheetDescription className="text-[11px] text-surface/60 leading-relaxed">
+                  <SheetDescription className="text-label text-surface/60 leading-relaxed">
                     Cameras can read light and shadow differently than the eye. Tap your true
                     sub-season — your palette, beauty notes, and colors to avoid will update from
                     the atelier library, and your confidence chip will lock to 100% Studio Tuned.
@@ -905,7 +905,7 @@ export function StyleProfile() {
                     <div key={group.season}>
                       <div className="flex items-center gap-3">
                         <span className="h-px w-6 bg-surface/30" />
-                        <p className="text-[10px] uppercase tracking-[0.38em] text-surface/70">
+                        <p className="text-micro uppercase tracking-label-max text-surface/70">
                           {group.season}
                         </p>
                       </div>
@@ -925,11 +925,11 @@ export function StyleProfile() {
                                   : "border-surface/15 hover:border-surface/60 bg-surface/2 hover:bg-surface/6"
                               }`}
                             >
-                              <p className="text-[11px] uppercase tracking-[0.22em] text-surface flex items-center justify-between gap-2">
+                              <p className="text-label uppercase tracking-label-wide text-surface flex items-center justify-between gap-2">
                                 {k.label}
                                 {active && <Check className="size-3 text-surface/80" />}
                               </p>
-                              <p className="mt-1 text-[10px] text-surface/55 leading-relaxed line-clamp-2">
+                              <p className="mt-1 text-micro text-surface/55 leading-relaxed line-clamp-2">
                                 {SEASONS_MASTER_DATA[k.key].subSeason}
                               </p>
                             </button>

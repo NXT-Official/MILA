@@ -88,7 +88,7 @@ function ConciergePage() {
           New chat
         </button>
       </div>
-      <p className="px-6 pt-2 text-[10px] uppercase tracking-[0.32em] text-muted-foreground">
+      <p className="px-6 pt-2 text-micro uppercase tracking-label-xwide text-muted-foreground">
         Recents
       </p>
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
@@ -159,7 +159,7 @@ function ConciergePage() {
                 <PanelLeft className="size-5" strokeWidth={1.75} aria-hidden="true" />
               </button>
               <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-[0.42em] text-muted-foreground/80 font-medium">
+                <p className="text-micro uppercase tracking-label-max text-muted-foreground/80 font-medium">
                   Mila's Insights
                 </p>
                 <h1 className="font-serif text-2xl leading-tight tracking-[-0.01em] truncate">
@@ -172,7 +172,7 @@ function ConciergePage() {
                 <Badge
                   key={b}
                   variant="outline"
-                  className="rounded-full px-3 py-0.5 text-[10px] font-normal uppercase tracking-[0.22em] border-foreground/15 bg-background/40"
+                  className="rounded-full px-3 py-0.5 text-micro font-normal uppercase tracking-label-wide border-foreground/15 bg-background/40"
                 >
                   {b}
                 </Badge>

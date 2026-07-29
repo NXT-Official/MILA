@@ -69,12 +69,12 @@ export function BodyTypeQuiz({
     <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-0 sm:p-4">
       <div className="bg-card w-full sm:border sm:border-border max-w-xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto p-6 sm:p-8 flex flex-col shadow-2xl">
         <div className="flex justify-between items-center pb-4 mb-6 border-b border-border/60">
-          <p className="text-[10px] uppercase tracking-[0.32em] text-accent">
+          <p className="text-micro uppercase tracking-label-xwide text-accent">
             Step {step} of 3 · Find your silhouette
           </p>
           <button
             onClick={onClose}
-            className="text-[10px] uppercase tracking-widest text-accent hover:text-foreground transition-colors"
+            className="text-micro uppercase tracking-widest text-accent hover:text-foreground transition-colors"
           >
             Close
           </button>
@@ -100,7 +100,7 @@ export function BodyTypeQuiz({
                     className={`w-full text-left border p-4 sm:p-5 rounded-none transition-all ${active ? "border-foreground bg-foreground/4" : "border-border hover:border-foreground/40"}`}
                   >
                     <p className="text-sm font-medium">{c.label}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                    <p className="text-label text-muted-foreground mt-1 leading-relaxed">
                       {c.hint}
                     </p>
                   </button>
@@ -139,7 +139,7 @@ export function BodyTypeQuiz({
                     className={`w-full text-left border p-4 sm:p-5 rounded-none transition-all ${active ? "border-foreground bg-foreground/4" : "border-border hover:border-foreground/40"}`}
                   >
                     <p className="text-sm font-medium">{c.label}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                    <p className="text-label text-muted-foreground mt-1 leading-relaxed">
                       {c.hint}
                     </p>
                   </button>
@@ -168,7 +168,7 @@ export function BodyTypeQuiz({
 
         {step === 3 && result && (
           <div className="space-y-5 text-center animate-fade-in">
-            <p className="text-[10px] uppercase tracking-[0.32em] text-accent">Your silhouette</p>
+            <p className="text-micro uppercase tracking-label-xwide text-accent">Your silhouette</p>
             <h3 className="font-serif text-3xl sm:text-4xl tracking-tight">{result}</h3>
             <p className="text-xs text-muted-foreground italic max-w-sm mx-auto">
               {BODY_TYPE_INFO[result].tagline}

@@ -132,14 +132,14 @@ export function ClimateWidget({
         </span>
         <div className="leading-tight">
           <p className="text-xs font-medium">{statusLabel}</p>
-          <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+          <p className="text-micro uppercase tracking-label-wide text-muted-foreground">
             {value?.location ?? "—"}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-2">
         <Select value={hubId} onValueChange={selectHub}>
-          <SelectTrigger className="h-8 rounded-full text-[11px] uppercase tracking-[0.18em] bg-background/60">
+          <SelectTrigger className="h-8 rounded-full text-label uppercase tracking-label bg-background/60">
             <SelectValue placeholder="Pick a hub">
               {HUBS.find((h) => h.id === hubId)?.city.toUpperCase()}
             </SelectValue>

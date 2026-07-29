@@ -31,7 +31,7 @@ function LoginPage() {
         <div className="text-center max-w-md">
           <Link
             to="/login"
-            className="inline-flex items-center gap-2.5 font-serif text-2xl tracking-[0.32em]"
+            className="inline-flex items-center gap-2.5 font-serif text-2xl tracking-label-xwide"
           >
             <img src="/favicon.svg" alt="" className="size-7" />
             MILA

@@ -22,7 +22,7 @@ const REASONS = [
 export function WelcomeStep({ onBegin }: { onBegin: () => void }) {
   return (
     <div className="py-6 sm:py-10">
-      <p className="text-xs uppercase tracking-[0.16em] text-accent font-semibold">
+      <p className="text-xs uppercase tracking-label-tight text-accent font-semibold">
         Digital Style Dossier
       </p>
       <h1

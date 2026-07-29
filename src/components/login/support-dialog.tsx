@@ -54,7 +54,7 @@ export function SupportDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <div className="flex items-center gap-5 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-5 text-label text-muted-foreground">
         <DialogTrigger asChild>
           <button
             type="button"

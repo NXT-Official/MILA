@@ -100,7 +100,9 @@ export function ColorPathStep({
           <div role="radiogroup" aria-label="Known seasonal palette" className="mt-4 space-y-6">
             {KNOWN_SEASON_GROUPS.map((group) => (
               <div key={group.season}>
-                <p className="text-[10px] uppercase tracking-[0.32em] text-muted">{group.season}</p>
+                <p className="text-micro uppercase tracking-label-xwide text-muted">
+                  {group.season}
+                </p>
                 <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {group.tiles.map((tile) => {
                     const active = knownTileId === tile.id;
@@ -121,7 +123,7 @@ export function ColorPathStep({
                           {tile.label}
                           {active && <Check className="size-3.5" aria-hidden="true" />}
                         </span>
-                        <span className="mt-1 block text-[11px] text-muted">
+                        <span className="mt-1 block text-label text-muted">
                           {SEASONS_MASTER_DATA[tile.key].subSeason}
                         </span>
                       </button>

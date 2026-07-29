@@ -249,16 +249,12 @@ function Dashboard() {
             <div className="w-full sm:max-w-xs">
               <p className="atelier-kicker mb-2">Today's Mood</p>
               <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
-                <SelectTrigger className="h-11 rounded-full border-border bg-card/60 backdrop-blur uppercase tracking-[0.18em] text-[11px]">
+                <SelectTrigger className="h-11 rounded-full border-border bg-card/60 backdrop-blur uppercase tracking-label text-label">
                   <SelectValue placeholder="Select an occasion" />
                 </SelectTrigger>
                 <SelectContent>
                   {VIBES.map((v) => (
-                    <SelectItem
-                      key={v}
-                      value={v}
-                      className="uppercase tracking-[0.18em] text-[11px]"
-                    >
+                    <SelectItem key={v} value={v} className="uppercase tracking-label text-label">
                       {v}
                     </SelectItem>
                   ))}
@@ -268,7 +264,7 @@ function Dashboard() {
             <Button
               onClick={generateLook}
               disabled={generating || !profileComplete || !climate || imageLoading}
-              className="w-full sm:w-auto h-12 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90 uppercase tracking-[0.2em] text-xs whitespace-normal text-center leading-snug"
+              className="w-full sm:w-auto h-12 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90 uppercase tracking-label text-xs whitespace-normal text-center leading-snug"
             >
               {generating ? (
                 <>
@@ -305,7 +301,7 @@ function Dashboard() {
                 animate="visible"
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 backdrop-blur px-3 py-1 text-[10px] uppercase tracking-[0.22em]">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 backdrop-blur px-3 py-1 text-micro uppercase tracking-label-wide">
                     <span className="text-muted-foreground">{vibe}</span>
                     <span className="h-1 w-1 rounded-full bg-foreground/40" />
                     <span className="font-medium">Vibe fit {look.vibe_alignment_score}/10</span>
@@ -345,7 +341,7 @@ function Dashboard() {
                     variant="outline"
                     onClick={saveLookToHistory}
                     disabled={savingLook || lookSaved || !look.imageDataUri}
-                    className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"
+                    className="rounded-full h-10 px-5 uppercase tracking-label text-label"
                   >
                     {lookSaved ? (
                       <>
@@ -365,7 +361,7 @@ function Dashboard() {
                     variant="ghost"
                     onClick={retryImage}
                     disabled={imageLoading || generating}
-                    className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"
+                    className="rounded-full h-10 px-5 uppercase tracking-label text-label"
                   >
                     {imageLoading ? (
                       <>
@@ -381,7 +377,7 @@ function Dashboard() {
                     variant="ghost"
                     onClick={generateLook}
                     disabled={imageLoading}
-                    className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"
+                    className="rounded-full h-10 px-5 uppercase tracking-label text-label"
                   >
                     <Sparkles className="size-4 mr-2 text-accent" /> Try another
                   </Button>
@@ -396,7 +392,7 @@ function Dashboard() {
                           source: "Today's look",
                         })
                       }
-                      className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"
+                      className="rounded-full h-10 px-5 uppercase tracking-label text-label"
                     >
                       <Sparkles className="size-4 mr-2 text-accent" /> Ask Mila about this look
                     </Button>

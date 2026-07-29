@@ -26,13 +26,13 @@ export function PostCanvas({ post }: { post: FeedPost }) {
               </Link>
               {post.author_verified && <VerifiedBadge />}
             </span>
-            <p className="text-[9px] uppercase tracking-[0.3em] text-stone">
+            <p className="text-nano uppercase tracking-label-xwide text-stone">
               {relativeTime(post.created_at)}
             </p>
           </div>
         </div>
         {post.is_self && (
-          <span className="text-[9px] uppercase tracking-[0.32em] text-stone px-2 py-0.5 rounded-full border border-porcelain/60">
+          <span className="text-nano uppercase tracking-label-xwide text-stone px-2 py-0.5 rounded-full border border-porcelain/60">
             Today's OOTD
           </span>
         )}
@@ -47,7 +47,7 @@ export function PostCanvas({ post }: { post: FeedPost }) {
             loading="lazy"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-stone text-[10px] uppercase tracking-[0.3em]">
+          <div className="absolute inset-0 flex items-center justify-center text-stone text-micro uppercase tracking-label-xwide">
             Image unavailable
           </div>
         )}
@@ -73,7 +73,7 @@ export function PostCanvas({ post }: { post: FeedPost }) {
         {post.generated_look_id && (
           <Link
             to="/history"
-            className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.28em] text-stone hover:text-ink transition-colors"
+            className="inline-flex items-center gap-1.5 text-micro uppercase tracking-label-xwide text-stone hover:text-ink transition-colors"
           >
             <Sparkles className="size-3" strokeWidth={1.75} />
             View AI Blueprint

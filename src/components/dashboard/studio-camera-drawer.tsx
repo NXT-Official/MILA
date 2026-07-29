@@ -184,11 +184,11 @@ export function StudioCameraDrawer({
               <button
                 type="button"
                 onClick={() => !postingSubmitting && setPostingOpen(false)}
-                className="inline-flex items-center gap-1.5 mx-auto text-[10px] uppercase tracking-[0.28em] text-stone hover:text-ink"
+                className="inline-flex items-center gap-1.5 mx-auto text-micro uppercase tracking-label-xwide text-stone hover:text-ink"
               >
                 <ArrowLeft className="size-3" /> Back to Lens
               </button>
-              <p className="text-[10px] uppercase tracking-[0.42em] text-muted-foreground">
+              <p className="text-micro uppercase tracking-label-max text-muted-foreground">
                 Daily Drop
               </p>
               <SheetTitle className="font-serif text-3xl md:text-4xl leading-tight">
@@ -209,7 +209,7 @@ export function StudioCameraDrawer({
         ) : (
           <>
             <SheetHeader className="text-center space-y-3 mb-6">
-              <p className="text-[10px] uppercase tracking-[0.42em] text-muted-foreground">
+              <p className="text-micro uppercase tracking-label-max text-muted-foreground">
                 The Studio Lens
               </p>
               <SheetTitle className="font-serif text-3xl md:text-4xl leading-tight">
@@ -230,13 +230,13 @@ export function StudioCameraDrawer({
                   <Camera className="size-4 text-ink" strokeWidth={1.75} />
                 </span>
                 <span className="flex flex-col">
-                  <span className="text-[9px] uppercase tracking-[0.32em] text-stone">
+                  <span className="text-nano uppercase tracking-label-xwide text-stone">
                     Daily Drop
                   </span>
                   <span className="font-serif text-base text-ink">Post Today's OOTD</span>
                 </span>
               </span>
-              <span className="text-[10px] uppercase tracking-[0.28em] text-stone group-hover:text-ink">
+              <span className="text-micro uppercase tracking-label-xwide text-stone group-hover:text-ink">
                 Dual capture →
               </span>
             </button>
@@ -269,7 +269,7 @@ export function StudioCameraDrawer({
                     if (m.id !== "dupe-hunter") resetDupeState();
                   }}
                   className={cn(
-                    "relative z-10 py-2.5 text-[10px] uppercase tracking-[0.28em] rounded-full transition-colors duration-300",
+                    "relative z-10 py-2.5 text-micro uppercase tracking-label-xwide rounded-full transition-colors duration-300",
                     active
                       ? "text-ink font-semibold"
                       : "text-muted-foreground hover:text-foreground",
@@ -327,7 +327,7 @@ export function StudioCameraDrawer({
                         strokeWidth={1.25}
                       />
                     </div>
-                    <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">
+                    <p className="text-micro uppercase tracking-label-xwide text-muted-foreground">
                       Scanning for luxury attributes…
                     </p>
                   </div>
@@ -344,7 +344,7 @@ export function StudioCameraDrawer({
                         />
                       )}
                       <div className="min-w-0">
-                        <p className="text-[9px] uppercase tracking-[0.32em] text-muted-foreground">
+                        <p className="text-nano uppercase tracking-label-xwide text-muted-foreground">
                           Inspiration
                         </p>
                         <p className="font-serif text-base text-ink truncate">
@@ -354,7 +354,7 @@ export function StudioCameraDrawer({
                           {dupeResult.inspiration.silhouette_tags.slice(0, 3).map((t) => (
                             <span
                               key={t}
-                              className="text-[9px] uppercase tracking-[0.2em] text-stone px-1.5 py-0.5 rounded-full border border-porcelain/60"
+                              className="text-nano uppercase tracking-label text-stone px-1.5 py-0.5 rounded-full border border-porcelain/60"
                             >
                               {t}
                             </span>
@@ -364,13 +364,13 @@ export function StudioCameraDrawer({
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">
+                      <p className="text-micro uppercase tracking-label-xwide text-muted-foreground">
                         {dupeResult.dupes.length} budget alternatives
                       </p>
                       <button
                         type="button"
                         onClick={resetDupeState}
-                        className="text-[10px] uppercase tracking-[0.22em] text-stone hover:text-ink"
+                        className="text-micro uppercase tracking-label-wide text-stone hover:text-ink"
                       >
                         Hunt again
                       </button>
@@ -405,7 +405,7 @@ export function StudioCameraDrawer({
                                     )}
                                   >
                                     <ImageOff className="size-5" strokeWidth={1.5} />
-                                    <span className="text-[10px] uppercase tracking-[0.3em]">
+                                    <span className="text-micro uppercase tracking-label-xwide">
                                       Image not available
                                     </span>
                                   </div>
@@ -415,12 +415,12 @@ export function StudioCameraDrawer({
                                     <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
                                       {d.title}
                                     </p>
-                                    <p className="mt-1 text-[10px] uppercase tracking-[0.24em] text-stone">
+                                    <p className="mt-1 text-micro uppercase tracking-label-wide text-stone">
                                       {formatPrice(d.price, d.currency)}
                                     </p>
                                   </div>
                                   {d.match_reasons[0] && (
-                                    <p className="text-[10px] text-muted-foreground line-clamp-2">
+                                    <p className="text-micro text-muted-foreground line-clamp-2">
                                       {d.match_reasons[0]}
                                     </p>
                                   )}
@@ -428,7 +428,7 @@ export function StudioCameraDrawer({
                                     href={d.affiliate_link}
                                     target="_blank"
                                     rel="noopener noreferrer sponsored"
-                                    className="inline-flex items-center justify-center gap-1.5 h-9 rounded-full bg-ink text-atelier-ivory text-[10px] uppercase tracking-[0.28em] hover:bg-ink/90 transition-colors"
+                                    className="inline-flex items-center justify-center gap-1.5 h-9 rounded-full bg-ink text-atelier-ivory text-micro uppercase tracking-label-xwide hover:bg-ink/90 transition-colors"
                                   >
                                     Shop the Dupe{" "}
                                     <ExternalLink className="size-3" strokeWidth={1.75} />

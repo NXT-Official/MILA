@@ -29,7 +29,7 @@ export function getMembersColumns({
           <div className="font-serif text-sm text-ink truncate">
             {row.original.full_name || row.original.username || "Unnamed"}
           </div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-stone mt-0.5">
+          <div className="text-micro uppercase tracking-label text-stone mt-0.5">
             {row.original.username ? `@${row.original.username}` : "—"}
           </div>
         </div>
@@ -83,7 +83,7 @@ export function getMembersColumns({
           <div className="flex justify-end">
             <Badge
               variant="outline"
-              className="border-destructive/50 text-destructive text-[9px] uppercase tracking-[0.18em]"
+              className="border-destructive/50 text-destructive text-nano uppercase tracking-label"
             >
               Suspended
             </Badge>

@@ -24,7 +24,7 @@ export function DesktopNav({
             key={it.to}
             to={it.to}
             className={cn(
-              "text-xs uppercase tracking-[0.2em] transition-colors",
+              "text-xs uppercase tracking-label transition-colors",
               active ? "text-accent" : "text-muted hover:text-ink",
             )}
           >
@@ -35,14 +35,14 @@ export function DesktopNav({
       <button
         type="button"
         onClick={onOpenLens}
-        className="text-xs uppercase tracking-[0.2em] text-muted hover:text-ink transition-colors"
+        className="text-xs uppercase tracking-label text-muted hover:text-ink transition-colors"
       >
         Lens
       </button>
       <Link
         to="/style-profile"
         className={cn(
-          "text-xs uppercase tracking-[0.2em] transition-colors",
+          "text-xs uppercase tracking-label transition-colors",
           path === "/style-profile" ? "text-accent" : "text-muted hover:text-ink",
         )}
       >
@@ -52,7 +52,7 @@ export function DesktopNav({
         type="button"
         onClick={onOpenConcierge}
         aria-label="Open Mila's Styling Studio"
-        className="text-xs uppercase tracking-[0.2em] text-muted hover:text-ink transition-colors"
+        className="text-xs uppercase tracking-label text-muted hover:text-ink transition-colors"
       >
         Concierge
       </button>

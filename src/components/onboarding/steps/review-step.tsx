@@ -17,7 +17,7 @@ function ReviewSection({
   return (
     <div className="flex items-start justify-between gap-4 border-b border-line py-4 last:border-b-0">
       <div>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted">{title}</p>
+        <p className="text-micro uppercase tracking-label text-muted">{title}</p>
         <div className="mt-1 text-sm text-ink">{value}</div>
       </div>
       <button

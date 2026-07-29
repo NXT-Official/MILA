@@ -55,8 +55,8 @@ function BriefingRule({
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-[0.32em] text-white">{title}</p>
-        <p className="mt-1 text-[11px] leading-relaxed text-white/65">{body}</p>
+        <p className="text-micro uppercase tracking-label-xwide text-white">{title}</p>
+        <p className="mt-1 text-label leading-relaxed text-white/65">{body}</p>
       </div>
     </li>
   );
@@ -321,7 +321,7 @@ export function VisualDiagnosticViewfinder({
   return !calibrated ? (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       <div className="flex items-center justify-between px-5 py-4 border-b-[0.5px] border-border">
-        <span className="text-[10px] uppercase tracking-[0.3em] text-accent">
+        <span className="text-micro uppercase tracking-label-xwide text-accent">
           Seoul Atelier · Find your light
         </span>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
@@ -330,7 +330,7 @@ export function VisualDiagnosticViewfinder({
       </div>
       <div className="flex-1 overflow-y-auto flex items-center justify-center px-6 py-10">
         <div className="w-full max-w-lg border-[0.5px] border-border bg-card text-card-foreground px-7 py-9">
-          <p className="text-[9px] uppercase tracking-[0.42em] text-accent text-center">
+          <p className="text-nano uppercase tracking-label-max text-accent text-center">
             Let's find your light
           </p>
           <h3 className="mt-3 font-serif text-3xl tracking-tight text-center text-foreground">
@@ -376,11 +376,11 @@ export function VisualDiagnosticViewfinder({
               pushLog("Light is good. Let's go.");
               setCalibrated(true);
             }}
-            className="mt-6 w-full h-11 bg-foreground text-background text-[10px] uppercase tracking-[0.32em] hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="mt-6 w-full h-11 bg-foreground text-background text-micro uppercase tracking-label-xwide hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Open the camera
           </button>
-          <p className="mt-4 text-center text-[9px] uppercase tracking-[0.32em] text-accent">
+          <p className="mt-4 text-center text-nano uppercase tracking-label-xwide text-accent">
             Your camera stays off until you're ready.
           </p>
         </div>
@@ -389,7 +389,7 @@ export function VisualDiagnosticViewfinder({
   ) : (
     <div className="fixed inset-0 z-50 bg-black flex flex-col">
       <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-5 py-4 bg-linear-to-b from-black/70 to-transparent">
-        <span className="text-[10px] uppercase tracking-[0.3em] text-white/90">
+        <span className="text-micro uppercase tracking-label-xwide text-white/90">
           Seoul Atelier · Studio Camera
         </span>
         <button onClick={onClose} className="text-white/80 hover:text-white">
@@ -467,7 +467,7 @@ export function VisualDiagnosticViewfinder({
             <button
               type="button"
               onClick={() => setTelemetryOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-3 py-2 text-[9px] uppercase tracking-[0.32em] hover:bg-white/5"
+              className="w-full flex items-center justify-between px-3 py-2 text-nano uppercase tracking-label-xwide hover:bg-white/5"
               aria-expanded={telemetryOpen}
             >
               <span className="inline-flex items-center gap-1.5">
@@ -478,7 +478,7 @@ export function VisualDiagnosticViewfinder({
               />
             </button>
             {telemetryOpen && (
-              <pre className="max-h-64 overflow-y-auto px-3 pb-3 pt-0 font-mono text-[9px] leading-relaxed text-white/75 whitespace-pre-wrap wrap-break-word">
+              <pre className="max-h-64 overflow-y-auto px-3 pb-3 pt-0 font-mono text-nano leading-relaxed text-white/75 whitespace-pre-wrap wrap-break-word">
                 {pipelineLog.length ? pipelineLog.join("\n") : "Waiting…"}
               </pre>
             )}
@@ -498,18 +498,18 @@ export function VisualDiagnosticViewfinder({
             style={{ backgroundColor: DRAPE_COLORS[drapeIdx] }}
           >
             <div className="text-center px-8 mix-blend-difference">
-              <p className="text-[10px] uppercase tracking-[0.35em] text-white font-medium">
+              <p className="text-micro uppercase tracking-label-xwide text-white font-medium">
                 {DRAPE_LABELS[labelIdx]}
               </p>
               <div className="mt-6 h-px w-20 mx-auto bg-white/80" />
-              <p className="mt-6 text-[9px] uppercase tracking-[0.4em] text-white/90">
+              <p className="mt-6 text-nano uppercase tracking-label-max text-white/90">
                 Seoul Studio · Reading your tones
               </p>
-              <p className="mt-4 font-serif text-3xl tabular-nums text-white tracking-[0.2em]">
+              <p className="mt-4 font-serif text-3xl tabular-nums text-white tracking-label">
                 {String(Math.floor(elapsed / 60)).padStart(2, "0")}:
                 {String(elapsed % 60).padStart(2, "0")}
               </p>
-              <p className="mt-1 text-[9px] uppercase tracking-[0.4em] text-white/80">
+              <p className="mt-1 text-nano uppercase tracking-label-max text-white/80">
                 Looking at your photo
               </p>
             </div>
@@ -543,7 +543,7 @@ export function VisualDiagnosticViewfinder({
 
       {!analyzing && (
         <div className="absolute bottom-44 inset-x-0 z-10 flex justify-center pointer-events-none">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-white/70 font-serif italic">
+          <p className="text-micro uppercase tracking-label-xwide text-white/70 font-serif italic">
             Align your profile boundaries within the guide
           </p>
         </div>
@@ -565,14 +565,14 @@ export function VisualDiagnosticViewfinder({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="text-[10px] uppercase tracking-[0.32em] text-white/70 hover:text-white transition-colors border-b border-white/20 hover:border-white/60 pb-1"
+            className="text-micro uppercase tracking-label-xwide text-white/70 hover:text-white transition-colors border-b border-white/20 hover:border-white/60 pb-1"
           >
             Upload a photo instead
           </button>
           <button
             type="button"
             onClick={() => setManualCalibrateOpen(true)}
-            className="text-[9px] uppercase tracking-[0.32em] text-white/50 hover:text-white/80 transition-colors"
+            className="text-nano uppercase tracking-label-xwide text-white/50 hover:text-white/80 transition-colors"
           >
             Already know your seasonal palette? Choose your look
           </button>
@@ -585,11 +585,11 @@ export function VisualDiagnosticViewfinder({
           className="bg-[#0B0B0B] text-white border-t border-white/10 rounded-t-2xl max-h-[85vh] overflow-y-auto"
         >
           <SheetHeader className="text-left">
-            <p className="text-[9px] uppercase tracking-[0.42em] text-white/50">Seoul Atelier</p>
+            <p className="text-nano uppercase tracking-label-max text-white/50">Seoul Atelier</p>
             <SheetTitle className="font-serif text-2xl tracking-tight text-white">
               Already know your seasonal palette? Choose your look below.
             </SheetTitle>
-            <SheetDescription className="text-[11px] text-white/60 leading-relaxed">
+            <SheetDescription className="text-label text-white/60 leading-relaxed">
               Skip the camera and pick your sub-season — your palette, beauty notes, and colors to
               avoid load straight from the atelier library.
             </SheetDescription>
@@ -600,7 +600,7 @@ export function VisualDiagnosticViewfinder({
               <div key={group.season}>
                 <div className="flex items-center gap-3">
                   <span className="h-px w-6 bg-white/30" />
-                  <p className="text-[10px] uppercase tracking-[0.38em] text-white/70">
+                  <p className="text-micro uppercase tracking-label-max text-white/70">
                     {group.season}
                   </p>
                 </div>
@@ -612,10 +612,10 @@ export function VisualDiagnosticViewfinder({
                       onClick={() => void applyManualCalibration(k.key, k.label)}
                       className="group text-left border border-white/15 hover:border-white/60 bg-white/2 hover:bg-white/6 px-4 py-3 transition-colors"
                     >
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-white">
+                      <p className="text-label uppercase tracking-label-wide text-white">
                         {k.label}
                       </p>
-                      <p className="mt-1 text-[10px] text-white/55 leading-relaxed line-clamp-2">
+                      <p className="mt-1 text-micro text-white/55 leading-relaxed line-clamp-2">
                         {SEASONS_MASTER_DATA[k.key].subSeason}
                       </p>
                     </button>

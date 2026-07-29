@@ -77,7 +77,7 @@ function FeedPage() {
     <>
       <section className="max-w-2xl mx-auto px-4 md:px-6 py-10 md:py-14 space-y-8 relative">
         <header className="text-center space-y-3">
-          <p className="text-[10px] uppercase tracking-[0.42em] text-muted-foreground">
+          <p className="text-micro uppercase tracking-label-max text-muted-foreground">
             The Atelier Feed
           </p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink leading-tight">
@@ -89,7 +89,7 @@ function FeedPage() {
           <button
             type="button"
             onClick={() => setIsPostOpen(true)}
-            className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-ink text-atelier-ivory text-[10px] uppercase tracking-[0.32em] hover:bg-ink/90 transition-colors shadow-atelier-soft"
+            className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-ink text-atelier-ivory text-micro uppercase tracking-label-xwide hover:bg-ink/90 transition-colors shadow-atelier-soft"
           >
             <Camera className="size-4" strokeWidth={1.75} />
             Post Today's OOTD
@@ -115,7 +115,7 @@ function FeedPage() {
             <p className="font-serif text-lg text-ink">Feed couldn't load.</p>
             <button
               onClick={() => refetch()}
-              className="mt-3 text-[10px] uppercase tracking-[0.28em] text-stone hover:text-ink"
+              className="mt-3 text-micro uppercase tracking-label-xwide text-stone hover:text-ink"
             >
               Try again
             </button>
@@ -146,7 +146,7 @@ function FeedPage() {
           className="rounded-t-3xl border-t border-porcelain/60 px-6 pt-8 pb-10 max-h-[95vh] overflow-y-auto"
         >
           <SheetHeader className="text-center space-y-2 mb-6">
-            <p className="text-[10px] uppercase tracking-[0.42em] text-muted-foreground">
+            <p className="text-micro uppercase tracking-label-max text-muted-foreground">
               Daily Drop
             </p>
             <SheetTitle className="font-serif text-3xl leading-tight">Post Today's OOTD</SheetTitle>

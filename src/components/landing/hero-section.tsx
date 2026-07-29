@@ -30,7 +30,7 @@ export function HeroSection() {
         <div className="relative">
           <div className="flex items-center justify-between">
             <SeasonTag season="True Summer" />
-            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+            <span className="text-micro uppercase tracking-label-wide text-muted-foreground">
               18°C · Light rain
             </span>
           </div>

@@ -83,8 +83,8 @@ export function AdminSidebar({
   return (
     <div className="flex h-full w-76 shrink-0 flex-col border-r border-porcelain/60 bg-atelier-panel/30 px-5 py-6">
       <div className="mb-8 px-1">
-        <div className="text-[9px] uppercase tracking-[0.28em] text-stone">Atelier</div>
-        <div className="mt-1 font-serif text-xl tracking-[0.14em] uppercase text-ink">
+        <div className="text-nano uppercase tracking-label-xwide text-stone">Atelier</div>
+        <div className="mt-1 font-serif text-xl tracking-label-tight uppercase text-ink">
           Admin Suite
         </div>
       </div>
@@ -100,7 +100,7 @@ export function AdminSidebar({
                 onClick={() => onNavigate?.()}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-full px-4 py-2.5 text-[10px] uppercase tracking-[0.22em] transition-colors",
+                  "flex items-center gap-2.5 rounded-full px-4 py-2.5 text-micro uppercase tracking-label-wide transition-colors",
                   active
                     ? "bg-ink text-background"
                     : "text-stone hover:text-ink hover:bg-background/60",
@@ -121,7 +121,7 @@ export function AdminSidebar({
           </div>
           <div className="min-w-0">
             <div className="text-xs text-ink truncate">{user?.email ?? "Steward"}</div>
-            <div className="text-[9px] uppercase tracking-[0.18em] text-stone">
+            <div className="text-nano uppercase tracking-label text-stone">
               {roles.includes("admin") ? "Steward" : "Moderator"}
             </div>
           </div>
@@ -131,7 +131,7 @@ export function AdminSidebar({
           onClick={handleSignOut}
           disabled={signingOut}
           aria-label="Sign out"
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-porcelain/60 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-stone transition-colors hover:border-accent/40 hover:text-ink disabled:opacity-50"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-porcelain/60 px-4 py-2 text-micro uppercase tracking-label-wide text-stone transition-colors hover:border-accent/40 hover:text-ink disabled:opacity-50"
         >
           {signingOut ? (
             <Loader2 className="size-3.5 animate-spin" />

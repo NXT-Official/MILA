@@ -124,7 +124,7 @@ export function CameraCapture({
             type="button"
             onClick={onPickGallery}
             disabled={disabled}
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 text-xs uppercase tracking-label-wide text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ImageIcon className="size-3.5" />
             Or choose a photo from gallery
@@ -148,7 +148,7 @@ export function CameraCapture({
       </div>
 
       <div className="pointer-events-none absolute top-8 left-4 right-4 flex justify-center">
-        <span className="text-[10px] uppercase tracking-[0.25em] text-white/80 bg-black/40 backdrop-blur px-3 py-1 rounded-full">
+        <span className="text-micro uppercase tracking-label-wide text-white/80 bg-black/40 backdrop-blur px-3 py-1 rounded-full">
           Align outfit inside the frame
         </span>
       </div>
@@ -187,7 +187,7 @@ export function CameraCapture({
             aria-label="Choose from gallery"
           >
             <ImageIcon className="size-4" />
-            <span className="text-[10px] uppercase tracking-[0.22em]">Gallery</span>
+            <span className="text-micro uppercase tracking-label-wide">Gallery</span>
           </button>
         </div>
       </div>

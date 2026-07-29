@@ -83,7 +83,7 @@ export function DataTable<TData, TValue>({
           <div />
         )}
         {action ?? (
-          <div className="text-[10px] uppercase tracking-[0.22em] text-stone">
+          <div className="text-micro uppercase tracking-label-wide text-stone">
             {isLoading ? "Loading…" : `${table.getFilteredRowModel().rows.length} ${countLabel}`}
           </div>
         )}
@@ -97,7 +97,7 @@ export function DataTable<TData, TValue>({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="h-auto px-5 py-3 text-[9px] uppercase tracking-[0.22em] text-stone"
+                    className="h-auto px-5 py-3 text-nano uppercase tracking-label-wide text-stone"
                   >
                     {header.isPlaceholder
                       ? null

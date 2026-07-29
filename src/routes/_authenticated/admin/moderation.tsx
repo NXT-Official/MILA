@@ -57,16 +57,16 @@ function ModerationPage() {
     <div>
       <Tabs value={tab} onValueChange={(value) => setTab(value as "feed" | "hidden")}>
         <TabsList className="mb-6 h-10">
-          <TabsTrigger value="feed" className="text-xs uppercase tracking-[0.18em]">
+          <TabsTrigger value="feed" className="text-xs uppercase tracking-label">
             Feed ({visibleRows.length})
           </TabsTrigger>
-          <TabsTrigger value="hidden" className="text-xs uppercase tracking-[0.18em]">
+          <TabsTrigger value="hidden" className="text-xs uppercase tracking-label">
             Hidden Feed ({hiddenRows.length})
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      <div className="mb-6 text-[10px] uppercase tracking-[0.22em] text-stone">
+      <div className="mb-6 text-micro uppercase tracking-label-wide text-stone">
         {isLoading ? "Loading…" : `${activeRows.length} entries`}
       </div>
 
@@ -88,7 +88,7 @@ function ModerationPage() {
                 <div className="absolute top-3 left-3">
                   <Badge
                     variant="outline"
-                    className="bg-background/90 border-destructive/50 text-destructive text-[9px] uppercase tracking-[0.18em]"
+                    className="bg-background/90 border-destructive/50 text-destructive text-nano uppercase tracking-label"
                   >
                     Hidden
                   </Badge>
@@ -104,7 +104,7 @@ function ModerationPage() {
                 >
                   {p.author_name || "Unnamed"}
                 </Link>
-                <div className="text-[10px] uppercase tracking-[0.18em] text-stone truncate">
+                <div className="text-micro uppercase tracking-label text-stone truncate">
                   {p.author_email}
                 </div>
               </div>
@@ -112,7 +112,7 @@ function ModerationPage() {
                 <p className="text-xs text-stone line-clamp-3 leading-relaxed">{p.caption}</p>
               )}
               {p.hidden && (
-                <p className="text-[10px] uppercase tracking-[0.18em] text-destructive/80">
+                <p className="text-micro uppercase tracking-label text-destructive/80">
                   Reason: {p.hidden_reason?.trim() || "No reason was provided."}
                 </p>
               )}
@@ -120,7 +120,7 @@ function ModerationPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="flex-1 h-8 text-[10px] uppercase tracking-[0.22em] text-stone hover:text-ink"
+                  className="flex-1 h-8 text-micro uppercase tracking-label-wide text-stone hover:text-ink"
                   onClick={() => toggleHidden(p.id, !p.hidden)}
                 >
                   {p.hidden ? (

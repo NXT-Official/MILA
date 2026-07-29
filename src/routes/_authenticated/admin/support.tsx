@@ -39,10 +39,10 @@ function SupportPage() {
   return (
     <Tabs defaultValue="help" className="w-full">
       <TabsList className="h-9">
-        <TabsTrigger value="help" className="text-xs uppercase tracking-[0.18em]">
+        <TabsTrigger value="help" className="text-xs uppercase tracking-label">
           Help Desk ({helpRows.length})
         </TabsTrigger>
-        <TabsTrigger value="feedback" className="text-xs uppercase tracking-[0.18em]">
+        <TabsTrigger value="feedback" className="text-xs uppercase tracking-label">
           Feedback ({feedbackRows.length})
         </TabsTrigger>
       </TabsList>

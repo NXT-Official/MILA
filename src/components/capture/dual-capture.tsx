@@ -120,7 +120,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
             type="button"
             onClick={() => retake("back")}
             disabled={submitting}
-            className="h-10 rounded-full border border-porcelain/60 text-[10px] uppercase tracking-[0.22em] text-stone hover:text-ink hover:border-porcelain transition-colors disabled:opacity-50"
+            className="h-10 rounded-full border border-porcelain/60 text-micro uppercase tracking-label-wide text-stone hover:text-ink hover:border-porcelain transition-colors disabled:opacity-50"
           >
             Retake the fit
           </button>
@@ -128,14 +128,14 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
             type="button"
             onClick={() => retake("front")}
             disabled={submitting}
-            className="h-10 rounded-full border border-porcelain/60 text-[10px] uppercase tracking-[0.22em] text-stone hover:text-ink hover:border-porcelain transition-colors disabled:opacity-50"
+            className="h-10 rounded-full border border-porcelain/60 text-micro uppercase tracking-label-wide text-stone hover:text-ink hover:border-porcelain transition-colors disabled:opacity-50"
           >
             Retake portrait
           </button>
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] uppercase tracking-[0.28em] text-stone">
+          <label className="text-micro uppercase tracking-label-xwide text-stone">
             Caption (optional)
           </label>
           <textarea
@@ -155,7 +155,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
               variant="ghost"
               onClick={onCancel}
               disabled={submitting}
-              className="text-[10px] uppercase tracking-[0.22em] text-stone"
+              className="text-micro uppercase tracking-label-wide text-stone"
             >
               Cancel
             </Button>
@@ -164,7 +164,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
             type="button"
             onClick={() => onSubmit(back, front, caption.trim())}
             disabled={submitting}
-            className="flex-1 h-12 rounded-full bg-ink text-atelier-ivory hover:bg-ink/90 text-[10px] uppercase tracking-[0.32em]"
+            className="flex-1 h-12 rounded-full bg-ink text-atelier-ivory hover:bg-ink/90 text-micro uppercase tracking-label-xwide"
           >
             {submitting ? (
               <span className="inline-flex items-center gap-2">
@@ -186,7 +186,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
   return (
     <div className="space-y-4">
       <div className="text-center space-y-1">
-        <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">
+        <p className="text-micro uppercase tracking-label-xwide text-muted-foreground">
           {copy.eyebrow}
         </p>
         <p className="font-serif text-2xl text-ink">{copy.title}</p>

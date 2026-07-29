@@ -12,14 +12,14 @@ export function DupeHunterSection() {
         </p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 max-w-2xl">
           <div className="rounded-panel border border-border bg-card/70 p-5">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-micro uppercase tracking-label text-muted-foreground">
               The inspiration
             </p>
             <p className="mt-2 font-serif text-lg text-foreground">Wool-blend maxi coat</p>
             <p className="mt-1 text-sm text-muted-foreground line-through">£420</p>
           </div>
           <div className="rounded-panel border border-line bg-accent-soft p-5">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-accent">Mila's match</p>
+            <p className="text-micro uppercase tracking-label text-accent">Mila's match</p>
             <p className="mt-2 font-serif text-lg text-foreground">Same cut, same drape</p>
             <p className="mt-1 text-sm font-medium text-foreground">£80</p>
           </div>

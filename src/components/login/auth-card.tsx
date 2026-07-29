@@ -50,7 +50,7 @@ export function AuthCard() {
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-border/60" />
           </div>
-          <div className="relative flex justify-center text-[10px] uppercase tracking-[0.3em]">
+          <div className="relative flex justify-center text-micro uppercase tracking-label-xwide">
             <span className="bg-card px-3 text-muted-foreground">Or continue with email</span>
           </div>
         </div>
@@ -93,7 +93,7 @@ export function AuthCard() {
       </CardContent>
 
       <div className="px-6 pb-5 -mt-1">
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/80 justify-center">
+        <div className="flex items-center gap-1.5 text-micro text-muted-foreground/80 justify-center">
           <ShieldCheck className="size-3" />
           Your sign-in is encrypted and secure.
         </div>

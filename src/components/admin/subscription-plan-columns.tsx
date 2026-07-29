@@ -83,7 +83,7 @@ export function getSubscriptionPlanColumns({
             {formatPlanPrice(row.original.price_amount, row.original.currency)}
           </div>
 
-          <div className="text-[10px] uppercase tracking-[0.18em] text-stone mt-0.5">
+          <div className="text-micro uppercase tracking-label text-stone mt-0.5">
             {BILLING_INTERVAL_LABELS[row.original.billing_interval]}
           </div>
         </div>
