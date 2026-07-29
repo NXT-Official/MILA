@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/_app/credit-packs")({
   beforeLoad: async () => {
@@ -96,34 +97,36 @@ function CreditPackCard({
   const unavailable = !pack.paddle_price_id;
 
   return (
-    <li className="atelier-card flex flex-col p-6">
-      <div className="flex items-center gap-2">
-        <Zap className="size-4 text-accent" aria-hidden="true" strokeWidth={1.75} />
-        <h2 className="font-serif text-xl text-ink">{pack.title}</h2>
-      </div>
+    <Card asChild className="flex flex-col p-6">
+      <li>
+        <div className="flex items-center gap-2">
+          <Zap className="size-4 text-accent" aria-hidden="true" strokeWidth={1.75} />
+          <h2 className="font-serif text-xl text-ink">{pack.title}</h2>
+        </div>
 
-      <p className="mt-3 text-sm text-ink tabular-nums">
-        {pack.credits} styling {pack.credits === 1 ? "credit" : "credits"}
-      </p>
-      {pack.description && (
-        <p className="mt-2 text-sm leading-relaxed text-muted">{pack.description}</p>
-      )}
+        <p className="mt-3 text-sm text-ink tabular-nums">
+          {pack.credits} styling {pack.credits === 1 ? "credit" : "credits"}
+        </p>
+        {pack.description && (
+          <p className="mt-2 text-sm leading-relaxed text-muted">{pack.description}</p>
+        )}
 
-      <p className="mt-5 font-display text-3xl font-bold tracking-tight text-ink tabular-nums">
-        {formatPlanPrice(pack.price_amount, pack.currency)}
-      </p>
+        <p className="mt-5 font-display text-3xl font-bold tracking-tight text-ink tabular-nums">
+          {formatPlanPrice(pack.price_amount, pack.currency)}
+        </p>
 
-      <div className="mt-auto pt-6">
-        <Button
-          type="button"
-          onClick={onBuy}
-          disabled={disabled || unavailable || !onBuy}
-          variant="secondary"
-          className="w-full"
-        >
-          {unavailable ? "Coming soon" : "Buy Pack"}
-        </Button>
-      </div>
-    </li>
+        <div className="mt-auto pt-6">
+          <Button
+            type="button"
+            onClick={onBuy}
+            disabled={disabled || unavailable || !onBuy}
+            variant="secondary"
+            className="w-full"
+          >
+            {unavailable ? "Coming soon" : "Buy Pack"}
+          </Button>
+        </div>
+      </li>
+    </Card>
   );
 }

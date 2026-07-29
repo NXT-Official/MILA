@@ -1,6 +1,7 @@
 import { Reveal } from "@/components/landing/reveal";
 import { SeasonTag } from "@/components/landing/season-tag";
 import { CtaButton } from "@/components/landing/cta-button";
+import { Card } from "@/components/ui/card";
 
 export function HeroSection() {
   return (
@@ -22,7 +23,7 @@ export function HeroSection() {
         </div>
       </div>
 
-      <div className="atelier-card relative overflow-hidden p-7 sm:p-9">
+      <Card className="relative overflow-hidden p-7 sm:p-9">
         <div
           className="pointer-events-none absolute -top-24 -right-16 h-64 w-64 rounded-full bg-accent/25 blur-3xl"
           aria-hidden="true"
@@ -53,7 +54,7 @@ export function HeroSection() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
     </Reveal>
   );
 }

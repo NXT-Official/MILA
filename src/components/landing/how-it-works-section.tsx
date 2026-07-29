@@ -1,5 +1,6 @@
 import { Reveal } from "@/components/landing/reveal";
 import { STEPS } from "@/constants/landing";
+import { Card } from "@/components/ui/card";
 
 export function HowItWorksSection() {
   return (
@@ -8,11 +9,11 @@ export function HowItWorksSection() {
       <h2 className="mt-2 font-serif">Three steps to dressed</h2>
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         {STEPS.map((s) => (
-          <div key={s.n} className="atelier-card p-6">
+          <Card key={s.n} className="p-6">
             <span className="font-serif text-3xl text-accent">{s.n}</span>
             <h3 className="mt-3 font-serif text-xl text-foreground">{s.title}</h3>
             <p className="mt-2 text-sm leading-relaxed">{s.body}</p>
-          </div>
+          </Card>
         ))}
       </div>
     </Reveal>

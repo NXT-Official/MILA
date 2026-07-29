@@ -34,6 +34,7 @@ import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
 import { motion, type Variants } from "framer-motion";
 import { errorMessage } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 
 const VIBES = [
   "Everyday Casual",
@@ -222,196 +223,195 @@ function Dashboard() {
       initial="hidden"
       animate="visible"
     >
-      <motion.section
-        variants={cardItemVariants}
-        className="relative mb-10 sm:mb-14 overflow-hidden atelier-card atelier-hero-card"
-      >
-        <div className="pointer-events-none absolute -top-32 -right-20 h-80 w-80 rounded-full bg-atelier-champagne/25 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-atelier-rose/15 blur-3xl" />
+      <Card asChild className="relative mb-10 sm:mb-14 overflow-hidden atelier-hero-card">
+        <motion.section variants={cardItemVariants}>
+          <div className="pointer-events-none absolute -top-32 -right-20 h-80 w-80 rounded-full bg-atelier-champagne/25 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-atelier-rose/15 blur-3xl" />
 
-        <div className="relative p-6 sm:p-8 md:p-10">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <p className="atelier-kicker">Today</p>
-              <h2 className="atelier-title mt-2">
-                {getGreeting()}
-                {profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}.
-              </h2>
-              <p className="text-sm text-muted-foreground mt-2 max-w-md">
-                Let Mila compose an ideal OOTD for today's weather, your palette, and your
-                silhouette.
-              </p>
-            </div>
-            <ClimateWidget value={climate} onChange={setClimate} />
-          </div>
-
-          <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
-            <div className="w-full sm:max-w-xs">
-              <p className="atelier-kicker mb-2">Today's Mood</p>
-              <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
-                <SelectTrigger className="h-11 rounded-full border-border bg-card/60 backdrop-blur uppercase tracking-label text-label">
-                  <SelectValue placeholder="Select an occasion" />
-                </SelectTrigger>
-                <SelectContent>
-                  {VIBES.map((v) => (
-                    <SelectItem key={v} value={v} className="uppercase tracking-label text-label">
-                      {v}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              onClick={generateLook}
-              disabled={generating || !profileComplete || !climate || imageLoading}
-              className="w-full sm:w-auto h-12 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90 uppercase tracking-label text-xs whitespace-normal text-center leading-snug"
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="size-4 mr-2 animate-spin" /> Composing…
-                </>
-              ) : climate ? (
-                <>
-                  <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Create my look —{" "}
-                  {climate.tempC}°C{" "}
-                  {climate.label.replace(/^[-\d.]+\s*°[CF]\s*/i, "").split(/[\s,]+/)[0] ||
-                    climate.condition}
-                </>
-              ) : (
-                <>
-                  <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Create my look
-                </>
-              )}
-            </Button>
-            {!profileComplete && (
-              <span className="text-xs text-muted-foreground">
-                Complete your style profile to unlock.
-              </span>
-            )}
-          </div>
-
-          <div className="mt-8">
-            {generating ? (
-              <OutfitResultSkeleton />
-            ) : look ? (
-              <motion.div
-                className="space-y-6"
-                variants={resultContainerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 backdrop-blur px-3 py-1 text-micro uppercase tracking-label-wide">
-                    <span className="text-muted-foreground">{vibe}</span>
-                    <span className="h-1 w-1 rounded-full bg-foreground/40" />
-                    <span className="font-medium">Vibe fit {look.vibe_alignment_score}/10</span>
-                    {climate && (
-                      <>
-                        <span className="h-1 w-1 rounded-full bg-foreground/40" />
-                        <ClimateGlyph icon={climate.icon} className="size-3" />
-                        <span className="text-muted-foreground">{climate.label}</span>
-                      </>
-                    )}
-                  </span>
-                </div>
-
-                <motion.div variants={resultItemVariants}>
-                  <GeneratedLookDetail
-                    outfit={look.outfit}
-                    hair={look.hair}
-                    makeup={look.makeup}
-                    media={
-                      <OutfitVisual
-                        imageDataUri={look.imageDataUri}
-                        imageGenerationError={look.imageGenerationError}
-                        loading={imageLoading}
-                        headline={look.outfit.headline}
-                        onRetry={retryImage}
-                        retryDisabled={imageLoading || generating}
-                      />
-                    }
-                  />
-                </motion.div>
-
-                <motion.div
-                  variants={resultItemVariants}
-                  className="flex flex-wrap items-center gap-3 border-t border-border pt-5"
-                >
-                  <Button
-                    variant="outline"
-                    onClick={saveLookToHistory}
-                    disabled={savingLook || lookSaved || !look.imageDataUri}
-                    size="pill"
-                  >
-                    {lookSaved ? (
-                      <>
-                        <CheckCircle2 className="size-4 mr-2" /> Saved
-                      </>
-                    ) : savingLook ? (
-                      <>
-                        <Loader2 className="size-4 mr-2 animate-spin" /> Saving
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark className="size-4 mr-2" /> Save to history
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={retryImage}
-                    disabled={imageLoading || generating}
-                    size="pill"
-                  >
-                    {imageLoading ? (
-                      <>
-                        <Loader2 className="size-4 mr-2 animate-spin" /> Retrying
-                      </>
-                    ) : (
-                      <>
-                        <RotateCcw className="size-4 mr-2" /> Retry visual
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={generateLook}
-                    disabled={imageLoading}
-                    size="pill"
-                  >
-                    <Sparkles className="size-4 mr-2 text-accent" /> Try another
-                  </Button>
-                  {savedLook && (
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        openConcierge({
-                          lookId: savedLook.id,
-                          imageUrl: savedLook.imageUrl,
-                          title: look.outfit.headline,
-                          source: "Today's look",
-                        })
-                      }
-                      size="pill"
-                    >
-                      <Sparkles className="size-4 mr-2 text-accent" /> Ask Mila about this look
-                    </Button>
-                  )}
-                </motion.div>
-              </motion.div>
-            ) : (
-              <div className="rounded-2xl border border-border bg-card p-10 text-center">
-                <p className="atelier-kicker">ready when you are</p>
-                <p className="atelier-title mt-2">Set the mood. Mila will compose the rest.</p>
-                <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-                  Each look is composed from first principles — tuned to your palette, body
-                  architecture, and the weather outside.
+          <div className="relative p-6 sm:p-8 md:p-10">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <p className="atelier-kicker">Today</p>
+                <h2 className="atelier-title mt-2">
+                  {getGreeting()}
+                  {profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}.
+                </h2>
+                <p className="text-sm text-muted-foreground mt-2 max-w-md">
+                  Let Mila compose an ideal OOTD for today's weather, your palette, and your
+                  silhouette.
                 </p>
               </div>
-            )}
+              <ClimateWidget value={climate} onChange={setClimate} />
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+              <div className="w-full sm:max-w-xs">
+                <p className="atelier-kicker mb-2">Today's Mood</p>
+                <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
+                  <SelectTrigger className="h-11 rounded-full border-border bg-card/60 backdrop-blur uppercase tracking-label text-label">
+                    <SelectValue placeholder="Select an occasion" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VIBES.map((v) => (
+                      <SelectItem key={v} value={v} className="uppercase tracking-label text-label">
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                onClick={generateLook}
+                disabled={generating || !profileComplete || !climate || imageLoading}
+                className="w-full sm:w-auto h-12 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90 uppercase tracking-label text-xs whitespace-normal text-center leading-snug"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="size-4 mr-2 animate-spin" /> Composing…
+                  </>
+                ) : climate ? (
+                  <>
+                    <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Create my look —{" "}
+                    {climate.tempC}°C{" "}
+                    {climate.label.replace(/^[-\d.]+\s*°[CF]\s*/i, "").split(/[\s,]+/)[0] ||
+                      climate.condition}
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Create my look
+                  </>
+                )}
+              </Button>
+              {!profileComplete && (
+                <span className="text-xs text-muted-foreground">
+                  Complete your style profile to unlock.
+                </span>
+              )}
+            </div>
+
+            <div className="mt-8">
+              {generating ? (
+                <OutfitResultSkeleton />
+              ) : look ? (
+                <motion.div
+                  className="space-y-6"
+                  variants={resultContainerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 backdrop-blur px-3 py-1 text-micro uppercase tracking-label-wide">
+                      <span className="text-muted-foreground">{vibe}</span>
+                      <span className="h-1 w-1 rounded-full bg-foreground/40" />
+                      <span className="font-medium">Vibe fit {look.vibe_alignment_score}/10</span>
+                      {climate && (
+                        <>
+                          <span className="h-1 w-1 rounded-full bg-foreground/40" />
+                          <ClimateGlyph icon={climate.icon} className="size-3" />
+                          <span className="text-muted-foreground">{climate.label}</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+
+                  <motion.div variants={resultItemVariants}>
+                    <GeneratedLookDetail
+                      outfit={look.outfit}
+                      hair={look.hair}
+                      makeup={look.makeup}
+                      media={
+                        <OutfitVisual
+                          imageDataUri={look.imageDataUri}
+                          imageGenerationError={look.imageGenerationError}
+                          loading={imageLoading}
+                          headline={look.outfit.headline}
+                          onRetry={retryImage}
+                          retryDisabled={imageLoading || generating}
+                        />
+                      }
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    variants={resultItemVariants}
+                    className="flex flex-wrap items-center gap-3 border-t border-border pt-5"
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={saveLookToHistory}
+                      disabled={savingLook || lookSaved || !look.imageDataUri}
+                      size="pill"
+                    >
+                      {lookSaved ? (
+                        <>
+                          <CheckCircle2 className="size-4 mr-2" /> Saved
+                        </>
+                      ) : savingLook ? (
+                        <>
+                          <Loader2 className="size-4 mr-2 animate-spin" /> Saving
+                        </>
+                      ) : (
+                        <>
+                          <Bookmark className="size-4 mr-2" /> Save to history
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={retryImage}
+                      disabled={imageLoading || generating}
+                      size="pill"
+                    >
+                      {imageLoading ? (
+                        <>
+                          <Loader2 className="size-4 mr-2 animate-spin" /> Retrying
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="size-4 mr-2" /> Retry visual
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={generateLook}
+                      disabled={imageLoading}
+                      size="pill"
+                    >
+                      <Sparkles className="size-4 mr-2 text-accent" /> Try another
+                    </Button>
+                    {savedLook && (
+                      <Button
+                        variant="outline"
+                        onClick={() =>
+                          openConcierge({
+                            lookId: savedLook.id,
+                            imageUrl: savedLook.imageUrl,
+                            title: look.outfit.headline,
+                            source: "Today's look",
+                          })
+                        }
+                        size="pill"
+                      >
+                        <Sparkles className="size-4 mr-2 text-accent" /> Ask Mila about this look
+                      </Button>
+                    )}
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <div className="rounded-2xl border border-border bg-card p-10 text-center">
+                  <p className="atelier-kicker">ready when you are</p>
+                  <p className="atelier-title mt-2">Set the mood. Mila will compose the rest.</p>
+                  <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+                    Each look is composed from first principles — tuned to your palette, body
+                    architecture, and the weather outside.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </motion.section>
+        </motion.section>
+      </Card>
 
       {profile?.color_season && (
         <motion.section variants={cardItemVariants}>

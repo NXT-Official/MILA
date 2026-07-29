@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 import {
   BILLING_INTERVAL_SUFFIX,
   formatPlanPrice,
@@ -22,59 +23,63 @@ export function PricingCard({
   const interval = BILLING_INTERVAL_SUFFIX[plan.billing_interval];
 
   return (
-    <li
-      aria-label={plan.is_featured ? `${plan.title} — recommended plan` : plan.title}
+    <Card
+      asChild
       className={cn(
-        "atelier-card relative flex flex-col p-6 sm:p-8",
+        "relative flex flex-col p-6 sm:p-8",
         plan.is_featured &&
           "border-accent/70 shadow-atelier-soft ring-1 ring-accent/30 lg:-translate-y-2",
       )}
     >
-      {plan.is_featured && (
-        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 gap-1.5 border border-accent/50 bg-accent-soft text-ink shadow-paper">
-          <Sparkles aria-hidden="true" className="size-3" strokeWidth={1.75} />
-          Recommended
-        </Badge>
-      )}
-
-      <h2 className="font-serif text-2xl text-ink">{plan.title}</h2>
-      {plan.description && (
-        <p className="mt-2 text-sm leading-relaxed text-muted">{plan.description}</p>
-      )}
-
-      <p className="mt-6">
-        <span className="font-display text-4xl font-bold tracking-tight text-ink tabular-nums">
-          {price}
-        </span>
-        <span className="ml-2 text-xs uppercase tracking-label text-muted">{interval}</span>
-      </p>
-
-      <ul className="mt-6 space-y-2.5 border-t border-line pt-6">
-        {plan.credits_included > 0 && (
-          <PlanFeature text={`${plan.credits_included} styling credits per day`} />
+      <li aria-label={plan.is_featured ? `${plan.title} — recommended plan` : plan.title}>
+        {plan.is_featured && (
+          <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 gap-1.5 border border-accent/50 bg-accent-soft text-ink shadow-paper">
+            <Sparkles aria-hidden="true" className="size-3" strokeWidth={1.75} />
+            Recommended
+          </Badge>
         )}
-        {plan.features.map((feature) => (
-          <PlanFeature key={feature} text={feature} />
-        ))}
-        <PlanFeature text="Credit packs to top up any day" />
-        <li className="flex items-start gap-2.5 text-sm leading-relaxed text-ink">
-          <VerifiedBadge className="mt-0.5" />
-          <span className="min-w-0 wrap-break-words">Verified badge on your profile and posts</span>
-        </li>
-      </ul>
 
-      <div className="mt-auto pt-8">
-        <Button
-          type="button"
-          onClick={onChoosePlan}
-          disabled={disabled || !plan.paddle_price_id || !onChoosePlan}
-          variant={plan.is_featured ? "primary" : "secondary"}
-          className="w-full"
-        >
-          Choose Plan
-        </Button>
-      </div>
-    </li>
+        <h2 className="font-serif text-2xl text-ink">{plan.title}</h2>
+        {plan.description && (
+          <p className="mt-2 text-sm leading-relaxed text-muted">{plan.description}</p>
+        )}
+
+        <p className="mt-6">
+          <span className="font-display text-4xl font-bold tracking-tight text-ink tabular-nums">
+            {price}
+          </span>
+          <span className="ml-2 text-xs uppercase tracking-label text-muted">{interval}</span>
+        </p>
+
+        <ul className="mt-6 space-y-2.5 border-t border-line pt-6">
+          {plan.credits_included > 0 && (
+            <PlanFeature text={`${plan.credits_included} styling credits per day`} />
+          )}
+          {plan.features.map((feature) => (
+            <PlanFeature key={feature} text={feature} />
+          ))}
+          <PlanFeature text="Credit packs to top up any day" />
+          <li className="flex items-start gap-2.5 text-sm leading-relaxed text-ink">
+            <VerifiedBadge className="mt-0.5" />
+            <span className="min-w-0 wrap-break-words">
+              Verified badge on your profile and posts
+            </span>
+          </li>
+        </ul>
+
+        <div className="mt-auto pt-8">
+          <Button
+            type="button"
+            onClick={onChoosePlan}
+            disabled={disabled || !plan.paddle_price_id || !onChoosePlan}
+            variant={plan.is_featured ? "primary" : "secondary"}
+            className="w-full"
+          >
+            Choose Plan
+          </Button>
+        </div>
+      </li>
+    </Card>
   );
 }
 

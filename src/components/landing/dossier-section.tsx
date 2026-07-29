@@ -1,5 +1,6 @@
 import { Reveal } from "@/components/landing/reveal";
 import { SeasonTag } from "@/components/landing/season-tag";
+import { Card } from "@/components/ui/card";
 
 export function DossierSection() {
   return (
@@ -14,7 +15,7 @@ export function DossierSection() {
         </p>
       </div>
 
-      <div className="atelier-card p-7">
+      <Card className="p-7">
         <div className="flex items-center justify-between">
           <span className="font-serif text-lg text-foreground">Digital Style Dossier</span>
           <SeasonTag season="True Summer" />
@@ -43,7 +44,7 @@ export function DossierSection() {
             <div className="h-full w-4/5 rounded-full bg-accent" />
           </div>
         </div>
-      </div>
+      </Card>
     </Reveal>
   );
 }

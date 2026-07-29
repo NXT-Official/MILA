@@ -1,9 +1,10 @@
 import { Reveal } from "@/components/landing/reveal";
+import { Card } from "@/components/ui/card";
 
 export function DupeHunterSection() {
   return (
     <Reveal className="mx-auto w-full max-w-6xl px-6 pb-24">
-      <div className="atelier-card atelier-hero-card p-8 sm:p-12">
+      <Card className="atelier-hero-card p-8 sm:p-12">
         <p className="atelier-kicker">Dupe Hunter</p>
         <h2 className="mt-2 font-serif">Mila found the dupe. You keep £340.</h2>
         <p className="mt-3 max-w-lg text-sm leading-relaxed">
@@ -24,7 +25,7 @@ export function DupeHunterSection() {
             <p className="mt-1 text-sm font-medium text-foreground">£80</p>
           </div>
         </div>
-      </div>
+      </Card>
     </Reveal>
   );
 }

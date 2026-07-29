@@ -15,6 +15,7 @@ import type { DailyLook } from "@/lib/generate-outfit.functions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
+import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/_app/history")({
   validateSearch: (search: Record<string, unknown>): { look?: string } =>
@@ -135,32 +136,34 @@ function HistoryCard({ item, onOpen }: { item: OutfitRow; onOpen: () => void }) 
   const badge = analysis.kind === "daily_look" ? analysis.data.vibe : null;
 
   return (
-    <button
-      onClick={onOpen}
-      className="atelier-card aspect-square relative overflow-hidden text-left cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <Card
+      asChild
+      className="aspect-square relative overflow-hidden text-left cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <HistoryImage
-        src={item.image_url}
-        alt={`Generated visualization of ${title}`}
-        frameClassName="h-full w-full bg-card"
-      />
-      <div className="absolute inset-0 bg-atelier-ink/0 group-hover:bg-atelier-ink/20 transition-colors pointer-events-none" />
-      <div className="absolute bottom-0 inset-x-0 p-4 bg-linear-to-t from-atelier-ink/85 via-atelier-ink/40 to-transparent text-atelier-ivory pointer-events-none">
-        {badge ? (
-          <p className="mb-1 text-nano uppercase tracking-label-wide opacity-80">{badge}</p>
-        ) : null}
-        <p className="font-serif text-base leading-snug line-clamp-2">{title}</p>
-        <div className="mt-1 flex items-center gap-2 text-micro uppercase tracking-widest opacity-70">
-          <span>{new Date(item.created_at).toLocaleDateString()}</span>
-          {item.match_score != null ? (
-            <>
-              <span className="h-1 w-1 rounded-full bg-current" />
-              <span>{item.match_score}</span>
-            </>
+      <button onClick={onOpen}>
+        <HistoryImage
+          src={item.image_url}
+          alt={`Generated visualization of ${title}`}
+          frameClassName="h-full w-full bg-card"
+        />
+        <div className="absolute inset-0 bg-atelier-ink/0 group-hover:bg-atelier-ink/20 transition-colors pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 p-4 bg-linear-to-t from-atelier-ink/85 via-atelier-ink/40 to-transparent text-atelier-ivory pointer-events-none">
+          {badge ? (
+            <p className="mb-1 text-nano uppercase tracking-label-wide opacity-80">{badge}</p>
           ) : null}
+          <p className="font-serif text-base leading-snug line-clamp-2">{title}</p>
+          <div className="mt-1 flex items-center gap-2 text-micro uppercase tracking-widest opacity-70">
+            <span>{new Date(item.created_at).toLocaleDateString()}</span>
+            {item.match_score != null ? (
+              <>
+                <span className="h-1 w-1 rounded-full bg-current" />
+                <span>{item.match_score}</span>
+              </>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
+    </Card>
   );
 }
 

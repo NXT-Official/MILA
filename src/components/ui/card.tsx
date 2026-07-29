@@ -1,19 +1,22 @@
 import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
 
 import { cn } from "@/lib/utils";
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "rounded-card border border-line bg-surface text-card-foreground shadow-paper",
-        className,
-      )}
-      {...props}
-    />
-  ),
-);
+/**
+ * The card surface itself lives in `.atelier-card` so the class and this
+ * component can never drift apart. `asChild` lets semantic elements — figure,
+ * section, li, button — wear the card without giving up their tag.
+ */
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { asChild?: boolean }
+>(({ className, asChild = false, ...props }, ref) => {
+  const Comp = asChild ? Slot : "div";
+  return (
+    <Comp ref={ref} className={cn("atelier-card text-card-foreground", className)} {...props} />
+  );
+});
 Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
