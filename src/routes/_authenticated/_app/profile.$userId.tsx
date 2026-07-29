@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/constants/query-keys";
 import { deletePost, getMemberProfile, updatePostCaption } from "@/lib/posts.functions";
 import { errorMessage } from "@/lib/utils";
+import { AvatarInitial } from "@/components/ui/avatar-initial";
 
 export const Route = createFileRoute("/_authenticated/_app/profile/$userId")({
   component: MemberProfilePage,
@@ -52,7 +53,6 @@ function MemberProfilePage() {
   }
 
   async function handleDelete(postId: string) {
-    // ponytail: native confirm — swap for a dialog if the flow needs more than yes/no.
     if (!window.confirm("Delete this post? This can't be undone.")) return;
     setBusy(true);
     try {
@@ -82,9 +82,10 @@ function MemberProfilePage() {
     <section className="mx-auto max-w-2xl space-y-7 px-4 py-10 md:px-6 md:py-14">
       <header className="relative overflow-hidden rounded-3xl border border-porcelain/60 bg-linear-to-br from-atelier-champagne/25 via-background to-porcelain/20 p-6 shadow-atelier-soft">
         <div className="relative flex items-center gap-5">
-          <div className="flex size-20 shrink-0 items-center justify-center rounded-full border border-white/70 bg-background/70 font-serif text-3xl text-ink shadow-atelier-soft">
-            {initial}
-          </div>
+          <AvatarInitial
+            name={name}
+            className="flex size-20 shrink-0 items-center justify-center rounded-full border border-white/70 bg-background/70 font-serif text-3xl text-ink shadow-atelier-soft"
+          />
           <div className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5">
               <h1 className="truncate font-serif text-3xl text-ink">{name}</h1>
