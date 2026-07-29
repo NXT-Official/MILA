@@ -113,7 +113,7 @@ export function DossierAccordion({
   return (
     <AccordionItem
       value={value}
-      className="border-[0.5px] border-border bg-white/40 dark:bg-white/5 backdrop-blur-xl rounded-none px-5 sm:px-8"
+      className="border-[0.5px] border-border bg-white/40 dark:bg-white/5 backdrop-blur-xl rounded-card px-5 sm:px-8"
     >
       <AccordionTrigger className="py-6 hover:no-underline">
         <div className="flex items-center justify-between w-full gap-3">

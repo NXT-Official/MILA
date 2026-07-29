@@ -458,7 +458,7 @@ export function StyleProfile() {
                 />
               </div>
             )}
-            <div className="mb-12">
+            <div className="mb-12 ">
               <AnimatePresence mode="wait" initial={false}>
                 {viewMode === "streamlined" ? (
                   <motion.div
@@ -621,13 +621,13 @@ export function StyleProfile() {
                               style={
                                 active ? undefined : { backgroundColor: groupTint[group.season] }
                               }
-                              className={`group text-left border px-3 py-3 transition-all min-h-17 ${
+                              className={`group text-left border rounded-xl px-3 py-3 transition-all min-h-17 ${
                                 active
                                   ? "border-foreground bg-foreground/4 -translate-y-px ring-1 ring-foreground"
                                   : "border-border hover:border-foreground/40"
                               }`}
                             >
-                              <p className="text-label uppercase tracking-label-wide text-foreground flex items-center justify-between gap-2">
+                              <p className="text-label uppercase tracking-label-wide flex items-center justify-between gap-2">
                                 <span>{tile.label}</span>
                                 {active && <Check className="size-3" />}
                               </p>
@@ -644,7 +644,7 @@ export function StyleProfile() {
                 <div className="mt-8 flex flex-col items-center">
                   <Button
                     disabled={!knownTileId || confirmingKnown}
-                    className="w-full sm:w-auto text-xs uppercase tracking-widest h-11 px-8 rounded-none bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40"
+                    className="w-full sm:w-auto text-xs uppercase tracking-widest h-11 px-8 rounded-card bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40"
                     onClick={async () => {
                       if (!knownTileId) return;
                       const tile = KNOWN_SEASON_GROUPS.flatMap((g) => g.tiles).find(
@@ -695,7 +695,7 @@ export function StyleProfile() {
                     <AccordionContent className="px-6 sm:px-8 pb-8">
                       <div className="flex flex-col items-center text-center pt-2">
                         <Button
-                          className="w-full sm:w-auto text-xs uppercase tracking-widest h-11 px-8 rounded-none bg-foreground text-background hover:bg-foreground/90"
+                          className="w-full sm:w-auto text-xs uppercase tracking-widest h-11 px-8 rounded-card bg-foreground text-background hover:bg-foreground/90"
                           onClick={() => setDiagOpen(true)}
                         >
                           <Camera className="size-3.5 mr-2" />

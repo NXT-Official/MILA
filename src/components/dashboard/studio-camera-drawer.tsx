@@ -14,7 +14,7 @@ import { cn, errorMessage } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, Camera, ArrowLeft, ImageOff } from "lucide-react";
+import { Loader2, ExternalLink, Camera, ArrowLeft, ImageOff, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { findDupes, type DupeHuntResult } from "@/lib/dupe-hunter.functions";
 import { createPost } from "@/lib/posts.functions";
@@ -180,14 +180,7 @@ export function StudioCameraDrawer({
       >
         {postingOpen ? (
           <>
-            <SheetHeader className="text-center space-y-2 mb-6">
-              <button
-                type="button"
-                onClick={() => !postingSubmitting && setPostingOpen(false)}
-                className="inline-flex items-center gap-1.5 mx-auto text-micro uppercase tracking-label-xwide text-stone hover:text-ink"
-              >
-                <ArrowLeft className="size-3" /> Back to Lens
-              </button>
+            <SheetHeader className="text-center space-y-2">
               <p className="text-micro uppercase tracking-label-max text-muted-foreground">
                 Daily Drop
               </p>
@@ -198,6 +191,15 @@ export function StudioCameraDrawer({
                 Two captures, head to toe — your fit, then your face & hair.
               </SheetDescription>
             </SheetHeader>
+            <div className="text-center my-3">
+              <button
+                type="button"
+                onClick={() => !postingSubmitting && setPostingOpen(false)}
+                className="inline-flex items-center gap-1.5 mx-auto text-micro uppercase tracking-label-xwide text-stone hover:text-ink"
+              >
+                <ArrowLeft className="size-3" /> Back to Lens
+              </button>
+            </div>
             <div className="max-w-md mx-auto">
               <DualCapture
                 onSubmit={handlePostOotd}
@@ -236,8 +238,8 @@ export function StudioCameraDrawer({
                   <span className="font-serif text-base text-ink">Post Today's OOTD</span>
                 </span>
               </span>
-              <span className="text-micro uppercase tracking-label-xwide text-stone group-hover:text-ink">
-                Dual capture →
+              <span className="text-micro uppercase tracking-label-xwide text-stone group-hover:text-ink flex items-center gap-1">
+                Dual capture <ArrowRight className="size-3.5" strokeWidth={1.75} />
               </span>
             </button>
           </>
@@ -269,7 +271,7 @@ export function StudioCameraDrawer({
                     if (m.id !== "dupe-hunter") resetDupeState();
                   }}
                   className={cn(
-                    "relative z-10 py-2.5 text-micro uppercase tracking-label-xwide rounded-full transition-colors duration-300",
+                    "relative z-10 py-2.5 text-xs uppercase tracking-label-xwide rounded-full transition-colors duration-300",
                     active
                       ? "text-ink font-semibold"
                       : "text-muted-foreground hover:text-foreground",

@@ -538,7 +538,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
         </div>
       </section>
 
-      <div className="px-6 sm:px-10 py-6 border-t-[0.5px] border-border flex justify-end">
+      {/* <div className="px-6 sm:px-10 py-6 border-t-[0.5px] border-border flex justify-end">
         <Button
           variant="outline"
           size="sm"
@@ -547,7 +547,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
           <Archive className="size-3.5" />
           Archive Dossier
         </Button>
-      </div>
+      </div> */}
     </section>
   );
 }
