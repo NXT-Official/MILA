@@ -223,14 +223,12 @@ export function StudioMembershipDrawer({
   return (
     <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-background">
-        <SheetHeader className="px-6 pt-8 pb-5 border-b border-porcelain/40 flex flex-row items-end justify-between space-y-0">
+        <SheetHeader className="px-6 pt-8 pb-5 border-b border-porcelain/30 flex flex-row items-end justify-between space-y-0">
           <div className="space-y-1 text-left">
             <SheetTitle className="font-serif text-2xl text-ink tracking-wide">
               {heading.title}
             </SheetTitle>
-            <SheetDescription className="text-micro uppercase tracking-label-wide text-stone">
-              {heading.sub}
-            </SheetDescription>
+            <SheetDescription className="atelier-label">{heading.sub}</SheetDescription>
           </div>
 
           <button
@@ -268,16 +266,16 @@ export function StudioMembershipDrawer({
                     </p>
                     <p className="truncate text-label text-stone">@{user.username}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5 text-pico uppercase tracking-label-tight">
-                      <span className="rounded-full border border-porcelain/70 bg-background/60 px-2 py-1 text-ink">
+                      <span className="rounded-full border border-porcelain/60 bg-background/60 px-2 py-1 text-ink">
                         Season · {user.season ?? "Unset"}
                       </span>
                       <span
-                        className={`rounded-full border px-2 py-1 ${user.faceShape ? "border-porcelain/70 bg-background/60 text-ink" : "border-amber-400/40 bg-amber-50/60 text-amber-700"}`}
+                        className={`rounded-full border px-2 py-1 ${user.faceShape ? "border-porcelain/60 bg-background/60 text-ink" : "border-amber-400/40 bg-amber-50/60 text-amber-700"}`}
                       >
                         Face · {user.faceShape ?? "—"}
                       </span>
                       <span
-                        className={`rounded-full border px-2 py-1 ${user.hairType ? "border-porcelain/70 bg-background/60 text-ink" : "border-amber-400/40 bg-amber-50/60 text-amber-700"}`}
+                        className={`rounded-full border px-2 py-1 ${user.hairType ? "border-porcelain/60 bg-background/60 text-ink" : "border-amber-400/40 bg-amber-50/60 text-amber-700"}`}
                       >
                         Hair · {user.hairType ?? "—"}
                       </span>
@@ -288,7 +286,7 @@ export function StudioMembershipDrawer({
                       to="/profile/$userId"
                       params={{ userId: authUser.id }}
                       onClick={onClose}
-                      className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-porcelain/70 bg-background/60 px-3 text-pico uppercase tracking-label-tight text-ink transition-colors hover:bg-background"
+                      className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-porcelain/60 bg-background/60 px-3 text-pico uppercase tracking-label-tight text-ink transition-colors hover:bg-background"
                     >
                       View Profile
                       <ArrowRight className="size-3" aria-hidden="true" />
@@ -306,16 +304,14 @@ export function StudioMembershipDrawer({
                   </Link>
                 )}
               </div>
-              <div className="relative overflow-hidden rounded-2xl border border-porcelain/50 bg-linear-to-br from-atelier-champagne/30 via-background to-porcelain/20 p-6 shadow-atelier-soft">
+              <div className="relative overflow-hidden rounded-2xl border border-porcelain/60 bg-linear-to-br from-atelier-champagne/30 via-background to-porcelain/20 p-6 shadow-atelier-soft">
                 <div
                   aria-hidden
                   className="absolute -top-16 -right-16 h-44 w-44 rounded-full bg-atelier-champagne/30 blur-3xl pointer-events-none"
                 />
                 <div className="relative space-y-6">
                   <div className="flex items-end justify-between">
-                    <span className="text-micro uppercase tracking-label-wide text-stone">
-                      Concierge Access
-                    </span>
+                    <span className="atelier-label">Concierge Access</span>
                     <div className="text-right">
                       <div className="font-serif text-2xl text-ink leading-none">Atelier</div>
                       <div className="text-micro uppercase tracking-label text-stone mt-1">
@@ -407,7 +403,7 @@ export function StudioMembershipDrawer({
                 </div>
               </div>
 
-              <div className="space-y-px rounded-xl overflow-hidden border border-porcelain/40">
+              <div className="space-y-px rounded-xl overflow-hidden border border-porcelain/30">
                 <Link
                   to="/style-profile"
                   onClick={onClose}
@@ -434,10 +430,8 @@ export function StudioMembershipDrawer({
           ) : view === "preferences" ? (
             <div className="space-y-8">
               <div className="space-y-3">
-                <p className="text-micro uppercase tracking-label-wide text-stone">
-                  Account details
-                </p>
-                <div className="rounded-xl border border-porcelain/40 overflow-hidden">
+                <p className="atelier-label">Account details</p>
+                <div className="rounded-xl border border-porcelain/30 overflow-hidden">
                   <button
                     onClick={() => setView("security")}
                     className="w-full flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors border-b border-porcelain/30"
@@ -453,20 +447,15 @@ export function StudioMembershipDrawer({
               </div>
 
               <div className="space-y-3">
-                <p className="text-micro uppercase tracking-label-wide text-stone">
-                  Styling parameters
-                </p>
-                <div className="rounded-xl border border-porcelain/40 overflow-hidden divide-y divide-porcelain/30">
+                <p className="atelier-label">Styling parameters</p>
+                <div className="rounded-xl border border-porcelain/30 overflow-hidden divide-y divide-porcelain/30">
                   <div className="flex items-center justify-between px-5 py-4">
                     <span className="text-sm text-ink">Climate Measurement</span>
                     <span className="text-micro uppercase tracking-label text-stone">
                       Celsius (°C)
                     </span>
                   </div>
-                  <button
-                    onClick={() => setView("location")}
-                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-porcelain/20 transition-colors"
-                  >
+                  <button onClick={() => setView("location")} className="atelier-row-action">
                     <span className="text-sm text-ink">Default Location</span>
                     <span className="flex items-center gap-3">
                       <span className="text-micro uppercase tracking-label text-stone">
@@ -475,10 +464,7 @@ export function StudioMembershipDrawer({
                       <span className="text-stone">→</span>
                     </span>
                   </button>
-                  <button
-                    onClick={() => setView("privacy")}
-                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-porcelain/20 transition-colors"
-                  >
+                  <button onClick={() => setView("privacy")} className="atelier-row-action">
                     <span className="text-sm text-ink">Privacy &amp; Data</span>
                     <span className="text-stone">→</span>
                   </button>
@@ -498,10 +484,8 @@ export function StudioMembershipDrawer({
             </div>
           ) : view === "location" ? (
             <div className="space-y-3">
-              <p className="text-micro uppercase tracking-label-wide text-stone">
-                Climate sync hub
-              </p>
-              <div className="rounded-xl border border-porcelain/40 overflow-hidden divide-y divide-porcelain/30">
+              <p className="atelier-label">Climate sync hub</p>
+              <div className="rounded-xl border border-porcelain/30 overflow-hidden divide-y divide-porcelain/30">
                 {HUBS.map((h) => (
                   <button
                     key={h.id}
@@ -510,7 +494,7 @@ export function StudioMembershipDrawer({
                       void saveDefaultHubId(authUser?.id, h.id);
                       setView("preferences");
                     }}
-                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-porcelain/20 transition-colors"
+                    className="atelier-row-action"
                   >
                     <span className="text-sm text-ink">{h.city}</span>
                     <span className="flex items-center gap-3 text-micro uppercase tracking-label text-stone">
@@ -529,7 +513,7 @@ export function StudioMembershipDrawer({
           ) : view === "security" ? (
             <div className="space-y-8">
               <form onSubmit={changeEmail} className="space-y-3">
-                <p className="text-micro uppercase tracking-label-wide text-stone">Email address</p>
+                <p className="atelier-label">Email address</p>
                 <p className="text-xs text-stone">
                   Current: <span className="text-ink">{authUser?.email}</span>
                 </p>
@@ -553,9 +537,7 @@ export function StudioMembershipDrawer({
                 onSubmit={changePassword}
                 className="space-y-3 pt-6 border-t border-porcelain/30"
               >
-                <p className="text-micro uppercase tracking-label-wide text-stone">
-                  Change password
-                </p>
+                <p className="atelier-label">Change password</p>
                 <Input
                   type="password"
                   placeholder="Current password"
@@ -646,7 +628,7 @@ export function StudioMembershipDrawer({
           ) : (
             <div className="space-y-8">
               <div className="space-y-3">
-                <p className="text-micro uppercase tracking-label-wide text-stone">Your data</p>
+                <p className="atelier-label">Your data</p>
                 <p className="text-xs text-stone leading-relaxed">
                   Mila stores your style profile, outfit analyses, community posts, and favorites to
                   tailor your recommendations. Your data is never sold and is only used within the
@@ -670,9 +652,7 @@ export function StudioMembershipDrawer({
               </div>
 
               <div className="pt-4 border-t border-porcelain/30 space-y-3">
-                <p className="text-micro uppercase tracking-label-wide text-stone">
-                  Account removal
-                </p>
+                <p className="atelier-label">Account removal</p>
                 <p className="text-micro text-stone leading-relaxed">
                   You can permanently delete your account and all associated data yourself, under
                   Email &amp; Security.

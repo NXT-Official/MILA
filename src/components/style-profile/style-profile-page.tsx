@@ -770,7 +770,7 @@ export function StyleProfile() {
                                   })}
                                 </div>
                               </div>
-                              <div className="space-y-3 pt-4 border-t border-porcelain/40">
+                              <div className="space-y-3 pt-4 border-t border-porcelain/30">
                                 <label className="text-xs uppercase tracking-label text-ink font-medium block">
                                   The Depth of Contrast
                                 </label>

@@ -99,10 +99,7 @@ function FeedPage() {
         {isLoading && (
           <div className="space-y-6">
             {[0, 1].map((i) => (
-              <div
-                key={i}
-                className="rounded-3xl border border-porcelain/60 bg-background/60 backdrop-blur overflow-hidden"
-              >
+              <div key={i} className="rounded-3xl atelier-glass overflow-hidden">
                 <div className="h-16 bg-porcelain/30" />
                 <div className="aspect-3/4 bg-porcelain/20 animate-pulse" />
               </div>
@@ -123,7 +120,7 @@ function FeedPage() {
         )}
 
         {!isLoading && !isError && posts.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-porcelain/70 p-10 text-center">
+          <div className="rounded-3xl border border-dashed border-porcelain/60 p-10 text-center">
             <p className="font-serif text-xl text-ink">You're first to the mirror today.</p>
             <p className="mt-2 text-sm text-stone">
               As your circle posts, their looks will land here.

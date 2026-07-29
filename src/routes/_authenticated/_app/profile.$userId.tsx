@@ -94,13 +94,13 @@ function MemberProfilePage() {
               <p className="mt-1 text-sm text-stone">@{data.profile.username}</p>
             )}
             <div className="mt-3 flex flex-wrap gap-2 text-nano uppercase tracking-label text-ink">
-              <span className="rounded-full border border-porcelain/70 bg-background/60 px-2.5 py-1">
+              <span className="rounded-full border border-porcelain/60 bg-background/60 px-2.5 py-1">
                 Season · {data.profile.color_season ?? "Unset"}
               </span>
-              <span className="rounded-full border border-porcelain/70 bg-background/60 px-2.5 py-1">
+              <span className="rounded-full border border-porcelain/60 bg-background/60 px-2.5 py-1">
                 Face · {data.profile.face_shape ?? "—"}
               </span>
-              <span className="rounded-full border border-porcelain/70 bg-background/60 px-2.5 py-1">
+              <span className="rounded-full border border-porcelain/60 bg-background/60 px-2.5 py-1">
                 Hair · {data.profile.hair_type ?? "—"}
               </span>
             </div>
@@ -199,7 +199,7 @@ function MemberProfilePage() {
           ))}
         </div>
       ) : (
-        <div className="rounded-3xl border border-dashed border-porcelain/70 p-10 text-center text-sm text-stone">
+        <div className="rounded-3xl border border-dashed border-porcelain/60 p-10 text-center text-sm text-stone">
           {tab === "hidden" ? "No hidden posts." : "No visible posts yet."}
         </div>
       )}

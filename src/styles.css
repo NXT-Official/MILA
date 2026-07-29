@@ -312,3 +312,34 @@
       backdrop-blur-xl;
   }
 }
+
+/* Recurring recipes. Each of these was typed out verbatim in 3+ places
+   before, with drifting opacities. Radius is deliberately NOT baked into
+   atelier-glass — callers pill it, round it, or square it. */
+
+@utility atelier-label {
+  @apply text-micro uppercase tracking-label-wide text-stone;
+}
+
+@utility atelier-glass {
+  @apply border border-porcelain/60 bg-background/70 backdrop-blur-xl;
+}
+
+@utility atelier-media-frame {
+  @apply relative mx-auto aspect-square w-full overflow-hidden rounded-card
+    border border-border bg-card shadow-paper;
+}
+
+@utility atelier-row-action {
+  @apply flex w-full items-center justify-between px-5 py-4 transition-colors
+    hover:bg-porcelain/20;
+}
+
+@utility atelier-headline {
+  @apply font-serif text-2xl leading-snug tracking-tight;
+}
+
+@utility atelier-tile {
+  @apply rounded-none border-[0.5px] border-border p-5 text-left transition-all
+    hover:border-foreground/40;
+}

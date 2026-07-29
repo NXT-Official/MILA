@@ -66,7 +66,7 @@ function AuthLayout() {
             </a>
             <button
               onClick={() => signOut()}
-              className="rounded-full border border-porcelain/60 text-micro uppercase tracking-label-wide text-stone hover:text-ink hover:border-porcelain px-5 py-2.5 transition-colors"
+              className="rounded-full border border-porcelain/60 atelier-label hover:text-ink hover:border-porcelain px-5 py-2.5 transition-colors"
             >
               Sign Out
             </button>

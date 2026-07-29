@@ -18,10 +18,7 @@ export function OutfitVisual({
 }) {
   if (loading) {
     return (
-      <div
-        className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-card border border-border bg-card shadow-paper"
-        role="status"
-      >
+      <div className="atelier-media-frame max-w-lg" role="status">
         <div className="absolute inset-0 animate-pulse bg-accent-soft/50" />
         <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
           <Loader2 className="size-5 animate-spin text-accent" aria-hidden="true" />
@@ -34,7 +31,7 @@ export function OutfitVisual({
 
   if (imageDataUri) {
     return (
-      <div className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-card border border-border bg-card shadow-paper">
+      <div className="atelier-media-frame max-w-lg">
         <img
           src={imageDataUri}
           alt={`AI-generated visualization of ${headline}`}
@@ -45,7 +42,7 @@ export function OutfitVisual({
   }
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-card border border-border bg-card shadow-paper">
+    <div className="atelier-media-frame max-w-lg">
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <ImageOff className="size-6 text-muted-foreground" aria-hidden="true" />
         <p className="text-sm text-muted-foreground">

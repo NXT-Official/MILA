@@ -83,7 +83,7 @@ export function DataTable<TData, TValue>({
           <div />
         )}
         {action ?? (
-          <div className="text-micro uppercase tracking-label-wide text-stone">
+          <div className="atelier-label">
             {isLoading ? "Loading…" : `${table.getFilteredRowModel().rows.length} ${countLabel}`}
           </div>
         )}
@@ -93,7 +93,7 @@ export function DataTable<TData, TValue>({
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-porcelain/40 hover:bg-transparent">
+              <TableRow key={headerGroup.id} className="border-porcelain/30 hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}

@@ -49,9 +49,7 @@ function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <section>
-          <h2 className="text-micro uppercase tracking-label-wide text-stone mb-4">
-            Recent Members
-          </h2>
+          <h2 className="atelier-label mb-4">Recent Members</h2>
           <div className="rounded-panel border border-porcelain/60 bg-atelier-panel/40 overflow-hidden">
             {(stats?.recentMembers ?? []).map((m) => (
               <div
@@ -78,18 +76,13 @@ function AdminDashboard() {
               </div>
             )}
           </div>
-          <Link
-            to="/admin/members"
-            className="mt-3 inline-block text-micro uppercase tracking-label-wide text-stone hover:text-ink"
-          >
+          <Link to="/admin/members" className="mt-3 inline-block atelier-label hover:text-ink">
             View all members →
           </Link>
         </section>
 
         <section>
-          <h2 className="text-micro uppercase tracking-label-wide text-stone mb-4">
-            Recent Activity
-          </h2>
+          <h2 className="atelier-label mb-4">Recent Activity</h2>
           <div className="rounded-panel border border-porcelain/60 bg-atelier-panel/40 overflow-hidden">
             {(stats?.recentPosts ?? []).map((p) => (
               <div
@@ -121,10 +114,7 @@ function AdminDashboard() {
               </div>
             )}
           </div>
-          <Link
-            to="/admin/moderation"
-            className="mt-3 inline-block text-micro uppercase tracking-label-wide text-stone hover:text-ink"
-          >
+          <Link to="/admin/moderation" className="mt-3 inline-block atelier-label hover:text-ink">
             View moderation →
           </Link>
         </section>

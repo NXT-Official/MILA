@@ -223,10 +223,10 @@ export function StudioCameraDrawer({
             <button
               type="button"
               onClick={() => setPostingOpen(true)}
-              className="group mx-auto mb-6 flex max-w-md w-full items-center justify-between gap-4 rounded-2xl border border-porcelain/70 bg-linear-to-r from-atelier-ivory via-background to-atelier-ivory/70 backdrop-blur-xl px-5 py-4 text-left shadow-atelier-soft hover:shadow-atelier-float transition-shadow"
+              className="group mx-auto mb-6 flex max-w-md w-full items-center justify-between gap-4 rounded-2xl border border-porcelain/60 bg-linear-to-r from-atelier-ivory via-background to-atelier-ivory/70 backdrop-blur-xl px-5 py-4 text-left shadow-atelier-soft hover:shadow-atelier-float transition-shadow"
             >
               <span className="flex items-center gap-3">
-                <span className="size-10 rounded-full border border-porcelain/70 bg-background flex items-center justify-center">
+                <span className="size-10 rounded-full border border-porcelain/60 bg-background flex items-center justify-center">
                   <Camera className="size-4 text-ink" strokeWidth={1.75} />
                 </span>
                 <span className="flex flex-col">
@@ -247,7 +247,7 @@ export function StudioCameraDrawer({
           <div
             role="tablist"
             aria-label="Lens mode"
-            className="mx-auto mb-6 relative grid grid-cols-2 max-w-md rounded-full border border-porcelain/60 bg-background/40 backdrop-blur-xl p-1 shadow-atelier-soft"
+            className="mx-auto mb-6 relative grid grid-cols-2 max-w-md rounded-full atelier-glass p-1 shadow-atelier-soft"
           >
             <span
               aria-hidden
@@ -335,7 +335,7 @@ export function StudioCameraDrawer({
 
                 {dupeResult && !dupeLoading && (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-4 rounded-2xl border border-porcelain/60 bg-background/60 backdrop-blur p-4">
+                    <div className="flex items-center gap-4 rounded-2xl atelier-glass p-4">
                       {inspirationPreview && (
                         <img
                           src={inspirationPreview}
@@ -370,7 +370,7 @@ export function StudioCameraDrawer({
                       <button
                         type="button"
                         onClick={resetDupeState}
-                        className="text-micro uppercase tracking-label-wide text-stone hover:text-ink"
+                        className="atelier-label hover:text-ink"
                       >
                         Hunt again
                       </button>
@@ -381,7 +381,7 @@ export function StudioCameraDrawer({
                         <CarouselContent className="-ml-3">
                           {dupeResult.dupes.map((d) => (
                             <CarouselItem key={d.id} className="pl-3 basis-[78%] sm:basis-1/2">
-                              <div className="h-full rounded-2xl border border-porcelain/60 bg-background/70 backdrop-blur overflow-hidden flex flex-col shadow-atelier-soft">
+                              <div className="h-full rounded-2xl atelier-glass overflow-hidden flex flex-col shadow-atelier-soft">
                                 <div className="aspect-3/4 bg-atelier-ivory/60 overflow-hidden">
                                   {d.image_url && (
                                     <img
@@ -415,7 +415,7 @@ export function StudioCameraDrawer({
                                     <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
                                       {d.title}
                                     </p>
-                                    <p className="mt-1 text-micro uppercase tracking-label-wide text-stone">
+                                    <p className="mt-1 atelier-label">
                                       {formatPrice(d.price, d.currency)}
                                     </p>
                                   </div>

@@ -195,7 +195,7 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
             <HistoryImage
               src={item.image_url}
               alt={`Generated visualization of ${outfit.headline}`}
-              frameClassName="relative mx-auto aspect-square w-full max-w-128 overflow-hidden rounded-card border border-border bg-card shadow-paper"
+              frameClassName="atelier-media-frame max-w-128"
             />
           }
         />
@@ -210,7 +210,7 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
         <HistoryImage
           src={item.image_url}
           alt="Analyzed outfit photo"
-          frameClassName="relative mx-auto aspect-square w-full max-w-128 overflow-hidden rounded-card border border-border bg-card shadow-paper"
+          frameClassName="atelier-media-frame max-w-128"
         />
         {verdict ? (
           <div className="rounded-card border border-border bg-card p-6 shadow-paper">

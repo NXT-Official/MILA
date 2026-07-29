@@ -9,7 +9,7 @@ export function PostCanvas({ post }: { post: FeedPost }) {
   const initial = (author[0] || "M").toUpperCase();
 
   return (
-    <article className="rounded-3xl border border-porcelain/60 bg-background/70 backdrop-blur-xl shadow-atelier-soft overflow-hidden">
+    <article className="rounded-3xl atelier-glass shadow-atelier-soft overflow-hidden">
       <header className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="size-9 rounded-full border border-porcelain/60 bg-linear-to-br from-atelier-champagne/30 to-porcelain/20 flex items-center justify-center font-serif text-sm text-ink">

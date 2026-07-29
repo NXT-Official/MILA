@@ -134,7 +134,7 @@ export function ColorQuiz({
             <LightingStep onConfirm={() => setStep(1)} />
           ) : step === 1 ? (
             <div className="space-y-6">
-              <h3 className="font-serif text-2xl tracking-tight leading-snug">
+              <h3 className="atelier-headline">
                 Let's find your underlying warmth.
                 <br />
                 Which colors feel most natural against your skin?
@@ -184,7 +184,7 @@ export function ColorQuiz({
             </div>
           ) : step === 2 ? (
             <div className="space-y-6">
-              <h3 className="font-serif text-2xl tracking-tight leading-snug">
+              <h3 className="atelier-headline">
                 A quick drape test.
                 <br />
                 Which swatch softens shadows around your eyes?
@@ -228,7 +228,7 @@ export function ColorQuiz({
             </div>
           ) : step === 3 ? (
             <div className="space-y-6">
-              <h3 className="font-serif text-2xl tracking-tight leading-snug">
+              <h3 className="atelier-headline">
                 Now look at your natural contrast.
                 <br />
                 How do your features sit against your skin?
@@ -239,7 +239,7 @@ export function ColorQuiz({
                     setValue("Light");
                     setStep(4);
                   }}
-                  className="border-[0.5px] border-border p-5 text-left rounded-none transition-all hover:border-foreground/40"
+                  className="atelier-tile"
                 >
                   <p className="text-xs uppercase font-medium tracking-widest">
                     Soft, low contrast
@@ -254,7 +254,7 @@ export function ColorQuiz({
                     setValue("Deep");
                     setStep(4);
                   }}
-                  className="border-[0.5px] border-border p-5 text-left rounded-none transition-all hover:border-foreground/40"
+                  className="atelier-tile"
                 >
                   <p className="text-xs uppercase font-medium tracking-widest">
                     Striking, high contrast
@@ -292,7 +292,7 @@ export function ColorQuiz({
             </div>
           ) : step === 5 ? (
             <div className="space-y-6">
-              <h3 className="font-serif text-2xl tracking-tight leading-snug">
+              <h3 className="atelier-headline">
                 Look closely at your eyes.
                 <br />
                 How would you describe your iris?
@@ -303,7 +303,7 @@ export function ColorQuiz({
                     setEyeBrightness("Bright");
                     setStep(6);
                   }}
-                  className="border-[0.5px] border-border p-5 text-left rounded-none transition-all hover:border-foreground/40"
+                  className="atelier-tile"
                 >
                   <p className="text-xs uppercase font-medium tracking-widest">
                     Glassy and jewel-like
@@ -318,7 +318,7 @@ export function ColorQuiz({
                     setEyeBrightness("Soft");
                     setStep(6);
                   }}
-                  className="border-[0.5px] border-border p-5 text-left rounded-none transition-all hover:border-foreground/40"
+                  className="atelier-tile"
                 >
                   <p className="text-xs uppercase font-medium tracking-widest">
                     Smoky and softly blended
@@ -332,7 +332,7 @@ export function ColorQuiz({
             </div>
           ) : step === 6 ? (
             <div className="space-y-6">
-              <h3 className="font-serif text-2xl tracking-tight leading-snug">
+              <h3 className="atelier-headline">
                 A quick saturation check.
                 <br />
                 Which tones bring out your natural presence?

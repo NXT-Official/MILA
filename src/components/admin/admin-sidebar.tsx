@@ -114,7 +114,7 @@ export function AdminSidebar({
         )}
       </nav>
 
-      <div className="mt-auto border-t border-porcelain/50 pt-4">
+      <div className="mt-auto border-t border-porcelain/60 pt-4">
         <div className="flex items-center gap-2.5 px-1 py-1">
           <div className="size-8 shrink-0 rounded-full border border-porcelain/60 bg-atelier-panel flex items-center justify-center font-serif text-xs text-ink">
             {initial}
@@ -131,7 +131,7 @@ export function AdminSidebar({
           onClick={handleSignOut}
           disabled={signingOut}
           aria-label="Sign out"
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-porcelain/60 px-4 py-2 text-micro uppercase tracking-label-wide text-stone transition-colors hover:border-accent/40 hover:text-ink disabled:opacity-50"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-porcelain/60 px-4 py-2 atelier-label transition-colors hover:border-accent/40 hover:text-ink disabled:opacity-50"
         >
           {signingOut ? (
             <Loader2 className="size-3.5 animate-spin" />

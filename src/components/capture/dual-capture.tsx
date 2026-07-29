@@ -120,7 +120,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
             type="button"
             onClick={() => retake("back")}
             disabled={submitting}
-            className="h-10 rounded-full border border-porcelain/60 text-micro uppercase tracking-label-wide text-stone hover:text-ink hover:border-porcelain transition-colors disabled:opacity-50"
+            className="h-10 rounded-full border border-porcelain/60 atelier-label hover:text-ink hover:border-porcelain transition-colors disabled:opacity-50"
           >
             Retake the fit
           </button>
@@ -128,7 +128,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
             type="button"
             onClick={() => retake("front")}
             disabled={submitting}
-            className="h-10 rounded-full border border-porcelain/60 text-micro uppercase tracking-label-wide text-stone hover:text-ink hover:border-porcelain transition-colors disabled:opacity-50"
+            className="h-10 rounded-full border border-porcelain/60 atelier-label hover:text-ink hover:border-porcelain transition-colors disabled:opacity-50"
           >
             Retake portrait
           </button>
@@ -144,7 +144,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
             maxLength={500}
             rows={3}
             placeholder="A line about today's mood, the weather, the muse…"
-            className="w-full rounded-2xl border border-porcelain/60 bg-background/70 backdrop-blur p-4 text-sm text-ink placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-atelier-champagne"
+            className="w-full rounded-2xl atelier-glass p-4 text-sm text-ink placeholder:text-stone focus:outline-none focus:ring-1 focus:ring-atelier-champagne"
           />
         </div>
 
@@ -155,7 +155,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
               variant="ghost"
               onClick={onCancel}
               disabled={submitting}
-              className="text-micro uppercase tracking-label-wide text-stone"
+              className="atelier-label"
             >
               Cancel
             </Button>
@@ -199,12 +199,12 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
           onClick={() => startCamera(copy.facing)}
           disabled={starting}
           className={cn(
-            "group relative w-full aspect-3/4 rounded-2xl overflow-hidden border border-dashed border-porcelain/70 bg-atelier-ivory/40 backdrop-blur-xl transition-colors hover:border-ink/30",
+            "group relative w-full aspect-3/4 rounded-2xl overflow-hidden border border-dashed border-porcelain/60 bg-atelier-ivory/40 backdrop-blur-xl transition-colors hover:border-ink/30",
             starting && "opacity-60 cursor-wait",
           )}
         >
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
-            <div className="size-16 rounded-full border border-porcelain/70 bg-background/60 backdrop-blur flex items-center justify-center mb-5">
+            <div className="size-16 rounded-full atelier-glass flex items-center justify-center mb-5">
               {starting ? (
                 <Loader2 className="size-6 animate-spin" />
               ) : (

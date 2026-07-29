@@ -66,7 +66,7 @@ function ModerationPage() {
         </TabsList>
       </Tabs>
 
-      <div className="mb-6 text-micro uppercase tracking-label-wide text-stone">
+      <div className="mb-6 atelier-label">
         {isLoading ? "Loading…" : `${activeRows.length} entries`}
       </div>
 
@@ -116,11 +116,11 @@ function ModerationPage() {
                   Reason: {p.hidden_reason?.trim() || "No reason was provided."}
                 </p>
               )}
-              <div className="mt-auto flex items-center gap-2 pt-2 border-t border-porcelain/40">
+              <div className="mt-auto flex items-center gap-2 pt-2 border-t border-porcelain/30">
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="flex-1 h-8 text-micro uppercase tracking-label-wide text-stone hover:text-ink"
+                  className="flex-1 h-8 atelier-label hover:text-ink"
                   onClick={() => toggleHidden(p.id, !p.hidden)}
                 >
                   {p.hidden ? (
@@ -151,7 +151,7 @@ function ModerationPage() {
         ))}
       </div>
       {!isLoading && activeRows.length === 0 && (
-        <div className="flex flex-col items-center gap-2 px-5 py-16 text-center text-sm text-stone border border-porcelain/40 rounded-panel">
+        <div className="flex flex-col items-center gap-2 px-5 py-16 text-center text-sm text-stone border border-porcelain/30 rounded-panel">
           <Inbox className="size-6 text-muted" strokeWidth={1.75} aria-hidden="true" />
           {tab === "hidden" ? "No hidden posts." : "No visible posts."}
         </div>

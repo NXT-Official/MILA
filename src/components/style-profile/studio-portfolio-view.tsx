@@ -245,7 +245,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-card p-6 rounded-card border border-border shadow-paper space-y-6">
-            <div className="text-center pb-4 border-b border-porcelain/50">
+            <div className="text-center pb-4 border-b border-porcelain/60">
               <h4 className="font-serif text-lg text-ink">The Signature Lip</h4>
               <p className="text-micro text-stone uppercase tracking-widest mt-1">
                 Pigment &amp; Finish
@@ -274,7 +274,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
           </div>
 
           <div className="bg-card p-6 rounded-card border border-border shadow-paper space-y-6">
-            <div className="text-center pb-4 border-b border-porcelain/50">
+            <div className="text-center pb-4 border-b border-porcelain/60">
               <h4 className="font-serif text-lg text-ink">The Natural Flush</h4>
               <p className="text-micro text-stone uppercase tracking-widest mt-1">
                 Cheek &amp; Warmth
@@ -322,7 +322,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
           </div>
 
           <div className="bg-card p-6 rounded-card border border-border shadow-paper space-y-6">
-            <div className="text-center pb-4 border-b border-porcelain/50">
+            <div className="text-center pb-4 border-b border-porcelain/60">
               <h4 className="font-serif text-lg text-ink">Luminous Accents</h4>
               <p className="text-micro text-stone uppercase tracking-widest mt-1">
                 Highlight &amp; Lid
