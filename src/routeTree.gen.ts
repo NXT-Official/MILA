@@ -26,6 +26,7 @@ import { Route as AuthenticatedAdminMembersRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminCreditPacksRouteImport } from './routes/_authenticated/admin/credit-packs'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
+import { Route as AuthenticatedAppPalettesRouteImport } from './routes/_authenticated/_app/palettes'
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
 import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
@@ -123,6 +124,12 @@ const AuthenticatedAppPricingRoute = AuthenticatedAppPricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppPalettesRoute =
+  AuthenticatedAppPalettesRouteImport.update({
+    id: '/palettes',
+    path: '/palettes',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppHistoryRoute = AuthenticatedAppHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
   '/history': typeof AuthenticatedAppHistoryRoute
+  '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
@@ -191,6 +199,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
   '/history': typeof AuthenticatedAppHistoryRoute
+  '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
@@ -217,6 +226,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/feed': typeof AuthenticatedAppFeedRoute
   '/_authenticated/_app/history': typeof AuthenticatedAppHistoryRoute
+  '/_authenticated/_app/palettes': typeof AuthenticatedAppPalettesRoute
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/_authenticated/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feed'
     | '/history'
+    | '/palettes'
     | '/pricing'
     | '/style-profile'
     | '/admin/credit-packs'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/feed'
     | '/history'
+    | '/palettes'
     | '/pricing'
     | '/style-profile'
     | '/admin/credit-packs'
@@ -289,6 +301,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/feed'
     | '/_authenticated/_app/history'
+    | '/_authenticated/_app/palettes'
     | '/_authenticated/_app/pricing'
     | '/_authenticated/_app/style-profile'
     | '/_authenticated/admin/credit-packs'
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPricingRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/palettes': {
+      id: '/_authenticated/_app/palettes'
+      path: '/palettes'
+      fullPath: '/palettes'
+      preLoaderRoute: typeof AuthenticatedAppPalettesRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/history': {
       id: '/_authenticated/_app/history'
       path: '/history'
@@ -482,6 +502,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppFeedRoute: typeof AuthenticatedAppFeedRoute
   AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
+  AuthenticatedAppPalettesRoute: typeof AuthenticatedAppPalettesRoute
   AuthenticatedAppPricingRoute: typeof AuthenticatedAppPricingRoute
   AuthenticatedAppStyleProfileRoute: typeof AuthenticatedAppStyleProfileRoute
   AuthenticatedAppProfileUserIdRoute: typeof AuthenticatedAppProfileUserIdRoute
@@ -493,6 +514,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppFeedRoute: AuthenticatedAppFeedRoute,
   AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,
+  AuthenticatedAppPalettesRoute: AuthenticatedAppPalettesRoute,
   AuthenticatedAppPricingRoute: AuthenticatedAppPricingRoute,
   AuthenticatedAppStyleProfileRoute: AuthenticatedAppStyleProfileRoute,
   AuthenticatedAppProfileUserIdRoute: AuthenticatedAppProfileUserIdRoute,

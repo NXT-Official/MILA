@@ -6,7 +6,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    const { message } = error as { message: unknown };
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
 }
 
 const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });

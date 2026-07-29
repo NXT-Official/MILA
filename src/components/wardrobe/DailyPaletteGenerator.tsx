@@ -3,6 +3,17 @@ import { RefreshCw, Sparkles, Bookmark } from "lucide-react";
 import { motion } from "framer-motion";
 import { generateDailyPalette } from "@/lib/color-analysis/paletteGenerator";
 import { migrateLegacySeason } from "@/lib/color-analysis/schemaMigration";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/query-keys";
+import {
+  deleteSavedPalette,
+  savePalette,
+  savedPalettesQueryOptions,
+} from "@/lib/queries/saved-palettes";
+import { errorMessage } from "@/lib/utils";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { SeasonId } from "@/lib/color-analysis/types";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -17,13 +28,30 @@ function hexToRgba(hex: string, alpha: number): string {
 
 export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: string | null }) {
   const [isRotating, setIsRotating] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [mixCount, setMixCount] = useState(1);
 
   const normalizedSeason = userColorSeason
     ? migrateLegacySeason(userColorSeason)
     : ("cool_summer" as SeasonId);
-  const [look, setLook] = useState(generateDailyPalette(normalizedSeason));
+  const [look, setLook] = useState(() => generateDailyPalette(normalizedSeason));
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: savedPalettes } = useQuery({
+    ...savedPalettesQueryOptions(user?.id),
+    enabled: !!user?.id,
+  });
+
+  // The pin lives in the saved collection, so this stays true across devices.
+  const savedRow = savedPalettes?.find(
+    (row) =>
+      row.palette.baseHex === look.baseHex &&
+      row.palette.statementHex === look.statementHex &&
+      row.palette.accentHex === look.accentHex,
+  );
+  const saved = !!savedRow;
+  const savedCount = savedPalettes?.length ?? 0;
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "short",
@@ -34,13 +62,35 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
   const handleShuffle = useCallback(() => {
     setIsRotating(true);
     setMixCount((c) => c + 1);
-    setSaved(false);
     setTimeout(() => {
       const next = generateDailyPalette(normalizedSeason);
       setLook(next);
       setIsRotating(false);
     }, 700);
   }, [normalizedSeason]);
+
+  const [pending, setPending] = useState(false);
+  const toggleSaved = useCallback(async () => {
+    if (!user) return;
+    setPending(true);
+    try {
+      if (savedRow) {
+        await deleteSavedPalette(user.id, savedRow.id);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.savedPalettes(user.id) });
+        toast.success("Palette removed from your saved list.");
+      } else {
+        await savePalette(user.id, look);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.savedPalettes(user.id) });
+        toast.success(`${look.styleVibe} saved.`, {
+          action: { label: "View all", onClick: () => navigate({ to: "/palettes" }) },
+        });
+      }
+    } catch (e) {
+      toast.error(errorMessage(e, "Couldn't update your saved palettes."));
+    } finally {
+      setPending(false);
+    }
+  }, [user, savedRow, look, queryClient, navigate]);
 
   const swatches = useMemo(
     () => [
@@ -100,7 +150,8 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
 
       <div className="flex gap-2">
         <IconButton
-          onClick={() => setSaved((s) => !s)}
+          onClick={toggleSaved}
+          disabled={pending || !user}
           variant={saved ? "primary" : "outline"}
           label={saved ? "Unsave palette" : "Save palette"}
         >
@@ -112,6 +163,16 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
           <span>Generate Next Look</span>
         </Button>
       </div>
+
+      <Link
+        to="/palettes"
+        className="atelier-focus-ring flex items-center justify-center gap-1.5 rounded-control text-micro uppercase tracking-label-wide text-muted-foreground transition-colors hover:text-ink"
+      >
+        <Bookmark className="size-3" strokeWidth={1.75} aria-hidden="true" />
+        {savedCount > 0
+          ? `View ${savedCount} saved palette${savedCount === 1 ? "" : "s"}`
+          : "View saved palettes"}
+      </Link>
     </div>
   );
 }
