@@ -665,6 +665,38 @@ export type Database = {
           },
         ];
       };
+      saved_palettes: {
+        Row: {
+          created_at: string;
+          id: string;
+          palette: Json;
+          style_vibe: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          palette: Json;
+          style_vibe: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          palette?: Json;
+          style_vibe?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "saved_palettes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       rate_limit_buckets: {
         Row: {
           count: number;
