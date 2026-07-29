@@ -235,9 +235,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
 
       <div className="space-y-6 px-9 pt-8 border-t border-porcelain/30">
         <div className="flex justify-between items-end mb-2">
-          <h3 className="text-xs uppercase tracking-label text-ink font-semibold">
-            The Beauty Canvas
-          </h3>
+          <h3 className="atelier-section-label">The Beauty Canvas</h3>
           <span className="text-micro text-stone uppercase tracking-widest">
             Cosmetic Harmonies
           </span>
@@ -374,9 +372,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
 
       <div className="space-y-4 px-9 pt-8 border-t border-porcelain/30">
         <div className="flex justify-between items-end mb-4">
-          <h3 className="text-xs uppercase tracking-label text-ink font-semibold">
-            Textile Drape & Weight
-          </h3>
+          <h3 className="atelier-section-label">Textile Drape & Weight</h3>
           <span className="text-micro text-stone uppercase tracking-widest">
             Recommended Core Materials
           </span>
@@ -429,9 +425,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
         <p className="text-micro uppercase tracking-label-xwide text-accent">
           Recommended Textiles · Denim
         </p>
-        <h3 className="text-xs uppercase tracking-label text-ink font-semibold">
-          The Denim Archive
-        </h3>
+        <h3 className="atelier-section-label">The Denim Archive</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
@@ -517,9 +511,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
 
       <div className="space-y-4 py-8 px-6 sm:px-10">
         <div className="flex justify-between items-end mb-2">
-          <h3 className="text-xs uppercase tracking-label text-ink font-semibold">
-            Disruptive Tones
-          </h3>
+          <h3 className="atelier-section-label">Disruptive Tones</h3>
         </div>
 
         <div className="flex flex-col gap-3">

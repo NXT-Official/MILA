@@ -334,6 +334,10 @@
     hover:bg-porcelain/20;
 }
 
+@utility atelier-section-label {
+  @apply text-xs font-semibold uppercase tracking-label text-ink;
+}
+
 @utility atelier-headline {
   @apply font-serif text-2xl leading-snug tracking-tight;
 }
