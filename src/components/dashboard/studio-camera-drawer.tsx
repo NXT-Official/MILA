@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { Loader2, ExternalLink, Camera, ArrowLeft, ImageOff, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { findDupes, type DupeHuntResult } from "@/lib/dupe-hunter.functions";
-import { createPost } from "@/lib/posts.functions";
+import { publishOotd } from "@/lib/publish-ootd";
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
 
@@ -80,7 +80,6 @@ export function StudioCameraDrawer({
   const [postingSubmitting, setPostingSubmitting] = useState(false);
   const dupeFileRef = useRef<HTMLInputElement>(null);
   const runDupes = useServerFn(findDupes);
-  const submitPost = useServerFn(createPost);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const copy = COPY[mode];
@@ -135,21 +134,7 @@ export function StudioCameraDrawer({
     }
     setPostingSubmitting(true);
     try {
-      const stamp = Date.now();
-      const backPath = `${userId}/back-${stamp}.jpg`;
-      const frontPath = `${userId}/front-${stamp}.jpg`;
-      const [{ error: e1 }, { error: e2 }] = await Promise.all([
-        supabase.storage.from("posts").upload(backPath, back, { contentType: "image/jpeg" }),
-        supabase.storage.from("posts").upload(frontPath, front, { contentType: "image/jpeg" }),
-      ]);
-      if (e1 || e2) throw new Error(e1?.message || e2?.message || "Upload failed");
-      await submitPost({
-        data: {
-          image_path_back: backPath,
-          image_path_front: frontPath,
-          caption: caption || null,
-        },
-      });
+      await publishOotd({ userId, back, front, caption });
       toast.success("Today's OOTD posted — feed unlocked.");
       await queryClient.invalidateQueries({ queryKey: queryKeys.feed(userId) });
       setPostingOpen(false);
