@@ -1,12 +1,16 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import type { FeedPost } from "@/lib/posts.functions";
+import type { PostItem } from "@/lib/outfit-items";
+import { PostItemDrawer } from "@/components/feed/post-item-drawer";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { relativeTime } from "@/lib/utils";
 
 export function PostCanvas({ post }: { post: FeedPost }) {
   const author = post.is_self ? "You" : post.author_name?.trim() || "Member";
+  const [openItem, setOpenItem] = useState<PostItem | null>(null);
 
   return (
     <article className="rounded-3xl atelier-glass shadow-atelier-soft overflow-hidden">
@@ -60,7 +64,27 @@ export function PostCanvas({ post }: { post: FeedPost }) {
             />
           </div>
         )}
+
+        {post.image_url_back &&
+          post.items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setOpenItem(item)}
+              // Percentages, because the box is normalized and the photo is fluid.
+              style={{
+                left: `${(item.bbox.x + item.bbox.w / 2) * 100}%`,
+                top: `${(item.bbox.y + item.bbox.h / 2) * 100}%`,
+              }}
+              className="atelier-focus-ring absolute -translate-x-1/2 -translate-y-1/2 size-6 rounded-full border-2 border-atelier-ivory bg-ink/40 backdrop-blur-sm shadow-atelier-float transition-transform hover:scale-110"
+              aria-label={`Find pieces similar to ${item.label}`}
+            >
+              <span className="absolute inset-1 rounded-full bg-atelier-ivory/90" />
+            </button>
+          ))}
       </div>
+
+      <PostItemDrawer item={openItem} onClose={() => setOpenItem(null)} />
 
       <footer className="px-5 py-4 space-y-3">
         {post.caption && (
