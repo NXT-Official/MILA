@@ -9,21 +9,14 @@ import {
   CLOTHING_CATEGORIES as CATEGORIES,
   CLOTHING_UNDERTONES as UNDERTONES,
 } from "@/constants/wardrobe";
+import { ClothingAttributesSchema, type ClothingAttributes } from "./outfit-items";
 
 const ANALYZE_CLOTHING_LIMIT = 20;
 const ANALYZE_CLOTHING_WINDOW_SECONDS = 60 * 60;
 
 const MODES = ["catalog", "dupe-hunt"] as const;
 
-const ClothingAttributesSchema = z.object({
-  name: z.string().max(100),
-  category: z.enum(CATEGORIES),
-  primary_color: z.string(),
-  color_undertone: z.enum(UNDERTONES),
-  silhouette_tags: z.array(z.string()),
-});
-
-export type ClothingAttributes = z.infer<typeof ClothingAttributesSchema>;
+export type { ClothingAttributes };
 
 const tool = {
   type: "function" as const,

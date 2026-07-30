@@ -286,6 +286,57 @@ export type Database = {
           },
         ];
       };
+      post_items: {
+        Row: {
+          attributes: Json;
+          bbox: Json;
+          category: string;
+          created_at: string;
+          id: string;
+          label: string;
+          post_id: string;
+          product_id: string | null;
+          source_url: string | null;
+        };
+        Insert: {
+          attributes: Json;
+          bbox: Json;
+          category: string;
+          created_at?: string;
+          id?: string;
+          label: string;
+          post_id: string;
+          product_id?: string | null;
+          source_url?: string | null;
+        };
+        Update: {
+          attributes?: Json;
+          bbox?: Json;
+          category?: string;
+          created_at?: string;
+          id?: string;
+          label?: string;
+          post_id?: string;
+          product_id?: string | null;
+          source_url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "post_items_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       posts: {
         Row: {
           caption: string | null;

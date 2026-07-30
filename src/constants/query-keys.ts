@@ -17,4 +17,5 @@ export const queryKeys = {
   adminCreditPacks: ["admin:credit-packs"] as const,
   creditPacks: ["credit-packs"] as const,
   savedPalettes: (userId: string | undefined) => ["saved-palettes", userId] as const,
+  similarItems: (postItemId: string) => ["similar-items", postItemId] as const,
 };

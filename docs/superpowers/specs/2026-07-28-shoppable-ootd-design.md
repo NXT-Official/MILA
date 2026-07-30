@@ -1,132 +1,149 @@
-# Shoppable OOTD (feed item tagging + dupes) — design
+# OOTD Item Tagging (feed item detection + similar items) — design
 
 Status: **TODO / not started.** Written 2026-07-28 from the client ask in `#mila-general`.
 
 ## Context
 
-Reference: TikTok's shopping overlay. On an OOTD video TikTok pins a hotspot per garment
-("Sleeveless tops", "Find similar"), and tapping one opens a drawer with two tabs — **Top**
-(similar community posts) and **Shop** (buyable products, sorted by best match / best
-sellers / top rated / price).
+Reference: TikTok's shopping overlay. On an OOTD photo or video, TikTok pins a hotspot per garment
+("Sleeveless tops", "Find similar"), and tapping one opens a drawer showing visually similar
+items.
 
 The ask: when a user posts their OOTD to the feed, Mila identifies each piece (tank top,
-jeans, sneakers, earrings), the poster can tag where each piece is from with a link, and
-Mila surfaces dupes/alternatives available online. Monetizable via affiliate commission.
+jeans, sneakers, earrings), and the poster can optionally tag where each piece is from with
+a link. Viewers can tap any garment to see similar pieces and discover visually comparable
+styles.
 
 **Most of the backend already exists.** This is mostly composition, not new infrastructure:
 
 - `analyzeClothing` (`src/lib/analyze-clothing.functions.ts`) — vision → structured
   `ClothingAttributes` (name, category, primary_color, color_undertone, silhouette_tags),
   already credit-gated (`withAiCredit`) and rate-limited.
-- `findDupes` (`src/lib/dupe-hunter.functions.ts`) — attributes → ranked `products` with
-  `affiliate_link`, `match_score`, `match_reasons`. Already has the scoring heuristic.
-- `products` / `brands` tables — `affiliate_link`, `commission_rate`, `affiliate_network`
-  are all already columns.
+- `findDupes` (`src/lib/dupe-hunter.functions.ts`) — attributes → ranked similar products
+  with `match_score` and `match_reasons`. Already has the scoring heuristic.
+- `products` / `brands` tables — existing catalog of clothing items.
 - `posts` table + `PostCanvas` (`src/components/feed/post-canvas.tsx`) — the render target.
 
-### The actual gaps
+## The actual gaps
 
-1. `analyzeClothing` takes **one garment per image**. An OOTD photo is 3–6 garments. Needs a
-   multi-item variant that returns an array, each with a normalized bounding box so the
-   hotspot can be positioned on the photo.
-2. No table linking a post to its tagged pieces.
+1. `analyzeClothing` currently accepts **one garment per image**. An OOTD contains 3–6 garments. It needs a multi-item variant that returns an array, each with a normalized bounding box so hotspots can be positioned on the photo.
+2. No table linking a post to its detected clothing pieces.
 3. No hotspot/drawer UI on `PostCanvas`.
-4. No affiliate click attribution. `ad_events` exists but its `ad_type` CHECK is
-   `('banner','rewarded','interstitial')` — doesn't cover an outbound product click.
 
 ## Scope
 
-In scope:
+### In scope
 
-- Multi-item detection on post: one AI call per OOTD returning N items + bboxes.
-- `post_items` table: post_id, label, category, attributes JSONB, bbox, optional
-  `source_url` (poster-supplied link) and optional `product_id` (catalog match).
-- Poster-side tagging UI: after capture, Mila's detected pieces are listed; poster confirms/
-  edits each and can paste where it's from. Skippable — a post with zero tags still posts.
-- Viewer-side: hotspots on the photo, tap → drawer showing the poster's link (if given) plus
-  `findDupes` results for that piece.
-- Affiliate click logging for revenue attribution.
+- Multi-item detection on post: one AI call per OOTD returning N detected garments + bounding boxes.
+- `post_items` table:
+  - `post_id`
+  - `label`
+  - `category`
+  - `attributes JSONB`
+  - `bbox`
+  - optional `source_url` (poster-supplied link)
+  - optional `product_id` (catalog match)
+- Poster-side tagging UI:
+  - after capture, Mila lists detected clothing pieces
+  - poster confirms or edits each item
+  - optionally pastes where the item came from
+  - completely skippable; posts without tags still publish
+- Viewer-side:
+  - hotspots displayed on the photo
+  - tap → drawer showing:
+    - the poster's link (if provided)
+    - visually similar clothing items returned by `findDupes`
 
-Out of scope for v1:
+### Out of scope for v1
 
-- The "Top" tab (similar community posts). Needs post embeddings; the Shop tab is where the
-  money is. Add when the feed has enough volume for similarity to be non-embarrassing.
-- Live catalog ingestion from real affiliate networks. `products` is seeded with a handful
-  of rows — dupes will look thin until a real feed is wired in. **This is the biggest
-  execution risk in the whole feature**, and it's a business/partnership problem, not a
-  code one.
-- Detection on the front (face/hair) capture — jewelry/earrings are usually only visible
-  there, so accept that v1 misses some accessories.
-- Editing tags after a post is published.
+- Similar community posts ("Top" tab). This requires post embeddings and enough feed volume to make similarity meaningful.
+- Live catalog ingestion. The catalog currently contains only seeded data, so similar-item coverage will improve as more products are added.
+- Detection on front-camera captures for accessories such as earrings and necklaces.
+- Editing tags after publishing.
 
 ## Decisions
 
-**One AI call per post, not per garment.** A per-garment call means N credits for one post
-and N times the latency. One vision call returns the array. Reuse the existing tool-calling
-shape in `analyze-clothing.functions.ts` — same tool, wrapped in an array property.
+### One AI call per post, not per garment
 
-**Detection runs on post, not on view.** Results are persisted to `post_items` once. A feed
-of 20 posts must never trigger 20 vision calls. Charge the poster 1 credit at post time.
+A per-garment call means N times the latency and N times the AI cost. Instead, make a single
+vision request that returns an array of detected garments using the existing tool schema wrapped
+inside an array.
 
-**`findDupes` runs on drawer open, not on post.** Nobody taps most hotspots, and catalog
-matching is cheap to redo later. Cache per `post_item` for ~24h so repeat viewers of a
-popular post don't each burn a call. Note: `findDupes` currently re-extracts attributes from
-an image — it needs an overload that accepts already-extracted `ClothingAttributes` so the
-drawer path skips the redundant vision call entirely. That refactor is the one real code
-change to existing files.
+### Detection runs on post, not on view
 
-**Bounding boxes as normalized 0–1 floats**, so hotspots survive any render size. Ask the
-model for them in the same tool call; expect them to be roughly right, not pixel-accurate —
-a hotspot dot only needs to land on the garment, not trace it.
+Detection results are stored once in `post_items`.
 
-**Poster links are untrusted input.** `source_url` is user-supplied and rendered as an
-outbound link on other people's screens. Validate scheme (`https:` only) on write, render
-with `rel="noopener noreferrer nofollow"`, and show the bare hostname rather than the raw
-URL so a link can't visually impersonate another domain. Non-negotiable.
+A feed containing 20 posts should never trigger 20 vision requests.
 
-**Click attribution: extend `ad_events` rather than add a table.** Add `'affiliate'` to the
-`ad_type` CHECK and log `event='click'` with `placement='feed_post_item'` and metadata
-`{post_item_id, product_id, brand_id}`. Commission is then a join against
-`brands.commission_rate`. Reuses the existing analytics surface instead of building a
-parallel one.
+### `findDupes` runs on drawer open
 
-## Monetization
+Most viewers won't tap every hotspot, so similar-item matching should only happen when needed.
 
-Three tiers, in the order they should be attempted:
+Cache results per `post_item` for roughly 24 hours.
 
-1. **Affiliate commission on dupe clicks** — works day one, needs no partner negotiation
-   beyond joining networks. `brands.commission_rate` is already there. Realistic take is
-   low single-digit % of a small conversion rate; it funds the feature, it isn't a business
-   on its own until volume is real.
-2. **Promoted placement in the Shop drawer** — a brand pays to rank above organic match
-   score. Higher margin, but only sellable once there's traffic to sell, and it degrades
-   the "Mila found you the honest dupe" trust that makes the feature work at all. Needs a
-   visible "Promoted" label if it ships.
-3. **Creator revenue share on poster-supplied links** — the poster earns when someone buys
-   their tagged piece. This is the retention play more than the revenue play: it gives
-   users a reason to tag carefully, which is what makes the whole feature's data good.
-   Requires payouts infrastructure that doesn't exist yet.
+`findDupes` currently re-extracts clothing attributes from an image. Add an overload that accepts
+already-extracted `ClothingAttributes` so the drawer skips the redundant vision step entirely.
 
-Recommendation: ship (1) only. It's the one that needs no new business relationships and no
-payouts. Revisit (2) and (3) once there's a month of click data to size them against.
+### Bounding boxes use normalized coordinates
+
+Store bounding boxes as normalized 0–1 floats so hotspots remain correctly positioned regardless
+of image size.
+
+Ask the vision model for approximate bounding boxes in the same response. Pixel-perfect precision
+is unnecessary—a hotspot only needs to land on the garment.
+
+### Poster links are untrusted input
+
+`source_url` is user-supplied.
+
+Validate:
+
+- `https:` only
+- render using `rel="noopener noreferrer nofollow"`
+- display only the hostname instead of the raw URL so a malicious link cannot visually impersonate another domain
+
+This is non-negotiable.
+
+## User experience
+
+### Posting
+
+1. User uploads an OOTD photo.
+2. Mila analyzes the outfit.
+3. Detected clothing items appear in a confirmation sheet.
+4. User may:
+   - rename items
+   - remove incorrect detections
+   - optionally paste where each item came from
+5. The post is published regardless of whether tagging is completed.
+
+### Viewing
+
+When another user opens the post:
+
+- clothing hotspots appear on the image
+- tapping a hotspot opens a drawer containing:
+  - the clothing label
+  - the original source link (if provided by the poster)
+  - visually similar items ranked by similarity
 
 ## Rough sequencing
 
-1. `post_items` migration + RLS (readable with the post, writable by post owner).
-2. `analyzeOutfitItems` server fn — multi-item + bbox. Test with a fixture image.
-3. Wire into the post flow in `feed.tsx` `handleSubmit`, after upload, before/alongside
-   `createPost`. Must not block the post if detection fails — post first, tag second.
-4. Tagging sheet (poster confirms pieces, optionally pastes links).
-5. Hotspots + Shop drawer on `PostCanvas`.
-6. `findDupes` attributes-overload + drawer wiring + click logging.
+1. `post_items` migration + RLS (readable with the post, writable by the post owner).
+2. `analyzeOutfitItems` server function — multi-item detection + bounding boxes. Test with fixture images.
+3. Integrate into the posting flow (`feed.tsx` → `handleSubmit`) after upload and before (or alongside) `createPost`.
+   - Detection failure should never prevent the post from publishing.
+   - Publish first, tagging second if necessary.
+4. Build the poster tagging sheet.
+5. Add hotspots and the similar-items drawer to `PostCanvas`.
+6. Add a `findDupes` overload that accepts existing `ClothingAttributes` and connect it to the drawer.
 
-Steps 1–3 are the load-bearing half; 4–6 are UI on top of settled data.
+Steps 1–3 establish the data model and detection pipeline; Steps 4–6 build the user-facing experience.
 
 ## Open questions
 
-- Credit cost for detection: 1 credit per post, or free to encourage posting? Free makes
-  the feed data richer, which is what the Shop drawer's value depends on. Leaning free, but
-  it's a cost call, not a code call.
-- What happens when the catalog has no plausible dupe for a piece? An empty drawer is worse
-  than no hotspot. Suggest: only render a hotspot once at least one match above a score
-  threshold exists, computed at post time.
+- Should outfit detection consume AI credits, or should it be free to encourage more users to tag their outfits?
+- What should happen when no sufficiently similar items are found?
+  - An empty drawer creates a poor experience.
+  - Consider rendering hotspots only for garments with at least one match above a minimum similarity threshold.
+- Should posters be able to manually add clothing items that the AI misses?
+- Should viewers be able to report incorrect detections to improve future recognition?

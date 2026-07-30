@@ -9,7 +9,9 @@ import {
 import { withAiCredit } from "./credits.server";
 import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
-import type { ClothingAttributes } from "./analyze-clothing.functions";
+import { ClothingAttributesSchema, type ClothingAttributes } from "./outfit-items";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 const FIND_DUPES_LIMIT = 15;
 const FIND_DUPES_WINDOW_SECONDS = 60 * 60;
@@ -117,6 +119,73 @@ function scoreCandidate(
   return { score, reasons };
 }
 
+/**
+ * Attributes in, ranked catalog matches out. No vision, no credit — the drawer
+ * already has the attributes stored on the post item.
+ */
+async function rankDupes(
+  supabase: SupabaseClient<Database>,
+  inspiration: ClothingAttributes,
+  maxResults: number,
+): Promise<DupeMatch[]> {
+  const { data: candidates, error } = await supabase
+    .from("products")
+    .select(
+      "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes",
+    )
+    .ilike("category", inspiration.category)
+    .limit(200);
+
+  if (error) {
+    console.error("Product query failed", error);
+    throw new Error("Couldn't search the dupe catalog.");
+  }
+
+  return (candidates ?? [])
+    .filter((p) => !!p.affiliate_link)
+    .map((product) => {
+      const { score, reasons } = scoreCandidate(inspiration, product);
+      return { product, score, reasons };
+    })
+    .filter((r) => r.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.product.price - b.product.price;
+    })
+    .slice(0, maxResults)
+    .map(({ product, score, reasons }) => ({
+      id: product.id,
+      title: product.title,
+      brand_id: product.brand_id,
+      category: product.category,
+      price: product.price,
+      currency: product.currency,
+      image_url: product.image_url,
+      affiliate_link: product.affiliate_link,
+      description: product.description,
+      match_score: score,
+      match_reasons: reasons,
+    }));
+}
+
+/**
+ * Similar pieces for a garment Mila already catalogued on a post. Skips the
+ * vision step findDupes needs, so opening a hotspot drawer costs one query.
+ */
+export const findSimilarItems = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        attributes: ClothingAttributesSchema,
+        maxResults: z.number().int().min(1).max(20).optional().default(6),
+      })
+      .parse(input),
+  )
+  .handler(({ data, context }): Promise<DupeMatch[]> =>
+    rankDupes(context.supabase, data.attributes, data.maxResults),
+  );
+
 export const findDupes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
@@ -165,47 +234,7 @@ export const findDupes = createServerFn({ method: "POST" })
       const call = json.choices?.[0]?.message?.tool_calls?.[0];
       if (!call) throw new Error("AI did not return attributes.");
       const inspiration = JSON.parse(call.function.arguments) as ClothingAttributes;
-
-      const { data: candidates, error } = await context.supabase
-        .from("products")
-        .select(
-          "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes",
-        )
-        .ilike("category", inspiration.category)
-        .limit(200);
-
-      if (error) {
-        console.error("Product query failed", error);
-        throw new Error("Couldn't search the dupe catalog.");
-      }
-
-      const ranked = (candidates ?? [])
-        .filter((p) => !!p.affiliate_link)
-        .map((p) => {
-          const { score, reasons } = scoreCandidate(inspiration, p);
-          return { product: p, score, reasons };
-        })
-        .filter((r) => r.score > 0)
-        .sort((a, b) => {
-          if (b.score !== a.score) return b.score - a.score;
-          return a.product.price - b.product.price;
-        })
-        .slice(0, data.maxResults);
-
-      const dupes: DupeMatch[] = ranked.map(({ product, score, reasons }) => ({
-        id: product.id,
-        title: product.title,
-        brand_id: product.brand_id,
-        category: product.category,
-        price: product.price,
-        currency: product.currency,
-        image_url: product.image_url,
-        affiliate_link: product.affiliate_link,
-        description: product.description,
-        match_score: score,
-        match_reasons: reasons,
-      }));
-
+      const dupes = await rankDupes(context.supabase, inspiration, data.maxResults);
       return { inspiration, dupes };
     });
   });

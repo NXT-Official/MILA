@@ -4,6 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { getCurrentUserRoles } from "@/lib/admin.functions";
 import { hasPermission } from "@/lib/authorization";
+import { loadPostItems } from "@/lib/outfit-items.functions";
+import type { PostItem } from "@/lib/outfit-items";
 
 const CreatePostInput = z.object({
   image_path_back: z.string().min(1),
@@ -23,6 +25,8 @@ export interface FeedPost {
   author_name: string | null;
   author_verified: boolean;
   is_self: boolean;
+  /** Garments detected in the back capture; empty when detection was skipped or failed. */
+  items: PostItem[];
   hidden?: boolean;
   hidden_reason?: string | null;
 }
@@ -148,7 +152,13 @@ export const getFeed = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     const userIds = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
-    const { names: nameMap, verified } = await loadAuthorDetails(userIds);
+    const [{ names: nameMap, verified }, itemMap] = await Promise.all([
+      loadAuthorDetails(userIds),
+      loadPostItems(
+        supabase,
+        (rows ?? []).map((r) => r.id),
+      ),
+    ]);
 
     const paths = (rows ?? []).flatMap((r) => [r.image_url_back, r.image_url_front]);
     const signed = paths.length
@@ -171,6 +181,7 @@ export const getFeed = createServerFn({ method: "GET" })
       author_name: nameMap.get(r.user_id) ?? null,
       author_verified: verified.has(r.user_id),
       is_self: r.user_id === userId,
+      items: itemMap.get(r.id) ?? [],
     }));
 
     return { has_posted_today: hasPostedToday, posts };
@@ -224,6 +235,12 @@ export const getMemberProfile = createServerFn({ method: "GET" })
     if (postsError) throw new Error("Couldn't load this member's posts.");
 
     const paths = (posts ?? []).flatMap((post) => [post.image_url_back, post.image_url_front]);
+    // Safe on the admin client: the post list above already applied the
+    // hidden/moderator rules, so only visible posts are asked about.
+    const itemMap = await loadPostItems(
+      supabaseAdmin,
+      (posts ?? []).map((post) => post.id),
+    );
     const signed = paths.length
       ? await supabaseAdmin.storage.from("posts").createSignedUrls(paths, SIGNED_URL_TTL)
       : { data: [], error: null };
@@ -243,6 +260,7 @@ export const getMemberProfile = createServerFn({ method: "GET" })
         author_name: profile.full_name,
         author_verified: isVerified,
         is_self: post.user_id === context.userId,
+        items: itemMap.get(post.id) ?? [],
       })),
     };
   });
