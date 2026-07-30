@@ -11,7 +11,9 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { PostCanvas } from "@/components/feed/post-canvas";
+import { OotdTaggingSheet } from "@/components/feed/ootd-tagging-sheet";
 import { DualCapture } from "@/components/capture/dual-capture";
+import type { PostItem } from "@/lib/outfit-items";
 import { getFeed } from "@/lib/posts.functions";
 import { publishOotd } from "@/lib/publish-ootd";
 import { useAuth } from "@/hooks/use-auth";
@@ -32,6 +34,7 @@ function FeedPage() {
   const queryClient = useQueryClient();
   const [isPostOpen, setIsPostOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [tagging, setTagging] = useState<{ postId: string; items: PostItem[] } | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.feed(user?.id),
@@ -46,10 +49,11 @@ function FeedPage() {
     if (!user) return;
     setSubmitting(true);
     try {
-      await publishOotd({ userId: user.id, back, front, caption });
+      const { postId, items } = await publishOotd({ userId: user.id, back, front, caption });
       toast.success("Today's OOTD posted.");
       setIsPostOpen(false);
       await queryClient.invalidateQueries({ queryKey: queryKeys.feed(user.id) });
+      if (items.length) setTagging({ postId, items });
     } catch (e) {
       toast.error(errorMessage(e, "Couldn't post today's OOTD."));
     } finally {
@@ -135,6 +139,17 @@ function FeedPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {tagging && user && (
+        <OotdTaggingSheet
+          key={tagging.postId}
+          postId={tagging.postId}
+          items={tagging.items}
+          userId={user.id}
+          open
+          onOpenChange={(open) => !open && setTagging(null)}
+        />
+      )}
     </>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from "@/constants/wardrobe";
 import {
   MAX_DETECTED_ITEMS,
+  normalizeSourceUrl,
   parseDetectedItems,
   type BBox,
   type ClothingAttributes,
@@ -141,6 +142,73 @@ export async function loadPostItems(
   }
   return byPost;
 }
+
+const UpdatePostItemsInput = z.object({
+  post_id: z.string().uuid(),
+  items: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        label: z.string().trim().min(1).max(100),
+        source_url: z.string().max(2048).nullable(),
+      }),
+    )
+    .max(MAX_DETECTED_ITEMS),
+});
+
+/**
+ * Saves the poster's edits: renamed labels, where each piece is from, and the
+ * removal of anything the model got wrong. Items missing from the list are
+ * deleted, so an empty list clears every tag on the post.
+ */
+export const updatePostItems = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => UpdatePostItemsInput.parse(input))
+  .handler(async ({ data, context }): Promise<PostItem[]> => {
+    const { supabase, userId } = context;
+
+    const { data: post, error: postError } = await supabase
+      .from("posts")
+      .select("id")
+      .eq("id", data.post_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (postError) throw new Error(postError.message);
+    if (!post) throw new Error("Post not found.");
+
+    // Poster links are untrusted. Anything that isn't https is refused rather
+    // than quietly dropped, so a typo doesn't look like it saved.
+    const items = data.items.map((item) => {
+      const raw = item.source_url?.trim();
+      const url = raw ? normalizeSourceUrl(raw) : null;
+      if (raw && !url) throw new Error(`"${raw}" isn't a valid https link.`);
+      return { ...item, source_url: url };
+    });
+
+    const keptIds = items.map((item) => item.id);
+    let removals = supabase.from("post_items").delete().eq("post_id", data.post_id);
+    if (keptIds.length) removals = removals.not("id", "in", `(${keptIds.join(",")})`);
+    const { error: deleteError } = await removals;
+    if (deleteError) throw new Error(deleteError.message);
+
+    // At most MAX_DETECTED_ITEMS rows, each with different values — not worth a
+    // bulk-upsert dance that would need every NOT NULL column resent.
+    const updates = await Promise.all(
+      items.map((item) =>
+        supabase
+          .from("post_items")
+          .update({ label: item.label, source_url: item.source_url })
+          .eq("id", item.id)
+          .eq("post_id", data.post_id)
+          .select(ITEM_COLUMNS)
+          .maybeSingle(),
+      ),
+    );
+    const failed = updates.find((result) => result.error);
+    if (failed?.error) throw new Error(failed.error.message);
+
+    return updates.flatMap((result) => (result.data ? [toPostItem(result.data)] : []));
+  });
 
 /**
  * One vision call per post, not per garment: N calls would be N times the latency
