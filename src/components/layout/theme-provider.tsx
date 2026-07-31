@@ -14,14 +14,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      setThemeState(stored);
-    }
-  }, []);
+    const active = stored === "light" || stored === "dark" || stored === "system" ? stored : theme;
+    if (active !== theme) setThemeState(active);
 
-  useEffect(() => {
-    applyTheme(theme);
-    if (theme !== "system") return;
+    applyTheme(active);
+    if (active !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => applyTheme("system");
     mq.addEventListener("change", onChange);
