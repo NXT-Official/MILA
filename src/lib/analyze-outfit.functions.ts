@@ -6,8 +6,6 @@ import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { consumeRateLimit } from "./rate-limit.server";
 import { withAiCredit } from "./credits.server";
 
-const RATE_LIMIT = { limit: 15, windowSeconds: 60 * 60, failure: "closed" } as const;
-
 const Input = z.object({
   imageUrl: z.string().url(),
   bodyType: z.string().min(1).max(64),
@@ -52,7 +50,10 @@ export const analyzeOutfit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
-    await consumeRateLimit("ai:analyzeOutfit", context.userId, RATE_LIMIT);
+    await consumeRateLimit(`ai:analyzeOutfit:${context.userId}`, {
+      limit: 15,
+      windowSeconds: 3600,
+    });
     // The hourly cap above throttles bursts; this is what actually gates on
     // balance. Callers turn InsufficientCreditsError into the paywall.
     return withAiCredit(context.supabase, context.userId, async () => {

@@ -1,10 +1,3 @@
-import { isIP } from "node:net";
-import { getRequest, getRequestIP } from "@tanstack/react-start/server";
-
-export const RATE_LIMIT_POLICIES = {
-  supportIp: { limit: 3, windowSeconds: 900, failure: "closed" },
-} as const;
-
 export class RateLimitExceededError extends Error {
   readonly statusCode = 429;
   constructor(readonly retryAfterSeconds: number) {
@@ -13,11 +6,7 @@ export class RateLimitExceededError extends Error {
   }
 }
 
-export type RateLimitPolicy = {
-  limit: number;
-  windowSeconds: number;
-  failure: "open" | "closed";
-};
+export type RateLimitPolicy = { limit: number; windowSeconds: number };
 
 export type RateLimitResult = {
   allowed: boolean;
@@ -26,78 +15,42 @@ export type RateLimitResult = {
   retry_after_seconds: number;
 };
 
-export type RateLimitStore = (
-  key: string,
-  policy: RateLimitPolicy,
-  cost: number,
-) => Promise<RateLimitResult>;
+export type RateLimitStore = (key: string, policy: RateLimitPolicy) => Promise<RateLimitResult>;
 
-export type RateLimitLogger = Pick<Console, "error" | "warn">;
-
-export function normalizeIp(value: string | undefined): string | undefined {
-  if (!value) return;
-  const candidate = value
-    .trim()
-    .replace(/^\[|\]$/g, "")
-    .split("%")[0];
-  if (isIP(candidate) === 4) return candidate;
-  if (isIP(candidate) === 6) return candidate.toLowerCase().replace(/^::ffff:/, "");
-}
-
-/**
- * Behind a proxy the socket address is the proxy's, so a deployment that sets
- * RATE_LIMIT_TRUSTED_IP_HEADER gets that one exact header read instead. Both
- * arguments default to the live request; tests pass them explicitly.
- */
-export function clientIp(
-  request: Request | undefined = getRequest(),
-  runtimeIp: () => string | undefined = getRequestIP,
-): string | undefined {
-  const trustedHeader = process.env.RATE_LIMIT_TRUSTED_IP_HEADER?.toLowerCase();
-  const fromHeader =
-    trustedHeader && request
-      ? normalizeIp(request.headers.get(trustedHeader) ?? undefined)
-      : undefined;
-  return fromHeader ?? normalizeIp(runtimeIp());
-}
-
-async function supabaseRateLimitStore(key: string, policy: RateLimitPolicy, cost: number) {
+const supabaseRateLimitStore: RateLimitStore = async (key, policy) => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .rpc("check_rate_limit", {
       _key: key,
       _limit: policy.limit,
       _window_seconds: policy.windowSeconds,
-      _cost: cost,
+      _cost: 1,
     })
     .single();
   if (error) throw error;
   return data as RateLimitResult;
-}
+};
 
 export async function consumeRateLimit(
-  namespace: string,
-  identity: string,
+  key: string,
   policy: RateLimitPolicy,
-  cost = 1,
   store: RateLimitStore = supabaseRateLimitStore,
-  logger: RateLimitLogger = console,
 ) {
-  if (!namespace || !identity || policy.limit <= 0 || policy.windowSeconds <= 0 || cost <= 0) {
+  if (!key || policy.limit <= 0 || policy.windowSeconds <= 0) {
     throw new Error("Invalid rate limit configuration");
   }
-  let data: RateLimitResult;
+
+  let result: RateLimitResult;
   try {
-    data = await store(`${namespace}:${identity}`, policy, cost);
+    result = await store(key, policy);
   } catch {
-    logger.error(JSON.stringify({ event: "rate_limit_store_error", policy: namespace }));
-    if (policy.failure === "closed")
-      throw new Error("Request protection is temporarily unavailable.");
-    return;
+    console.error(JSON.stringify({ event: "rate_limit_store_error", policy: key.split(":")[0] }));
+    throw new Error("Request protection is temporarily unavailable.");
   }
-  if (!data?.allowed) {
-    logger.warn(JSON.stringify({ event: "rate_limit_block", policy: namespace }));
-    throw new RateLimitExceededError(data?.retry_after_seconds ?? policy.windowSeconds);
+
+  if (!result.allowed) {
+    console.warn(JSON.stringify({ event: "rate_limit_block", policy: key.split(":")[0] }));
+    throw new RateLimitExceededError(result.retry_after_seconds);
   }
-  return data;
+  return result;
 }

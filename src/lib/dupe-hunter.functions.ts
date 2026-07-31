@@ -13,8 +13,6 @@ import { ClothingAttributesSchema, type ClothingAttributes } from "./outfit-item
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-const RATE_LIMIT = { limit: 15, windowSeconds: 60 * 60, failure: "closed" } as const;
-
 const Input = z.object({
   imageUrl: z.string().url(),
   maxResults: z.number().int().min(1).max(20).optional().default(6),
@@ -189,7 +187,7 @@ export const findDupes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }): Promise<DupeHuntResult> => {
-    await consumeRateLimit("ai:findDupes", context.userId, RATE_LIMIT);
+    await consumeRateLimit(`ai:findDupes:${context.userId}`, { limit: 15, windowSeconds: 3600 });
     return withAiCredit(context.supabase, context.userId, async () => {
       const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
 

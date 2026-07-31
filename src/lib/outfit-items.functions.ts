@@ -19,7 +19,6 @@ import {
   type PostItem,
 } from "./outfit-items";
 
-const RATE_LIMIT = { limit: 10, windowSeconds: 60 * 60, failure: "closed" } as const;
 // The provider fetches the image immediately (see ai.server), so this only has to
 // outlive one request.
 const DETECTION_URL_TTL = 120;
@@ -230,7 +229,7 @@ export const analyzeOutfitItems = createServerFn({ method: "POST" })
     if (postError) throw new Error(postError.message);
     if (!post) throw new Error("Post not found.");
 
-    await consumeRateLimit("ai:analyzeOutfitItems", userId, RATE_LIMIT);
+    await consumeRateLimit(`ai:analyzeOutfitItems:${userId}`, { limit: 10, windowSeconds: 3600 });
 
     const signed = await supabase.storage
       .from("posts")

@@ -478,7 +478,6 @@ Copy `.env.example` to `.env` and fill in real values — never commit `.env`.
 | `VITE_PADDLE_ENV`                        |                    No | Client                   | Paddle.js environment (`sandbox` or `production`)                                     |
 | `PADDLE_SANDBOX_API_KEY`                 |     Yes (for billing) | Server, **secret**       | Paddle sandbox subscription and transaction API key                                   |
 | `PADDLE_SANDBOX_WEBHOOK_SECRET`          |     Yes (for billing) | Server, **secret**       | Verifies Paddle webhook signatures                                                    |
-| `RATE_LIMIT_TRUSTED_IP_HEADER`           |                    No | Server                   | Exact deployment-provided client-IP header trusted by support rate limiting           |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD`         |                    No | Local documentation only | Not read by application code — the credentials the schema migration seeds (see below) |
 | `USER_EMAIL` / `USER_PASSWORD`           |                    No | Local documentation only | Same as above; the plain member test account                                          |
 | `MODERATOR_EMAIL` / `MODERATOR_PASSWORD` |                    No | Local documentation only | Same as above; the moderator test account                                             |

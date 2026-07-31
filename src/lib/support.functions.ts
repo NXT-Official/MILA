@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { verifyHcaptcha } from "./hcaptcha.server";
-import { clientIp, consumeRateLimit, RATE_LIMIT_POLICIES } from "./rate-limit.server";
+import { consumeRateLimit } from "./rate-limit.server";
 
 const SubmitSupportMessageInput = z.object({
   kind: z.enum(["help", "feedback"]),
@@ -12,11 +13,11 @@ const SubmitSupportMessageInput = z.object({
 export const submitSupportMessage = createServerFn({ method: "POST" })
   .validator((input: unknown) => SubmitSupportMessageInput.parse(input))
   .handler(async ({ data }) => {
-    const ip = clientIp() ?? "unknown";
+    const ip = getRequestIP();
 
-    await consumeRateLimit("support-message", ip, RATE_LIMIT_POLICIES.supportIp);
+    await consumeRateLimit(`support-message:${ip ?? "unknown"}`, { limit: 3, windowSeconds: 900 });
 
-    await verifyHcaptcha(data.captchaToken, ip !== "unknown" ? ip : undefined);
+    await verifyHcaptcha(data.captchaToken, ip);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin

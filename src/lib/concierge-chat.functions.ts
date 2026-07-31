@@ -25,8 +25,6 @@ export type ConciergeReply = { reply: string };
 
 const HISTORY_CHAR_BUDGET = 6000;
 
-const RATE_LIMIT = { limit: 20, windowSeconds: 5 * 60, failure: "closed" } as const;
-
 const tool = {
   type: "function" as const,
   function: {
@@ -116,7 +114,7 @@ export const conciergeChat = createServerFn({ method: "POST" })
     return parsed.data;
   })
   .handler(async ({ data, context }): Promise<ConciergeReply> => {
-    await consumeRateLimit("ai:concierge", context.userId, RATE_LIMIT);
+    await consumeRateLimit(`ai:concierge:${context.userId}`, { limit: 20, windowSeconds: 300 });
 
     // Wraps the profile/look loads too — a chat about a look that was deleted
     // out from under the client must not cost the client a credit.

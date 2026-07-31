@@ -1,25 +1,21 @@
-import type {
-  RateLimitPolicy,
-  RateLimitResult,
-  RateLimitStore,
-} from "../../src/lib/rate-limit.server";
+import type { RateLimitResult, RateLimitStore } from "../../src/lib/rate-limit.server";
 
 export class MemoryRateLimitStore {
   private buckets = new Map<string, { count: number; startedAt: number }>();
 
   constructor(private now: () => number) {}
 
-  consume: RateLimitStore = async (key, policy, cost) => {
-    validate(policy, cost);
+  consume: RateLimitStore = async (key, policy) => {
+    if (policy.limit <= 0 || policy.windowSeconds <= 0) {
+      throw new Error("Invalid rate limit configuration");
+    }
     const now = this.now();
     const previous = this.buckets.get(key);
-    const startedAt =
-      !previous || now >= previous.startedAt + policy.windowSeconds * 1000
-        ? now
-        : previous.startedAt;
-    const count =
-      startedAt === now && previous?.startedAt !== now ? cost : (previous?.count ?? 0) + cost;
+    const expired = !previous || now >= previous.startedAt + policy.windowSeconds * 1000;
+    const startedAt = expired ? now : previous.startedAt;
+    const count = expired ? 1 : previous.count + 1;
     this.buckets.set(key, { count, startedAt });
+
     const resetAt = startedAt + policy.windowSeconds * 1000;
     return {
       allowed: count <= policy.limit,
@@ -29,14 +25,4 @@ export class MemoryRateLimitStore {
         count > policy.limit ? Math.max(1, Math.ceil((resetAt - now) / 1000)) : 0,
     } satisfies RateLimitResult;
   };
-
-  clear() {
-    this.buckets.clear();
-  }
-}
-
-function validate(policy: RateLimitPolicy, cost: number) {
-  if (policy.limit <= 0 || policy.windowSeconds <= 0 || cost <= 0) {
-    throw new Error("Invalid rate limit configuration");
-  }
 }

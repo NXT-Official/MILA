@@ -12,8 +12,6 @@ import {
   type SeasonKey,
 } from "@/constants/style-profile";
 
-const RATE_LIMIT = { limit: 10, windowSeconds: 60 * 60, failure: "closed" } as const;
-
 const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 const TONE_TYPES = ["Warm Tone (Yellow Base)", "Cool Tone (Blue Base)"] as const;
 const BRIGHTNESS = ["High Lightness", "Medium Lightness", "Low Lightness"] as const;
@@ -258,7 +256,10 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
       }
 
       try {
-        await consumeRateLimit("ai:analyzePersonalColor", context.userId, RATE_LIMIT);
+        await consumeRateLimit(`ai:analyzePersonalColor:${context.userId}`, {
+          limit: 10,
+          windowSeconds: 3600,
+        });
       } catch (err) {
         if (err instanceof RateLimitExceededError) {
           return { success: false, error: "ANALYSIS_RATE_LIMITED" };
