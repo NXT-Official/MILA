@@ -260,8 +260,6 @@ export function StyleProfile() {
         : base.fullPalette,
     };
     const undertone = (["Spring", "Autumn"] as string[]).includes(season) ? "Warm" : "Cool";
-    // update, not upsert — see handleStudioComplete for why upsert 403s
-    // for accounts whose username is still NULL.
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -453,9 +451,7 @@ export function StyleProfile() {
             </div>
             {form.color_season && (
               <div className="mb-10 space-y-8">
-                <ColorDossierSection
-                  profile={{ color_season: form.color_season, full_name: form.full_name }}
-                />
+                <ColorDossierSection colorSeason={form.color_season} />
               </div>
             )}
             <div className="mb-12 ">
@@ -709,7 +705,7 @@ export function StyleProfile() {
                         </button>
                       </div>
                       {manualOpen && (
-                        <div className="mt-6 animate-fade-in space-y-8 px-1 sm:px-2">
+                        <div className="mt-6 space-y-8 px-1 sm:px-2">
                           <div className="bg-card p-8 rounded-card border border-border shadow-paper max-w-2xl mx-auto space-y-8">
                             <div className="text-center space-y-2">
                               <span className="text-[0.18em] uppercase tracking-label-xwide text-stone text-xs block">
