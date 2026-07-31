@@ -4,7 +4,7 @@ import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { withAiCredit } from "./credits.server";
-import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+import { consumeRateLimit } from "./rate-limit.server";
 import { deriveColorMetrics } from "./profile-color";
 import { normalizeBeautyPreferences } from "./beauty-preferences";
 import { HUBS } from "@/constants/climate";
@@ -25,8 +25,7 @@ export type ConciergeReply = { reply: string };
 
 const HISTORY_CHAR_BUDGET = 6000;
 
-const RATE_LIMIT = 20;
-const RATE_WINDOW_MS = 5 * 60_000;
+const RATE_LIMIT = { limit: 20, windowSeconds: 5 * 60, failure: "closed" } as const;
 
 const tool = {
   type: "function" as const,
@@ -117,12 +116,7 @@ export const conciergeChat = createServerFn({ method: "POST" })
     return parsed.data;
   })
   .handler(async ({ data, context }): Promise<ConciergeReply> => {
-    try {
-      await consumeRateLimit(`ai:concierge:${context.userId}`, RATE_LIMIT, RATE_WINDOW_MS / 1000);
-    } catch (err) {
-      if (err instanceof RateLimitExceededError) throw new Error(err.message);
-      throw err;
-    }
+    await consumeRateLimit("ai:concierge", context.userId, RATE_LIMIT);
 
     // Wraps the profile/look loads too — a chat about a look that was deleted
     // out from under the client must not cost the client a credit.

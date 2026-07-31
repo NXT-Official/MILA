@@ -281,7 +281,7 @@ Always call the report_daily_look tool.`;
       let parsedArgs: unknown;
       try {
         parsedArgs = JSON.parse(stripMarkdownFences(call.function.arguments));
-      } catch (err) {
+      } catch {
         throw new Error("Mila couldn't compose a look this time. Please try again.");
       }
 

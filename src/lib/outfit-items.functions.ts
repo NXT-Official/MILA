@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { aiChatCompletion } from "./ai.server";
-import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+import { consumeRateLimit } from "./rate-limit.server";
 import { withAiCredit } from "./credits.server";
 import {
   CLOTHING_CATEGORIES as CATEGORIES,
@@ -19,8 +19,7 @@ import {
   type PostItem,
 } from "./outfit-items";
 
-const ANALYZE_OUTFIT_LIMIT = 10;
-const ANALYZE_OUTFIT_WINDOW_SECONDS = 60 * 60;
+const RATE_LIMIT = { limit: 10, windowSeconds: 60 * 60, failure: "closed" } as const;
 // The provider fetches the image immediately (see ai.server), so this only has to
 // outlive one request.
 const DETECTION_URL_TTL = 120;
@@ -231,16 +230,7 @@ export const analyzeOutfitItems = createServerFn({ method: "POST" })
     if (postError) throw new Error(postError.message);
     if (!post) throw new Error("Post not found.");
 
-    try {
-      await consumeRateLimit(
-        `ai:analyzeOutfitItems:${userId}`,
-        ANALYZE_OUTFIT_LIMIT,
-        ANALYZE_OUTFIT_WINDOW_SECONDS,
-      );
-    } catch (err) {
-      if (err instanceof RateLimitExceededError) throw new Error(err.message);
-      throw err;
-    }
+    await consumeRateLimit("ai:analyzeOutfitItems", userId, RATE_LIMIT);
 
     const signed = await supabase.storage
       .from("posts")
