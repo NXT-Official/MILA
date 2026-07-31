@@ -19,7 +19,6 @@ export function ColorResultStep({
   candidate,
   telemetry,
   existingDossier,
-  fullName,
   onBack,
   onReviewAnother,
   onConfirmed,
@@ -27,7 +26,6 @@ export function ColorResultStep({
   candidate: StudioColorProfile | null;
   telemetry?: StudioTelemetry | null;
   existingDossier: StudioDossier | null;
-  fullName: string | null;
   onBack: () => void;
   onReviewAnother: () => void;
   onConfirmed: () => void;
@@ -78,9 +76,7 @@ export function ColorResultStep({
         colors to soften or avoid.
       </p>
       <div className="mt-6">
-        <ColorDossierSection
-          profile={{ color_season: dossier.season, full_name: fullName ?? undefined }}
-        />
+        <ColorDossierSection colorSeason={dossier.season} />
       </div>
       <div className="mt-6">
         <StudioPortfolioView profile={dossier} isDemo={false} telemetry={telemetry ?? null} />

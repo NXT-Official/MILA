@@ -1,17 +1,9 @@
-import React from "react";
 import { Sparkles } from "lucide-react";
 import { SEASONS_DATA } from "../../lib/color-analysis/seasonsData";
 import { migrateLegacySeason } from "../../lib/color-analysis/schemaMigration";
 
-interface StyleProfileProps {
-  profile: {
-    color_season: string;
-    full_name?: string;
-  };
-}
-
-export const ColorDossierSection: React.FC<StyleProfileProps> = ({ profile }) => {
-  const resolvedSeasonId = migrateLegacySeason(profile.color_season);
+export function ColorDossierSection({ colorSeason }: { colorSeason: string }) {
+  const resolvedSeasonId = migrateLegacySeason(colorSeason);
   const seasonData = SEASONS_DATA[resolvedSeasonId];
 
   if (!seasonData) {
@@ -122,4 +114,4 @@ export const ColorDossierSection: React.FC<StyleProfileProps> = ({ profile }) =>
       )}
     </div>
   );
-};
+}
