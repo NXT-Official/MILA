@@ -14,22 +14,23 @@ const iconButtonVariants = cva(
       size: {
         sm: "size-9 [&_svg]:size-4",
         md: "size-11 [&_svg]:size-4",
-        lg: "size-12 [&_svg]:size-5",
       },
     },
     defaultVariants: { variant: "ghost", size: "md" },
   },
 );
 
-export interface IconButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof iconButtonVariants> {
-  label: string;
-}
-
-export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ className, variant, size, label, children, ...props }, ref) => (
+export function IconButton({
+  className,
+  variant,
+  size,
+  label,
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof iconButtonVariants> & { label: string }) {
+  return (
     <button
-      ref={ref}
       type="button"
       aria-label={label}
       className={cn(iconButtonVariants({ variant, size, className }))}
@@ -37,6 +38,5 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     >
       {children}
     </button>
-  ),
-);
-IconButton.displayName = "IconButton";
+  );
+}
