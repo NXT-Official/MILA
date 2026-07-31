@@ -26,7 +26,6 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted-foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
@@ -44,13 +43,11 @@
   --color-surface: var(--card);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
   --color-atelier-ivory: var(--canvas);
   --color-atelier-porcelain: var(--card);
   --color-atelier-ink: var(--ink);
   --color-atelier-champagne: var(--accent);
   --color-atelier-rose: var(--rose);
-  --color-atelier-stone: var(--muted-foreground);
   --color-atelier-panel: var(--atelier-panel);
   /* Bare aliases kept for the ~35 existing call sites using text-ink /
      text-stone / border-porcelain / text-rose without an atelier- prefix.
@@ -102,7 +99,6 @@
   --primary: var(--ink); /* Charcoal — Dark / CTA */
   --primary-foreground: oklch(0.98 0.005 78.3); /* Warm White #FAF8F5 */
   --secondary: oklch(0.95 0.008 70);
-  --secondary-foreground: var(--ink);
   --muted: oklch(0.95 0.008 70);
   --muted-foreground: oklch(0.502 0.018 67.4); /* Warm Stone #6B6259 */
   --accent: oklch(0.75 0.085 82.1); /* Champagne Gold #C9A96E — brand accent */
@@ -147,7 +143,6 @@
   --primary: var(--ink);
   --primary-foreground: oklch(0.2 0.012 55);
   --secondary: oklch(0.26 0.012 60);
-  --secondary-foreground: var(--ink);
   --muted: oklch(0.26 0.012 60);
   --muted-foreground: oklch(0.7 0.015 65);
   --accent: oklch(0.76 0.055 75); /* champagne gold, dark-tuned */

@@ -31,8 +31,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signingOut,
         signOut: async () => {
           setSigningOut(true);
-          await supabase.auth.signOut();
-          window.location.href = "/";
+          try {
+            await supabase.auth.signOut();
+            window.location.href = "/";
+          } catch (e) {
+            setSigningOut(false);
+            throw e;
+          }
         },
       }}
     >
