@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Info, ChevronDown, Archive, ShieldCheck, FlaskConical } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Info, ChevronDown, ShieldCheck, FlaskConical } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   type DetailedColorProfile as StudioDossier,
@@ -37,7 +36,7 @@ export function StudioPortfolioView({
     return name.trim();
   });
   return (
-    <section className="mt-10 bg-card rounded-card border border-border shadow-paper animate-fade-in">
+    <section className="mt-10 bg-card rounded-card border border-border shadow-paper">
       <header className="px-6 sm:px-10 pt-10 pb-8 border-b-[0.5px] border-border">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-8">
           <div className="inline-flex items-center gap-1.5 px-3 rounded-xl py-1 bg-foreground text-background text-nano uppercase tracking-label-xwide font-medium">
@@ -524,17 +523,6 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
           </div>
         </div>
       </section>
-
-      {/* <div className="px-6 sm:px-10 py-6 border-t-[0.5px] border-border flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-micro uppercase tracking-label gap-2 border-border hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <Archive className="size-3.5" />
-          Archive Dossier
-        </Button>
-      </div> */}
     </section>
   );
 }
