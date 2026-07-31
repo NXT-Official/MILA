@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
-import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+import { consumeRateLimit, RateLimitExceededError } from "./rate-limit.server";
 import { withAiCredit } from "./credits.server";
 import { INSUFFICIENT_CREDITS, isInsufficientCreditsError } from "./credits";
 import {
@@ -12,8 +12,7 @@ import {
   type SeasonKey,
 } from "@/constants/style-profile";
 
-const ANALYZE_COLOR_LIMIT = 10;
-const ANALYZE_COLOR_WINDOW_SECONDS = 60 * 60;
+const RATE_LIMIT = { limit: 10, windowSeconds: 60 * 60, failure: "closed" } as const;
 
 const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 const TONE_TYPES = ["Warm Tone (Yellow Base)", "Cool Tone (Blue Base)"] as const;
@@ -259,11 +258,7 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
       }
 
       try {
-        await consumeRateLimit(
-          `ai:analyzePersonalColor:${context.userId}`,
-          ANALYZE_COLOR_LIMIT,
-          ANALYZE_COLOR_WINDOW_SECONDS,
-        );
+        await consumeRateLimit("ai:analyzePersonalColor", context.userId, RATE_LIMIT);
       } catch (err) {
         if (err instanceof RateLimitExceededError) {
           return { success: false, error: "ANALYSIS_RATE_LIMITED" };
@@ -776,11 +771,9 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
         throw err;
       }
     } catch (error) {
+      // Logged in full server-side; `detail` reaches the browser, so an
+      // unexpected error's raw message (possibly Postgres text) stays out of it.
       console.error("[analyzePersonalColor] Unhandled gateway exception:", error);
-      return {
-        success: false,
-        error: "SERVER_GATEWAY_TIMEOUT",
-        detail: error instanceof Error ? error.message : String(error),
-      };
+      return { success: false, error: "SERVER_GATEWAY_TIMEOUT" };
     }
   });

@@ -3,11 +3,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
-import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+import { consumeRateLimit } from "./rate-limit.server";
 import { withAiCredit } from "./credits.server";
 
-const ANALYZE_OUTFIT_LIMIT = 15;
-const ANALYZE_OUTFIT_WINDOW_SECONDS = 60 * 60;
+const RATE_LIMIT = { limit: 15, windowSeconds: 60 * 60, failure: "closed" } as const;
 
 const Input = z.object({
   imageUrl: z.string().url(),
@@ -53,16 +52,7 @@ export const analyzeOutfit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
-    try {
-      await consumeRateLimit(
-        `ai:analyzeOutfit:${context.userId}`,
-        ANALYZE_OUTFIT_LIMIT,
-        ANALYZE_OUTFIT_WINDOW_SECONDS,
-      );
-    } catch (err) {
-      if (err instanceof RateLimitExceededError) throw new Error(err.message);
-      throw err;
-    }
+    await consumeRateLimit("ai:analyzeOutfit", context.userId, RATE_LIMIT);
     // The hourly cap above throttles bursts; this is what actually gates on
     // balance. Callers turn InsufficientCreditsError into the paywall.
     return withAiCredit(context.supabase, context.userId, async () => {

@@ -7,14 +7,13 @@ import {
   CLOTHING_UNDERTONES as UNDERTONES,
 } from "@/constants/wardrobe";
 import { withAiCredit } from "./credits.server";
-import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
+import { consumeRateLimit } from "./rate-limit.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { ClothingAttributesSchema, type ClothingAttributes } from "./outfit-items";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-const FIND_DUPES_LIMIT = 15;
-const FIND_DUPES_WINDOW_SECONDS = 60 * 60;
+const RATE_LIMIT = { limit: 15, windowSeconds: 60 * 60, failure: "closed" } as const;
 
 const Input = z.object({
   imageUrl: z.string().url(),
@@ -190,16 +189,7 @@ export const findDupes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }): Promise<DupeHuntResult> => {
-    try {
-      await consumeRateLimit(
-        `ai:findDupes:${context.userId}`,
-        FIND_DUPES_LIMIT,
-        FIND_DUPES_WINDOW_SECONDS,
-      );
-    } catch (err) {
-      if (err instanceof RateLimitExceededError) throw new Error(err.message);
-      throw err;
-    }
+    await consumeRateLimit("ai:findDupes", context.userId, RATE_LIMIT);
     return withAiCredit(context.supabase, context.userId, async () => {
       const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
 
