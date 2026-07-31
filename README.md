@@ -72,7 +72,7 @@ Status reflects what was confirmed by reading the code, not the product's ambiti
 | Style profile / colour-season quiz                    | Implemented      | Body type, face shape, hair, beauty preferences, 16-season colour dossier (`/style-profile`)                                 |
 | Daily look generation                                 | Implemented      | Outfit + hair + makeup, weather- and vibe-aware, via `generate-outfit.functions.ts`                                          |
 | Outfit history                                        | Implemented      | Past generated looks, stored in `outfits` (`/history`)                                                                       |
-| Wardrobe/outfit photo analysis                        | Implemented      | `analyze-clothing.functions.ts`, `analyze-outfit.functions.ts`                                                               |
+| Wardrobe/outfit photo analysis                        | Implemented      | `analyze-outfit.functions.ts`, plus per-garment detection in `outfit-items.functions.ts`                                     |
 | Dupe hunter                                           | Implemented      | Photo → AI read → matched against a seeded affiliate `products`/`brands` catalog                                             |
 | Stylist chat                                          | Implemented      | `concierge-chat.functions.ts` — conversational styling chat with optional look/photo context                                 |
 | Community feed                                        | Implemented      | Members post outfit photos (`posts`); moderation-aware visibility                                                            |
