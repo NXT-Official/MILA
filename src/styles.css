@@ -6,12 +6,10 @@
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
   --radius-control: 0.75rem;
   --radius-panel: 1rem;
   --radius-card: 1.25rem;
@@ -49,10 +47,6 @@
   --color-atelier-champagne: var(--accent);
   --color-atelier-rose: var(--rose);
   --color-atelier-panel: var(--atelier-panel);
-  /* Bare aliases kept for the ~35 existing call sites using text-ink /
-     text-stone / border-porcelain / text-rose without an atelier- prefix.
-     New code should prefer the canonical names: ink, muted, surface,
-     canvas, accent, accent-soft, line. */
   --color-ink: var(--ink);
   --color-stone: var(--muted-foreground);
   --color-porcelain: var(--card);
@@ -67,15 +61,10 @@
   --ease-editorial: var(--ease-editorial-value);
   --container-reading: 46rem;
   --container-content: 72rem;
-  --container-wide: 84rem;
-  /* Micro-label scale. The uppercase kicker is this design's signature and
-     was previously spelled as ~19 arbitrary tracking values and 6 arbitrary
-     pixel sizes. Everything now snaps to these five tracking steps and four
-     sizes — change the label look here, not in 100 files. */
-  --text-pico: 0.5rem; /* 8px */
-  --text-nano: 0.5625rem; /* 9px */
-  --text-micro: 0.625rem; /* 10px */
-  --text-label: 0.6875rem; /* 11px */
+  --text-pico: 0.5rem;
+  --text-nano: 0.5625rem;
+  --text-micro: 0.625rem;
+  --text-label: 0.6875rem;
   --tracking-label-tight: 0.15em;
   --tracking-label: 0.2em;
   --tracking-label-wide: 0.25em;
@@ -86,39 +75,34 @@
 :root {
   color-scheme: light;
   --radius: 0.25rem;
-  /* Brand kit palette: Ivory #F5F0E8 · Gold #C9A96E · Parchment #F5ECD9 ·
-     Gold Muted #E8D5B0 · Charcoal #2B2320 · Stone #6B6259 · White #FAF8F5 */
   --canvas: #f5f0e8;
   --background: var(--canvas);
-  --ink: oklch(0.264 0.013 41.6); /* Atelier Charcoal #2B2320 */
+  --ink: oklch(0.264 0.013 41.6);
   --foreground: var(--ink);
   --card: #faf8f5;
   --card-foreground: var(--ink);
   --popover: oklch(0.98 0.005 78.3);
   --popover-foreground: var(--ink);
-  --primary: var(--ink); /* Charcoal — Dark / CTA */
-  --primary-foreground: oklch(0.98 0.005 78.3); /* Warm White #FAF8F5 */
+  --primary: var(--ink);
+  --primary-foreground: oklch(0.98 0.005 78.3);
   --secondary: oklch(0.95 0.008 70);
   --muted: oklch(0.95 0.008 70);
-  --muted-foreground: oklch(0.502 0.018 67.4); /* Warm Stone #6B6259 */
-  --accent: oklch(0.75 0.085 82.1); /* Champagne Gold #C9A96E — brand accent */
+  --muted-foreground: oklch(0.502 0.018 67.4);
+  --accent: oklch(0.75 0.085 82.1);
   --accent-foreground: var(--ink);
-  --accent-soft: oklch(
-    0.945 0.027 85.7
-  ); /* Parchment #F5ECD9 — soft gold wash, used for hover/highlight surfaces */
+  --accent-soft: oklch(0.945 0.027 85.7);
   --destructive: oklch(0.55 0.2 27);
   --destructive-foreground: oklch(0.98 0.005 75);
-  --success: oklch(0.52 0.1 152); /* muted forest, warm-compatible */
+  --success: oklch(0.52 0.1 152);
   --success-foreground: oklch(0.98 0.005 75);
-  --warning: oklch(0.62 0.14 55); /* warm amber-rust, distinct from gold accent */
+  --warning: oklch(0.62 0.14 55);
   --warning-foreground: oklch(0.2 0.02 55);
-  /* Gold Muted per brand kit — "structural warmth without weight" */
   --border: #e8d5b0;
-  --input: oklch(0.879 0.053 84); /* Gold Muted #E8D5B0 */
-  --ring: oklch(0.75 0.085 82.1); /* Champagne Gold #C9A96E */
+  --input: oklch(0.879 0.053 84);
+  --ring: oklch(0.75 0.085 82.1);
   --font-display-family: "Playfair Display", "Times New Roman", Georgia, serif;
   --font-sans-family: "Inter", Helvetica, Arial, sans-serif;
-  --font-serif: var(--font-display-family); /* back-compat for .font-serif usages */
+  --font-serif: var(--font-display-family);
   --rose: oklch(0.76 0.055 25);
   --atelier-panel: oklch(1 0.003 80 / 78%);
   --shadow-paper-value:
@@ -145,9 +129,9 @@
   --secondary: oklch(0.26 0.012 60);
   --muted: oklch(0.26 0.012 60);
   --muted-foreground: oklch(0.7 0.015 65);
-  --accent: oklch(0.76 0.055 75); /* champagne gold, dark-tuned */
+  --accent: oklch(0.76 0.055 75);
   --accent-foreground: oklch(0.16 0.012 55);
-  --accent-soft: oklch(0.32 0.03 80); /* dark champagne wash */
+  --accent-soft: oklch(0.32 0.03 80);
   --destructive: oklch(0.62 0.19 27);
   --destructive-foreground: oklch(0.98 0.005 75);
   --success: oklch(0.65 0.11 152);
@@ -156,7 +140,7 @@
   --warning-foreground: oklch(0.16 0.02 55);
   --border: oklch(0.95 0.01 70 / 12%);
   --input: oklch(0.95 0.01 70 / 16%);
-  --ring: oklch(0.75 0.085 82.1); /* Champagne Gold #C9A96E */
+  --ring: oklch(0.75 0.085 82.1);
   --rose: oklch(0.68 0.055 25);
   --atelier-panel: oklch(0.2 0.012 55 / 78%);
   --shadow-paper-value: 0 1px 2px oklch(0 0 0 / 0.3), 0 10px 30px oklch(0 0 0 / 0.35);
@@ -252,10 +236,6 @@
 }
 
 @layer components {
-  .atelier-screen {
-    @apply min-h-screen bg-canvas text-ink;
-  }
-
   .atelier-container {
     @apply mx-auto w-full max-w-content px-5 sm:px-8 lg:px-10;
   }
@@ -280,10 +260,6 @@
     );
   }
 
-  .atelier-panel {
-    @apply rounded-panel border border-line/80 bg-accent-soft/45;
-  }
-
   .atelier-kicker {
     @apply text-xs font-semibold uppercase tracking-label-tight text-accent;
   }
@@ -300,16 +276,7 @@
     @apply outline-none focus-visible:ring-2 focus-visible:ring-accent
       focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
   }
-
-  .atelier-dark-glass {
-    @apply border border-white/10 bg-ink/90 text-surface shadow-nav
-      backdrop-blur-xl;
-  }
 }
-
-/* Recurring recipes. Each of these was typed out verbatim in 3+ places
-   before, with drifting opacities. Radius is deliberately NOT baked into
-   atelier-glass — callers pill it, round it, or square it. */
 
 @utility atelier-label {
   @apply text-micro uppercase tracking-label-wide text-stone;
@@ -335,9 +302,4 @@
 
 @utility atelier-headline {
   @apply font-serif text-2xl leading-snug tracking-tight;
-}
-
-@utility atelier-tile {
-  @apply rounded-none border-[0.5px] border-border p-5 text-left transition-all
-    hover:border-foreground/40;
 }
