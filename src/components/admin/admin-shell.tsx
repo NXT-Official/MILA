@@ -27,14 +27,17 @@ export function AdminShell() {
   }, [sidebarOpen]);
 
   useEffect(() => {
-    if (!user || viewer.isLoading || viewer.canAccessStaffArea) return;
-    navigate({ to: viewer.destination, replace: true });
-  }, [user, viewer.isLoading, viewer.canAccessStaffArea, viewer.destination, navigate]);
-
-  useEffect(() => {
-    if (!user || viewer.isLoading || !viewer.canAccessStaffArea || canAccessPath) return;
-    navigate({ to: "/admin/moderation", replace: true });
-  }, [user, viewer.isLoading, viewer.canAccessStaffArea, canAccessPath, navigate]);
+    if (!user || viewer.isLoading) return;
+    if (!viewer.canAccessStaffArea) navigate({ to: viewer.destination, replace: true });
+    else if (!canAccessPath) navigate({ to: "/admin/moderation", replace: true });
+  }, [
+    user,
+    viewer.isLoading,
+    viewer.canAccessStaffArea,
+    viewer.destination,
+    canAccessPath,
+    navigate,
+  ]);
 
   if (!user || viewer.isLoading) {
     return (
