@@ -11,25 +11,25 @@ export function ExpandableText({
   className?: string;
 }) {
   const id = useId();
+  const ref = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
-  const ref = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || expanded) return;
     const check = () => setOverflowing(el.scrollHeight - el.clientHeight > 1);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
-  }, [text, clampClassName]);
+  }, [text, clampClassName, expanded]);
 
   return (
     <div>
       <p ref={ref} id={id} className={cn(className, !expanded && clampClassName)}>
         {text}
       </p>
-      {overflowing ? (
+      {overflowing && (
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -39,7 +39,7 @@ export function ExpandableText({
         >
           {expanded ? "Show less" : "Read more"}
         </button>
-      ) : null}
+      )}
     </div>
   );
 }
