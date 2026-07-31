@@ -41,7 +41,7 @@ function OnboardingLayout() {
   }
 
   return (
-    <div className="atelier-screen flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-canvas text-ink">
       <header className="atelier-container flex items-center justify-between py-6">
         <Link
           to="/onboarding/style-profile"

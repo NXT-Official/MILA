@@ -171,7 +171,6 @@ function ConciergePage() {
               {seasonBadges.map((b) => (
                 <Badge
                   key={b}
-                  variant="outline"
                   className="rounded-full px-3 py-0.5 text-micro font-normal uppercase tracking-label-wide border-foreground/15 bg-background/40"
                 >
                   {b}
