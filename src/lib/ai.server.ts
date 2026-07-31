@@ -110,7 +110,7 @@ export async function aiChatCompletion(
   try {
     return { ok: true, args: JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "")) };
   } catch {
-    console.error("[ai] provider returned unparseable JSON", text.slice(0, 500));
+    console.error("[ai] provider returned unparseable JSON", { length: text.length });
     return { ok: false, status: 502 };
   }
 }

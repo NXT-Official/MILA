@@ -225,8 +225,14 @@ export const getMemberProfile = createServerFn({ method: "GET" })
       .maybeSingle();
     if (profileResult.error || !profileResult.data) throw new Error("Member not found.");
     const profile = profileResult.data;
-    const { verified } = await loadAuthorDetails([profile.id]);
-    const isVerified = verified.has(profile.id);
+    const { data: activeSubscription } = await supabaseAdmin
+      .from("subscriptions")
+      .select("user_id")
+      .eq("user_id", profile.id)
+      .in("status", IN_FORCE_SUBSCRIPTION_STATUSES)
+      .limit(1)
+      .maybeSingle();
+    const isVerified = !!activeSubscription;
 
     let postsQuery = supabaseAdmin
       .from("posts")
