@@ -14,16 +14,14 @@ const COPY: Record<SaveStatus, string> = {
 export function SaveStatusIndicator({
   status,
   onRetry,
-  className,
 }: {
   status: SaveStatus;
   onRetry?: () => void;
-  className?: string;
 }) {
   if (status === "idle") return null;
 
   return (
-    <div className={cn("flex items-center gap-2 text-xs", className)} role="status">
+    <div className="flex items-center gap-2 text-xs" role="status">
       {status === "saving" && (
         <LoaderCircle className="size-3.5 animate-spin text-muted" aria-hidden="true" />
       )}

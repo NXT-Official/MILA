@@ -184,7 +184,6 @@ export function StyleProfileOnboarding({
           candidate={pendingCandidate}
           telemetry={pendingTelemetry}
           existingDossier={dossier}
-          fullName={profile?.full_name ?? null}
           onBack={() => goTo("color-path")}
           onReviewAnother={() => {
             setPendingCandidate(null);
