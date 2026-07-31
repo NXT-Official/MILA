@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { verifyHcaptcha } from "./hcaptcha.server";
-import { consumeRateLimit, RateLimitExceededError } from "./ai-rate-limit.server";
-import { clientIp, RATE_LIMIT_POLICIES } from "./rate-limit.server";
+import { clientIp, consumeRateLimit, RATE_LIMIT_POLICIES } from "./rate-limit.server";
 
 const SubmitSupportMessageInput = z.object({
   kind: z.enum(["help", "feedback"]),
@@ -15,16 +14,7 @@ export const submitSupportMessage = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const ip = clientIp() ?? "unknown";
 
-    try {
-      await consumeRateLimit(
-        `support-message:${ip}`,
-        RATE_LIMIT_POLICIES.supportIp.limit,
-        RATE_LIMIT_POLICIES.supportIp.windowSeconds,
-      );
-    } catch (err) {
-      if (err instanceof RateLimitExceededError) throw new Error(err.message);
-      throw err;
-    }
+    await consumeRateLimit("support-message", ip, RATE_LIMIT_POLICIES.supportIp);
 
     await verifyHcaptcha(data.captchaToken, ip !== "unknown" ? ip : undefined);
 
