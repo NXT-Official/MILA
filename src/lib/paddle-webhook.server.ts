@@ -45,6 +45,11 @@ export type PaddleSubscriptionWebhookEvent = {
   };
 };
 
+/**
+ * Throws on transient failures so the caller can answer 5xx and let Paddle
+ * redeliver. Permanent failures — an event we can't attribute, a price we don't
+ * sell — return quietly instead: no number of retries will fix those.
+ */
 export async function applyPaddleSubscriptionEvent(
   db: MilaSupabaseClient,
   event: PaddleSubscriptionWebhookEvent,
@@ -62,7 +67,11 @@ export async function applyPaddleSubscriptionEvent(
     .select("id, credits_included")
     .eq("paddle_price_id", priceId ?? "")
     .maybeSingle();
-  if (planError || !plan) {
+  if (planError) {
+    console.error("[paddle-webhook] plan lookup failed", planError);
+    throw new Error("subscription plan lookup failed");
+  }
+  if (!plan) {
     console.error("[paddle-webhook] unknown paddle price id", { priceId, subscriptionId: data.id });
     return;
   }
@@ -93,7 +102,7 @@ export async function applyPaddleSubscriptionEvent(
   );
   if (upsertError) {
     console.error("[paddle-webhook] failed to upsert subscription", upsertError);
-    return;
+    throw new Error("subscription not upserted");
   }
 
   await db
@@ -113,7 +122,10 @@ export async function applyPaddleSubscriptionEvent(
     .update(entitlementUpdate)
     .eq("user_id", userId);
   if (entitlementError) {
+    // The renewal's credits live here. Dropping this silently is how a paying
+    // member ends up with an active subscription and an empty balance.
     console.error("[paddle-webhook] failed to sync entitlements", entitlementError);
+    throw new Error("entitlements not synced");
   }
 }
 

@@ -69,6 +69,13 @@ export const createPost = createServerFn({ method: "POST" })
   .validator((input: unknown) => CreatePostInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Storage RLS only constrains uploads. Without this a member could publish a
+    // post pointing at someone else's image path and claim it as their own OOTD.
+    const ownsBothImages = [data.image_path_back, data.image_path_front].every((path) =>
+      path.startsWith(`${userId}/`),
+    );
+    if (!ownsBothImages) throw new Error("Post images must be your own uploads.");
+
     const { data: row, error } = await supabase
       .from("posts")
       .insert({
@@ -125,7 +132,12 @@ export const deletePost = createServerFn({ method: "POST" })
       .eq("user_id", userId);
     if (error) throw new Error(error.message);
 
-    await supabase.storage.from("posts").remove([row.image_url_back, row.image_url_front]);
+    const { error: removeError } = await supabase.storage
+      .from("posts")
+      .remove([row.image_url_back, row.image_url_front]);
+    // The row is already gone; a failed purge only leaves orphaned bytes behind,
+    // so surface it for cleanup rather than failing a delete the user saw succeed.
+    if (removeError) console.error("[deletePost] image purge failed", removeError.message);
     return { id: data.post_id };
   });
 

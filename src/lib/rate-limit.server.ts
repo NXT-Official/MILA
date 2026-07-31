@@ -1,5 +1,5 @@
 import { isIP } from "node:net";
-import { getRequestIP } from "@tanstack/react-start/server";
+import { getRequest, getRequestIP } from "@tanstack/react-start/server";
 
 export const RATE_LIMIT_POLICIES = {
   supportIp: { limit: 3, windowSeconds: 900, failure: "closed" },
@@ -44,8 +44,13 @@ export function normalizeIp(value: string | undefined): string | undefined {
   if (isIP(candidate) === 6) return candidate.toLowerCase().replace(/^::ffff:/, "");
 }
 
+/**
+ * Behind a proxy the socket address is the proxy's, so a deployment that sets
+ * RATE_LIMIT_TRUSTED_IP_HEADER gets that one exact header read instead. Both
+ * arguments default to the live request; tests pass them explicitly.
+ */
 export function clientIp(
-  request?: Request,
+  request: Request | undefined = getRequest(),
   runtimeIp: () => string | undefined = getRequestIP,
 ): string | undefined {
   const trustedHeader = process.env.RATE_LIMIT_TRUSTED_IP_HEADER?.toLowerCase();
