@@ -71,7 +71,6 @@ export function PostCanvas({ post }: { post: FeedPost }) {
               key={item.id}
               type="button"
               onClick={() => setOpenItem(item)}
-              // Percentages, because the box is normalized and the photo is fluid.
               style={{
                 left: `${(item.bbox.x + item.bbox.w / 2) * 100}%`,
                 top: `${(item.bbox.y + item.bbox.h / 2) * 100}%`,

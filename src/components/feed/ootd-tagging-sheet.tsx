@@ -19,10 +19,6 @@ import { errorMessage } from "@/lib/utils";
 
 type Draft = { id: string; category: string; label: string; sourceUrl: string };
 
-/**
- * Shown once, right after publishing. Everything here is optional — the post is
- * already live, so closing this sheet simply keeps Mila's own labels.
- */
 export function OotdTaggingSheet({
   postId,
   items,

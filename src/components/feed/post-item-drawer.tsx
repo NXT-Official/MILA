@@ -26,18 +26,10 @@ function formatPrice(price: number, currency: string) {
   }
 }
 
-// The catalog and the piece's attributes are both fixed, so today's matches are
-// still tomorrow's. ponytail: per-browser rather than a shared cache table —
-// matching is one indexed query with no AI call behind it.
 const MATCH_CACHE_MS = 24 * 60 * 60 * 1000;
 
-/**
- * Opened by tapping a hotspot. Shows the piece, wherever the poster said it's
- * from, and visually similar items.
- */
 export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClose: () => void }) {
   const fetchSimilar = useServerFn(findSimilarItems);
-  // Only on open: most viewers never tap most hotspots.
   const { data: similar, isLoading } = useQuery({
     queryKey: queryKeys.similarItems(item?.id ?? ""),
     queryFn: () => fetchSimilar({ data: { attributes: item!.attributes } }),
@@ -68,7 +60,6 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
               <a
                 href={item.source_url}
                 target="_blank"
-                // nofollow because the destination is poster-supplied and unvetted.
                 rel="noopener noreferrer nofollow"
                 className="atelier-focus-ring flex items-center justify-between gap-3 rounded-2xl atelier-glass px-5 py-4"
               >
@@ -76,8 +67,6 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                   <span className="block text-nano uppercase tracking-label-xwide text-stone">
                     Poster's link
                   </span>
-                  {/* The hostname, never the raw URL: a long path can otherwise be
-                      dressed up to look like it points at another domain. */}
                   <span className="block font-serif text-base text-ink truncate">
                     {sourceUrlHost(item.source_url)}
                   </span>
