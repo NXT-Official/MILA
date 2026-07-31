@@ -25,10 +25,7 @@ export function CatalogTitleCell({
       <div className="flex items-center gap-2">
         <span className="font-serif text-sm text-ink truncate">{title}</span>
         {archived && (
-          <Badge
-            variant="outline"
-            className="border-stone/40 text-stone text-nano uppercase tracking-label"
-          >
+          <Badge className="border-stone/40 text-stone text-nano uppercase tracking-label">
             Archived
           </Badge>
         )}

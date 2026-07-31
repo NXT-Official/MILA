@@ -81,10 +81,7 @@ export function getMembersColumns({
       cell: ({ row }) =>
         row.original.suspended ? (
           <div className="flex justify-end">
-            <Badge
-              variant="outline"
-              className="border-destructive/50 text-destructive text-nano uppercase tracking-label"
-            >
+            <Badge className="border-destructive/50 text-destructive text-nano uppercase tracking-label">
               Suspended
             </Badge>
           </div>
