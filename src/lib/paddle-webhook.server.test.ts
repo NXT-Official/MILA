@@ -64,7 +64,12 @@ function fakeChain(terminal: Terminal, onWrite?: (payload: unknown) => void) {
   return chain;
 }
 
-function fakeDb(config: { plan: Terminal; existingSubscription?: Terminal }) {
+function fakeDb(config: {
+  plan: Terminal;
+  existingSubscription?: Terminal;
+  upsert?: Terminal;
+  entitlementUpdate?: Terminal;
+}) {
   const subscriptionUpserts: unknown[] = [];
   const profileUpdates: unknown[] = [];
   const entitlementUpdates: unknown[] = [];
@@ -77,13 +82,17 @@ function fakeDb(config: { plan: Terminal; existingSubscription?: Terminal }) {
       if (subscriptionsCallCount === 1) {
         return fakeChain(config.existingSubscription ?? { data: null, error: null });
       }
-      return fakeChain({ data: null, error: null }, (p) => subscriptionUpserts.push(p));
+      return fakeChain(config.upsert ?? { data: null, error: null }, (p) =>
+        subscriptionUpserts.push(p),
+      );
     }
     if (table === "profiles") {
       return fakeChain({ data: null, error: null }, (p) => profileUpdates.push(p));
     }
     if (table === "user_entitlements") {
-      return fakeChain({ data: null, error: null }, (p) => entitlementUpdates.push(p));
+      return fakeChain(config.entitlementUpdate ?? { data: null, error: null }, (p) =>
+        entitlementUpdates.push(p),
+      );
     }
     throw new Error(`unexpected table ${table}`);
   });
@@ -191,6 +200,27 @@ describe("applyPaddleSubscriptionEvent", () => {
 
     expect(subscriptionUpserts).toEqual([]);
     expect(entitlementUpdates).toEqual([]);
+  });
+
+  test("rethrows when the subscription can't be recorded, so Paddle retries", async () => {
+    const { db } = fakeDb({
+      plan: { data: { id: "plan-1", credits_included: 500 }, error: null },
+      upsert: { data: null, error: { message: "deadlock" } },
+    });
+    await expect(applyPaddleSubscriptionEvent(db, baseEvent({}))).rejects.toThrow();
+  });
+
+  test("rethrows when a renewal's credits can't be applied, so Paddle retries", async () => {
+    const { db } = fakeDb({
+      plan: { data: { id: "plan-1", credits_included: 500 }, error: null },
+      entitlementUpdate: { data: null, error: { message: "deadlock" } },
+    });
+    await expect(applyPaddleSubscriptionEvent(db, baseEvent({}))).rejects.toThrow();
+  });
+
+  test("rethrows when the plan lookup itself fails, rather than dropping the event", async () => {
+    const { db } = fakeDb({ plan: { data: null, error: { message: "timeout" } } });
+    await expect(applyPaddleSubscriptionEvent(db, baseEvent({}))).rejects.toThrow();
   });
 });
 

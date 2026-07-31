@@ -24,6 +24,15 @@ test("the shared captcha hook clears expired/error tokens and resets after attem
   expect(hook).toContain("setToken(null)");
 });
 
+test("publishing a post refuses image paths outside the poster's own storage folder", () => {
+  // Storage RLS only constrains uploads, so the insert has to re-check ownership
+  // or a member could claim someone else's photo as their OOTD.
+  expect(source("./posts.functions.ts")).toContain("path.startsWith(`${userId}/`)");
+  // ...and the uploader must keep writing paths that satisfy that prefix.
+  expect(source("./publish-ootd.ts")).toContain("`${userId}/back-");
+  expect(source("./publish-ootd.ts")).toContain("`${userId}/front-");
+});
+
 test("every hCaptcha form goes through that hook rather than mounting its own widget", () => {
   for (const path of [
     "../components/login/login-form.tsx",
