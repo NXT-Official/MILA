@@ -1,21 +1,20 @@
-type ChatCompletionRequest = {
-  messages: Array<Record<string, unknown>>;
-  tools?: Array<Record<string, unknown>>;
-  tool_choice?: Record<string, unknown>;
-};
-
 type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+
+export type AiTool = { function: { name: string; parameters: Record<string, unknown> } };
+
+export type AiResult = { ok: true; args: unknown } | { ok: false; status: number };
 
 const GEMINI_API = "https://generativelanguage.googleapis.com/v1beta";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
-function aiEnv() {
-  return { apiKey: process.env.AI_API_KEY, model: process.env.AI_MODEL };
+export function isAiConfigured(): boolean {
+  return Boolean(process.env.AI_API_KEY && process.env.AI_MODEL);
 }
 
-export function isAiConfigured(): boolean {
-  const { apiKey, model } = aiEnv();
-  return Boolean(apiKey && model);
+export function aiFailure(status: number, fallback: string): Error {
+  if (status === 429) return new Error("Rate limit reached. Please try again in a moment.");
+  if (status === 402) return new Error("AI credits exhausted. Please try again later.");
+  return new Error(fallback);
 }
 
 async function imagePart(url: string): Promise<GeminiPart> {
@@ -53,17 +52,25 @@ async function messageParts(content: unknown): Promise<GeminiPart[]> {
   return parts;
 }
 
-export async function aiChatCompletion(request: ChatCompletionRequest): Promise<Response> {
-  const { apiKey, model } = aiEnv();
+export async function aiChatCompletion(
+  messages: Array<Record<string, unknown>>,
+  tool: AiTool,
+): Promise<AiResult> {
+  const apiKey = process.env.AI_API_KEY;
+  const model = process.env.AI_MODEL;
   if (!apiKey || !model) {
     throw new Error("AI provider not configured — set AI_API_KEY and AI_MODEL");
   }
 
-  const system = request.messages
+  const system = messages
     .filter((message) => message.role === "system" && typeof message.content === "string")
     .map((message) => message.content as string);
+  system.push(
+    `Return only the ${tool.function.name} arguments as JSON matching the required schema.`,
+  );
+
   const contents: Array<{ role: "user" | "model"; parts: GeminiPart[] }> = [];
-  for (const message of request.messages) {
+  for (const message of messages) {
     if (message.role === "system") continue;
     const role = message.role === "assistant" ? "model" : "user";
     const parts = await messageParts(message.content);
@@ -73,46 +80,37 @@ export async function aiChatCompletion(request: ChatCompletionRequest): Promise<
     else contents.push({ role, parts });
   }
 
-  const requestedName = (request.tool_choice?.function as { name?: unknown } | undefined)?.name;
-  const selectedTool = request.tools?.find(
-    (tool) =>
-      tool.type === "function" &&
-      (!requestedName || (tool.function as { name?: unknown } | undefined)?.name === requestedName),
-  );
-  const fn = selectedTool?.function as
-    { name?: string; parameters?: Record<string, unknown> } | undefined;
-  if (fn?.name) {
-    system.push(`Return only the ${fn.name} arguments as JSON matching the required schema.`);
-  }
-
   const response = await fetch(`${GEMINI_API}/models/${model}:generateContent`, {
     method: "POST",
     headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify({
       contents,
-      systemInstruction: system.length ? { parts: [{ text: system.join("\n\n") }] } : undefined,
-      generationConfig: fn?.parameters
-        ? { responseMimeType: "application/json", responseJsonSchema: fn.parameters }
-        : undefined,
+      systemInstruction: { parts: [{ text: system.join("\n\n") }] },
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseJsonSchema: tool.function.parameters,
+      },
       store: false,
     }),
   });
-  if (!response.ok) return response;
+  if (!response.ok) {
+    console.error("[ai] provider error", response.status, await response.text());
+    return { ok: false, status: response.status };
+  }
 
   const json = (await response.json()) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };
   const text = json.candidates?.[0]?.content?.parts?.find((part) => part.text)?.text;
   if (!text) {
-    return Response.json(json, { status: 502, statusText: "Invalid AI response" });
+    console.error("[ai] provider returned no text", JSON.stringify(json).slice(0, 500));
+    return { ok: false, status: 502 };
   }
-  return Response.json({
-    choices: [
-      {
-        message: fn?.name
-          ? { tool_calls: [{ function: { name: fn.name, arguments: text } }] }
-          : { content: text },
-      },
-    ],
-  });
+
+  try {
+    return { ok: true, args: JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "")) };
+  } catch {
+    console.error("[ai] provider returned unparseable JSON", { length: text.length });
+    return { ok: false, status: 502 };
+  }
 }

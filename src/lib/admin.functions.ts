@@ -18,14 +18,9 @@ export async function getCurrentUserRoles(
   supabase: MilaSupabaseClient,
   userId: string,
 ): Promise<AppRole[]> {
-  const [{ data: profile, error: profileError }, { data: roleRows, error: rolesError }] =
-    await Promise.all([
-      supabase.from("profiles").select("suspended").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-    ]);
-  if (profileError || rolesError) throw new Error("Unable to verify your permissions.");
-  if (!profile || profile.suspended) throw new Error("Forbidden: Account suspended");
-  return [...new Set((roleRows ?? []).map(({ role }) => role).filter(isAppRole))];
+  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  if (error) throw new Error("Unable to verify your permissions.");
+  return [...new Set((data ?? []).map(({ role }) => role).filter(isAppRole))];
 }
 
 export async function assertPermission(

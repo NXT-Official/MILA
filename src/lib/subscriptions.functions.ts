@@ -15,6 +15,18 @@ export type MarkCancelAtPeriodEndStore = (
   cancelAtPeriodEnd: boolean,
 ) => Promise<void>;
 
+const markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = async (
+  paddleSubscriptionId,
+  cancelAtPeriodEnd,
+) => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin
+    .from("subscriptions")
+    .update({ cancel_at_period_end: cancelAtPeriodEnd })
+    .eq("paddle_subscription_id", paddleSubscriptionId);
+  if (error) console.error("[subscriptions] failed to mirror cancel_at_period_end", error);
+};
+
 async function findInForceSubscriptionId(
   db: MilaSupabaseClient,
   userId: string,
@@ -148,24 +160,22 @@ export const myMembershipStatus = createServerFn({ method: "GET" })
 
 export const resumeMySubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<ResumeSubscriptionResult> => {
-    const { markCancelAtPeriodEnd } = await import("./subscriptions.server");
-    return resumeSubscriptionForUser(
+  .handler(async ({ context }): Promise<ResumeSubscriptionResult> =>
+    resumeSubscriptionForUser(
       context.supabase,
       resumeViaPaddleApi,
       context.userId,
       markCancelAtPeriodEnd,
-    );
-  });
+    ),
+  );
 
 export const cancelMySubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<CancelSubscriptionResult> => {
-    const { markCancelAtPeriodEnd } = await import("./subscriptions.server");
-    return cancelSubscriptionForUser(
+  .handler(async ({ context }): Promise<CancelSubscriptionResult> =>
+    cancelSubscriptionForUser(
       context.supabase,
       cancelViaPaddleApi,
       context.userId,
       markCancelAtPeriodEnd,
-    );
-  });
+    ),
+  );

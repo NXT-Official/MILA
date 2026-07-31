@@ -106,11 +106,8 @@ type Calibration = z.infer<typeof CalibrationSchema> & {
 };
 
 const calibrationTool = {
-  type: "function" as const,
   function: {
     name: "report_calibration",
-    description:
-      "Return ONLY the raw environmental + biological calibration read of this portrait. Do NOT pick a seasonal palette key — that happens in a second pass.",
     parameters: {
       type: "object",
       properties: {
@@ -140,11 +137,8 @@ const calibrationTool = {
 };
 
 const slimTool = {
-  type: "function" as const,
   function: {
     name: "report_studio_color_profile",
-    description:
-      "Return only the raw vision read of the portrait. Do NOT generate any color palettes, fabric lists, makeup specs, or styling text — those are hydrated downstream from a static dictionary.",
     parameters: {
       type: "object",
       properties: {
@@ -226,7 +220,14 @@ type ColorAnalysisResult =
         forcedDiagnostic: boolean;
       };
     }
-  | { success: false; error: string; detail?: string };
+  | { success: false; error: string };
+
+function analysisFailure(status: number): ColorAnalysisResult {
+  if (status === 429) return { success: false, error: "ANALYSIS_RATE_LIMITED" };
+  if (status === 402) return { success: false, error: "ANALYSIS_CREDITS_EXHAUSTED" };
+  if (status === 502) return { success: false, error: "ANALYSIS_PARSING_FAILED" };
+  return { success: false, error: "ANALYSIS_GATEWAY_FAILURE" };
+}
 
 export const analyzePersonalColor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -272,13 +273,13 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
           context.supabase,
           context.userId,
           async () => {
-            const callGateway = async (
+            const callGateway = (
               systemPrompt: string,
               userText: string,
               toolDef: typeof slimTool | typeof calibrationTool,
-            ) => {
-              const res = await aiChatCompletion({
-                messages: [
+            ) =>
+              aiChatCompletion(
+                [
                   { role: "system", content: systemPrompt },
                   {
                     role: "user",
@@ -291,14 +292,8 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
                     ],
                   },
                 ],
-                tools: [toolDef],
-                tool_choice: {
-                  type: "function",
-                  function: { name: toolDef.function.name },
-                },
-              });
-              return res;
-            };
+                toolDef,
+              );
 
             const forced = data.diagnostics?.forceCalibration;
             let pass1Parsed: { success: true; data: z.infer<typeof CalibrationSchema> };
@@ -319,54 +314,15 @@ Return ONLY by calling the report_calibration tool.`;
                 "Run the Pass-1 calibration read on this portrait.",
                 calibrationTool,
               );
-              if (pass1Res.status === 429)
-                return { success: false, error: "ANALYSIS_RATE_LIMITED" };
-              if (pass1Res.status === 402)
-                return { success: false, error: "ANALYSIS_CREDITS_EXHAUSTED" };
-              if (!pass1Res.ok) {
-                const t = await pass1Res.text();
-                console.error("[analyzePersonalColor] Pass1 gateway error", pass1Res.status, t);
-                return {
-                  success: false,
-                  error: "ANALYSIS_GATEWAY_FAILURE",
-                  detail: `Pass1 HTTP ${pass1Res.status}`,
-                };
-              }
-              const pass1Json = await pass1Res.json();
-              const pass1Call = pass1Json.choices?.[0]?.message?.tool_calls?.[0];
-              if (!pass1Call) {
-                console.error(
-                  "[analyzePersonalColor] Pass1 no tool_call",
-                  JSON.stringify(pass1Json).slice(0, 500),
-                );
-                return {
-                  success: false,
-                  error: "ANALYSIS_PARSING_FAILED",
-                  detail: "Pass1: no tool_call returned",
-                };
-              }
-              let pass1Args: unknown;
-              try {
-                pass1Args = JSON.parse(pass1Call.function.arguments);
-              } catch (e) {
-                console.error("[analyzePersonalColor] Pass1 JSON parse failed", e);
-                return {
-                  success: false,
-                  error: "ANALYSIS_PARSING_FAILED",
-                  detail: "Pass1: invalid tool args JSON",
-                };
-              }
-              const parsed1 = CalibrationSchema.safeParse(pass1Args);
+              if (!pass1Res.ok) return analysisFailure(pass1Res.status);
+
+              const parsed1 = CalibrationSchema.safeParse(pass1Res.args);
               if (!parsed1.success) {
                 console.error(
                   "[analyzePersonalColor] Pass1 schema mismatch",
                   parsed1.error.flatten(),
                 );
-                return {
-                  success: false,
-                  error: "ANALYSIS_PARSING_FAILED",
-                  detail: parsed1.error.message,
-                };
+                return { success: false, error: "ANALYSIS_PARSING_FAILED" };
               }
               pass1Parsed = parsed1;
             }
@@ -608,58 +564,12 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
               slimTool,
             );
 
-            if (res.status === 429) {
-              return { success: false, error: "ANALYSIS_RATE_LIMITED" };
-            }
-            if (res.status === 402) {
-              return { success: false, error: "ANALYSIS_CREDITS_EXHAUSTED" };
-            }
-            if (!res.ok) {
-              const t = await res.text();
-              console.error("[analyzePersonalColor] Gateway error", res.status, t);
-              return {
-                success: false,
-                error: "ANALYSIS_GATEWAY_FAILURE",
-                detail: `HTTP ${res.status}`,
-              };
-            }
+            if (!res.ok) return analysisFailure(res.status);
 
-            const json = await res.json();
-            const call = json.choices?.[0]?.message?.tool_calls?.[0];
-            if (!call) {
-              console.error(
-                "[analyzePersonalColor] No tool_call in gateway response",
-                JSON.stringify(json).slice(0, 500),
-              );
-              return {
-                success: false,
-                error: "ANALYSIS_PARSING_FAILED",
-                detail: "No tool_call returned",
-              };
-            }
-            let args: unknown;
-            try {
-              args = JSON.parse(call.function.arguments);
-            } catch (e) {
-              console.error(
-                "[analyzePersonalColor] tool args JSON parse failed",
-                e,
-                call.function.arguments?.slice?.(0, 500),
-              );
-              return {
-                success: false,
-                error: "ANALYSIS_PARSING_FAILED",
-                detail: "Invalid JSON in tool arguments",
-              };
-            }
-            const slim = SlimVisionSchema.safeParse(args);
+            const slim = SlimVisionSchema.safeParse(res.args);
             if (!slim.success) {
               console.error("[analyzePersonalColor] Slim schema mismatch", slim.error.flatten());
-              return {
-                success: false,
-                error: "ANALYSIS_PARSING_FAILED",
-                detail: slim.error.message,
-              };
+              return { success: false, error: "ANALYSIS_PARSING_FAILED" };
             }
 
             const spec = SEASONS_MASTER_DATA[slim.data.season];
@@ -720,11 +630,7 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
                 "[analyzePersonalColor] Hydrated profile schema mismatch",
                 parsed.error.flatten(),
               );
-              return {
-                success: false,
-                error: "ANALYSIS_PARSING_FAILED",
-                detail: parsed.error.message,
-              };
+              return { success: false, error: "ANALYSIS_PARSING_FAILED" };
             }
             const telemetry = {
               pass1Raw: {

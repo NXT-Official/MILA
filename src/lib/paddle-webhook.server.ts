@@ -4,22 +4,19 @@ import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import type { Database } from "@/integrations/supabase/types";
 import { grantAiCredits } from "@/lib/credits.server";
 
-function parseSignatureHeader(header: string): { ts?: string; h1?: string } {
-  const parsed: Record<string, string> = {};
-  for (const segment of header.split(";")) {
-    const [key, value] = segment.split("=");
-    if (key && value) parsed[key.trim()] = value.trim();
-  }
-  return parsed;
-}
-
 export function verifyPaddleSignature(
   rawBody: string,
   header: string | null,
   secret: string,
 ): boolean {
   if (!header) return false;
-  const { ts, h1 } = parseSignatureHeader(header);
+
+  const parts: Record<string, string> = {};
+  for (const segment of header.split(";")) {
+    const [key, value] = segment.split("=");
+    if (key && value) parts[key.trim()] = value.trim();
+  }
+  const { ts, h1 } = parts;
   if (!ts || !h1) return false;
 
   const expected = createHmac("sha256", secret).update(`${ts}:${rawBody}`).digest("hex");

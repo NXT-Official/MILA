@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
-import { aiChatCompletion } from "./ai.server";
+import { aiChatCompletion, aiFailure } from "./ai.server";
 import { consumeRateLimit } from "./rate-limit.server";
 import { withAiCredit } from "./credits.server";
 import {
@@ -24,10 +24,8 @@ import {
 const DETECTION_URL_TTL = 120;
 
 const tool = {
-  type: "function" as const,
   function: {
     name: "report_outfit_items",
-    description: "Return every distinct clothing item worn in the photo.",
     parameters: {
       type: "object",
       properties: {
@@ -240,8 +238,8 @@ export const analyzeOutfitItems = createServerFn({ method: "POST" })
       supabase,
       userId,
       async () => {
-        const res = await aiChatCompletion({
-          messages: [
+        const result = await aiChatCompletion(
+          [
             {
               role: "system",
               content:
@@ -255,24 +253,11 @@ export const analyzeOutfitItems = createServerFn({ method: "POST" })
               ],
             },
           ],
-          tools: [tool],
-          tool_choice: { type: "function", function: { name: "report_outfit_items" } },
-        });
+          tool,
+        );
+        if (!result.ok) throw aiFailure(result.status, "Outfit detection failed.");
 
-        if (res.status === 429)
-          throw new Error("Rate limit reached. Please try again in a moment.");
-        if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-        if (!res.ok) {
-          const body = await res.text();
-          console.error("AI provider error", res.status, body);
-          throw new Error("Outfit detection failed.");
-        }
-
-        const json = await res.json();
-        const call = json.choices?.[0]?.message?.tool_calls?.[0];
-        if (!call) throw new Error("AI did not return any items.");
-        const raw = JSON.parse(call.function.arguments) as { items?: unknown };
-        return parseDetectedItems(raw.items);
+        return parseDetectedItems((result.args as { items?: unknown }).items);
       },
       // Nothing recognised means nothing to tag — don't charge for that.
       { refundIf: (items) => items.length === 0 },

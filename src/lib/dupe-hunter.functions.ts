@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { aiChatCompletion } from "./ai.server";
+import { aiChatCompletion, aiFailure } from "./ai.server";
 import {
   CLOTHING_CATEGORIES as CATEGORIES,
   CLOTHING_UNDERTONES as UNDERTONES,
@@ -19,10 +19,8 @@ const Input = z.object({
 });
 
 const tool = {
-  type: "function" as const,
   function: {
     name: "report_clothing_attributes",
-    description: "Extract structural attributes of an inspiration luxury piece for dupe matching.",
     parameters: {
       type: "object",
       properties: {
@@ -194,8 +192,8 @@ export const findDupes = createServerFn({ method: "POST" })
       const systemPrompt =
         "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract precise structural silhouette and color attributes so we can match budget dupes. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match. Always call the report_clothing_attributes tool.";
 
-      const aiRes = await aiChatCompletion({
-        messages: [
+      const result = await aiChatCompletion(
+        [
           { role: "system", content: systemPrompt },
           {
             role: "user",
@@ -205,23 +203,11 @@ export const findDupes = createServerFn({ method: "POST" })
             ],
           },
         ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "report_clothing_attributes" } },
-      });
+        tool,
+      );
+      if (!result.ok) throw aiFailure(result.status, "Dupe extraction failed.");
 
-      if (aiRes.status === 429)
-        throw new Error("Rate limit reached. Please try again in a moment.");
-      if (aiRes.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-      if (!aiRes.ok) {
-        const t = await aiRes.text();
-        console.error("AI provider error", aiRes.status, t);
-        throw new Error("Dupe extraction failed.");
-      }
-
-      const json = await aiRes.json();
-      const call = json.choices?.[0]?.message?.tool_calls?.[0];
-      if (!call) throw new Error("AI did not return attributes.");
-      const inspiration = JSON.parse(call.function.arguments) as ClothingAttributes;
+      const inspiration = ClothingAttributesSchema.parse(result.args);
       const dupes = await rankDupes(context.supabase, inspiration, data.maxResults);
       return { inspiration, dupes };
     });

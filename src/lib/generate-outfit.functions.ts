@@ -2,10 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { climateForWeatherCode } from "@/constants/climate";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { aiChatCompletion } from "./ai.server";
+import { aiChatCompletion, aiFailure } from "./ai.server";
 import { withAiCredit, markLookImagePending, payForLookImage } from "./credits.server";
 import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
-import { generateOutfitImage, isCloudflareRateLimitError } from "./cloudflare-image.server";
+import { CloudflareRateLimitError, generateOutfitImage } from "./cloudflare-image.server";
 import { errorMessage } from "@/lib/utils";
 
 const Input = z.object({
@@ -25,11 +25,8 @@ const Input = z.object({
 });
 
 const tool = {
-  type: "function" as const,
   function: {
     name: "report_daily_look",
-    description:
-      "Compose a complete head-to-toe daily look: outfit, hair, and makeup — from first principles, harmonized to the client's profile, weather, and vibe.",
     parameters: {
       type: "object",
       properties: {
@@ -120,31 +117,6 @@ export type GeneratedLook = DailyLook & {
   imageDataUri: string | null;
   imageGenerationError?: string;
 };
-
-function stripMarkdownFences(text: string): string {
-  const trimmed = text.trim();
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  return fenced ? fenced[1].trim() : trimmed;
-}
-
-function friendlyImageError(err: unknown): string {
-  if (isCloudflareRateLimitError(err)) {
-    return "The visual service is temporarily busy. Your written outfit is still available.";
-  }
-  return "The outfit was created, but its visual could not be generated.";
-}
-
-async function tryGenerateOutfitImage(
-  outfit: DailyLook,
-): Promise<{ imageDataUri: string | null; imageGenerationError?: string }> {
-  try {
-    const imageDataUri = await generateOutfitImage(outfit);
-    return { imageDataUri };
-  } catch (error) {
-    console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
-    return { imageDataUri: null, imageGenerationError: friendlyImageError(error) };
-  }
-}
 
 export const generateDailyLook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -258,37 +230,18 @@ ${hairRule}
 
 Always call the report_daily_look tool.`;
 
-      const res = await aiChatCompletion({
-        messages: [
+      const composed = await aiChatCompletion(
+        [
           { role: "system", content: systemPrompt },
           { role: "user", content: "Compose today's complete look." },
         ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "report_daily_look" } },
-      });
+        tool,
+      );
+      const failure = "Mila couldn't compose a look this time. Please try again.";
+      if (!composed.ok) throw aiFailure(composed.status, failure);
 
-      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-      if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(`AI service error: ${res.status} ${res.statusText} — ${t}`);
-      }
-
-      const json = await res.json();
-      const call = json.choices?.[0]?.message?.tool_calls?.[0];
-      if (!call) throw new Error("AI did not return a selection.");
-
-      let parsedArgs: unknown;
-      try {
-        parsedArgs = JSON.parse(stripMarkdownFences(call.function.arguments));
-      } catch {
-        throw new Error("Mila couldn't compose a look this time. Please try again.");
-      }
-
-      const look = DailyLookSchema.safeParse(parsedArgs);
-      if (!look.success) {
-        throw new Error("Mila couldn't compose a look this time. Please try again.");
-      }
+      const look = DailyLookSchema.safeParse(composed.args);
+      if (!look.success) throw new Error(failure);
       // The credit charged above covers this look's first visual, rendered by the
       // separate regenerateOutfitImage call the client makes next.
       await markLookImagePending(context.userId);
@@ -307,5 +260,18 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
     return parsed.data;
   })
   .handler(async ({ data, context }) =>
-    payForLookImage(context.supabase, context.userId, () => tryGenerateOutfitImage(data)),
+    payForLookImage(context.supabase, context.userId, async () => {
+      try {
+        return { imageDataUri: await generateOutfitImage(data) };
+      } catch (error) {
+        console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
+        return {
+          imageDataUri: null,
+          imageGenerationError:
+            error instanceof CloudflareRateLimitError
+              ? "The visual service is temporarily busy. Your written outfit is still available."
+              : "The outfit was created, but its visual could not be generated.",
+        };
+      }
+    }),
   );

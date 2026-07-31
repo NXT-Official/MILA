@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { aiChatCompletion } from "./ai.server";
+import { aiChatCompletion, aiFailure } from "./ai.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { consumeRateLimit } from "./rate-limit.server";
 import { withAiCredit } from "./credits.server";
@@ -13,10 +13,8 @@ const Input = z.object({
 });
 
 const tool = {
-  type: "function" as const,
   function: {
     name: "report_outfit_analysis",
-    description: "Return a structured analysis of the outfit.",
     parameters: {
       type: "object",
       properties: {
@@ -61,8 +59,8 @@ export const analyzeOutfit = createServerFn({ method: "POST" })
 
       const systemPrompt = `You are an expert fashion stylist and color analyst. You are evaluating an outfit for a user with a ${data.bodyType} body type and a ${data.colorSeason} color profile. Look at the attached image. Does the silhouette flatter their specific body type? Do the colors harmonize with their season? Be candid but encouraging. Always call the report_outfit_analysis tool with your findings.`;
 
-      const res = await aiChatCompletion({
-        messages: [
+      const result = await aiChatCompletion(
+        [
           { role: "system", content: systemPrompt },
           {
             role: "user",
@@ -72,23 +70,11 @@ export const analyzeOutfit = createServerFn({ method: "POST" })
             ],
           },
         ],
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "report_outfit_analysis" } },
-      });
+        tool,
+      );
+      if (!result.ok) throw aiFailure(result.status, "AI analysis failed.");
 
-      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-      if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-      if (!res.ok) {
-        const t = await res.text();
-        console.error("AI provider error", res.status, t);
-        throw new Error("AI analysis failed.");
-      }
-
-      const json = await res.json();
-      const call = json.choices?.[0]?.message?.tool_calls?.[0];
-      if (!call) throw new Error("AI did not return analysis.");
-      const args = JSON.parse(call.function.arguments);
-      return args as {
+      return result.args as {
         color_match: string;
         silhouette: string;
         overall_score: number;

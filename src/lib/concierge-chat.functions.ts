@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
+import { assertTrustedStorageImageUrl, isTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { z } from "zod";
-import { aiChatCompletion } from "./ai.server";
+import { aiChatCompletion, aiFailure } from "./ai.server";
 import { withAiCredit } from "./credits.server";
 import { consumeRateLimit } from "./rate-limit.server";
 import { deriveColorMetrics } from "./profile-color";
@@ -26,10 +26,8 @@ export type ConciergeReply = { reply: string };
 const HISTORY_CHAR_BUDGET = 6000;
 
 const tool = {
-  type: "function" as const,
   function: {
     name: "report_concierge_reply",
-    description: "Return Mila's conversational styling reply.",
     parameters: {
       type: "object",
       properties: {
@@ -163,10 +161,7 @@ export const conciergeChat = createServerFn({ method: "POST" })
           throw new Error("That saved look is no longer available. You can continue without it.");
         }
         lookLines = describeSavedLook(look.analysis_result);
-        const trustedPrefix = `${process.env.SUPABASE_URL?.replace(/\/+$/, "")}/storage/v1/object/public/`;
-        if (look.image_url?.startsWith(trustedPrefix)) {
-          lookImageUrl = look.image_url;
-        }
+        if (isTrustedStorageImageUrl(look.image_url)) lookImageUrl = look.image_url;
       }
 
       const attachedImageUrl = data.imageUrl ? assertTrustedStorageImageUrl(data.imageUrl) : null;
@@ -220,29 +215,12 @@ RULES:
           : { role: "user", content: data.message },
       ];
 
-      const res = await aiChatCompletion({
-        messages,
-        tools: [tool],
-        tool_choice: { type: "function", function: { name: "report_concierge_reply" } },
-      });
-
-      if (res.status === 429) throw new Error("Rate limit reached. Please try again in a moment.");
-      if (res.status === 402) throw new Error("AI credits exhausted. Please try again later.");
-      if (!res.ok) {
-        const t = await res.text();
-        console.error("AI provider error", res.status, t);
-        throw new Error("Mila couldn't respond just now. Please try again.");
+      const result = await aiChatCompletion(messages, tool);
+      if (!result.ok) {
+        throw aiFailure(result.status, "Mila couldn't respond just now. Please try again.");
       }
 
-      let reply: unknown;
-      try {
-        const json = await res.json();
-        const call = json.choices?.[0]?.message?.tool_calls?.[0];
-        reply = call ? JSON.parse(call.function.arguments).reply : null;
-      } catch (err) {
-        console.error("[conciergeChat] malformed provider response", err);
-        throw new Error("Mila couldn't respond just now. Please try again.");
-      }
+      const reply = (result.args as { reply?: unknown }).reply;
       if (typeof reply !== "string" || !reply.trim()) {
         throw new Error("Mila couldn't respond just now. Please try again.");
       }

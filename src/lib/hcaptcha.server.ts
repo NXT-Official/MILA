@@ -7,7 +7,7 @@ export async function verifyHcaptcha(token: string | undefined | null, remoteIp?
     console.error("[hcaptcha] HCAPTCHA_SECRET is not configured");
     throw new Error("Captcha verification is not available. Please try again later.");
   }
-  if (!token || typeof token !== "string" || token.length === 0 || token.length > 4000) {
+  if (!token || token.length > 4000) {
     throw new Error("Captcha verification failed. Please try again.");
   }
 

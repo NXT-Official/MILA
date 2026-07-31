@@ -8,8 +8,6 @@ import { cancelViaPaddleApi } from "./subscriptions.functions";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
-const USER_BUCKETS = ["outfits", "posts"] as const;
-
 export type DeleteAccountResult = { success: true } | { error: string };
 
 export type DeleteAccountDeps = {
@@ -75,7 +73,7 @@ const supabaseDeleteAccountDeps: DeleteAccountDeps = {
 
   purgeStorage: async (userId) => {
     const supabaseAdmin = await admin();
-    for (const bucket of USER_BUCKETS) {
+    for (const bucket of ["outfits", "posts"] as const) {
       const { data: files, error } = await supabaseAdmin.storage
         .from(bucket)
         .list(userId, { limit: 1000 });
