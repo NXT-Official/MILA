@@ -200,9 +200,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <StudioCameraDrawer
           isOpen={isLensOpen}
           onClose={() => setIsLensOpen(false)}
-          initialMode="look-analysis"
           userId={user?.id ?? null}
-          onLookCapture={(file) => runLensCapture(file)}
+          onLookCapture={runLensCapture}
           onPickGallery={() => fileInputRef.current?.click()}
           onInsufficientCredits={() => setCreditPaywallOpen(true)}
         />
