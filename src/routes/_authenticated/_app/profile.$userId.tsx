@@ -73,7 +73,6 @@ function MemberProfilePage() {
   }
 
   const name = data.profile.full_name?.trim() || data.profile.username || "Member";
-  const initial = name[0]?.toUpperCase() || "M";
   const visiblePosts = data.posts.filter((post) => !post.hidden);
   const hiddenPosts = data.posts.filter((post) => post.hidden);
   const activePosts = tab === "hidden" ? hiddenPosts : visiblePosts;

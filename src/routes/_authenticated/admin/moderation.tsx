@@ -86,10 +86,7 @@ function ModerationPage() {
               ) : null}
               {p.hidden && (
                 <div className="absolute top-3 left-3">
-                  <Badge
-                    variant="outline"
-                    className="bg-background/90 border-destructive/50 text-destructive text-nano uppercase tracking-label"
-                  >
+                  <Badge className="bg-background/90 border-destructive/50 text-destructive text-nano uppercase tracking-label">
                     Hidden
                   </Badge>
                 </div>
