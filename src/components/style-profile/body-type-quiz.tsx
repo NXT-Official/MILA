@@ -82,7 +82,7 @@ export function BodyTypeQuiz({
         </div>
 
         {step === 1 && (
-          <div className="space-y-5 animate-fade-in">
+          <div className="space-y-5">
             <div className="text-center">
               <h3 className="font-serif text-2xl sm:text-3xl tracking-tight">
                 How do your favorite blazers drape?
@@ -122,7 +122,7 @@ export function BodyTypeQuiz({
         )}
 
         {step === 2 && (
-          <div className="space-y-5 animate-fade-in">
+          <div className="space-y-5">
             <div className="text-center">
               <h3 className="font-serif text-2xl sm:text-3xl tracking-tight">
                 Where do you naturally feel most balanced?
@@ -170,7 +170,7 @@ export function BodyTypeQuiz({
         )}
 
         {step === 3 && result && (
-          <div className="space-y-5 text-center animate-fade-in">
+          <div className="space-y-5 text-center">
             <p className="text-micro uppercase tracking-label-xwide text-accent">Your silhouette</p>
             <h3 className="font-serif text-3xl sm:text-4xl tracking-tight">{result}</h3>
             <p className="text-xs text-muted-foreground italic max-w-sm mx-auto">

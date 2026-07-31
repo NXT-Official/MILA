@@ -62,7 +62,6 @@ export function ColorQuiz({
   userId?: string;
 }) {
   const [step, setStep] = useState(0);
-  const lightingConfirmed = false;
   const [hue, setHue] = useState<Hue | null>(null);
   const [drape, setDrape] = useState<"Warm" | "Cool" | null>(null);
   const [value, setValue] = useState<Value | null>(null);
@@ -90,7 +89,7 @@ export function ColorQuiz({
       undertone: hue,
       selectedAesthetic: finalAesthetic,
       axes: { hue, value, chroma },
-      inputs: { drape, hairDepth, eyeBrightness, lightingConfirmed },
+      inputs: { drape, hairDepth, eyeBrightness, lightingConfirmed: false },
       primary: detail.primary,
       secondary: detail.secondary,
       accent: detail.accent,
@@ -469,7 +468,7 @@ function DetailedColorResultView({
 }) {
   const detail = SEASON_DETAIL[profile.season];
   return (
-    <div className="space-y-8 animate-fade-in text-left max-w-xl mx-auto">
+    <div className="space-y-8 text-left max-w-xl mx-auto">
       <div className="text-center border-b-[0.5px] border-border pb-6">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-foreground text-background text-nano uppercase tracking-widest font-medium">
           <ShieldCheck className="size-3.5" /> SEOUL DIGITAL DIAGNOSTIC
