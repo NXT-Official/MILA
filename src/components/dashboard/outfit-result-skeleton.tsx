@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 function SkeletonCard({ compact }: { compact?: boolean }) {
   return (
     <div className="rounded-card border border-border bg-card p-5 md:p-6 shadow-paper">
-      <Skeleton className="h-3 rounded-full bg-foreground/8 h-2.5 w-16" />
+      <Skeleton className="rounded-full bg-foreground/8 h-2.5 w-16" />
       {compact ? (
         <div className="mt-4 space-y-2">
           <Skeleton className="h-3 rounded-full bg-foreground/8 w-full" />
@@ -12,7 +12,7 @@ function SkeletonCard({ compact }: { compact?: boolean }) {
         </div>
       ) : (
         <>
-          <Skeleton className="h-3 rounded-full bg-foreground/8 mt-3 h-5 w-2/3" />
+          <Skeleton className="rounded-full bg-foreground/8 mt-3 h-5 w-2/3" />
           <div className="mt-4 space-y-2">
             <Skeleton className="h-3 rounded-full bg-foreground/8 w-full" />
             <Skeleton className="h-3 rounded-full bg-foreground/8 w-full" />
