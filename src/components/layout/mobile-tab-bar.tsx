@@ -30,7 +30,7 @@ export function MobileTabBar({
             key={it.to}
             to={it.to}
             className={cn(
-              "relative flex-1 flex flex-col items-center gap-0.5 py-1.5 text-nano uppercase tracking-label transition-colors",
+              "relative flex-1 flex flex-col items-center gap-0.5 py-1.5 text-[9px] uppercase tracking-label transition-colors",
               active ? "text-accent" : "text-surface/50",
             )}
           >
@@ -42,7 +42,7 @@ export function MobileTabBar({
       <button
         type="button"
         onClick={onOpenLens}
-        className="relative flex-1 flex flex-col items-center gap-0.5 py-1.5 text-nano uppercase tracking-label text-surface/50"
+        className="relative flex-1 flex flex-col items-center gap-0.5 py-1.5 text-[9px] uppercase tracking-label text-surface/50"
       >
         <Camera className="size-4.5" strokeWidth={1.75} />
         <span>Lens</span>
@@ -50,7 +50,7 @@ export function MobileTabBar({
       <Link
         to="/style-profile"
         className={cn(
-          "relative flex-1 flex flex-col items-center gap-0.5 py-1.5 text-nano uppercase tracking-label transition-colors",
+          "relative flex-1 flex flex-col items-center gap-0.5 py-1.5 text-[9px] uppercase tracking-label transition-colors",
           path === "/style-profile" ? "text-accent" : "text-surface/50",
         )}
       >
