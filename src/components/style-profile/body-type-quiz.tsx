@@ -4,22 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { OptionTile } from "@/components/ui/option-tile";
 import { type BodyType, BODY_TYPE_INFO } from "@/constants/style-profile";
+import { cn } from "@/lib/utils";
 
-export type Drape = "structured" | "waist" | "relaxed";
-export type Balance = "aligned" | "hips" | "upper";
+type Drape = "structured" | "waist" | "relaxed";
+type Balance = "aligned" | "hips" | "upper";
 
-function resolveBodyFromQuiz(drape: Drape, balance: Balance): BodyType {
-  if (drape === "waist") {
-    if (balance === "hips") return "Pear";
-    return "Hourglass";
-  }
-  if (drape === "structured") {
-    if (balance === "hips") return "Hourglass";
-    return "Inverted Triangle";
-  }
-  if (balance === "hips") return "Pear";
-  return "Rectangle";
-}
+const BODY_BY_ANSWER: Record<Drape, Record<Balance, BodyType>> = {
+  structured: { aligned: "Inverted Triangle", upper: "Inverted Triangle", hips: "Hourglass" },
+  waist: { aligned: "Hourglass", upper: "Hourglass", hips: "Pear" },
+  relaxed: { aligned: "Rectangle", upper: "Rectangle", hips: "Pear" },
+};
 
 const DRAPE_CHOICES: { value: Drape; label: string; hint: string }[] = [
   {
@@ -37,6 +31,69 @@ const BALANCE_CHOICES: { value: Balance; label: string; hint: string }[] = [
   { value: "upper", label: "Stronger upper frame", hint: "Presence sits across the shoulders." },
 ];
 
+function ChoiceStep<T extends string>({
+  title,
+  prompt,
+  choices,
+  value,
+  onSelect,
+  onBack,
+  onNext,
+  nextLabel,
+}: {
+  title: string;
+  prompt: string;
+  choices: { value: T; label: string; hint: string }[];
+  value: T | null;
+  onSelect: (value: T) => void;
+  onBack?: () => void;
+  onNext: () => void;
+  nextLabel: string;
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="text-center">
+        <h3 className="font-serif text-2xl sm:text-3xl tracking-tight">{title}</h3>
+        <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto leading-relaxed">
+          {prompt}
+        </p>
+      </div>
+      <div className="space-y-2.5">
+        {choices.map((c) => (
+          <OptionTile
+            key={c.value}
+            selected={value === c.value}
+            onClick={() => onSelect(c.value)}
+            className="border p-4 sm:p-5"
+          >
+            <p className="text-sm font-medium">{c.label}</p>
+            <p className="text-label text-muted-foreground mt-1 leading-relaxed">{c.hint}</p>
+          </OptionTile>
+        ))}
+      </div>
+      <div className={cn("flex pt-2", onBack ? "justify-between" : "justify-end")}>
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="text-xs uppercase rounded-none"
+          >
+            <ArrowLeft className="size-3 mr-1" /> Back
+          </Button>
+        )}
+        <Button
+          disabled={!value}
+          onClick={onNext}
+          className="text-xs uppercase tracking-widest rounded-none h-10 px-6"
+        >
+          {nextLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function BodyTypeQuiz({
   onClose,
   onComplete,
@@ -51,7 +108,7 @@ export function BodyTypeQuiz({
   const [balance, setBalance] = useState<Balance | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const result: BodyType | null = drape && balance ? resolveBodyFromQuiz(drape, balance) : null;
+  const result = drape && balance ? BODY_BY_ANSWER[drape][balance] : null;
 
   async function commit() {
     if (!result) return;
@@ -82,91 +139,28 @@ export function BodyTypeQuiz({
         </div>
 
         {step === 1 && (
-          <div className="space-y-5">
-            <div className="text-center">
-              <h3 className="font-serif text-2xl sm:text-3xl tracking-tight">
-                How do your favorite blazers drape?
-              </h3>
-              <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto leading-relaxed">
-                Pick the one that feels most like you when you put on a piece you love.
-              </p>
-            </div>
-            <div className="space-y-2.5">
-              {DRAPE_CHOICES.map((c) => {
-                const active = drape === c.value;
-                return (
-                  <OptionTile
-                    key={c.value}
-                    selected={active}
-                    onClick={() => setDrape(c.value)}
-                    className="border p-4 sm:p-5"
-                  >
-                    <p className="text-sm font-medium">{c.label}</p>
-                    <p className="text-label text-muted-foreground mt-1 leading-relaxed">
-                      {c.hint}
-                    </p>
-                  </OptionTile>
-                );
-              })}
-            </div>
-            <div className="flex justify-end pt-2">
-              <Button
-                disabled={!drape}
-                onClick={() => setStep(2)}
-                className="text-xs uppercase tracking-widest rounded-none h-10 px-6"
-              >
-                Continue
-              </Button>
-            </div>
-          </div>
+          <ChoiceStep
+            title="How do your favorite blazers drape?"
+            prompt="Pick the one that feels most like you when you put on a piece you love."
+            choices={DRAPE_CHOICES}
+            value={drape}
+            onSelect={setDrape}
+            onNext={() => setStep(2)}
+            nextLabel="Continue"
+          />
         )}
 
         {step === 2 && (
-          <div className="space-y-5">
-            <div className="text-center">
-              <h3 className="font-serif text-2xl sm:text-3xl tracking-tight">
-                Where do you naturally feel most balanced?
-              </h3>
-              <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto leading-relaxed">
-                Think of yourself in your favorite jeans and a soft t-shirt.
-              </p>
-            </div>
-            <div className="space-y-2.5">
-              {BALANCE_CHOICES.map((c) => {
-                const active = balance === c.value;
-                return (
-                  <OptionTile
-                    key={c.value}
-                    selected={active}
-                    onClick={() => setBalance(c.value)}
-                    className="border p-4 sm:p-5"
-                  >
-                    <p className="text-sm font-medium">{c.label}</p>
-                    <p className="text-label text-muted-foreground mt-1 leading-relaxed">
-                      {c.hint}
-                    </p>
-                  </OptionTile>
-                );
-              })}
-            </div>
-            <div className="flex justify-between pt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStep(1)}
-                className="text-xs uppercase rounded-none"
-              >
-                <ArrowLeft className="size-3 mr-1" /> Back
-              </Button>
-              <Button
-                disabled={!balance}
-                onClick={() => setStep(3)}
-                className="text-xs uppercase tracking-widest rounded-none h-10 px-6"
-              >
-                See your silhouette
-              </Button>
-            </div>
-          </div>
+          <ChoiceStep
+            title="Where do you naturally feel most balanced?"
+            prompt="Think of yourself in your favorite jeans and a soft t-shirt."
+            choices={BALANCE_CHOICES}
+            value={balance}
+            onSelect={setBalance}
+            onBack={() => setStep(1)}
+            onNext={() => setStep(3)}
+            nextLabel="See your silhouette"
+          />
         )}
 
         {step === 3 && result && (
