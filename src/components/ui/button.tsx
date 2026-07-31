@@ -15,8 +15,6 @@ const buttonVariants = cva(
           "border border-line bg-surface text-ink hover:bg-accent-soft/60 active:bg-accent-soft/80",
         outline: "border border-line bg-canvas text-ink hover:bg-accent-soft/40",
         ghost: "bg-transparent text-ink hover:bg-accent-soft/50",
-        editorial:
-          "h-auto rounded-none bg-transparent p-0 text-ink underline decoration-line decoration-1 underline-offset-4 hover:decoration-accent",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         glass: "atelier-glass text-ink hover:border-porcelain",
       },
