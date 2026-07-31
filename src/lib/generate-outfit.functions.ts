@@ -127,25 +127,6 @@ function stripMarkdownFences(text: string): string {
   return fenced ? fenced[1].trim() : trimmed;
 }
 
-function friendlyImageError(err: unknown): string {
-  if (isCloudflareRateLimitError(err)) {
-    return "The visual service is temporarily busy. Your written outfit is still available.";
-  }
-  return "The outfit was created, but its visual could not be generated.";
-}
-
-async function tryGenerateOutfitImage(
-  outfit: DailyLook,
-): Promise<{ imageDataUri: string | null; imageGenerationError?: string }> {
-  try {
-    const imageDataUri = await generateOutfitImage(outfit);
-    return { imageDataUri };
-  } catch (error) {
-    console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
-    return { imageDataUri: null, imageGenerationError: friendlyImageError(error) };
-  }
-}
-
 export const generateDailyLook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => {
@@ -307,5 +288,17 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
     return parsed.data;
   })
   .handler(async ({ data, context }) =>
-    payForLookImage(context.supabase, context.userId, () => tryGenerateOutfitImage(data)),
+    payForLookImage(context.supabase, context.userId, async () => {
+      try {
+        return { imageDataUri: await generateOutfitImage(data) };
+      } catch (error) {
+        console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
+        return {
+          imageDataUri: null,
+          imageGenerationError: isCloudflareRateLimitError(error)
+            ? "The visual service is temporarily busy. Your written outfit is still available."
+            : "The outfit was created, but its visual could not be generated.",
+        };
+      }
+    }),
   );

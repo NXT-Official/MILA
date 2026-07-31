@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
+import { assertTrustedStorageImageUrl, isTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { z } from "zod";
 import { aiChatCompletion } from "./ai.server";
 import { withAiCredit } from "./credits.server";
@@ -163,10 +163,7 @@ export const conciergeChat = createServerFn({ method: "POST" })
           throw new Error("That saved look is no longer available. You can continue without it.");
         }
         lookLines = describeSavedLook(look.analysis_result);
-        const trustedPrefix = `${process.env.SUPABASE_URL?.replace(/\/+$/, "")}/storage/v1/object/public/`;
-        if (look.image_url?.startsWith(trustedPrefix)) {
-          lookImageUrl = look.image_url;
-        }
+        if (isTrustedStorageImageUrl(look.image_url)) lookImageUrl = look.image_url;
       }
 
       const attachedImageUrl = data.imageUrl ? assertTrustedStorageImageUrl(data.imageUrl) : null;

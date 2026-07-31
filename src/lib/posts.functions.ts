@@ -58,12 +58,6 @@ export interface FeedResponse {
 
 const SIGNED_URL_TTL = 60 * 60;
 
-function startOfTodayIso(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
-
 export const createPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => CreatePostInput.parse(input))
@@ -146,14 +140,14 @@ export const getFeed = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<FeedResponse> => {
     const { supabase, userId } = context;
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
     const { count: todayCount, error: todayErr } = await supabase
       .from("posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gte("created_at", startOfTodayIso());
+      .gte("created_at", startOfToday.toISOString());
     if (todayErr) throw new Error(todayErr.message);
-
-    const hasPostedToday = (todayCount ?? 0) > 0;
 
     const { data: rows, error } = await supabase
       .from("posts")
@@ -196,7 +190,7 @@ export const getFeed = createServerFn({ method: "GET" })
       items: itemMap.get(r.id) ?? [],
     }));
 
-    return { has_posted_today: hasPostedToday, posts };
+    return { has_posted_today: (todayCount ?? 0) > 0, posts };
   });
 
 const MemberProfileInput = z.object({ user_id: z.string().uuid() });
