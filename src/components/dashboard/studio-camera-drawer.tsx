@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/sheet";
 import { CameraCapture } from "@/components/capture/camera-capture";
 import { DualCapture } from "@/components/capture/dual-capture";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { cn, errorMessage } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
@@ -21,16 +20,15 @@ import { publishOotd } from "@/lib/publish-ootd";
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
 
-export type StudioCameraMode = "look-analysis" | "dupe-hunter";
+type StudioCameraMode = "look-analysis" | "dupe-hunter";
 
 interface StudioCameraDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode?: StudioCameraMode;
-  userId?: string | null;
-  onLookCapture?: (file: File) => void;
-  onPickGallery?: (mode: StudioCameraMode) => void;
-  onInsufficientCredits?: () => void;
+  userId: string | null;
+  onLookCapture: (file: File) => void;
+  onPickGallery: () => void;
+  onInsufficientCredits: () => void;
 }
 
 const MODES: { id: StudioCameraMode; label: string }[] = [
@@ -66,13 +64,12 @@ function formatPrice(price: number, currency: string) {
 export function StudioCameraDrawer({
   isOpen,
   onClose,
-  initialMode = "look-analysis",
   userId,
   onLookCapture,
   onPickGallery,
   onInsufficientCredits,
 }: StudioCameraDrawerProps) {
-  const [mode, setMode] = useState<StudioCameraMode>(initialMode);
+  const [mode, setMode] = useState<StudioCameraMode>("look-analysis");
   const [dupeLoading, setDupeLoading] = useState(false);
   const [dupeResult, setDupeResult] = useState<DupeHuntResult | null>(null);
   const [inspirationPreview, setInspirationPreview] = useState<string | null>(null);
@@ -117,7 +114,7 @@ export function StudioCameraDrawer({
       }
     } catch (e) {
       if (isInsufficientCreditsError(e)) {
-        onInsufficientCredits?.();
+        onInsufficientCredits();
       } else {
         toast.error(errorMessage(e, "Couldn't run the dupe hunter."));
       }
@@ -274,10 +271,10 @@ export function StudioCameraDrawer({
             {mode === "look-analysis" && (
               <CameraCapture
                 onCapture={(file) => {
-                  onLookCapture?.(file);
+                  onLookCapture(file);
                   onClose();
                 }}
-                onPickGallery={() => onPickGallery?.("look-analysis")}
+                onPickGallery={onPickGallery}
               />
             )}
 
@@ -364,68 +361,74 @@ export function StudioCameraDrawer({
                     </div>
 
                     {dupeResult.dupes.length > 0 ? (
-                      <Carousel opts={{ align: "start" }}>
-                        <CarouselContent className="-ml-3">
-                          {dupeResult.dupes.map((d) => (
-                            <CarouselItem key={d.id} className="pl-3 basis-[78%] sm:basis-1/2">
-                              <div className="h-full rounded-2xl atelier-glass overflow-hidden flex flex-col shadow-atelier-soft">
-                                <div className="aspect-3/4 bg-atelier-ivory/60 overflow-hidden">
-                                  {d.image_url && (
-                                    <img
-                                      src={d.image_url}
-                                      alt={d.title}
-                                      className="h-full w-full object-cover"
-                                      loading="lazy"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = "none";
-                                        e.currentTarget.nextElementSibling?.classList.replace(
-                                          "hidden",
-                                          "flex",
-                                        );
-                                      }}
-                                    />
+                      <div
+                        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1"
+                        tabIndex={0}
+                        role="group"
+                        aria-label="Budget alternatives"
+                      >
+                        {dupeResult.dupes.map((d) => (
+                          <div
+                            key={d.id}
+                            className="min-w-0 shrink-0 basis-[78%] snap-start sm:basis-[calc(50%-0.375rem)]"
+                          >
+                            <div className="h-full rounded-2xl atelier-glass overflow-hidden flex flex-col shadow-atelier-soft">
+                              <div className="aspect-3/4 bg-atelier-ivory/60 overflow-hidden">
+                                {d.image_url && (
+                                  <img
+                                    src={d.image_url}
+                                    alt={d.title}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                      e.currentTarget.nextElementSibling?.classList.replace(
+                                        "hidden",
+                                        "flex",
+                                      );
+                                    }}
+                                  />
+                                )}
+                                <div
+                                  className={cn(
+                                    "h-full w-full flex-col items-center justify-center gap-2 text-stone",
+                                    d.image_url ? "hidden" : "flex",
                                   )}
-                                  <div
-                                    className={cn(
-                                      "h-full w-full flex-col items-center justify-center gap-2 text-stone",
-                                      d.image_url ? "hidden" : "flex",
-                                    )}
-                                  >
-                                    <ImageOff className="size-5" strokeWidth={1.5} />
-                                    <span className="text-micro uppercase tracking-label-xwide">
-                                      Image not available
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="p-4 flex-1 flex flex-col gap-3">
-                                  <div className="flex-1">
-                                    <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
-                                      {d.title}
-                                    </p>
-                                    <p className="mt-1 atelier-label">
-                                      {formatPrice(d.price, d.currency)}
-                                    </p>
-                                  </div>
-                                  {d.match_reasons[0] && (
-                                    <p className="text-micro text-muted-foreground line-clamp-2">
-                                      {d.match_reasons[0]}
-                                    </p>
-                                  )}
-                                  <a
-                                    href={d.affiliate_link}
-                                    target="_blank"
-                                    rel="noopener noreferrer sponsored"
-                                    className="inline-flex items-center justify-center gap-1.5 h-9 rounded-full bg-ink text-atelier-ivory text-micro uppercase tracking-label-xwide hover:bg-ink/90 transition-colors"
-                                  >
-                                    Shop the Dupe{" "}
-                                    <ExternalLink className="size-3" strokeWidth={1.75} />
-                                  </a>
+                                >
+                                  <ImageOff className="size-5" strokeWidth={1.5} />
+                                  <span className="text-micro uppercase tracking-label-xwide">
+                                    Image not available
+                                  </span>
                                 </div>
                               </div>
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                      </Carousel>
+                              <div className="p-4 flex-1 flex flex-col gap-3">
+                                <div className="flex-1">
+                                  <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
+                                    {d.title}
+                                  </p>
+                                  <p className="mt-1 atelier-label">
+                                    {formatPrice(d.price, d.currency)}
+                                  </p>
+                                </div>
+                                {d.match_reasons[0] && (
+                                  <p className="text-micro text-muted-foreground line-clamp-2">
+                                    {d.match_reasons[0]}
+                                  </p>
+                                )}
+                                <a
+                                  href={d.affiliate_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer sponsored"
+                                  className="inline-flex items-center justify-center gap-1.5 h-9 rounded-full bg-ink text-atelier-ivory text-micro uppercase tracking-label-xwide hover:bg-ink/90 transition-colors"
+                                >
+                                  Shop the Dupe{" "}
+                                  <ExternalLink className="size-3" strokeWidth={1.75} />
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <div className="rounded-2xl border border-dashed border-porcelain/60 p-6 text-center">
                         <p className="font-serif text-base text-ink">
