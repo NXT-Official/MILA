@@ -38,7 +38,6 @@
     "@tanstack/router-plugin": "^1.167.28",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^0.575.0",
     "nitro": "3.0.260603-beta",
