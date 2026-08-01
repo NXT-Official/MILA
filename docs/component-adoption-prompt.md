@@ -4,7 +4,7 @@ Copy everything below the line into a fresh Claude Code session in this repo.
 
 ---
 
-You are doing a full component-extraction and adoption pass on `/Users/user/nxt/mila_v1` (React 19 + TanStack Router/Start + Tailwind v4 + shadcn-style primitives in `src/components/ui/`, Supabase, tests via `bun test`).
+You are doing a full component-extraction and adoption pass on `/Users/user/nxt/MILA/app` (React 19 + TanStack Router/Start + Tailwind v4 + shadcn-style primitives in `src/components/ui/`, Supabase, tests via `bun test`).
 
 **The goal, in priority order: (1) reusable — one definition per visual/structural idea; (2) less code — the tree should shrink, not grow; (3) clean — each file does one thing and reads short.** A change that adds abstraction without deleting duplication is a failure, not progress.
 

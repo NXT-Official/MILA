@@ -1,13 +1,13 @@
 # Prompt: move the landing page off hardcoded copy and onto Sanity
 
-Copy everything below the line into a fresh Claude Code session started from `/Users/user/nxt`
-(the **parent** folder — not `mila_v1`, so the Studio and the app are both visible).
+Copy everything below the line into a fresh Claude Code session started from `/Users/user/nxt/MILA`
+(the **parent** folder — not `app`, so the Studio and the app are both visible).
 
 ---
 
 You are wiring Sanity CMS into the Mila marketing landing page. The app is at
-`/Users/user/nxt/mila_v1`. The Studio must live at `/Users/user/nxt/studio-mila` — a standalone
-sibling folder. **Never** embed the Studio into the app, and never move it inside `mila_v1`.
+`/Users/user/nxt/MILA/app`. The Studio must live at `/Users/user/nxt/MILA/studio-mila` — a standalone
+sibling folder. **Never** embed the Studio into the app, and never move it inside `app`.
 
 Read `.agents/skills/sanity-best-practices/references/get-started.md` before you start. Then read
 **`remix.md`**, not `nextjs.md` — see "Framework reality check" below. Read `schema.md` when you
@@ -19,15 +19,15 @@ write the schema.
 |---|---|
 | Sanity project | Mila — `8bkzi9bn` |
 | Dataset | `production` |
-| Studio path | `/Users/user/nxt/studio-mila` (standalone, create it — it does not exist yet) |
-| App path | `/Users/user/nxt/mila_v1` |
+| Studio path | `/Users/user/nxt/MILA/studio-mila` (standalone, create it — it does not exist yet) |
+| App path | `/Users/user/nxt/MILA/app` |
 | App stack | React 19 · TanStack Start + Router · Vite 7 · Nitro · Tailwind v4 · Bun |
 | Package manager | **bun** (`bun add`, `bun run`) — there is a `bun.lock`, no `package-lock.json` |
 
 ## Framework reality check — do not skip this
 
 The Sanity onboarding flow labels this project "Next.js". **It is not.** There is no `next`
-dependency. `mila_v1/package.json` has `@tanstack/react-start`, `@tanstack/react-router`, `vite`,
+dependency. `app/package.json` has `@tanstack/react-start`, `@tanstack/react-router`, `vite`,
 and `nitro`. Concretely:
 
 - **Do not install `next-sanity`.** Install `@sanity/client` (and `@sanity/image-url` only if you
@@ -39,10 +39,12 @@ and `nitro`. Concretely:
   Router's `createFileRoute({ loader })` + `Route.useLoaderData()`.
 - Env vars follow the repo's existing convention: publishable values get a `VITE_` prefix and are
   read via `import.meta.env`; secrets stay unprefixed and are read via `process.env` **only inside
-  server functions**. See `mila_v1/.env.example` for the house style, and add your new keys there
-  (with empty values) as well as to `.env`.
+  server functions**. See `app/.env.example` for the house style, and add your new keys there
+  (with empty values) as well as to `.env`. If the fetch ends up fully server-side (it should —
+  see the CSP section), `SANITY_PROJECT_ID` / `SANITY_DATASET` unprefixed is better than `VITE_`:
+  nothing Sanity-related reaches the bundle at all.
 
-### CSP gotcha — read `mila_v1/vite.config.ts`
+### CSP gotcha — read `app/vite.config.ts`
 
 The production build ships a Content-Security-Policy through Nitro route rules. `connect-src` is an
 allowlist and **does not include Sanity**. If you fetch from the browser, production will break
@@ -62,7 +64,7 @@ Two options, in order of preference:
 
 ## What is hardcoded today
 
-The landing page is `mila_v1/src/routes/index.tsx`, which composes nine components from
+The landing page is `app/src/routes/index.tsx`, which composes nine components from
 `src/components/landing/`. Copy lives in two places:
 
 - **`src/constants/landing.ts`** — `TESTIMONIALS` (5 entries: `name`, `season`, `quote`) and
@@ -110,13 +112,15 @@ Rules:
   Tailwind cannot generate classes from runtime values.
 - Prices in the dupe-hunter section are `string`, not `number`. They carry a currency symbol and
   are pure marketing copy; no arithmetic happens.
+- Do not name a field `match`. It is a GROQ operator and will break the projection — the
+  dupe-hunter comparison card is `milaMatch`.
 
 ## Steps
 
-1. **Verify the layout first.** Confirm both `/Users/user/nxt/studio-mila` (after you create it)
-   and `/Users/user/nxt/mila_v1` are visible from your working directory. If you can only see the
-   app's source, stop and ask to be restarted from `/Users/user/nxt`.
-2. **Create the Studio**, from `/Users/user/nxt`, never from inside `mila_v1`:
+1. **Verify the layout first.** Confirm both `/Users/user/nxt/MILA/studio-mila` (after you create it)
+   and `/Users/user/nxt/MILA/app` are visible from your working directory. If you can only see the
+   app's source, stop and ask to be restarted from `/Users/user/nxt/MILA`.
+2. **Create the Studio**, from `/Users/user/nxt/MILA`, never from inside `app`:
    ```bash
    npm create sanity@latest -- --project 8bkzi9bn --dataset production --template clean --typescript --output-path studio-mila
    ```

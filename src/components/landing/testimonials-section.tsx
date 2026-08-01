@@ -1,15 +1,15 @@
 import { Star } from "lucide-react";
 import { Reveal } from "@/components/landing/reveal";
 import { SeasonTag } from "@/components/landing/season-tag";
-import { TESTIMONIALS } from "@/constants/landing";
 import { Card } from "@/components/ui/card";
+import type { Testimonial } from "@/lib/landing-content";
 
-export function TestimonialsSection() {
+export function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) {
   return (
     <Reveal className="mx-auto w-full max-w-6xl px-6 pb-24">
       <div className="flex snap-x gap-4 overflow-x-auto pb-2">
-        {TESTIMONIALS.map((t) => (
-          <Card asChild key={t.name} className="w-72 shrink-0 snap-start p-5">
+        {testimonials.map((t) => (
+          <Card asChild key={t._key} className="w-72 shrink-0 snap-start p-5">
             <figure>
               <div className="flex gap-0.5 text-accent" aria-hidden="true">
                 {Array.from({ length: 5 }).map((_, i) => (

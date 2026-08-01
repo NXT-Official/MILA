@@ -4,7 +4,7 @@ Copy everything below the line into a fresh Claude Code session in this repo.
 
 ---
 
-You are refactoring styling in `/Users/user/nxt/mila_v1` (React + TanStack Router + **Tailwind v4** + shadcn-style primitives in `src/components/ui/`). Global design tokens and component classes live in `src/styles.css` (`@theme inline` for tokens, `@layer components` for classes). `cn()` from `@/lib/utils` merges classes via tailwind-merge.
+You are refactoring styling in `/Users/user/nxt/MILA/app` (React + TanStack Router + **Tailwind v4** + shadcn-style primitives in `src/components/ui/`). Global design tokens and component classes live in `src/styles.css` (`@theme inline` for tokens, `@layer components` for classes). `cn()` from `@/lib/utils` merges classes via tailwind-merge.
 
 ## Goal
 
