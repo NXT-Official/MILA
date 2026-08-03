@@ -110,7 +110,6 @@ export function hasHairType(profile: ProfileSnapshot | null | undefined): boolea
   return !!profile && (HAIR_TYPES as readonly string[]).includes(profile.hair_type ?? "");
 }
 
-/** Required steps only — beauty preferences and location are always considered complete. */
 export function isOnboardingStepComplete(
   step: OnboardingStepId,
   profile: ProfileSnapshot | null | undefined,

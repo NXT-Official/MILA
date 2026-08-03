@@ -153,6 +153,27 @@ ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 CREATE INDEX idx_posts_user_id ON public.posts(user_id);
 CREATE INDEX idx_posts_created_at ON public.posts(created_at DESC);
 
+CREATE TABLE public.post_items (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+  label TEXT NOT NULL CHECK (length(trim(label)) > 0 AND length(label) <= 100),
+  category TEXT NOT NULL,
+  attributes JSONB NOT NULL,
+  bbox JSONB NOT NULL CHECK (
+    jsonb_typeof(bbox -> 'x') = 'number' AND
+    jsonb_typeof(bbox -> 'y') = 'number' AND
+    jsonb_typeof(bbox -> 'w') = 'number' AND
+    jsonb_typeof(bbox -> 'h') = 'number'
+  ),
+  source_url TEXT CHECK (source_url IS NULL OR source_url ~ '^https://'),
+  product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.post_items ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX post_items_post_idx ON public.post_items(post_id);
+
 CREATE TABLE public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -243,51 +264,6 @@ ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX idx_subscriptions_user ON public.subscriptions(user_id, updated_at DESC);
 
-CREATE TABLE public.credit_packs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug TEXT NOT NULL UNIQUE
-    CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND length(slug) BETWEEN 2 AND 60),
-  title TEXT NOT NULL CHECK (length(trim(title)) > 0 AND length(title) <= 80),
-  description TEXT NOT NULL DEFAULT '' CHECK (length(description) <= 280),
-  price_amount INTEGER NOT NULL DEFAULT 0 CHECK (price_amount >= 0),
-  currency TEXT NOT NULL DEFAULT 'usd' CHECK (currency ~ '^[a-z]{3}$'),
-  credits INTEGER NOT NULL CHECK (credits > 0),
-  is_active BOOLEAN NOT NULL DEFAULT false,
-  sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order >= 0),
-  paddle_product_id TEXT,
-  paddle_price_id TEXT,
-  archived_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE public.credit_packs ENABLE ROW LEVEL SECURITY;
-
-CREATE INDEX idx_credit_packs_active_sort
-  ON public.credit_packs (is_active, sort_order);
-
-CREATE UNIQUE INDEX credit_packs_paddle_price_id_idx
-  ON public.credit_packs (paddle_price_id)
-  WHERE paddle_price_id IS NOT NULL;
-
-CREATE TABLE public.credit_pack_purchases (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  credit_pack_id UUID NOT NULL REFERENCES public.credit_packs(id),
-  paddle_transaction_id TEXT NOT NULL UNIQUE,
-  credits_granted INTEGER NOT NULL CHECK (credits_granted > 0),
-  granted_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE public.credit_pack_purchases ENABLE ROW LEVEL SECURITY;
-
-CREATE INDEX idx_credit_pack_purchases_user ON public.credit_pack_purchases (user_id);
-
-CREATE INDEX idx_credit_pack_purchases_ungranted
-  ON public.credit_pack_purchases (created_at)
-  WHERE granted_at IS NULL;
-
 CREATE TABLE public.concierge_conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -313,6 +289,26 @@ CREATE INDEX concierge_conversations_user_updated_idx
   ON public.concierge_conversations(user_id, updated_at DESC);
 CREATE INDEX concierge_messages_conversation_created_idx
   ON public.concierge_messages(conversation_id, created_at);
+
+CREATE TABLE public.saved_palettes (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  palette JSONB NOT NULL,
+  style_vibe TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.saved_palettes ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX saved_palettes_user_created_idx
+  ON public.saved_palettes(user_id, created_at DESC);
+
+CREATE UNIQUE INDEX saved_palettes_user_colors_idx ON public.saved_palettes(
+  user_id,
+  (palette ->> 'baseHex'),
+  (palette ->> 'statementHex'),
+  (palette ->> 'accentHex')
+);
 
 CREATE TABLE public.rate_limit_buckets (
   key TEXT PRIMARY KEY,
@@ -344,22 +340,45 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role;
 
+CREATE OR REPLACE FUNCTION public.derive_username(desired text, email text)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  base text;
+  candidate text;
+  n int := 0;
+BEGIN
+  IF desired IS NOT NULL
+     AND length(trim(desired)) BETWEEN 3 AND 30
+     AND trim(desired) ~ '^[a-zA-Z0-9_-]+$'
+     AND NOT EXISTS (SELECT 1 FROM public.profiles WHERE lower(username) = lower(trim(desired))) THEN
+    RETURN trim(desired);
+  END IF;
+
+  base := left(regexp_replace(split_part(COALESCE(email, ''), '@', 1), '[^a-zA-Z0-9_-]', '', 'g'), 26);
+  IF length(base) < 3 THEN base := 'member'; END IF;
+
+  candidate := base;
+  WHILE EXISTS (SELECT 1 FROM public.profiles WHERE lower(username) = lower(candidate)) LOOP
+    n := n + 1;
+    candidate := base || n::text;
+  END LOOP;
+  RETURN candidate;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.derive_username(text, text) FROM PUBLIC, anon, authenticated;
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
-  candidate text := NEW.raw_user_meta_data->>'username';
+  candidate text := public.derive_username(NEW.raw_user_meta_data->>'username', NEW.email);
 BEGIN
-  IF candidate IS NULL
-     OR length(trim(candidate)) < 3
-     OR length(trim(candidate)) > 30
-     OR candidate !~ '^[a-zA-Z0-9_-]+$'
-     OR EXISTS (SELECT 1 FROM public.profiles WHERE lower(username) = lower(candidate)) THEN
-    candidate := NULL;
-  END IF;
-
   BEGIN
     INSERT INTO public.profiles (id, full_name, username)
     VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', ''), candidate);
@@ -691,10 +710,6 @@ CREATE TRIGGER update_subscriptions_updated_at
   BEFORE UPDATE ON public.subscriptions
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER update_credit_packs_updated_at
-  BEFORE UPDATE ON public.credit_packs
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 
 REVOKE ALL ON public.user_roles             FROM authenticated;
@@ -705,15 +720,13 @@ REVOKE ALL ON public.brands                 FROM authenticated;
 REVOKE ALL ON public.products               FROM authenticated;
 REVOKE ALL ON public.subscription_plans     FROM authenticated;
 REVOKE ALL ON public.subscriptions          FROM authenticated;
-REVOKE ALL ON public.credit_packs           FROM authenticated;
-REVOKE ALL ON public.credit_pack_purchases  FROM authenticated;
 REVOKE ALL ON public.support_messages       FROM authenticated;
 REVOKE ALL ON public.staff_audit_log        FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON public.rate_limit_buckets     FROM PUBLIC, anon, authenticated;
 
 GRANT SELECT ON public.user_roles, public.user_entitlements, public.purchases,
                 public.ad_events, public.brands, public.products,
-                public.subscription_plans, public.subscriptions, public.credit_packs
+                public.subscription_plans, public.subscriptions
   TO authenticated;
 
 GRANT SELECT, UPDATE (resolved) ON public.support_messages TO authenticated;
@@ -721,6 +734,12 @@ GRANT SELECT, UPDATE (resolved) ON public.support_messages TO authenticated;
 REVOKE ALL ON public.outfits, public.user_favorites, public.posts FROM authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE
   ON public.outfits, public.user_favorites, public.posts TO authenticated;
+
+REVOKE ALL ON public.post_items FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.post_items TO authenticated;
+
+REVOKE ALL ON public.saved_palettes FROM PUBLIC, anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON public.saved_palettes TO authenticated;
 
 REVOKE ALL ON public.concierge_conversations, public.concierge_messages FROM anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.concierge_conversations TO authenticated;
@@ -842,6 +861,19 @@ CREATE POLICY "Moderators manage all posts" ON public.posts
   USING ((select public.has_role(auth.uid(), 'moderator')))
   WITH CHECK ((select public.has_role(auth.uid(), 'moderator')));
 
+CREATE POLICY "Post items are visible with their post" ON public.post_items
+  FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_id));
+
+CREATE POLICY "Post owners manage their post items" ON public.post_items
+  FOR ALL TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_id AND p.user_id = (select auth.uid()))
+  )
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM public.posts p WHERE p.id = post_id AND p.user_id = (select auth.uid()))
+  );
+
 CREATE POLICY "Users view own roles" ON public.user_roles
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = user_id OR (select public.has_role(auth.uid(), 'admin')));
@@ -876,14 +908,6 @@ CREATE POLICY "Users view their own subscriptions" ON public.subscriptions
   FOR SELECT TO authenticated
   USING (user_id = (select auth.uid()));
 
-CREATE POLICY "Authenticated view active credit packs" ON public.credit_packs
-  FOR SELECT TO authenticated
-  USING (is_active AND archived_at IS NULL);
-
-CREATE POLICY "Admins view all credit packs" ON public.credit_packs
-  FOR SELECT TO authenticated
-  USING ((select public.has_role(auth.uid(), 'admin')));
-
 CREATE POLICY "Users view own concierge conversations" ON public.concierge_conversations
   FOR SELECT TO authenticated
   USING ((select auth.uid()) = user_id);
@@ -910,6 +934,18 @@ CREATE POLICY "Users insert own concierge messages" ON public.concierge_messages
   WITH CHECK ((select auth.uid()) = user_id);
 
 CREATE POLICY "Users delete own concierge messages" ON public.concierge_messages
+  FOR DELETE TO authenticated
+  USING ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users view own saved palettes" ON public.saved_palettes
+  FOR SELECT TO authenticated
+  USING ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users insert own saved palettes" ON public.saved_palettes
+  FOR INSERT TO authenticated
+  WITH CHECK ((select auth.uid()) = user_id);
+
+CREATE POLICY "Users delete own saved palettes" ON public.saved_palettes
   FOR DELETE TO authenticated
   USING ((select auth.uid()) = user_id);
 
@@ -982,8 +1018,9 @@ FROM b JOIN (VALUES
 ) AS p(brand_name, title, image_url, affiliate_link, price, palettes, shapes, category)
 ON b.name = p.brand_name;
 
-INSERT INTO public.profiles (id, full_name)
-SELECT u.id, COALESCE(u.raw_user_meta_data->>'full_name', '')
+INSERT INTO public.profiles (id, full_name, username)
+SELECT u.id, COALESCE(u.raw_user_meta_data->>'full_name', ''),
+       public.derive_username(u.raw_user_meta_data->>'username', u.email)
 FROM auth.users u
 WHERE NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = u.id)
 ON CONFLICT (id) DO NOTHING;
@@ -1085,10 +1122,6 @@ UNION ALL
 SELECT u.id, s.role FROM seed s JOIN auth.users u ON u.email = s.email
 ON CONFLICT (user_id, role) DO NOTHING;
 
--- Catalog seed. paddle_*_id values are sandbox ids; re-point them when a
--- production Paddle account exists. Every plan unlocks the same studio — the
--- only difference is credits_included, a DAILY allowance the pricing card
--- renders as its own bullet, so description and features are identical here.
 INSERT INTO public.subscription_plans (
   slug, title, description, price_amount, billing_interval, credits_included,
   features, is_active, is_featured, sort_order, paddle_product_id, paddle_price_id
@@ -1120,33 +1153,6 @@ ON CONFLICT (slug) DO UPDATE SET
   features = EXCLUDED.features,
   is_active = EXCLUDED.is_active,
   is_featured = EXCLUDED.is_featured,
-  sort_order = EXCLUDED.sort_order,
-  paddle_product_id = EXCLUDED.paddle_product_id,
-  paddle_price_id = EXCLUDED.paddle_price_id,
-  archived_at = NULL;
-
-INSERT INTO public.credit_packs (
-  slug, title, description, price_amount, credits,
-  is_active, sort_order, paddle_product_id, paddle_price_id
-) VALUES
-  ('pocket-refill', 'Pocket Refill',
-   'A quick top-up for a busy week. Credits never expire.',
-   499, 50, true, 1,
-   'pro_01kyh2c6nnjsk2n53ch30caqf0', 'pri_01kyh2c7b9z32dp5c8nwnc9mtj'),
-  ('studio-refill', 'Studio Refill',
-   'Three times the credits at a better rate per look.',
-   1299, 150, true, 2,
-   'pro_01kyh2c7x4508kd7y57txw3pts', 'pri_01kyh2c8er1qb5knxt4vv8ravk'),
-  ('atelier-refill', 'Atelier Refill',
-   'The best value per credit, for a full wardrobe overhaul.',
-   3499, 500, true, 3,
-   'pro_01kyh2c8z9g432qrw0j7ykz2sn', 'pri_01kyh2c9fwrhq71n6hbyjg9x52')
-ON CONFLICT (slug) DO UPDATE SET
-  title = EXCLUDED.title,
-  description = EXCLUDED.description,
-  price_amount = EXCLUDED.price_amount,
-  credits = EXCLUDED.credits,
-  is_active = EXCLUDED.is_active,
   sort_order = EXCLUDED.sort_order,
   paddle_product_id = EXCLUDED.paddle_product_id,
   paddle_price_id = EXCLUDED.paddle_price_id,
