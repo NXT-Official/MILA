@@ -2,7 +2,6 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import type { Database } from "@/integrations/supabase/types";
-import { grantAiCredits } from "@/lib/credits.server";
 
 export function verifyPaddleSignature(
   rawBody: string,
@@ -123,77 +122,5 @@ export async function applyPaddleSubscriptionEvent(
     // member ends up with an active subscription and an empty balance.
     console.error("[paddle-webhook] failed to sync entitlements", entitlementError);
     throw new Error("entitlements not synced");
-  }
-}
-
-export type PaddleTransactionWebhookEvent = {
-  event_type: "transaction.completed";
-  data: {
-    id: string;
-    customer_id: string;
-    items: Array<{ price: { id: string } }>;
-    custom_data: { user_id?: string } | null;
-  };
-};
-
-export async function applyPaddleCreditPackEvent(
-  db: MilaSupabaseClient,
-  event: PaddleTransactionWebhookEvent,
-  grant: typeof grantAiCredits = grantAiCredits,
-): Promise<void> {
-  const { data } = event;
-  const priceId = data.items[0]?.price.id;
-  const { data: pack, error: packError } = await db
-    .from("credit_packs")
-    .select("id, credits")
-    .eq("paddle_price_id", priceId ?? "")
-    .maybeSingle();
-  if (packError) {
-    console.error("[paddle-webhook] credit pack lookup failed", packError);
-    throw new Error("credit pack lookup failed");
-  }
-  if (!pack) return;
-
-  const userId = data.custom_data?.user_id;
-  if (!userId) {
-    console.error("[paddle-webhook] missing custom_data.user_id", { transactionId: data.id });
-    return;
-  }
-
-  const { error: insertError } = await db.from("credit_pack_purchases").upsert(
-    {
-      user_id: userId,
-      credit_pack_id: pack.id,
-      paddle_transaction_id: data.id,
-      credits_granted: pack.credits,
-    },
-    { onConflict: "paddle_transaction_id", ignoreDuplicates: true },
-  );
-  if (insertError) {
-    console.error("[paddle-webhook] failed to record credit pack purchase", insertError);
-    throw new Error("credit pack purchase not recorded");
-  }
-
-  const { data: claimed, error: claimError } = await db
-    .from("credit_pack_purchases")
-    .update({ granted_at: new Date().toISOString() })
-    .eq("paddle_transaction_id", data.id)
-    .is("granted_at", null)
-    .select("id");
-  if (claimError) {
-    console.error("[paddle-webhook] failed to claim credit grant", claimError);
-    throw new Error("credit grant not claimed");
-  }
-  if (!claimed || claimed.length === 0) return;
-
-  try {
-    await grant(db, userId, pack.credits);
-  } catch (err) {
-    await db
-      .from("credit_pack_purchases")
-      .update({ granted_at: null })
-      .eq("paddle_transaction_id", data.id);
-    console.error("[paddle-webhook] failed to grant ai credits", err);
-    throw err;
   }
 }

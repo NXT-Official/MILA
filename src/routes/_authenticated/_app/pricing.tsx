@@ -1,18 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Lock, ScrollText, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ScrollText } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadErrorPanel } from "@/components/ui/error-state";
 import { PricingCard } from "@/components/pricing/pricing-card";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
-import { publicCreditPacksQueryOptions } from "@/lib/queries/credit-packs";
-import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/_app/pricing")({
   component: PricingPage,
@@ -22,12 +18,6 @@ function PricingPage() {
   const { data, isLoading, isError, refetch } = useQuery(publicSubscriptionPlansQueryOptions());
   const { user } = useAuth();
   const { openCheckout, ready } = usePaddleCheckout(user?.id);
-  const { data: packs } = useQuery(publicCreditPacksQueryOptions());
-  const { data: subscription } = useQuery({
-    ...mySubscriptionQueryOptions(user?.id),
-    enabled: !!user,
-  });
-  const subscribed = !!subscription;
 
   return (
     <div className="atelier-page max-w-6xl">
@@ -63,39 +53,6 @@ function PricingPage() {
             />
           ))}
         </ul>
-      )}
-
-      {!!packs?.length && (
-        <Card asChild className="mx-auto mt-16 max-w-3xl p-8 text-center sm:mt-20 sm:p-10">
-          <section>
-            <p className="atelier-kicker mb-3">Credit packs</p>
-            <h2 className="font-serif text-2xl text-ink sm:text-3xl">
-              {subscribed ? "Out of credits before the day resets?" : "A membership extra"}
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted">
-              {subscribed
-                ? "Top up with a pack and keep styling with Mila today. Pack credits are used after your daily allowance runs out, and they never expire."
-                : "Credit packs top up your balance on days you run through your allowance. They're available to members only — choose a membership above to unlock them."}
-            </p>
-
-            <div className="mt-6 flex justify-center">
-              {subscribed ? (
-                <Button asChild variant="secondary" className="min-w-56">
-                  <Link to="/credit-packs">
-                    <Zap className="size-4" aria-hidden="true" strokeWidth={1.75} />
-                    Browse Credit Packs
-                  </Link>
-                </Button>
-              ) : (
-                // Cosmetic half of the gate; the page itself re-checks on the server.
-                <Button type="button" variant="secondary" className="min-w-56" disabled>
-                  <Lock className="size-4" aria-hidden="true" strokeWidth={1.75} />
-                  Members only
-                </Button>
-              )}
-            </div>
-          </section>
-        </Card>
       )}
     </div>
   );

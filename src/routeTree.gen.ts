@@ -23,14 +23,12 @@ import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminSubscriptionPlansRouteImport } from './routes/_authenticated/admin/subscription-plans'
 import { Route as AuthenticatedAdminModerationRouteImport } from './routes/_authenticated/admin/moderation'
 import { Route as AuthenticatedAdminMembersRouteImport } from './routes/_authenticated/admin/members'
-import { Route as AuthenticatedAdminCreditPacksRouteImport } from './routes/_authenticated/admin/credit-packs'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
 import { Route as AuthenticatedAppPalettesRouteImport } from './routes/_authenticated/_app/palettes'
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
 import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
-import { Route as AuthenticatedAppCreditPacksRouteImport } from './routes/_authenticated/_app/credit-packs'
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
 import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_authenticated/_app/profile.$userId'
 
@@ -107,12 +105,6 @@ const AuthenticatedAdminMembersRoute =
     path: '/members',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const AuthenticatedAdminCreditPacksRoute =
-  AuthenticatedAdminCreditPacksRouteImport.update({
-    id: '/credit-packs',
-    path: '/credit-packs',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
 const AuthenticatedAppStyleProfileRoute =
   AuthenticatedAppStyleProfileRouteImport.update({
     id: '/style-profile',
@@ -146,12 +138,6 @@ const AuthenticatedAppDashboardRoute =
     path: '/dashboard',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
-const AuthenticatedAppCreditPacksRoute =
-  AuthenticatedAppCreditPacksRouteImport.update({
-    id: '/credit-packs',
-    path: '/credit-packs',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
 const AuthenticatedAppConciergeRoute =
   AuthenticatedAppConciergeRouteImport.update({
     id: '/concierge',
@@ -172,14 +158,12 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
-  '/credit-packs': typeof AuthenticatedAppCreditPacksRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
   '/history': typeof AuthenticatedAppHistoryRoute
   '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
-  '/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
   '/admin/members': typeof AuthenticatedAdminMembersRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
@@ -195,14 +179,12 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
-  '/credit-packs': typeof AuthenticatedAppCreditPacksRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
   '/history': typeof AuthenticatedAppHistoryRoute
   '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
-  '/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
   '/admin/members': typeof AuthenticatedAdminMembersRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
@@ -222,14 +204,12 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/_app/concierge': typeof AuthenticatedAppConciergeRoute
-  '/_authenticated/_app/credit-packs': typeof AuthenticatedAppCreditPacksRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/feed': typeof AuthenticatedAppFeedRoute
   '/_authenticated/_app/history': typeof AuthenticatedAppHistoryRoute
   '/_authenticated/_app/palettes': typeof AuthenticatedAppPalettesRoute
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
-  '/_authenticated/admin/credit-packs': typeof AuthenticatedAdminCreditPacksRoute
   '/_authenticated/admin/members': typeof AuthenticatedAdminMembersRoute
   '/_authenticated/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/_authenticated/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
@@ -248,14 +228,12 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/auth/callback'
     | '/concierge'
-    | '/credit-packs'
     | '/dashboard'
     | '/feed'
     | '/history'
     | '/palettes'
     | '/pricing'
     | '/style-profile'
-    | '/admin/credit-packs'
     | '/admin/members'
     | '/admin/moderation'
     | '/admin/subscription-plans'
@@ -271,14 +249,12 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/auth/callback'
     | '/concierge'
-    | '/credit-packs'
     | '/dashboard'
     | '/feed'
     | '/history'
     | '/palettes'
     | '/pricing'
     | '/style-profile'
-    | '/admin/credit-packs'
     | '/admin/members'
     | '/admin/moderation'
     | '/admin/subscription-plans'
@@ -297,14 +273,12 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/auth/callback'
     | '/_authenticated/_app/concierge'
-    | '/_authenticated/_app/credit-packs'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/feed'
     | '/_authenticated/_app/history'
     | '/_authenticated/_app/palettes'
     | '/_authenticated/_app/pricing'
     | '/_authenticated/_app/style-profile'
-    | '/_authenticated/admin/credit-packs'
     | '/_authenticated/admin/members'
     | '/_authenticated/admin/moderation'
     | '/_authenticated/admin/subscription-plans'
@@ -423,13 +397,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMembersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/admin/credit-packs': {
-      id: '/_authenticated/admin/credit-packs'
-      path: '/credit-packs'
-      fullPath: '/admin/credit-packs'
-      preLoaderRoute: typeof AuthenticatedAdminCreditPacksRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
     '/_authenticated/_app/style-profile': {
       id: '/_authenticated/_app/style-profile'
       path: '/style-profile'
@@ -472,13 +439,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppDashboardRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/_app/credit-packs': {
-      id: '/_authenticated/_app/credit-packs'
-      path: '/credit-packs'
-      fullPath: '/credit-packs'
-      preLoaderRoute: typeof AuthenticatedAppCreditPacksRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
     '/_authenticated/_app/concierge': {
       id: '/_authenticated/_app/concierge'
       path: '/concierge'
@@ -498,7 +458,6 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppConciergeRoute: typeof AuthenticatedAppConciergeRoute
-  AuthenticatedAppCreditPacksRoute: typeof AuthenticatedAppCreditPacksRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppFeedRoute: typeof AuthenticatedAppFeedRoute
   AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
@@ -510,7 +469,6 @@ interface AuthenticatedAppRouteChildren {
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppConciergeRoute: AuthenticatedAppConciergeRoute,
-  AuthenticatedAppCreditPacksRoute: AuthenticatedAppCreditPacksRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppFeedRoute: AuthenticatedAppFeedRoute,
   AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,
@@ -524,7 +482,6 @@ const AuthenticatedAppRouteWithChildren =
   AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
 
 interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminCreditPacksRoute: typeof AuthenticatedAdminCreditPacksRoute
   AuthenticatedAdminMembersRoute: typeof AuthenticatedAdminMembersRoute
   AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
   AuthenticatedAdminSubscriptionPlansRoute: typeof AuthenticatedAdminSubscriptionPlansRoute
@@ -533,7 +490,6 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminCreditPacksRoute: AuthenticatedAdminCreditPacksRoute,
   AuthenticatedAdminMembersRoute: AuthenticatedAdminMembersRoute,
   AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
   AuthenticatedAdminSubscriptionPlansRoute:

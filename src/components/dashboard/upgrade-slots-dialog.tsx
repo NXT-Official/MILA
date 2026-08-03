@@ -25,8 +25,7 @@ export function UpgradeSlotsDialog({
           </div>
           <DialogTitle className="font-serif text-2xl">Studio Energy Depleted</DialogTitle>
           <DialogDescription>
-            You've used today's styling credits. Move to a membership with a bigger daily allowance
-            — members can also top up with a credit pack to keep going today.
+            You've used today's styling credits. Move to a membership with a bigger daily allowance.
           </DialogDescription>
         </DialogHeader>
 

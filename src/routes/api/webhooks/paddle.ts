@@ -2,11 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { requireEnv } from "@/lib/env";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  applyPaddleCreditPackEvent,
   applyPaddleSubscriptionEvent,
   verifyPaddleSignature,
   type PaddleSubscriptionWebhookEvent,
-  type PaddleTransactionWebhookEvent,
 } from "@/lib/paddle-webhook.server";
 
 const SUBSCRIPTION_EVENT_TYPES = new Set([
@@ -14,7 +12,6 @@ const SUBSCRIPTION_EVENT_TYPES = new Set([
   "subscription.updated",
   "subscription.canceled",
 ]);
-const TRANSACTION_EVENT_TYPES = new Set(["transaction.completed"]);
 
 export const Route = createFileRoute("/api/webhooks/paddle")({
   server: {
@@ -37,16 +34,11 @@ export const Route = createFileRoute("/api/webhooks/paddle")({
               supabaseAdmin,
               event as unknown as PaddleSubscriptionWebhookEvent,
             );
-          } else if (TRANSACTION_EVENT_TYPES.has(event.event_type)) {
-            await applyPaddleCreditPackEvent(
-              supabaseAdmin,
-              event as unknown as PaddleTransactionWebhookEvent,
-            );
           }
         } catch (err) {
           // 5xx is the retry signal: Paddle re-delivers on its own schedule and
           // surfaces the failure in the dashboard. Money already taken — never
-          // answer 200 for a renewal or top-up we haven't applied.
+          // answer 200 for a renewal we haven't applied.
           console.error("[paddle-webhook] event failed", event.event_type, err);
           return new Response("event failed", { status: 500 });
         }

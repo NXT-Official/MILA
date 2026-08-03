@@ -151,13 +151,6 @@ async function resumeViaPaddleApi(
   return { renewsAt };
 }
 
-export const myMembershipStatus = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ active: boolean }> => {
-    const subscriptionId = await findInForceSubscriptionId(context.supabase, context.userId);
-    return { active: !!subscriptionId };
-  });
-
 export const resumeMySubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ResumeSubscriptionResult> =>

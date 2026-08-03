@@ -427,19 +427,9 @@ export function StudioMembershipDrawer({
                     />
                   )}
 
-                  {subscription && (
+                  {subscription && (credits ?? 0) === 0 && (
                     <p className="text-micro text-center leading-relaxed text-stone">
-                      {(credits ?? 0) === 0
-                        ? "You're out of credits for today — "
-                        : "Run out before the day resets? "}
-                      <Link
-                        to="/credit-packs"
-                        onClick={onClose}
-                        className="text-ink underline underline-offset-2 hover:text-accent"
-                      >
-                        buy a credit pack
-                      </Link>{" "}
-                      to keep styling with Mila.
+                      You're out of credits for today — they reset tomorrow.
                     </p>
                   )}
                 </div>

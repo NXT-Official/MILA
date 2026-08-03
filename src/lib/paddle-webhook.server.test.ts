@@ -1,11 +1,9 @@
 import { describe, expect, mock, test } from "bun:test";
 import { createHmac } from "node:crypto";
 import {
-  applyPaddleCreditPackEvent,
   applyPaddleSubscriptionEvent,
   verifyPaddleSignature,
   type PaddleSubscriptionWebhookEvent,
-  type PaddleTransactionWebhookEvent,
 } from "./paddle-webhook.server";
 
 const secret = "whsec_test_secret";
@@ -221,108 +219,5 @@ describe("applyPaddleSubscriptionEvent", () => {
   test("rethrows when the plan lookup itself fails, rather than dropping the event", async () => {
     const { db } = fakeDb({ plan: { data: null, error: { message: "timeout" } } });
     await expect(applyPaddleSubscriptionEvent(db, baseEvent({}))).rejects.toThrow();
-  });
-});
-
-/**
- * credit_pack_purchases is touched up to three times per event: the ledger
- * upsert, the granted_at claim, and — only if the grant throws — the release.
- */
-function fakeCreditPackDb(config: { pack: Terminal; claim?: Terminal }) {
-  const writes: unknown[] = [];
-  let purchaseCalls = 0;
-  const from = mock((table: string) => {
-    if (table === "credit_packs") return fakeChain(config.pack);
-    if (table === "credit_pack_purchases") {
-      purchaseCalls += 1;
-      const terminal =
-        purchaseCalls === 2
-          ? (config.claim ?? { data: [{ id: "purchase-1" }], error: null })
-          : { data: null, error: null };
-      return fakeChain(terminal, (p) => writes.push(p));
-    }
-    throw new Error(`unexpected table ${table}`);
-  });
-  return { db: { from } as never, writes };
-}
-
-function baseTransactionEvent(
-  overrides: Partial<PaddleTransactionWebhookEvent["data"]>,
-): PaddleTransactionWebhookEvent {
-  return {
-    event_type: "transaction.completed",
-    data: {
-      id: "txn_123",
-      customer_id: "ctm_123",
-      items: [{ price: { id: "pri_pack_small" } }],
-      custom_data: { user_id: "user-1" },
-      ...overrides,
-    },
-  };
-}
-
-describe("applyPaddleCreditPackEvent", () => {
-  test("grants credits on first delivery of a known pack purchase", async () => {
-    const { db, writes } = fakeCreditPackDb({
-      pack: { data: { id: "pack-1", credits: 10 }, error: null },
-    });
-    const grant = mock(async () => 42);
-    await applyPaddleCreditPackEvent(db, baseTransactionEvent({}), grant);
-    expect(grant).toHaveBeenCalledTimes(1);
-    expect(grant).toHaveBeenCalledWith(db, "user-1", 10);
-    // Ledger row, then the granted_at stamp that closes it out.
-    expect((writes[1] as { granted_at: string | null }).granted_at).toBeString();
-  });
-
-  test("does not grant again once granted_at is stamped", async () => {
-    const { db } = fakeCreditPackDb({
-      pack: { data: { id: "pack-1", credits: 10 }, error: null },
-      claim: { data: [], error: null }, // conditional update matched nothing
-    });
-    const grant = mock(async () => 42);
-    await applyPaddleCreditPackEvent(db, baseTransactionEvent({}), grant);
-    expect(grant).not.toHaveBeenCalled();
-  });
-
-  test("releases the claim and rethrows when the grant fails, so Paddle retries", async () => {
-    const { db, writes } = fakeCreditPackDb({
-      pack: { data: { id: "pack-1", credits: 10 }, error: null },
-    });
-    const grant = mock(async () => {
-      throw new Error("rpc exploded");
-    });
-    await expect(applyPaddleCreditPackEvent(db, baseTransactionEvent({}), grant)).rejects.toThrow(
-      "rpc exploded",
-    );
-    // Last write hands the grant back to the next delivery.
-    expect(writes.at(-1)).toEqual({ granted_at: null });
-  });
-
-  test("rethrows when the purchase can't be recorded at all", async () => {
-    const { db } = fakeCreditPackDb({
-      pack: { data: { id: "pack-1", credits: 10 }, error: null },
-      claim: { data: null, error: { message: "boom" } },
-    });
-    const grant = mock(async () => 42);
-    await expect(applyPaddleCreditPackEvent(db, baseTransactionEvent({}), grant)).rejects.toThrow();
-    expect(grant).not.toHaveBeenCalled();
-  });
-
-  test("is a no-op when the price id doesn't match a known pack (e.g. a subscription renewal)", async () => {
-    const { db } = fakeCreditPackDb({
-      pack: { data: null, error: null },
-    });
-    const grant = mock(async () => 42);
-    await applyPaddleCreditPackEvent(db, baseTransactionEvent({}), grant);
-    expect(grant).not.toHaveBeenCalled();
-  });
-
-  test("skips processing when custom_data.user_id is missing", async () => {
-    const { db } = fakeCreditPackDb({
-      pack: { data: { id: "pack-1", credits: 10 }, error: null },
-    });
-    const grant = mock(async () => 42);
-    await applyPaddleCreditPackEvent(db, baseTransactionEvent({ custom_data: null }), grant);
-    expect(grant).not.toHaveBeenCalled();
   });
 });
