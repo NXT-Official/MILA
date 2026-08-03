@@ -100,7 +100,7 @@ export function AdminSidebar({
                 onClick={() => onNavigate?.()}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-full px-4 py-2.5 text-micro uppercase tracking-label-wide transition-colors",
+                  "flex items-center gap-2.5 rounded-full px-4 py-2.5 text-xs uppercase tracking-label-wide transition-colors",
                   active
                     ? "bg-ink text-background"
                     : "text-stone hover:text-ink hover:bg-background/60",
