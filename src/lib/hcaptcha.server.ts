@@ -14,20 +14,16 @@ export async function verifyHcaptcha(token: string | undefined | null, remoteIp?
   const body = new URLSearchParams({ secret, response: token });
   if (remoteIp) body.set("remoteip", remoteIp);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
   let res: Response;
   try {
     res = await fetch(VERIFY_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
-      signal: controller.signal,
+      signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
     });
   } catch {
     throw new Error("Captcha verification failed. Please try again.");
-  } finally {
-    clearTimeout(timeout);
   }
 
   if (!res.ok) {
