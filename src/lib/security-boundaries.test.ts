@@ -3,6 +3,33 @@ import { readFileSync } from "node:fs";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
+test("the /admin tree gates on an admin-only permission, /moderator on staff access", () => {
+  // canAccessStaffArea is admin.access, which moderators hold — using it to guard
+  // /admin would put a moderator back inside the admin tree.
+  const admin = source("../routes/_authenticated/admin.tsx");
+  expect(admin).toContain('hasPermission(viewer.roles, "admin.dashboard.view")');
+  expect(admin).not.toContain("viewer.canAccessStaffArea");
+
+  const moderator = source("../routes/_authenticated/moderator.tsx");
+  expect(moderator).toContain("viewer.canAccessStaffArea");
+});
+
+test("no route or component still points at the retired /admin staff paths", () => {
+  const retired = ["/admin/moderation", "/admin/support"];
+  const offenders = [
+    ...new Bun.Glob("**/*.{ts,tsx}").scanSync({
+      cwd: new URL("..", import.meta.url).pathname,
+      absolute: true,
+    }),
+  ]
+    .filter((file) => !/\.test\.ts$|routeTree\.gen\.ts$/.test(file))
+    // Quoted-exact, so an import like "@/components/admin/support-columns" is not a hit.
+    .filter((file) =>
+      retired.some((path) => new RegExp(`["'\`]${path}["'\`]`).test(readFileSync(file, "utf8"))),
+    );
+  expect(offenders).toEqual([]);
+});
+
 test("browser Supabase client never imports or reads the service-role credential", () => {
   const client = source("../integrations/supabase/client.ts");
   expect(client).not.toContain("SERVICE_ROLE");
