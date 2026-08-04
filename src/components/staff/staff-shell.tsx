@@ -4,11 +4,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthenticatedViewerState } from "@/lib/queries/auth";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import { AdminHeader } from "@/components/admin/admin-header";
-import { hasPermission, STAFF_ROUTE_PERMISSIONS } from "@/lib/authorization";
+import { StaffSidebar } from "@/components/staff/staff-sidebar";
+import { StaffHeader } from "@/components/staff/staff-header";
+import { hasPermission, MODERATOR_HOME, STAFF_ROUTE_PERMISSIONS } from "@/lib/authorization";
 
-export function AdminShell() {
+export function StaffShell() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useAuth();
   const viewer = useAuthenticatedViewerState(user?.id);
@@ -29,7 +29,7 @@ export function AdminShell() {
   useEffect(() => {
     if (!user || viewer.isLoading) return;
     if (!viewer.canAccessStaffArea) navigate({ to: viewer.destination, replace: true });
-    else if (!canAccessPath) navigate({ to: "/admin/moderation", replace: true });
+    else if (!canAccessPath) navigate({ to: MODERATOR_HOME, replace: true });
   }, [
     user,
     viewer.isLoading,
@@ -64,7 +64,7 @@ export function AdminShell() {
   return (
     <div className="h-dvh overflow-hidden bg-background flex">
       <div className="hidden lg:flex">
-        <AdminSidebar path={path} roles={viewer.roles} />
+        <StaffSidebar path={path} roles={viewer.roles} />
       </div>
 
       <AnimatePresence>
@@ -87,7 +87,7 @@ export function AdminShell() {
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
               className="relative h-full w-[min(22rem,88vw)]"
             >
-              <AdminSidebar
+              <StaffSidebar
                 path={path}
                 roles={viewer.roles}
                 onNavigate={() => setSidebarOpen(false)}
@@ -98,7 +98,7 @@ export function AdminShell() {
       </AnimatePresence>
 
       <div className="flex min-w-0 flex-1 flex-col min-h-0">
-        <AdminHeader
+        <StaffHeader
           path={path}
           roleLabel={viewer.isAdmin ? "Steward" : "Moderator"}
           sidebarOpen={sidebarOpen}

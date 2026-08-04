@@ -4,11 +4,14 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { staffGateQueryOptions } from "@/lib/queries/admin";
+import { MODERATOR_HOME } from "@/lib/authorization";
 
 export function SiteHeader() {
   const { session } = useAuth();
   const { data: gate } = useQuery({ ...staffGateQueryOptions(), enabled: !!session });
-  const destination = session ? (gate?.can_access_staff_area ? "/admin" : "/dashboard") : "/login";
+  // Moderators have staff access but no /admin tree.
+  const staffHome = gate?.is_admin ? "/admin" : MODERATOR_HOME;
+  const destination = session ? (gate?.can_access_staff_area ? staffHome : "/dashboard") : "/login";
   const label = session ? (gate?.can_access_staff_area ? "Staff" : "Dashboard") : "Sign in";
 
   return (

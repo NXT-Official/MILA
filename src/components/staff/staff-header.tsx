@@ -8,11 +8,11 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     title: "Subscription Plans",
     subtitle: "Manage the membership plan catalog",
   },
-  "/admin/moderation": { title: "Moderation", subtitle: "Review and moderate the feed" },
-  "/admin/support": { title: "Support", subtitle: "Help desk & feedback" },
+  "/moderator/moderation": { title: "Moderation", subtitle: "Review and moderate the feed" },
+  "/moderator/support": { title: "Support", subtitle: "Help desk & feedback" },
 };
 
-export function AdminHeader({
+export function StaffHeader({
   path,
   roleLabel,
   sidebarOpen,
@@ -23,7 +23,7 @@ export function AdminHeader({
   sidebarOpen: boolean;
   onOpenSidebar: () => void;
 }) {
-  const meta = PAGE_META[path] ?? { title: "Admin", subtitle: "" };
+  const meta = PAGE_META[path] ?? { title: "Staff", subtitle: "" };
 
   return (
     <header className="shrink-0 border-b border-porcelain/60 bg-background/80 backdrop-blur px-5 md:px-8">
@@ -32,7 +32,7 @@ export function AdminHeader({
           <button
             type="button"
             onClick={onOpenSidebar}
-            aria-label={sidebarOpen ? "Close admin navigation" : "Open admin navigation"}
+            aria-label={sidebarOpen ? "Close staff navigation" : "Open staff navigation"}
             aria-expanded={sidebarOpen}
             className="lg:hidden inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-porcelain/60 bg-background/60 text-ink hover:border-porcelain transition-colors"
           >

@@ -19,14 +19,15 @@ import {
   type AppRole,
 } from "@/lib/authorization";
 
-interface AdminNavItem {
+interface StaffNavItem {
   to: string;
   label: string;
   icon: LucideIcon;
   permission: AppPermission;
 }
 
-const ADMIN_LINKS: AdminNavItem[] = [
+// Spans both route trees; the permission filter below decides what each role sees.
+const STAFF_LINKS: StaffNavItem[] = [
   {
     to: "/admin",
     label: "Dashboard",
@@ -46,20 +47,20 @@ const ADMIN_LINKS: AdminNavItem[] = [
     permission: STAFF_ROUTE_PERMISSIONS["/admin/subscription-plans"],
   },
   {
-    to: "/admin/moderation",
+    to: "/moderator/moderation",
     label: "Moderation",
     icon: ShieldAlert,
-    permission: STAFF_ROUTE_PERMISSIONS["/admin/moderation"],
+    permission: STAFF_ROUTE_PERMISSIONS["/moderator/moderation"],
   },
   {
-    to: "/admin/support",
+    to: "/moderator/support",
     label: "Support",
     icon: LifeBuoy,
-    permission: STAFF_ROUTE_PERMISSIONS["/admin/support"],
+    permission: STAFF_ROUTE_PERMISSIONS["/moderator/support"],
   },
 ];
 
-export function AdminSidebar({
+export function StaffSidebar({
   path,
   roles,
   onNavigate,
@@ -78,12 +79,12 @@ export function AdminSidebar({
       <div className="mb-8 px-1">
         <div className="text-nano uppercase tracking-label-xwide text-stone">Atelier</div>
         <div className="mt-1 font-serif text-xl tracking-label-tight uppercase text-ink">
-          Admin Suite
+          {roles.includes("admin") ? "Admin Suite" : "Moderation Suite"}
         </div>
       </div>
 
-      <nav className="flex flex-col gap-1.5" aria-label="Admin sections">
-        {ADMIN_LINKS.filter(({ permission }) => hasPermission(roles, permission)).map(
+      <nav className="flex flex-col gap-1.5" aria-label="Staff sections">
+        {STAFF_LINKS.filter(({ permission }) => hasPermission(roles, permission)).map(
           ({ to, label, icon: Icon }) => {
             const active = path === to;
             return (
