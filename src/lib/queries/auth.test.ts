@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { resolveAuthenticatedDestination } from "./auth";
-import { MODERATOR_HOME, STAFF_ROUTE_PERMISSIONS } from "@/lib/authorization";
+import { MODERATOR_HOME, staffBase, STAFF_ROUTE_PERMISSIONS } from "@/lib/authorization";
 
 test("admins land on /admin, moderators land in the moderator tree", () => {
   const complete = { isStyleProfileComplete: true };
@@ -28,17 +28,20 @@ test("staff skip onboarding, plain members do not", () => {
   );
 });
 
-test("the two staff trees are permission-disjoint", () => {
-  const adminOnly = Object.entries(STAFF_ROUTE_PERMISSIONS).filter(([path]) =>
-    path.startsWith("/admin"),
-  );
-  const moderator = Object.entries(STAFF_ROUTE_PERMISSIONS).filter(([path]) =>
-    path.startsWith("/moderator"),
-  );
-  // Moderation and support moved out of /admin; nothing may move back without
-  // this failing, because a moderator can reach /moderator but never /admin.
-  expect(adminOnly.map(([, permission]) => permission)).not.toContain("moderation.view");
-  expect(adminOnly.map(([, permission]) => permission)).not.toContain("support.view");
-  expect(moderator.map(([path]) => path)).toEqual(["/moderator/moderation", "/moderator/support"]);
+test("each tree carries its own moderation/support paths at the same permission", () => {
+  for (const screen of ["moderation", "support"] as const) {
+    const permission = screen === "moderation" ? "moderation.view" : "support.view";
+    // Same permission both sides — the tree decides the URL, never the access.
+    expect(STAFF_ROUTE_PERMISSIONS[`/admin/${screen}`]).toBe(permission);
+    expect(STAFF_ROUTE_PERMISSIONS[`/moderator/${screen}`]).toBe(permission);
+  }
   expect(MODERATOR_HOME).toBe("/moderator/moderation");
+});
+
+test("staffBase keeps each role on its own URLs", () => {
+  expect(staffBase(["admin"])).toBe("/admin");
+  expect(staffBase(["moderator"])).toBe("/moderator");
+  // An admin who also holds the moderator role still gets admin URLs.
+  expect(staffBase(["moderator", "admin"])).toBe("/admin");
+  expect(staffBase([])).toBe("/moderator");
 });

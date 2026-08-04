@@ -14,20 +14,19 @@ test("the /admin tree gates on an admin-only permission, /moderator on staff acc
   expect(moderator).toContain("viewer.canAccessStaffArea");
 });
 
-test("no route or component still points at the retired /admin staff paths", () => {
-  const retired = ["/admin/moderation", "/admin/support"];
-  const offenders = [
-    ...new Bun.Glob("**/*.{ts,tsx}").scanSync({
-      cwd: new URL("..", import.meta.url).pathname,
-      absolute: true,
-    }),
-  ]
-    .filter((file) => !/\.test\.ts$|routeTree\.gen\.ts$/.test(file))
-    // Quoted-exact, so an import like "@/components/admin/support-columns" is not a hit.
-    .filter((file) =>
-      retired.some((path) => new RegExp(`["'\`]${path}["'\`]`).test(readFileSync(file, "utf8"))),
-    );
-  expect(offenders).toEqual([]);
+test("moderation and support are mounted twice but implemented once", () => {
+  for (const [screen, component] of [
+    ["moderation", "ModerationPage"],
+    ["support", "SupportPage"],
+  ]) {
+    for (const tree of ["admin", "moderator"]) {
+      const route = source(`../routes/_authenticated/${tree}/${screen}.tsx`);
+      // Each route file must delegate; a copy-pasted page body would drift.
+      expect(route).toContain(`import { ${component} } from "@/components/staff/${screen}-page"`);
+      expect(route).toContain(`component: ${component}`);
+      expect(route).toContain(`createFileRoute("/_authenticated/${tree}/${screen}")`);
+    }
+  }
 });
 
 test("browser Supabase client never imports or reads the service-role credential", () => {
