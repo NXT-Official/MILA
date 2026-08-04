@@ -13,18 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { queryKeys } from "@/constants/query-keys";
 import { findSimilarItems } from "@/lib/dupe-hunter.functions";
 import { sourceUrlHost, type PostItem } from "@/lib/outfit-items";
-
-function formatPrice(price: number, currency: string) {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(price);
-  } catch {
-    return `${currency} ${price}`;
-  }
-}
+import { formatPrice } from "@/lib/utils";
 
 const MATCH_CACHE_MS = 24 * 60 * 60 * 1000;
 

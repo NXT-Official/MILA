@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { CameraCapture } from "@/components/capture/camera-capture";
 import { DualCapture } from "@/components/capture/dual-capture";
-import { cn, errorMessage } from "@/lib/utils";
+import { cn, errorMessage, formatPrice } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -48,18 +48,6 @@ const COPY: Record<StudioCameraMode, { title: string; description: string }> = {
       "Snap an inspiration piece — designer bag, coat, shoe. I'll extract the silhouette and surface budget-friendly alternatives.",
   },
 };
-
-function formatPrice(price: number, currency: string) {
-  try {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(price);
-  } catch {
-    return `${currency} ${price}`;
-  }
-}
 
 export function StudioCameraDrawer({
   isOpen,
