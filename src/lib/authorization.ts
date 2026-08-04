@@ -28,20 +28,27 @@ export const ROLE_PERMISSIONS = {
 } as const satisfies Record<AppRole, readonly AppPermission[]>;
 
 /**
- * Staff routes live in two trees: `/admin` is admin-only, `/moderator` is open to
- * both roles. Admins hold `moderation.view`/`support.view` too, so they use the
- * moderator tree rather than owning a second copy of those screens.
+ * Staff routes live in two trees. Moderation and support exist in both, mounted
+ * on one shared page component each, so an admin stays on `/admin/*` URLs and a
+ * moderator stays on `/moderator/*`. `staffBase` decides which tree a viewer sees.
  */
 export const STAFF_ROUTE_PERMISSIONS = {
   "/admin": "admin.dashboard.view",
   "/admin/members": "members.view",
   "/admin/subscription-plans": "subscriptionPlans.manage",
+  "/admin/moderation": "moderation.view",
+  "/admin/support": "support.view",
   "/moderator/moderation": "moderation.view",
   "/moderator/support": "support.view",
 } as const satisfies Record<string, AppPermission>;
 
 /** Where a signed-in staff member starts when they have no admin dashboard. */
 export const MODERATOR_HOME = "/moderator/moderation";
+
+/** The route tree a viewer belongs to — admins never see `/moderator` URLs. */
+export function staffBase(roles: readonly AppRole[]): "/admin" | "/moderator" {
+  return roles.includes("admin") ? "/admin" : "/moderator";
+}
 
 export function isAppRole(role: string): role is AppRole {
   return APP_ROLES.includes(role as AppRole);

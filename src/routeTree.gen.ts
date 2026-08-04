@@ -23,7 +23,9 @@ import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/pad
 import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
 import { Route as AuthenticatedModeratorSupportRouteImport } from './routes/_authenticated/moderator/support'
 import { Route as AuthenticatedModeratorModerationRouteImport } from './routes/_authenticated/moderator/moderation'
+import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminSubscriptionPlansRouteImport } from './routes/_authenticated/admin/subscription-plans'
+import { Route as AuthenticatedAdminModerationRouteImport } from './routes/_authenticated/admin/moderation'
 import { Route as AuthenticatedAdminMembersRouteImport } from './routes/_authenticated/admin/members'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
@@ -106,10 +108,22 @@ const AuthenticatedModeratorModerationRoute =
     path: '/moderation',
     getParentRoute: () => AuthenticatedModeratorRoute,
   } as any)
+const AuthenticatedAdminSupportRoute =
+  AuthenticatedAdminSupportRouteImport.update({
+    id: '/support',
+    path: '/support',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminSubscriptionPlansRoute =
   AuthenticatedAdminSubscriptionPlansRouteImport.update({
     id: '/subscription-plans',
     path: '/subscription-plans',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminModerationRoute =
+  AuthenticatedAdminModerationRouteImport.update({
+    id: '/moderation',
+    path: '/moderation',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminMembersRoute =
@@ -179,7 +193,9 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/admin/members': typeof AuthenticatedAdminMembersRoute
+  '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
+  '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/moderator/moderation': typeof AuthenticatedModeratorModerationRoute
   '/moderator/support': typeof AuthenticatedModeratorSupportRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
@@ -201,7 +217,9 @@ export interface FileRoutesByTo {
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/admin/members': typeof AuthenticatedAdminMembersRoute
+  '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
+  '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/moderator/moderation': typeof AuthenticatedModeratorModerationRoute
   '/moderator/support': typeof AuthenticatedModeratorSupportRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
@@ -228,7 +246,9 @@ export interface FileRoutesById {
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/_authenticated/admin/members': typeof AuthenticatedAdminMembersRoute
+  '/_authenticated/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/_authenticated/admin/subscription-plans': typeof AuthenticatedAdminSubscriptionPlansRoute
+  '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/moderator/moderation': typeof AuthenticatedModeratorModerationRoute
   '/_authenticated/moderator/support': typeof AuthenticatedModeratorSupportRoute
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
@@ -254,7 +274,9 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/style-profile'
     | '/admin/members'
+    | '/admin/moderation'
     | '/admin/subscription-plans'
+    | '/admin/support'
     | '/moderator/moderation'
     | '/moderator/support'
     | '/onboarding/style-profile'
@@ -276,7 +298,9 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/style-profile'
     | '/admin/members'
+    | '/admin/moderation'
     | '/admin/subscription-plans'
+    | '/admin/support'
     | '/moderator/moderation'
     | '/moderator/support'
     | '/onboarding/style-profile'
@@ -302,7 +326,9 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/pricing'
     | '/_authenticated/_app/style-profile'
     | '/_authenticated/admin/members'
+    | '/_authenticated/admin/moderation'
     | '/_authenticated/admin/subscription-plans'
+    | '/_authenticated/admin/support'
     | '/_authenticated/moderator/moderation'
     | '/_authenticated/moderator/support'
     | '/_authenticated/onboarding/style-profile'
@@ -420,11 +446,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedModeratorModerationRouteImport
       parentRoute: typeof AuthenticatedModeratorRoute
     }
+    '/_authenticated/admin/support': {
+      id: '/_authenticated/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AuthenticatedAdminSupportRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/subscription-plans': {
       id: '/_authenticated/admin/subscription-plans'
       path: '/subscription-plans'
       fullPath: '/admin/subscription-plans'
       preLoaderRoute: typeof AuthenticatedAdminSubscriptionPlansRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/moderation': {
+      id: '/_authenticated/admin/moderation'
+      path: '/moderation'
+      fullPath: '/admin/moderation'
+      preLoaderRoute: typeof AuthenticatedAdminModerationRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/members': {
@@ -520,14 +560,18 @@ const AuthenticatedAppRouteWithChildren =
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminMembersRoute: typeof AuthenticatedAdminMembersRoute
+  AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
   AuthenticatedAdminSubscriptionPlansRoute: typeof AuthenticatedAdminSubscriptionPlansRoute
+  AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminMembersRoute: AuthenticatedAdminMembersRoute,
+  AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
   AuthenticatedAdminSubscriptionPlansRoute:
     AuthenticatedAdminSubscriptionPlansRoute,
+  AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
