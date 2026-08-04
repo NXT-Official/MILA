@@ -4,14 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getSupportColumns } from "@/components/admin/support-columns";
+import { getSupportColumns } from "@/components/moderator/support-columns";
 import { queryKeys } from "@/constants/query-keys";
 import { adminResolveSupportMessage } from "@/lib/admin.functions";
 import { adminSupportQueryOptions } from "@/lib/queries/admin";
 import { requireStaffRoutePermission } from "@/lib/staff-route";
 import { errorMessage } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/admin/support")({
+export const Route = createFileRoute("/_authenticated/moderator/support")({
   beforeLoad: ({ context }) => requireStaffRoutePermission(context.queryClient, "support.view"),
   component: SupportPage,
 });

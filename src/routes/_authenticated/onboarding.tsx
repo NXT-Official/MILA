@@ -24,13 +24,20 @@ function OnboardingLayout() {
   useEffect(() => {
     if (!user || viewer.isLoading) return;
     if (viewer.canAccessStaffArea) {
-      navigate({ to: "/admin", replace: true });
+      navigate({ to: viewer.destination, replace: true });
       return;
     }
     if (shouldRedirectForComplete) {
       navigate({ to: "/dashboard", replace: true });
     }
-  }, [user, viewer.isLoading, viewer.canAccessStaffArea, shouldRedirectForComplete, navigate]);
+  }, [
+    user,
+    viewer.isLoading,
+    viewer.canAccessStaffArea,
+    viewer.destination,
+    shouldRedirectForComplete,
+    navigate,
+  ]);
 
   if (!user || viewer.isLoading || viewer.canAccessStaffArea || shouldRedirectForComplete) {
     return (

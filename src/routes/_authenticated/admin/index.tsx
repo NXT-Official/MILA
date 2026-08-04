@@ -114,7 +114,10 @@ function AdminDashboard() {
               </div>
             )}
           </div>
-          <Link to="/admin/moderation" className="mt-3 inline-block atelier-label hover:text-ink">
+          <Link
+            to="/moderator/moderation"
+            className="mt-3 inline-block atelier-label hover:text-ink"
+          >
             View moderation →
           </Link>
         </section>

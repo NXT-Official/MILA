@@ -13,7 +13,7 @@ import { requireStaffRoutePermission } from "@/lib/staff-route";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/admin/moderation")({
+export const Route = createFileRoute("/_authenticated/moderator/moderation")({
   beforeLoad: ({ context }) => requireStaffRoutePermission(context.queryClient, "moderation.view"),
   component: ModerationPage,
 });

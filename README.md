@@ -104,8 +104,8 @@ flowchart TD
 ```
 
 The landing page (`/`) itself checks for a session during route load and immediately redirects
-signed-in visitors to `/dashboard` (or `/admin` if their role is admin) — it is only ever seen
-by signed-out visitors in practice.
+signed-in visitors to `/dashboard` (or `/admin` for admins, `/moderator/moderation` for
+moderators) — it is only ever seen by signed-out visitors in practice.
 
 ## Architecture
 
@@ -234,24 +234,30 @@ the source tree to read or edit directly.
 
 ## Application Routes
 
-| Route               | Access                    | Purpose                                                                          |
-| ------------------- | ------------------------- | -------------------------------------------------------------------------------- |
-| `/`                 | Public                    | Landing/marketing page; redirects signed-in visitors to `/dashboard` or `/admin` |
-| `/login`            | Public                    | Email/password and Google OAuth sign-in and sign-up (tabbed)                     |
-| `/auth/callback`    | Public                    | OAuth session exchange, then redirects to `next` (defaults to `/dashboard`)      |
-| `/dashboard`        | Authenticated             | Daily look generation, camera/gallery capture, credits, membership drawer        |
-| `/feed`             | Authenticated             | Community feed of member outfit posts                                            |
-| `/history`          | Authenticated             | Previously generated looks                                                       |
-| `/style-profile`    | Authenticated             | Colour-season and body-profile quiz; "digital style dossier"                     |
-| `/admin`            | Authenticated, admin role | Dashboard stats (members, credits, posts, support)                               |
-| `/admin/members`    | Authenticated, admin role | Member list — grant/revoke admin, suspend, create/edit accounts                  |
-| `/admin/moderation` | Authenticated, admin role | Hide/restore/delete feed posts                                                   |
-| `/admin/support`    | Authenticated, admin role | Help-desk and feedback message triage                                            |
+| Route                       | Access                    | Purpose                                                                          |
+| --------------------------- | ------------------------- | -------------------------------------------------------------------------------- |
+| `/`                         | Public                    | Landing/marketing page; redirects signed-in visitors to `/dashboard` or `/admin` |
+| `/login`                    | Public                    | Email/password and Google OAuth sign-in and sign-up (tabbed)                     |
+| `/auth/callback`            | Public                    | OAuth session exchange, then redirects to `next` (defaults to `/dashboard`)      |
+| `/dashboard`                | Authenticated             | Daily look generation, camera/gallery capture, credits, membership drawer        |
+| `/feed`                     | Authenticated             | Community feed of member outfit posts                                            |
+| `/history`                  | Authenticated             | Previously generated looks                                                       |
+| `/style-profile`            | Authenticated             | Colour-season and body-profile quiz; "digital style dossier"                     |
+| `/admin`                    | Authenticated, admin role | Dashboard stats (members, credits, posts, support)                               |
+| `/admin/members`            | Authenticated, admin role | Member list — grant/revoke roles, suspend, create/edit accounts                  |
+| `/admin/subscription-plans` | Authenticated, admin role | Membership plan catalog                                                          |
+| `/moderator`                | Authenticated, staff      | Redirects to `/moderator/moderation`                                             |
+| `/moderator/moderation`     | Authenticated, staff      | Hide/restore/delete feed posts                                                   |
+| `/moderator/support`        | Authenticated, staff      | Help-desk and feedback message triage                                            |
 
 `/dashboard`, `/feed`, `/history`, and `/style-profile` share a pathless `_authenticated/_app`
-layout route (top/bottom navigation chrome); `/admin*` shares a separate `_authenticated/admin`
-layout (sidebar + header). Both ultimately nest under the `_authenticated` layout route that
-performs the actual session check — see below.
+layout route (top/bottom navigation chrome). Staff routes are split across **two** layout routes,
+`_authenticated/admin` and `_authenticated/moderator`, which both render the same `StaffShell`
+(sidebar + header) but gate differently: `/admin*` requires `admin.dashboard.view` (admins only),
+`/moderator*` requires `admin.access` (either staff role). Moderation and support live only under
+`/moderator` — admins hold those permissions too and navigate there rather than owning a second
+copy of the screens. All of them nest under the `_authenticated` layout route that performs the
+actual session check — see below.
 
 ## Authentication and Authorization
 
@@ -282,10 +288,11 @@ is skipped during server-side rendering (`typeof window === "undefined"`), so th
 effectively client-only — a page could be server-rendered before the redirect fires, though a
 signed-out client cannot successfully call any protected server function regardless (see below).
 
-`src/routes/_authenticated/admin.tsx` renders `AdminShell` with **no route-level admin check at
-all**. Admin authorization is enforced by the `AdminShell` component itself, which queries
-`adminAmIAdmin()` and renders a "Restricted" screen for non-admins — this is a UI-level gate, not
-a route redirect.
+`src/routes/_authenticated/admin.tsx` and `src/routes/_authenticated/moderator.tsx` each guard
+their tree in `beforeLoad` via `loadAuthenticatedViewerState` — the first on
+`admin.dashboard.view`, the second on `canAccessStaffArea`. `StaffShell` repeats the check per
+path (`STAFF_ROUTE_PERMISSIONS`) and renders a "Restricted" screen as a fallback. Both layers are
+client-side; the server-side counterpart is the per-function role check below.
 
 ### Server-side enforcement
 
@@ -390,11 +397,13 @@ compose `Label` + `Input` directly.
 
 ## Admin System
 
-The admin suite (`/admin/*`) is a full CRUD/moderation interface, not a placeholder:
+The staff suite is a full CRUD/moderation interface, not a placeholder. It spans two route
+trees — `/admin/*` for admin-only screens and `/moderator/*` for the ones both roles share:
 
-- **Layout**: `AdminShell` renders a fixed sidebar (`AdminSidebar`) and a header
-  (`AdminHeader`) with a mobile drawer toggle; both collapse into a slide-over drawer below the
-  `lg` breakpoint.
+- **Layout**: `StaffShell` (`src/components/staff/`) renders a fixed sidebar (`StaffSidebar`)
+  and a header (`StaffHeader`) with a mobile drawer toggle; both collapse into a slide-over
+  drawer below the `lg` breakpoint. The same shell serves both trees; the sidebar filters its
+  links by permission, so a moderator sees only Moderation and Support.
 - **Dashboard** (`/admin`): six stat cards (members, stewards, AI credits outstanding, posts,
   hidden posts, open support messages) plus "Recent Members" and "Recent Activity" panels, all
   from one `adminDashboardStats` server function.
@@ -403,16 +412,21 @@ The admin suite (`/admin/*`) is a full CRUD/moderation interface, not a placehol
   disabled for your own account when it's the only admin action that would lock you out), toggle
   suspension, edit name/username, create a new member account directly (email + password, no
   invite email).
-- **Moderation** (`/admin/moderation`): a card grid of feed posts with hide/restore and
+- **Moderation** (`/moderator/moderation`): a card grid of feed posts with hide/restore and
   permanent-delete actions; hidden posts show a reason and a badge.
-- **Support** (`/admin/support`): tabbed `DataTable`s for help-desk vs. feedback messages, with
-  a resolved/unresolved toggle.
+- **Support** (`/moderator/support`): tabbed `DataTable`s for help-desk vs. feedback messages,
+  with a resolved/unresolved toggle.
+
+`src/lib/authorization.ts` is the single permission map. `STAFF_ROUTE_PERMISSIONS` names the
+permission each staff path needs, and `MODERATOR_HOME` is the one place the moderator landing
+path is written — `resolveAuthenticatedDestination` sends admins to `/admin` and moderators
+there instead.
 
 Permission checking happens at two layers, described in full in
-[Authentication and Authorization](#authentication-and-authorization): client-side (a
-"Restricted" screen if `adminAmIAdmin()` returns false) and server-side (every admin server
-function independently calls `assertAdmin`, which is the layer that actually matters for
-security). There is no route-level `beforeLoad` redirect guarding `/admin`.
+[Authentication and Authorization](#authentication-and-authorization): client-side (the layout
+`beforeLoad` guards plus a "Restricted" screen in `StaffShell`) and server-side (every staff
+server function independently calls `assertAdmin` or `assertPermission`, which is the layer that
+actually matters for security).
 
 ## Design System
 
@@ -619,7 +633,7 @@ never use production credentials or network services. Run `bun run test:coverage
 If a test strategy is added later, reasonable starting points given the codebase would be:
 
 - Component tests for the shared `src/components/ui/` primitives
-- Route tests for the `_authenticated` and `_authenticated/admin` guard logic
+- Route tests for the `_authenticated`, `_authenticated/admin`, and `_authenticated/moderator` guard logic
 - Server-function tests for `admin.functions.ts`'s `assertAdmin` enforcement
 - Form-validation tests for the Zod schemas shared between client and server
 - End-to-end tests for the sign-up → style-profile → daily-look flow
