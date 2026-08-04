@@ -57,12 +57,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-/**
- * Safely reads whatever is actually in `outfits.analysis_result` — an
- * object already (the normal case), a JSON string (some legacy path), or
- * malformed/empty data. Never throws; unrecognized shapes degrade to an
- * "unavailable" state instead of crashing the page.
- */
 function normalizeAnalysisResult(raw: unknown): NormalizedAnalysis {
   let value = raw;
   if (typeof value === "string") {
@@ -307,8 +301,6 @@ function History() {
     };
   }, [user, reloadToken]);
 
-  // ponytail: opens ?look=<id> once items land; closing the dialog won't reopen
-  // it because neither dep changes.
   useEffect(() => {
     if (!look) return;
     const match = items.find((i) => i.id === look);
