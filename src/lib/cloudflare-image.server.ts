@@ -44,9 +44,6 @@ export async function generateOutfitImage(outfit: DailyLook): Promise<string> {
   });
   const imageModel = process.env.IMAGE_MODEL || "@cf/black-forest-labs/flux-1-schnell";
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
   let res: Response;
   try {
     res = await fetch(
@@ -58,13 +55,11 @@ export async function generateOutfitImage(outfit: DailyLook): Promise<string> {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ prompt: buildOutfitImagePrompt(outfit), steps: 4 }),
-        signal: controller.signal,
+        signal: AbortSignal.timeout(TIMEOUT_MS),
       },
     );
   } catch {
     throw new Error("Couldn't reach the Cloudflare image service.");
-  } finally {
-    clearTimeout(timeout);
   }
 
   if (res.status === 429) throw new CloudflareRateLimitError("Cloudflare rate limit reached.");
