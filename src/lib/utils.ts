@@ -14,6 +14,18 @@ export function errorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+export function formatPrice(price: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(price);
+  } catch {
+    return `${currency} ${price}`;
+  }
+}
+
 const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 const UNITS = [
   ["year", 31536000],
