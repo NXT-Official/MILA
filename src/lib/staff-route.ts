@@ -1,7 +1,7 @@
 import { redirect } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { hasPermission, type AppPermission } from "@/lib/authorization";
+import { hasPermission, MODERATOR_HOME, type AppPermission } from "@/lib/authorization";
 import { loadAuthenticatedViewerState } from "@/lib/queries/auth";
 
 export async function requireStaffRoutePermission(
@@ -15,7 +15,7 @@ export async function requireStaffRoutePermission(
   const viewer = await loadAuthenticatedViewerState(queryClient, userId);
   if (!hasPermission(viewer.roles, permission)) {
     throw redirect({
-      to: viewer.canAccessStaffArea ? "/admin/moderation" : viewer.destination,
+      to: viewer.canAccessStaffArea ? MODERATOR_HOME : viewer.destination,
       replace: true,
     });
   }

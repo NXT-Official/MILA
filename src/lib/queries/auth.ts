@@ -1,11 +1,17 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { staffGateQueryOptions } from "@/lib/queries/admin";
-import { hasPermission, type AppPermission, type AppRole } from "@/lib/authorization";
+import {
+  hasPermission,
+  MODERATOR_HOME,
+  type AppPermission,
+  type AppRole,
+} from "@/lib/authorization";
 import { profileQueryOptions } from "@/lib/queries/profile";
 import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 
-export type AuthenticatedDestination = "/admin" | "/onboarding/style-profile" | "/dashboard";
+export type AuthenticatedDestination =
+  "/admin" | typeof MODERATOR_HOME | "/onboarding/style-profile" | "/dashboard";
 
 export interface AuthenticatedViewerState {
   isAdmin: boolean;
@@ -22,7 +28,9 @@ export function resolveAuthenticatedDestination(input: {
   canAccessStaffArea?: boolean;
   isStyleProfileComplete: boolean;
 }): AuthenticatedDestination {
-  if (input.isAdmin || input.canAccessStaffArea) return "/admin";
+  // Only admins get the /admin tree; a moderator's home is the moderation queue.
+  if (input.isAdmin) return "/admin";
+  if (input.canAccessStaffArea) return MODERATOR_HOME;
   if (!input.isStyleProfileComplete) return "/onboarding/style-profile";
   return "/dashboard";
 }
