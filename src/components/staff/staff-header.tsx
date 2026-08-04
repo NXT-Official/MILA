@@ -8,6 +8,9 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     title: "Subscription Plans",
     subtitle: "Manage the membership plan catalog",
   },
+  // Same two screens, one entry per tree.
+  "/admin/moderation": { title: "Moderation", subtitle: "Review and moderate the feed" },
+  "/admin/support": { title: "Support", subtitle: "Help desk & feedback" },
   "/moderator/moderation": { title: "Moderation", subtitle: "Review and moderate the feed" },
   "/moderator/support": { title: "Support", subtitle: "Help desk & feedback" },
 };

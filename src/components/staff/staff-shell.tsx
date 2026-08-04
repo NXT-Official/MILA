@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAuthenticatedViewerState } from "@/lib/queries/auth";
 import { StaffSidebar } from "@/components/staff/staff-sidebar";
 import { StaffHeader } from "@/components/staff/staff-header";
-import { hasPermission, MODERATOR_HOME, STAFF_ROUTE_PERMISSIONS } from "@/lib/authorization";
+import { hasPermission, STAFF_ROUTE_PERMISSIONS } from "@/lib/authorization";
 
 export function StaffShell() {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -29,7 +29,8 @@ export function StaffShell() {
   useEffect(() => {
     if (!user || viewer.isLoading) return;
     if (!viewer.canAccessStaffArea) navigate({ to: viewer.destination, replace: true });
-    else if (!canAccessPath) navigate({ to: MODERATOR_HOME, replace: true });
+    // Fall back inside the viewer's own tree, not across to the other one.
+    else if (!canAccessPath) navigate({ to: viewer.destination, replace: true });
   }, [
     user,
     viewer.isLoading,

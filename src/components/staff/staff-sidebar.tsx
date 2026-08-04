@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSignOut } from "@/hooks/use-sign-out";
 import {
   hasPermission,
+  staffBase,
   STAFF_ROUTE_PERMISSIONS,
   type AppPermission,
   type AppRole,
@@ -26,7 +27,8 @@ interface StaffNavItem {
   permission: AppPermission;
 }
 
-// Spans both route trees; the permission filter below decides what each role sees.
+// Both trees are listed; the filter below keeps only the viewer's own tree, so an
+// admin gets /admin/moderation and a moderator gets /moderator/moderation.
 const STAFF_LINKS: StaffNavItem[] = [
   {
     to: "/admin",
@@ -45,6 +47,18 @@ const STAFF_LINKS: StaffNavItem[] = [
     label: "Plans",
     icon: CreditCard,
     permission: STAFF_ROUTE_PERMISSIONS["/admin/subscription-plans"],
+  },
+  {
+    to: "/admin/moderation",
+    label: "Moderation",
+    icon: ShieldAlert,
+    permission: STAFF_ROUTE_PERMISSIONS["/admin/moderation"],
+  },
+  {
+    to: "/admin/support",
+    label: "Support",
+    icon: LifeBuoy,
+    permission: STAFF_ROUTE_PERMISSIONS["/admin/support"],
   },
   {
     to: "/moderator/moderation",
@@ -73,6 +87,10 @@ export function StaffSidebar({
   const { signingOut, handleSignOut } = useSignOut();
 
   const initial = (user?.email?.[0] ?? "M").toUpperCase();
+  const base = staffBase(roles);
+  const links = STAFF_LINKS.filter(
+    ({ to, permission }) => to.startsWith(base) && hasPermission(roles, permission),
+  );
 
   return (
     <div className="flex h-full w-76 shrink-0 flex-col border-r border-porcelain/60 bg-atelier-panel/30 px-5 py-6">
@@ -84,28 +102,26 @@ export function StaffSidebar({
       </div>
 
       <nav className="flex flex-col gap-1.5" aria-label="Staff sections">
-        {STAFF_LINKS.filter(({ permission }) => hasPermission(roles, permission)).map(
-          ({ to, label, icon: Icon }) => {
-            const active = path === to;
-            return (
-              <Link
-                key={to}
-                to={to}
-                onClick={() => onNavigate?.()}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-full px-4 py-2.5 text-xs uppercase tracking-label-wide transition-colors",
-                  active
-                    ? "bg-ink text-background"
-                    : "text-stone hover:text-ink hover:bg-background/60",
-                )}
-              >
-                <Icon className="size-4.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                {label}
-              </Link>
-            );
-          },
-        )}
+        {links.map(({ to, label, icon: Icon }) => {
+          const active = path === to;
+          return (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => onNavigate?.()}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-2.5 rounded-full px-4 py-2.5 text-xs uppercase tracking-label-wide transition-colors",
+                active
+                  ? "bg-ink text-background"
+                  : "text-stone hover:text-ink hover:bg-background/60",
+              )}
+            >
+              <Icon className="size-4.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+              {label}
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="mt-auto border-t border-porcelain/60 pt-4">

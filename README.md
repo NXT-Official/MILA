@@ -246,6 +246,8 @@ the source tree to read or edit directly.
 | `/admin`                    | Authenticated, admin role | Dashboard stats (members, credits, posts, support)                               |
 | `/admin/members`            | Authenticated, admin role | Member list — grant/revoke roles, suspend, create/edit accounts                  |
 | `/admin/subscription-plans` | Authenticated, admin role | Membership plan catalog                                                          |
+| `/admin/moderation`         | Authenticated, admin role | Hide/restore/delete feed posts                                                   |
+| `/admin/support`            | Authenticated, admin role | Help-desk and feedback message triage                                            |
 | `/moderator`                | Authenticated, staff      | Redirects to `/moderator/moderation`                                             |
 | `/moderator/moderation`     | Authenticated, staff      | Hide/restore/delete feed posts                                                   |
 | `/moderator/support`        | Authenticated, staff      | Help-desk and feedback message triage                                            |
@@ -254,10 +256,14 @@ the source tree to read or edit directly.
 layout route (top/bottom navigation chrome). Staff routes are split across **two** layout routes,
 `_authenticated/admin` and `_authenticated/moderator`, which both render the same `StaffShell`
 (sidebar + header) but gate differently: `/admin*` requires `admin.dashboard.view` (admins only),
-`/moderator*` requires `admin.access` (either staff role). Moderation and support live only under
-`/moderator` — admins hold those permissions too and navigate there rather than owning a second
-copy of the screens. All of them nest under the `_authenticated` layout route that performs the
-actual session check — see below.
+`/moderator*` requires `admin.access` (either staff role).
+
+Moderation and support are mounted in **both** trees so each role stays on its own URLs — an
+admin works at `/admin/moderation`, a moderator at `/moderator/moderation`. The route files are
+thin; both point at one shared page component (`src/components/staff/moderation-page.tsx`,
+`support-page.tsx`), so there is one implementation per screen. `staffBase(roles)` in
+`src/lib/authorization.ts` decides which tree's links the sidebar shows. All of them nest under
+the `_authenticated` layout route that performs the actual session check — see below.
 
 ## Authentication and Authorization
 
@@ -398,12 +404,14 @@ compose `Label` + `Input` directly.
 ## Admin System
 
 The staff suite is a full CRUD/moderation interface, not a placeholder. It spans two route
-trees — `/admin/*` for admin-only screens and `/moderator/*` for the ones both roles share:
+trees — `/admin/*` for admins and `/moderator/*` for moderators — so neither role ever sees the
+other's URLs:
 
 - **Layout**: `StaffShell` (`src/components/staff/`) renders a fixed sidebar (`StaffSidebar`)
   and a header (`StaffHeader`) with a mobile drawer toggle; both collapse into a slide-over
-  drawer below the `lg` breakpoint. The same shell serves both trees; the sidebar filters its
-  links by permission, so a moderator sees only Moderation and Support.
+  drawer below the `lg` breakpoint. The same shell serves both trees; the sidebar keeps only the
+  links under `staffBase(roles)` that the viewer's permissions allow, so an admin sees five
+  `/admin/*` links and a moderator sees two `/moderator/*` ones.
 - **Dashboard** (`/admin`): six stat cards (members, stewards, AI credits outstanding, posts,
   hidden posts, open support messages) plus "Recent Members" and "Recent Activity" panels, all
   from one `adminDashboardStats` server function.
@@ -412,15 +420,17 @@ trees — `/admin/*` for admin-only screens and `/moderator/*` for the ones both
   disabled for your own account when it's the only admin action that would lock you out), toggle
   suspension, edit name/username, create a new member account directly (email + password, no
   invite email).
-- **Moderation** (`/moderator/moderation`): a card grid of feed posts with hide/restore and
-  permanent-delete actions; hidden posts show a reason and a badge.
-- **Support** (`/moderator/support`): tabbed `DataTable`s for help-desk vs. feedback messages,
-  with a resolved/unresolved toggle.
+- **Moderation** (`/admin/moderation`, `/moderator/moderation`): a card grid of feed posts with
+  hide/restore and permanent-delete actions; hidden posts show a reason and a badge. One
+  component, `src/components/staff/moderation-page.tsx`, mounted by both route files.
+- **Support** (`/admin/support`, `/moderator/support`): tabbed `DataTable`s for help-desk vs.
+  feedback messages, with a resolved/unresolved toggle. Same arrangement — `support-page.tsx`.
 
 `src/lib/authorization.ts` is the single permission map. `STAFF_ROUTE_PERMISSIONS` names the
-permission each staff path needs, and `MODERATOR_HOME` is the one place the moderator landing
-path is written — `resolveAuthenticatedDestination` sends admins to `/admin` and moderators
-there instead.
+permission each staff path needs — the two copies of a shared screen carry the _same_
+permission, since the tree decides the URL, never the access. `MODERATOR_HOME` is the one place
+the moderator landing path is written, and `resolveAuthenticatedDestination` sends admins to
+`/admin` and moderators there instead.
 
 Permission checking happens at two layers, described in full in
 [Authentication and Authorization](#authentication-and-authorization): client-side (the layout
