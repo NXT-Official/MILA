@@ -2,9 +2,10 @@ import { expect, test } from "bun:test";
 import { resolveAuthenticatedDestination } from "./auth";
 import { MODERATOR_HOME, staffBase, STAFF_ROUTE_PERMISSIONS } from "@/lib/authorization";
 
-test("admins land on /admin, moderators land in the moderator tree", () => {
+test("admins land on /admin/dashboard, moderators land in the moderator tree", () => {
   const complete = { isStyleProfileComplete: true };
-  expect(resolveAuthenticatedDestination({ ...complete, isAdmin: true })).toBe("/admin");
+  // /admin itself is the staff login screen; the dashboard sits behind it.
+  expect(resolveAuthenticatedDestination({ ...complete, isAdmin: true })).toBe("/admin/dashboard");
   // A moderator has admin.access but no admin dashboard — sending them to /admin
   // would bounce them straight back out of a tree they can't enter.
   expect(

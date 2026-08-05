@@ -6,12 +6,47 @@ const source = (path: string) => readFileSync(new URL(path, import.meta.url), "u
 test("the /admin tree gates on an admin-only permission, /moderator on staff access", () => {
   // canAccessStaffArea is admin.access, which moderators hold — using it to guard
   // /admin would put a moderator back inside the admin tree.
-  const admin = source("../routes/_authenticated/admin.tsx");
+  const admin = source("../routes/admin/_authed.tsx");
   expect(admin).toContain('hasPermission(viewer.roles, "admin.dashboard.view")');
   expect(admin).not.toContain("viewer.canAccessStaffArea");
 
-  const moderator = source("../routes/_authenticated/moderator.tsx");
+  const moderator = source("../routes/moderator/_authed.tsx");
   expect(moderator).toContain("viewer.canAccessStaffArea");
+
+  // Both trees sit outside /_authenticated, so a lapsed session lands on the
+  // staff login rather than the member one.
+  for (const tree of [admin, moderator]) {
+    expect(tree).toContain('redirect({ to: "/staff", replace: true })');
+  }
+});
+
+test("each login form refuses a sign-in belonging to the other tree", () => {
+  const hook = source("../hooks/use-login-redirect.ts");
+  // Both directions come off one flag, so neither form can quietly stop checking,
+  // and it is staff access — moderators belong on /staff too, not just admins.
+  expect(hook).toContain(
+    'tree === "staff" ? !viewer.canAccessStaffArea : viewer.canAccessStaffArea',
+  );
+  expect(hook).toContain("rejectWrongTreeLogin(queryClient, WRONG_TREE_NOTICE[tree])");
+  expect(source("../routes/login.tsx")).toContain('useLoginRedirect("member")');
+  expect(source("../routes/staff.tsx")).toContain('useLoginRedirect("staff")');
+  // OAuth returns bypass the login page entirely, so the callback checks too.
+  expect(source("../routes/auth/callback.tsx")).toContain(
+    "rejectWrongTreeLogin(context.queryClient, WRONG_TREE_NOTICE.member)",
+  );
+  // The rejection has to drop the session, not just redirect, or the form stays
+  // a working entry point into the tree it just refused.
+  expect(source("./staff-route.ts")).toContain("await supabase.auth.signOut()");
+});
+
+test("a suspended account is blocked in the member tree and both staff trees", () => {
+  for (const path of [
+    "../routes/_authenticated.tsx",
+    "../routes/admin/_authed.tsx",
+    "../routes/moderator/_authed.tsx",
+  ]) {
+    expect(source(path)).toContain("<SuspendedGate>");
+  }
 });
 
 test("moderation and support are mounted twice but implemented once", () => {
@@ -19,12 +54,13 @@ test("moderation and support are mounted twice but implemented once", () => {
     ["moderation", "ModerationPage"],
     ["support", "SupportPage"],
   ]) {
-    for (const tree of ["admin", "moderator"]) {
-      const route = source(`../routes/_authenticated/${tree}/${screen}.tsx`);
+    for (const dir of ["admin/_authed", "moderator/_authed"]) {
+      const routeId = `/${dir}`;
+      const route = source(`../routes/${dir}/${screen}.tsx`);
       // Each route file must delegate; a copy-pasted page body would drift.
       expect(route).toContain(`import { ${component} } from "@/components/staff/${screen}-page"`);
       expect(route).toContain(`component: ${component}`);
-      expect(route).toContain(`createFileRoute("/_authenticated/${tree}/${screen}")`);
+      expect(route).toContain(`createFileRoute("${routeId}/${screen}")`);
     }
   }
 });
