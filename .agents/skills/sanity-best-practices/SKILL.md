@@ -10,6 +10,7 @@ Comprehensive best practices and integration guides for Sanity development, main
 ## When to Apply
 
 Reference these guidelines when:
+
 - Setting up a new Sanity project or onboarding
 - Integrating Sanity with a frontend framework (Next.js, Nuxt, Astro, Remix, SvelteKit, Hydrogen)
 - Writing GROQ queries or optimizing performance
@@ -80,6 +81,7 @@ references/nextjs.md
 ```
 
 Each reference file contains:
+
 - Comprehensive topic or integration coverage
 - Incorrect and correct code examples
 - Decision matrices and workflow guidance
