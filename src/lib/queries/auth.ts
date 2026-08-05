@@ -11,7 +11,7 @@ import { profileQueryOptions } from "@/lib/queries/profile";
 import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 
 export type AuthenticatedDestination =
-  "/admin" | typeof MODERATOR_HOME | "/onboarding/style-profile" | "/dashboard";
+  "/admin/dashboard" | typeof MODERATOR_HOME | "/onboarding/style-profile" | "/dashboard";
 
 export interface AuthenticatedViewerState {
   isAdmin: boolean;
@@ -29,7 +29,7 @@ export function resolveAuthenticatedDestination(input: {
   isStyleProfileComplete: boolean;
 }): AuthenticatedDestination {
   // Only admins get the /admin tree; a moderator's home is the moderation queue.
-  if (input.isAdmin) return "/admin";
+  if (input.isAdmin) return "/admin/dashboard";
   if (input.canAccessStaffArea) return MODERATOR_HOME;
   if (!input.isStyleProfileComplete) return "/onboarding/style-profile";
   return "/dashboard";

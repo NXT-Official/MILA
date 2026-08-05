@@ -33,7 +33,7 @@ export const ROLE_PERMISSIONS = {
  * moderator stays on `/moderator/*`. `staffBase` decides which tree a viewer sees.
  */
 export const STAFF_ROUTE_PERMISSIONS = {
-  "/admin": "admin.dashboard.view",
+  "/admin/dashboard": "admin.dashboard.view",
   "/admin/members": "members.view",
   "/admin/subscription-plans": "subscriptionPlans.manage",
   "/admin/moderation": "moderation.view",
