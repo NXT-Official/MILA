@@ -21,9 +21,10 @@ One visual decision = one place in code. Today the same visual idea is retyped a
 - Exact repeated strings: `text-[10px] uppercase tracking-[0.25em] text-stone` ×9, `text-xs uppercase font-medium tracking-widest` ×10, `text-[10px] uppercase tracking-[0.42em] text-muted-foreground` ×4
 - Only one utility exists for this today: `.atelier-kicker` (23 uses)
 
-**2. Buttons.** `src/components/ui/button.tsx` has a solid `cva` with variants `primary|secondary|outline|ghost|editorial|destructive` and sizes `sm|md|lg|icon` — but the design's *actual* button is a pill with uppercase micro-tracking, which is not a variant. So callers override it by hand: `className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"` appears 5× (`routes/_authenticated/_app/dashboard.tsx:348,368,384,399`, `routes/_authenticated/_app/history.tsx:375,387`). Separately there are **113 raw `<button>` elements** across the app; many are pill-shaped chips duplicating `inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-porcelain/60 bg-background/60 backdrop-blur text-[10px] uppercase tracking-[0.22em] text-ink hover:border-porcelain transition-colors` (`components/layout/app-shell.tsx:143,154`).
+**2. Buttons.** `src/components/ui/button.tsx` has a solid `cva` with variants `primary|secondary|outline|ghost|editorial|destructive` and sizes `sm|md|lg|icon` — but the design's _actual_ button is a pill with uppercase micro-tracking, which is not a variant. So callers override it by hand: `className="rounded-full h-10 px-5 uppercase tracking-[0.2em] text-[11px]"` appears 5× (`routes/_authenticated/_app/dashboard.tsx:348,368,384,399`, `routes/_authenticated/_app/history.tsx:375,387`). Separately there are **113 raw `<button>` elements** across the app; many are pill-shaped chips duplicating `inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-porcelain/60 bg-background/60 backdrop-blur text-[10px] uppercase tracking-[0.22em] text-ink hover:border-porcelain transition-colors` (`components/layout/app-shell.tsx:143,154`).
 
 **3. Surfaces.** Four competing recipes for "a bordered panel":
+
 - `.atelier-card` / `.atelier-hairline-card` (defined in styles.css, 16 uses) = `rounded-card border border-line bg-surface shadow-paper`
 - the same thing typed raw: `rounded-card border border-border bg-card p-6 shadow-paper` ×3, `bg-card p-6 rounded-card border border-border shadow-paper space-y-6` ×3
 - glass: `rounded-3xl border border-porcelain/60 bg-background/70 backdrop-blur-xl shadow-atelier-soft` (`components/feed/post-canvas.tsx:12`), and near-misses at `feed.tsx:104`, `studio-camera-drawer.tsx:338`, `app-shell.tsx:122`, `admin-header.tsx:33`, `concierge-chat.tsx:384` — differing only in `/60` vs `/70` vs `/80` and `backdrop-blur` vs `-xl`
@@ -34,6 +35,7 @@ One visual decision = one place in code. Today the same visual idea is retyped a
 **5. Two naming systems.** `styles.css` `@layer components` defines both `mila-*` (`mila-page`, `mila-container`, `mila-panel`, `mila-focus-ring`, `mila-dark-glass`) and `atelier-*` (`atelier-page`, `atelier-card`, `atelier-hairline-card`, `atelier-hero-card`, `atelier-kicker`, `atelier-title`). Usage is lopsided — `mila-page` ×2, `mila-container` ×3, `mila-panel` ×2 vs `atelier-page` ×6, `atelier-card` ×16. Pick one prefix.
 
 Smaller exact duplicates worth folding in:
+
 - avatar disc: `size-{9,10} rounded-full border border-porcelain/60 bg-linear-to-br from-atelier-champagne/30 to-porcelain/20 flex items-center justify-center font-serif text-sm text-ink` (`app-shell.tsx:162`, `post-canvas.tsx:15`)
 - media frame: `relative mx-auto aspect-square w-full max-w-lg overflow-hidden rounded-card border border-border bg-card shadow-paper` ×4 (`dashboard/outfit-visual.tsx:22,37,48`, `dashboard/outfit-result-skeleton.tsx:36`) — plus a `max-w-128` variant of the same thing in `routes/_authenticated/_app/history.tsx`
 - `font-serif text-2xl tracking-tight leading-snug` ×5
@@ -43,7 +45,7 @@ Smaller exact duplicates worth folding in:
 ## Rules
 
 1. **No new dependencies.** Tailwind v4 + `cva` + `cn()` are already here; that is the whole toolkit.
-2. **Zero visual change.** This is a mechanical consolidation. If snapping a value to a token would shift pixels, snap it anyway *only* when the delta is ≤1 step (e.g. `tracking-[0.24em]` → the `0.25em` token) and list every such rounding in your final report. Never change colors, spacing, or layout to "improve" them.
+2. **Zero visual change.** This is a mechanical consolidation. If snapping a value to a token would shift pixels, snap it anyway _only_ when the delta is ≤1 step (e.g. `tracking-[0.24em]` → the `0.25em` token) and list every such rounding in your final report. Never change colors, spacing, or layout to "improve" them.
 3. **Prefer extending what exists over creating new things.** `Button`'s `cva` gets a `pill` variant, not a new `PillButton` component. `.atelier-card` already exists — replace the raw copies with it rather than inventing `.surface-card`.
 4. **CSS utility vs React component:** if it's pure styling with no behavior, make it a Tailwind v4 `@utility` in `styles.css`. Only make a React component when there is markup structure or behavior to share (avatar disc = component, micro-label = utility).
 5. **Don't build a token for a one-off.** A class string that appears once stays inline. Threshold: **3+ occurrences, or 2 occurrences in different feature areas**.
@@ -55,11 +57,12 @@ Smaller exact duplicates worth folding in:
 **Phase 1 — tokens.** In `src/styles.css` `@theme inline`, add the letter-spacing scale that the arbitrary values are groping toward, e.g. `--tracking-label: 0.2em; --tracking-label-wide: 0.25em; --tracking-label-xwide: 0.32em; --tracking-label-max: 0.42em`, and micro font sizes `--text-micro: 0.625rem /* 10px */; --text-nano: 0.5625rem /* 9px */; --text-label: 0.6875rem /* 11px */`. Map every existing arbitrary value to its nearest token and write the mapping table into the final report before editing anything.
 
 **Phase 2 — utilities.** Add Tailwind v4 `@utility` rules to `styles.css` for the recurring recipes. Suggested set (adjust to what the data actually supports):
+
 - `label` / `label-wide` / `label-xwide` — the uppercase micro-label at each tracking step; `.atelier-kicker` should be re-expressed on top of these, not duplicated
 - `surface-glass` — the blurred translucent panel, one canonical opacity
 - `media-frame` — the aspect-square bordered image frame
 - `row-action` — the full-width `justify-between` hover row
-Standardize `border-porcelain/*` to at most **two** opacities (a strong and a hairline) and note which uses you moved.
+  Standardize `border-porcelain/*` to at most **two** opacities (a strong and a hairline) and note which uses you moved.
 
 **Phase 3 — primitives.** Add to `button.tsx`'s `cva`: a `pill` variant (or `shape: "pill"`) carrying `rounded-full uppercase tracking-label` and an `xs`/`chip` size for the `h-9 px-3 text-[10px]` chip. Replace the 6 hand-overridden `<Button className="rounded-full h-10 px-5 …">` call sites. Then sweep the 113 raw `<button>` elements: convert the ones that are visually buttons/chips to `<Button>`; leave genuinely structural ones (card-sized click targets like `HistoryCard`, icon toggles already covered by `icon-button.tsx`) as raw elements but give them the shared utility class.
 

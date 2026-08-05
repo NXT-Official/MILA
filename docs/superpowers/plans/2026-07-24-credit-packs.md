@@ -21,9 +21,11 @@
 ### Task 1: Migration — `credit_packs` catalog table
 
 **Files:**
+
 - Create: `supabase/migrations/20260724150000_create_credit_packs.sql`
 
 **Interfaces:**
+
 - Produces: table `public.credit_packs` with columns `id, slug, title, description, price_amount, currency, credits, is_active, sort_order, paddle_product_id, paddle_price_id, archived_at, created_at, updated_at`. Consumed by Tasks 4, 5, 6, 7.
 
 - [ ] **Step 1: Write the migration**
@@ -107,9 +109,11 @@ git commit -m "feat: add credit_packs catalog table"
 ### Task 2: Migration — `credit_pack_purchases` ledger + `grant_ai_credits` RPC
 
 **Files:**
+
 - Create: `supabase/migrations/20260724160000_create_credit_pack_purchases.sql`
 
 **Interfaces:**
+
 - Consumes: `public.credit_packs(id)` from Task 1; `public.user_entitlements(ai_credits, credits_reset_at)` from the existing `20260724140000_add_credit_reset.sql`.
 - Produces: table `public.credit_pack_purchases`; RPC `grant_ai_credits(_user_id UUID, _daily_allowance INTEGER, _amount INTEGER) RETURNS INTEGER`. Consumed by Task 3.
 
@@ -229,11 +233,13 @@ git commit -m "feat: add credit_pack_purchases ledger and grant_ai_credits RPC"
 ### Task 3: `grantAiCredits` in `credits.server.ts`
 
 **Files:**
+
 - Modify: `src/lib/credits.server.ts`
 - Modify: `tests/helpers/memory-credit-store.ts`
 - Modify: `src/lib/credits.server.test.ts`
 
 **Interfaces:**
+
 - Consumes: `resolveDailyCreditAllowance` (already defined in this file, unexported, used internally — no export needed since `grantAiCredits` lives in the same file).
 - Produces: `export type GrantCreditStore = (userId: string, dailyAllowance: number, amount: number) => Promise<number>`; `export async function grantAiCredits(supabase: SupabaseClient, userId: string, amount: number, store: GrantCreditStore = supabaseGrantCreditStore): Promise<number>`. Consumed by Task 7.
 
@@ -371,9 +377,11 @@ git commit -m "feat: add grantAiCredits for one-time credit pack top-ups"
 ### Task 4: `src/lib/credit-packs.ts` — types and admin-input schemas
 
 **Files:**
+
 - Create: `src/lib/credit-packs.ts`
 
 **Interfaces:**
+
 - Consumes: `planSlugSchema`, `slugifyPlanTitle`, `formatPlanPrice`, `parsePriceToCents`, `centsToPriceInput` from `@/lib/subscription-plans` (pure formatting/validation helpers, reused as-is rather than duplicated — their behavior isn't plan-specific).
 - Produces: `interface CreditPack`, `type PublicCreditPack`, `const PUBLIC_PACK_COLUMNS`, `createCreditPackInputSchema`, `type CreateCreditPackInput`, `updateCreditPackInputSchema`, `type UpdateCreditPackInput`. Consumed by Tasks 5, 6, 9, 10.
 
@@ -456,9 +464,11 @@ git commit -m "feat: add credit pack types and admin input schemas"
 ### Task 5: `src/lib/credit-packs.functions.ts` — admin CRUD server functions
 
 **Files:**
+
 - Create: `src/lib/credit-packs.functions.ts`
 
 **Interfaces:**
+
 - Consumes: `assertAdmin`, `recordStaffAction` from `@/lib/admin.functions`; `createCreditPackInputSchema`, `updateCreditPackInputSchema`, `type CreditPack` from `@/lib/credit-packs` (Task 4); table `public.credit_packs` (Task 1).
 - Produces: `adminListCreditPacks`, `adminCreateCreditPack`, `adminUpdateCreditPack`, `adminSetCreditPackArchived`, `adminDeleteCreditPack` (all `createServerFn` instances). Consumed by Tasks 6, 9.
 
@@ -583,7 +593,7 @@ export const adminDeleteCreditPack = createServerFn({ method: "POST" })
   });
 ```
 
-There's no `*.functions.test.ts` for `subscription-plans.functions.ts` in this codebase either (it's exercised through the admin UI + manual QA, same as `subscriptions.functions.ts` which *does* have a test only because it wraps non-trivial Paddle-API branching logic — this file is straight CRUD with no branching worth isolating). Skipped for the same reason; covered by Task 9's manual QA pass.
+There's no `*.functions.test.ts` for `subscription-plans.functions.ts` in this codebase either (it's exercised through the admin UI + manual QA, same as `subscriptions.functions.ts` which _does_ have a test only because it wraps non-trivial Paddle-API branching logic — this file is straight CRUD with no branching worth isolating). Skipped for the same reason; covered by Task 9's manual QA pass.
 
 - [ ] **Step 2: Typecheck**
 
@@ -602,10 +612,12 @@ git commit -m "feat: add admin CRUD server functions for credit packs"
 ### Task 6: Query options + query keys
 
 **Files:**
+
 - Create: `src/lib/queries/credit-packs.ts`
 - Modify: `src/constants/query-keys.ts`
 
 **Interfaces:**
+
 - Consumes: `adminListCreditPacks` (Task 5), `PUBLIC_PACK_COLUMNS`, `type PublicCreditPack` (Task 4).
 - Produces: `adminCreditPacksQueryOptions()`, `publicCreditPacksQueryOptions()`; `queryKeys.adminCreditPacks`, `queryKeys.creditPacks`. Consumed by Tasks 9, 10.
 
@@ -670,10 +682,12 @@ git commit -m "feat: add credit pack query options"
 ### Task 7: Webhook handling — `applyPaddleCreditPackEvent`
 
 **Files:**
+
 - Modify: `src/lib/paddle-webhook.server.ts`
 - Modify: `src/lib/paddle-webhook.server.test.ts`
 
 **Interfaces:**
+
 - Consumes: `grantAiCredits` from `@/lib/credits.server` (Task 3); tables `credit_packs`, `credit_pack_purchases` (Tasks 1, 2).
 - Produces: `type PaddleTransactionWebhookEvent`; `async function applyPaddleCreditPackEvent(db: MilaSupabaseClient, event: PaddleTransactionWebhookEvent, grant?: typeof grantAiCredits): Promise<void>`. Consumed by Task 8.
 
@@ -843,9 +857,11 @@ git commit -m "feat: grant ai credits on completed credit pack purchases"
 ### Task 8: Wire `transaction.completed` into the webhook route
 
 **Files:**
+
 - Modify: `src/routes/api/webhooks/paddle.ts`
 
 **Interfaces:**
+
 - Consumes: `applyPaddleCreditPackEvent`, `type PaddleTransactionWebhookEvent` (Task 7); `applyPaddleSubscriptionEvent`, `type PaddleSubscriptionWebhookEvent`, `verifyPaddleSignature` (existing).
 
 - [ ] **Step 1: Replace the file contents**
@@ -922,6 +938,7 @@ git commit -m "feat: route transaction.completed webhooks to credit pack handler
 ### Task 9: Admin UI — credit pack catalog management
 
 **Files:**
+
 - Create: `src/components/admin/credit-pack-columns.tsx`
 - Create: `src/components/admin/credit-pack-form-dialog.tsx`
 - Create: `src/routes/_authenticated/admin/credit-packs.tsx`
@@ -930,6 +947,7 @@ git commit -m "feat: route transaction.completed webhooks to credit pack handler
 - Modify: `src/components/admin/admin-header.tsx`
 
 **Interfaces:**
+
 - Consumes: `CreditPack` (Task 4), `adminCreditPacksQueryOptions` (Task 6), `adminCreateCreditPack`/`adminUpdateCreditPack`/`adminSetCreditPackArchived`/`adminDeleteCreditPack` (Task 5), `formatPlanPrice`/`parsePriceToCents`/`centsToPriceInput`/`planSlugSchema`/`slugifyPlanTitle` from `@/lib/subscription-plans` (reused, not duplicated).
 - Reuses the existing `"subscriptionPlans.manage"` permission rather than adding a new one — it's the same "billing catalog" concern an admin who can edit membership plans should also be trusted with, and inventing a second permission for a 2-item pack catalog would be pure ceremony.
 
@@ -1057,7 +1075,11 @@ export function getCreditPackColumns({
                 <DropdownMenuItem onClick={() => onArchive(pack, !archived)}>
                   {archived ? (
                     <>
-                      <ArchiveRestore className="mr-2 size-4" strokeWidth={1.75} aria-hidden="true" />
+                      <ArchiveRestore
+                        className="mr-2 size-4"
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                      />
                       Restore
                     </>
                   ) : (
@@ -1273,24 +1295,47 @@ export function CreditPackFormDialog({
             />
           </FormField>
 
-          <FormField label="Description" htmlFor="pack-description" error={errors.description?.message}>
+          <FormField
+            label="Description"
+            htmlFor="pack-description"
+            error={errors.description?.message}
+          >
             <Textarea id="pack-description" rows={2} {...register("description")} />
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Price" htmlFor="pack-price" required error={errors.price?.message}>
-              <Input id="pack-price" inputMode="decimal" placeholder="1.99" {...register("price")} />
+              <Input
+                id="pack-price"
+                inputMode="decimal"
+                placeholder="1.99"
+                {...register("price")}
+              />
             </FormField>
-            <FormField label="Currency" htmlFor="pack-currency" required error={errors.currency?.message}>
+            <FormField
+              label="Currency"
+              htmlFor="pack-currency"
+              required
+              error={errors.currency?.message}
+            >
               <Input id="pack-currency" maxLength={3} {...register("currency")} />
             </FormField>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Credits" htmlFor="pack-credits" required error={errors.credits?.message}>
+            <FormField
+              label="Credits"
+              htmlFor="pack-credits"
+              required
+              error={errors.credits?.message}
+            >
               <Input id="pack-credits" type="number" min={1} {...register("credits")} />
             </FormField>
-            <FormField label="Sort Order" htmlFor="pack-sort-order" error={errors.sort_order?.message}>
+            <FormField
+              label="Sort Order"
+              htmlFor="pack-sort-order"
+              error={errors.sort_order?.message}
+            >
               <Input id="pack-sort-order" type="number" min={0} {...register("sort_order")} />
             </FormField>
           </div>
@@ -1510,11 +1555,13 @@ git commit -m "feat: add admin credit pack catalog management"
 ### Task 10: Self-serve purchase — `UpgradeSlotsDialog`
 
 **Files:**
+
 - Modify: `src/components/dashboard/upgrade-slots-dialog.tsx`
 - Modify: `src/components/layout/app-shell.tsx`
 - Modify: `src/routes/_authenticated/_app/dashboard.tsx`
 
 **Interfaces:**
+
 - Consumes: `publicCreditPacksQueryOptions` (Task 6), `usePaddleCheckout` (existing, unchanged — its `openCheckout(plan, user)` param is typed as `Pick<PublicSubscriptionPlan, "paddle_price_id">`, which a `PublicCreditPack` satisfies structurally), `formatPlanPrice` from `@/lib/subscription-plans`.
 
 - [ ] **Step 1: Rewrite the dialog**
@@ -1605,33 +1652,33 @@ export function UpgradeSlotsDialog({
 In `src/components/layout/app-shell.tsx`, replace:
 
 ```tsx
-        <UpgradeSlotsDialog
-          open={creditPaywallOpen}
-          onOpenChange={setCreditPaywallOpen}
-          variant="credits"
-        />
+<UpgradeSlotsDialog
+  open={creditPaywallOpen}
+  onOpenChange={setCreditPaywallOpen}
+  variant="credits"
+/>
 ```
 
 with:
 
 ```tsx
-        <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} user={user} />
+<UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} user={user} />
 ```
 
 In `src/routes/_authenticated/_app/dashboard.tsx`, replace:
 
 ```tsx
-      <UpgradeSlotsDialog
-        open={creditPaywallOpen}
-        onOpenChange={setCreditPaywallOpen}
-        variant="credits"
-      />
+<UpgradeSlotsDialog
+  open={creditPaywallOpen}
+  onOpenChange={setCreditPaywallOpen}
+  variant="credits"
+/>
 ```
 
 with:
 
 ```tsx
-      <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} user={user} />
+<UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} user={user} />
 ```
 
 (Both files already have `const { user } = useAuth();` in scope — no new import needed.)
@@ -1644,6 +1691,7 @@ Expected: no errors — confirms `PublicCreditPack` structurally satisfies `open
 - [ ] **Step 4: Manual QA (Paddle sandbox)**
 
 Using the `paddle:sandbox-testing` conventions already established in this project (sandbox environment, test cards):
+
 1. As an admin, create an active credit pack in `/admin/credit-packs`, then create a matching one-time Price in the Paddle sandbox dashboard and paste its price ID into `credit_packs.paddle_price_id` directly (Supabase Studio).
 2. As a test user, deplete today's AI credits until the paywall dialog opens.
 3. Confirm the pack now renders as a real, clickable button (not the old disabled stub) with its live price.

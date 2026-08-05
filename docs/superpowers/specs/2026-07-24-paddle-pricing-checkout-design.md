@@ -17,6 +17,7 @@ that button to a real Paddle Checkout — not building new pricing UI.
 ## Scope
 
 In scope:
+
 - `@paddle/paddle-js` overlay checkout wired to the existing "Choose Plan" button
 - `VITE_PADDLE_CLIENT_TOKEN` / `VITE_PADDLE_ENV` env vars (client token created via the
   Paddle API, not the dashboard)
@@ -28,6 +29,7 @@ In scope:
   badge picks up the entitlement change once the webhook lands
 
 Out of scope (future sub-projects):
+
 - Showing "your current plan" / blocking re-purchase of an already-active plan — belongs to
   a subscription-update sub-project, which will need to read `subscriptions` state properly
   anyway (upgrade/downgrade, proration) rather than a half-built guard here

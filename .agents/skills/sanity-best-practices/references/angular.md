@@ -43,11 +43,11 @@ Configure environment files for Sanity credentials:
 export const environment = {
   production: false,
   sanity: {
-    projectId: 'your-project-id',
-    dataset: 'production',
-    apiVersion: '2025-05-01',
+    projectId: "your-project-id",
+    dataset: "production",
+    apiVersion: "2025-05-01",
   },
-}
+};
 ```
 
 ```typescript
@@ -55,11 +55,11 @@ export const environment = {
 export const environment = {
   production: true,
   sanity: {
-    projectId: 'your-project-id',
-    dataset: 'production',
-    apiVersion: '2025-05-01',
+    projectId: "your-project-id",
+    dataset: "production",
+    apiVersion: "2025-05-01",
   },
-}
+};
 ```
 
 > There is no Angular-specific Sanity SDK. Use `@sanity/client` directly, wrapped in an Angular service.
@@ -70,15 +70,15 @@ Sanity TypeGen generates TypeScript types from your schema and GROQ queries. In 
 
 ```typescript
 // studio/sanity.cli.ts
-import { defineCliConfig } from 'sanity/cli'
+import { defineCliConfig } from "sanity/cli";
 
 export default defineCliConfig({
   typegen: {
     enabled: true,
-    path: '../angular-app/src/**/*.ts',
-    generates: '../angular-app/sanity.types.ts',
+    path: "../angular-app/src/**/*.ts",
+    generates: "../angular-app/sanity.types.ts",
   },
-})
+});
 ```
 
 The remaining defaults (`overloadClientMethods: true`, `schema: "schema.json"`) work as-is. Include the generated types file in `angular-app/tsconfig.json` (usually covered by `"include": ["src/**/*.ts", "sanity.types.ts"]`). See `typegen.md` for the full TypeGen workflow, git strategy, and configuration options.
@@ -88,16 +88,21 @@ The remaining defaults (`overloadClientMethods: true`, `schema: "schema.json"`) 
 Create an injectable service wrapping `@sanity/client` and `@sanity/image-url`:
 
 ```typescript
-import { Injectable } from '@angular/core'
-import { createClient, type ClientReturn, type QueryParams, type SanityClient } from '@sanity/client'
-import imageUrlBuilder, { type ImageUrlBuilder } from '@sanity/image-url'
-import type { SanityImageSource } from '@sanity/image-url/lib/types/types'
-import { environment } from '../environments/environment'
+import { Injectable } from "@angular/core";
+import {
+  createClient,
+  type ClientReturn,
+  type QueryParams,
+  type SanityClient,
+} from "@sanity/client";
+import imageUrlBuilder, { type ImageUrlBuilder } from "@sanity/image-url";
+import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
+import { environment } from "../environments/environment";
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class SanityService {
-  private client: SanityClient
-  private builder: ImageUrlBuilder
+  private client: SanityClient;
+  private builder: ImageUrlBuilder;
 
   constructor() {
     this.client = createClient({
@@ -105,17 +110,17 @@ export class SanityService {
       dataset: environment.sanity.dataset,
       apiVersion: environment.sanity.apiVersion,
       useCdn: true,
-    })
-    this.builder = imageUrlBuilder(this.client)
+    });
+    this.builder = imageUrlBuilder(this.client);
   }
 
   // ClientReturn resolves TypeGen's declaration-merged overloads for defineQuery strings
   fetch<Query extends string>(query: Query, params?: QueryParams): Promise<ClientReturn<Query>> {
-    return this.client.fetch(query, params)
+    return this.client.fetch(query, params);
   }
 
   getImageUrlBuilder(source: SanityImageSource) {
-    return this.builder.image(source)
+    return this.builder.image(source);
   }
 }
 ```
@@ -129,16 +134,16 @@ For preview/draft content, create a second client instance with a token and `use
 The `resource` API works natively with promises and integrates with Angular signals:
 
 ```typescript
-import { Component, input, resource, inject } from '@angular/core'
-import { defineQuery } from 'groq'
-import { SanityService } from '../sanity.service'
+import { Component, input, resource, inject } from "@angular/core";
+import { defineQuery } from "groq";
+import { SanityService } from "../sanity.service";
 
 const POST_QUERY = defineQuery(`*[_type == "post" && slug.current == $slug][0]{
   title, body, mainImage, publishedAt
-}`)
+}`);
 
 @Component({
-  selector: 'app-post',
+  selector: "app-post",
   standalone: true,
   template: `
     @if (post.value(); as p) {
@@ -152,13 +157,13 @@ const POST_QUERY = defineQuery(`*[_type == "post" && slug.current == $slug][0]{
   `,
 })
 export default class PostComponent {
-  slug = input.required<string>()
-  private sanity = inject(SanityService)
+  slug = input.required<string>();
+  private sanity = inject(SanityService);
 
   post = resource({
     params: () => ({ slug: this.slug() }),
     loader: ({ params }) => this.sanity.fetch(POST_QUERY, params),
-  })
+  });
 }
 ```
 
@@ -171,23 +176,23 @@ The `resource` automatically re-fetches when `slug` changes and exposes `value()
 For teams using RxJS patterns or needing operators like `retry` and `debounceTime`:
 
 ```typescript
-import { Component, input, inject } from '@angular/core'
-import { rxResource } from '@angular/core/rxjs-interop'
-import { defineQuery } from 'groq'
-import { from } from 'rxjs'
-import { SanityService } from '../sanity.service'
+import { Component, input, inject } from "@angular/core";
+import { rxResource } from "@angular/core/rxjs-interop";
+import { defineQuery } from "groq";
+import { from } from "rxjs";
+import { SanityService } from "../sanity.service";
 
-const POST_QUERY = defineQuery(`*[_type == "post" && slug.current == $slug][0]`)
+const POST_QUERY = defineQuery(`*[_type == "post" && slug.current == $slug][0]`);
 
-@Component({ /* ... */ })
+@Component({/* ... */})
 export default class PostComponent {
-  slug = input.required<string>()
-  private sanity = inject(SanityService)
+  slug = input.required<string>();
+  private sanity = inject(SanityService);
 
   post = rxResource({
     params: () => ({ slug: this.slug() }),
     loader: ({ params }) => from(this.sanity.fetch(POST_QUERY, params)),
-  })
+  });
 }
 ```
 
@@ -196,18 +201,18 @@ export default class PostComponent {
 For apps not yet on Angular 19, convert observables to signals:
 
 ```typescript
-import { Component, inject } from '@angular/core'
-import { toSignal } from '@angular/core/rxjs-interop'
-import { defineQuery } from 'groq'
-import { from } from 'rxjs'
-import { SanityService } from '../sanity.service'
+import { Component, inject } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { defineQuery } from "groq";
+import { from } from "rxjs";
+import { SanityService } from "../sanity.service";
 
-const POSTS_QUERY = defineQuery(`*[_type == "post"] | order(publishedAt desc)`)
+const POSTS_QUERY = defineQuery(`*[_type == "post"] | order(publishedAt desc)`);
 
-@Component({ /* ... */ })
+@Component({/* ... */})
 export class HomeComponent {
-  private sanity = inject(SanityService)
-  posts = toSignal(from(this.sanity.fetch(POSTS_QUERY)), { initialValue: [] })
+  private sanity = inject(SanityService);
+  posts = toSignal(from(this.sanity.fetch(POSTS_QUERY)), { initialValue: [] });
 }
 ```
 
@@ -215,11 +220,11 @@ export class HomeComponent {
 
 ### Choosing a pattern
 
-| Pattern | Angular Version | Reactivity | Best For |
-|---|---|---|---|
-| `resource` | 19+ | Signal-based, auto re-fetch | New projects, dynamic queries |
-| `rxResource` | 19+ | RxJS + signals | Teams using RxJS operators |
-| `toSignal` | 17+ | One-shot conversion | Static queries, legacy apps |
+| Pattern      | Angular Version | Reactivity                  | Best For                      |
+| ------------ | --------------- | --------------------------- | ----------------------------- |
+| `resource`   | 19+             | Signal-based, auto re-fetch | New projects, dynamic queries |
+| `rxResource` | 19+             | RxJS + signals              | Teams using RxJS operators    |
+| `toSignal`   | 17+             | One-shot conversion         | Static queries, legacy apps   |
 
 ## 4. Routing
 
@@ -227,31 +232,29 @@ Use lazy-loaded routes with `withComponentInputBinding()` so route params bind d
 
 ```typescript
 // app.config.ts
-import { provideRouter, withComponentInputBinding } from '@angular/router'
-import { routes } from './app.routes'
+import { provideRouter, withComponentInputBinding } from "@angular/router";
+import { routes } from "./app.routes";
 
 export const appConfig = {
-  providers: [
-    provideRouter(routes, withComponentInputBinding()),
-  ],
-}
+  providers: [provideRouter(routes, withComponentInputBinding())],
+};
 ```
 
 ```typescript
 // app.routes.ts
-import { Routes } from '@angular/router'
+import { Routes } from "@angular/router";
 
 export const routes: Routes = [
   {
-    path: '',
-    loadComponent: () => import('./home/home.component'),
-    pathMatch: 'full',
+    path: "",
+    loadComponent: () => import("./home/home.component"),
+    pathMatch: "full",
   },
   {
-    path: 'post/:slug',
-    loadComponent: () => import('./post/post.component'),
+    path: "post/:slug",
+    loadComponent: () => import("./post/post.component"),
   },
-]
+];
 ```
 
 With `withComponentInputBinding()`, the `:slug` route param is automatically bound to `slug = input.required<string>()` on the component — no need to inject `ActivatedRoute`.
@@ -261,31 +264,31 @@ With `withComponentInputBinding()`, the `:slug` route param is automatically bou
 ### A. `@portabletext/to-html` with Angular Pipe (Recommended)
 
 ```typescript
-import { Pipe, PipeTransform, inject } from '@angular/core'
-import { toHTML, type PortableTextComponents } from '@portabletext/to-html'
-import type { PortableTextBlock } from '@portabletext/types'
-import { SanityService } from '../sanity.service'
+import { Pipe, PipeTransform, inject } from "@angular/core";
+import { toHTML, type PortableTextComponents } from "@portabletext/to-html";
+import type { PortableTextBlock } from "@portabletext/types";
+import { SanityService } from "../sanity.service";
 
-@Pipe({ name: 'portableTextToHTML', standalone: true })
+@Pipe({ name: "portableTextToHTML", standalone: true })
 export class PortableTextToHTMLPipe implements PipeTransform {
-  private sanity = inject(SanityService)
+  private sanity = inject(SanityService);
 
   private components: PortableTextComponents = {
     types: {
       image: ({ value }) => {
-        const url = this.sanity.getImageUrlBuilder(value).width(800).auto('format').url()
-        return `<img src="${url}" alt="${value.alt || ''}" loading="lazy" />`
+        const url = this.sanity.getImageUrlBuilder(value).width(800).auto("format").url();
+        return `<img src="${url}" alt="${value.alt || ""}" loading="lazy" />`;
       },
     },
     marks: {
       link: ({ children, value }) =>
         `<a href="${value.href}" rel="noopener noreferrer">${children}</a>`,
     },
-  }
+  };
 
   transform(value: PortableTextBlock[] | undefined): string {
-    if (!value) return ''
-    return toHTML(value, { components: this.components })
+    if (!value) return "";
+    return toHTML(value, { components: this.components });
   }
 }
 ```
@@ -307,19 +310,19 @@ See `portable-text.md` for Portable Text schema design and serialization rules.
 Create a pipe wrapping `@sanity/image-url`:
 
 ```typescript
-import { Pipe, PipeTransform, inject } from '@angular/core'
-import type { SanityImageSource } from '@sanity/image-url/lib/types/types'
-import { SanityService } from '../sanity.service'
+import { Pipe, PipeTransform, inject } from "@angular/core";
+import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
+import { SanityService } from "../sanity.service";
 
-@Pipe({ name: 'sanityImage', standalone: true })
+@Pipe({ name: "sanityImage", standalone: true })
 export class SanityImagePipe implements PipeTransform {
-  private sanity = inject(SanityService)
+  private sanity = inject(SanityService);
 
   transform(value: SanityImageSource | undefined, width?: number): string | null {
-    if (!value) return null
-    const builder = this.sanity.getImageUrlBuilder(value)
-    if (width) return builder.width(width).auto('format').url()
-    return builder.auto('format').url()
+    if (!value) return null;
+    const builder = this.sanity.getImageUrlBuilder(value);
+    if (width) return builder.width(width).auto("format").url();
+    return builder.auto("format").url();
   }
 }
 ```
@@ -393,9 +396,9 @@ When building with Sanity, leverage these Angular 19+ features:
 
 ```html
 @for (post of posts.value(); track post._id) {
-  <app-post-card [post]="post" />
+<app-post-card [post]="post" />
 } @empty {
-  <p>No posts found.</p>
+<p>No posts found.</p>
 }
 ```
 
@@ -403,9 +406,9 @@ When building with Sanity, leverage these Angular 19+ features:
 
 ```html
 @defer (on viewport) {
-  <app-comments [postId]="post._id" />
+<app-comments [postId]="post._id" />
 } @placeholder {
-  <p>Scroll to see comments…</p>
+<p>Scroll to see comments…</p>
 }
 ```
 
@@ -418,65 +421,70 @@ Angular 17+ includes built-in SSR support (replacing Angular Universal):
 
 ```typescript
 // app.config.server.ts
-import { provideServerRendering } from '@angular/platform-server'
-import { provideClientHydration } from '@angular/platform-browser'
+import { provideServerRendering } from "@angular/platform-server";
+import { provideClientHydration } from "@angular/platform-browser";
 
 export const serverConfig = {
-  providers: [
-    provideServerRendering(),
-    provideClientHydration(),
-  ],
-}
+  providers: [provideServerRendering(), provideClientHydration()],
+};
 ```
 
 Key considerations for Sanity + Angular SSR:
 
-| Feature | Details |
-|---|---|
-| **Hydration** | `provideClientHydration()` preserves server-rendered DOM. The client reuses it instead of re-rendering. |
+| Feature                 | Details                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Hydration**           | `provideClientHydration()` preserves server-rendered DOM. The client reuses it instead of re-rendering.                               |
 | **HTTP Transfer Cache** | Only works with Angular's `HttpClient`. Since `@sanity/client` uses its own HTTP transport, use `TransferState` manually (see below). |
-| **Prerendering** | Use `getPrerenderParams` in route config to generate static pages at build time. |
+| **Prerendering**        | Use `getPrerenderParams` in route config to generate static pages at build time.                                                      |
 
 ### Transfer State for `@sanity/client`
 
 Angular's built-in HTTP Transfer Cache does not cover `@sanity/client` requests. Without manual transfer, the client re-fetches every query during hydration. Add `TransferState` to the service from Section 2:
 
 ```typescript
-import { Injectable, inject, PLATFORM_ID, makeStateKey, TransferState } from '@angular/core'
-import { isPlatformBrowser, isPlatformServer } from '@angular/common'
-import { createClient, type ClientReturn, type QueryParams, type SanityClient } from '@sanity/client'
+import { Injectable, inject, PLATFORM_ID, makeStateKey, TransferState } from "@angular/core";
+import { isPlatformBrowser, isPlatformServer } from "@angular/common";
+import {
+  createClient,
+  type ClientReturn,
+  type QueryParams,
+  type SanityClient,
+} from "@sanity/client";
 
 async function hashQuery(query: string, params?: QueryParams): Promise<string> {
-  const input = query + JSON.stringify(params ?? {})
-  const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
-  return Array.from(new Uint8Array(buffer), b => b.toString(16).padStart(2, '0')).join('')
+  const input = query + JSON.stringify(params ?? {});
+  const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 export class SanityService {
-  private client: SanityClient
-  private transferState = inject(TransferState)
-  private platformId = inject(PLATFORM_ID)
+  private client: SanityClient;
+  private transferState = inject(TransferState);
+  private platformId = inject(PLATFORM_ID);
 
-  async fetch<Query extends string>(query: Query, params?: QueryParams): Promise<ClientReturn<Query>> {
+  async fetch<Query extends string>(
+    query: Query,
+    params?: QueryParams,
+  ): Promise<ClientReturn<Query>> {
     // The key type includes `null` so `get(key, null)` type-checks against
     // Angular's `get<T>(key: StateKey<T>, defaultValue: T): T` signature.
-    const key = makeStateKey<ClientReturn<Query> | null>(await hashQuery(query, params))
+    const key = makeStateKey<ClientReturn<Query> | null>(await hashQuery(query, params));
 
     if (isPlatformBrowser(this.platformId)) {
-      const cached = this.transferState.get(key, null)
+      const cached = this.transferState.get(key, null);
       if (cached !== null) {
-        this.transferState.remove(key)
-        return cached
+        this.transferState.remove(key);
+        return cached;
       }
     }
 
-    const result = await this.client.fetch(query, params)
+    const result = await this.client.fetch(query, params);
 
     if (isPlatformServer(this.platformId)) {
-      this.transferState.set(key, result)
+      this.transferState.set(key, result);
     }
 
-    return result
+    return result;
   }
 }
 ```
@@ -487,21 +495,26 @@ Prerendering dynamic routes:
 
 ```typescript
 // app.routes.server.ts
-import { RenderMode, ServerRoute } from '@angular/ssr'
+import { RenderMode, ServerRoute } from "@angular/ssr";
 
 export const serverRoutes: ServerRoute[] = [
   {
-    path: 'post/:slug',
+    path: "post/:slug",
     renderMode: RenderMode.Prerender,
     async getPrerenderParams() {
       // Fetch all slugs from Sanity at build time
-      const client = createClient({ projectId: '...', dataset: '...', apiVersion: '...', useCdn: true })
-      const slugs = await client.fetch<string[]>(`*[_type == "post"].slug.current`)
-      return slugs.map((slug) => ({ slug }))
+      const client = createClient({
+        projectId: "...",
+        dataset: "...",
+        apiVersion: "...",
+        useCdn: true,
+      });
+      const slugs = await client.fetch<string[]>(`*[_type == "post"].slug.current`);
+      return slugs.map((slug) => ({ slug }));
     },
   },
-  { path: '**', renderMode: RenderMode.Server },
-]
+  { path: "**", renderMode: RenderMode.Server },
+];
 ```
 
 ❌ **Bad:** Using `isPlatformBrowser()` in templates to conditionally render content — causes hydration mismatch.
@@ -517,10 +530,10 @@ export const serverRoutes: ServerRoute[] = [
 For draft content preview, create a separate preview client with an API token:
 
 ```typescript
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class SanityService {
-  private client: SanityClient
-  private previewClient: SanityClient
+  private client: SanityClient;
+  private previewClient: SanityClient;
 
   constructor() {
     this.client = createClient({
@@ -528,18 +541,22 @@ export class SanityService {
       dataset: environment.sanity.dataset,
       apiVersion: environment.sanity.apiVersion,
       useCdn: true,
-    })
+    });
 
     this.previewClient = this.client.withConfig({
       useCdn: false,
       token: environment.sanity.previewToken, // Server-side only!
-      perspective: 'drafts',
-    })
+      perspective: "drafts",
+    });
   }
 
-  fetch<Query extends string>(query: Query, params?: QueryParams, preview = false): Promise<ClientReturn<Query>> {
-    const client = preview ? this.previewClient : this.client
-    return client.fetch(query, params)
+  fetch<Query extends string>(
+    query: Query,
+    params?: QueryParams,
+    preview = false,
+  ): Promise<ClientReturn<Query>> {
+    const client = preview ? this.previewClient : this.client;
+    return client.fetch(query, params);
   }
 }
 ```
@@ -554,13 +571,13 @@ The community library `@limitless-angular/sanity` provides experimental Visual E
 
 Common errors when integrating Angular with Sanity:
 
-| Error | Cause | Solution |
-|---|---|---|
-| `401 Unauthorized` | Invalid or missing API token | Verify token in [Sanity Manage](https://www.sanity.io/manage). Ensure it has correct permissions. |
-| `403 Forbidden` | CORS origin not allowed | Add your Angular dev/production URL to CORS origins in [Sanity Manage](https://www.sanity.io/manage). |
-| `422 Invalid query` | GROQ syntax error | Test queries in Vision plugin or Sanity's GROQ playground. See `groq.md`. |
-| Hydration mismatch | Conditional rendering based on platform | Use `@defer` or `afterNextRender()` instead of `isPlatformBrowser()` checks. |
-| Empty response | Missing dataset or wrong `apiVersion` | Verify environment config. Use a date-based `apiVersion` (e.g., `'2025-05-01'`). |
-| Images not loading | Missing `@sanity/image-url` setup | Ensure `getImageUrlBuilder` is called with a valid image reference. See `image.md`. |
+| Error               | Cause                                   | Solution                                                                                              |
+| ------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `401 Unauthorized`  | Invalid or missing API token            | Verify token in [Sanity Manage](https://www.sanity.io/manage). Ensure it has correct permissions.     |
+| `403 Forbidden`     | CORS origin not allowed                 | Add your Angular dev/production URL to CORS origins in [Sanity Manage](https://www.sanity.io/manage). |
+| `422 Invalid query` | GROQ syntax error                       | Test queries in Vision plugin or Sanity's GROQ playground. See `groq.md`.                             |
+| Hydration mismatch  | Conditional rendering based on platform | Use `@defer` or `afterNextRender()` instead of `isPlatformBrowser()` checks.                          |
+| Empty response      | Missing dataset or wrong `apiVersion`   | Verify environment config. Use a date-based `apiVersion` (e.g., `'2025-05-01'`).                      |
+| Images not loading  | Missing `@sanity/image-url` setup       | Ensure `getImageUrlBuilder` is called with a valid image reference. See `image.md`.                   |
 
 For GROQ query patterns and best practices, see `groq.md`. For schema design, see `schema.md`.

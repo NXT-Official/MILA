@@ -23,9 +23,11 @@
 ### Task 1: `subscriptions` table + `profiles.paddle_customer_id` migration
 
 **Files:**
+
 - Create: `supabase/migrations/<timestamp>_create_subscriptions.sql`
 
 **Interfaces:**
+
 - Produces: table `public.subscriptions(id, user_id, plan_id, paddle_subscription_id, paddle_customer_id, status, current_period_end, cancel_at_period_end, created_at, updated_at)`; column `public.profiles.paddle_customer_id`.
 
 **Context:** `supabase migration list` shows the remote migration-history table is out of sync with reality — six local migrations (`20260713075119` through `20260724120000`) already ran against the live database (their tables/columns exist — verified directly via the service-role client) but aren't recorded as applied. Running `db push` as-is would try to replay all six `CREATE TABLE`s and fail. Repair the history first so `db push` only pushes what's actually new.
@@ -33,30 +35,38 @@
 - [ ] **Step 1: Confirm the drift and repair the migration history**
 
 Run:
+
 ```bash
 npx --yes supabase migration list
 ```
+
 Expected: the six migrations from `20260713075119` to `20260724120000` show an empty `remote` column.
 
 Run:
+
 ```bash
 npx --yes supabase migration repair --status applied \
   20260713075119 20260713120000 20260714090000 20260715120000 20260719120000 20260724120000
 ```
+
 Expected: `Repaired migration history: ... applied`. This only edits the CLI's bookkeeping table — it does not touch schema.
 
 Run:
+
 ```bash
 npx --yes supabase db push --dry-run
 ```
+
 Expected: `Would push these migrations:` with an empty list (nothing pending).
 
 - [ ] **Step 2: Create the migration file via the CLI**
 
 Run:
+
 ```bash
 npx --yes supabase migration new create_subscriptions
 ```
+
 Expected: creates `supabase/migrations/<timestamp>_create_subscriptions.sql` (an empty scaffold). Note the exact filename it prints — later steps refer to it as `<migration_file>`.
 
 - [ ] **Step 3: Write the migration**
@@ -116,20 +126,25 @@ CREATE POLICY "Users view their own subscriptions" ON public.subscriptions
 - [ ] **Step 4: Preview, then push**
 
 Run:
+
 ```bash
 npx --yes supabase db push --dry-run
 ```
+
 Expected: `Would push these migrations:` listing only `<migration_file>`.
 
 Run:
+
 ```bash
 npx --yes supabase db push
 ```
+
 Expected: `Applying migration <migration_file>...` then `Finished supabase db push.`
 
 - [ ] **Step 5: Verify against the live database**
 
 Run:
+
 ```bash
 set -a && source .env && set +a && node -e '
 const { createClient } = require("@supabase/supabase-js");
@@ -144,6 +159,7 @@ db.from("profiles").select("paddle_customer_id").limit(1).then(({ error }) => {
 });
 '
 ```
+
 Expected: both `... OK` lines print, no errors.
 
 - [ ] **Step 6: Commit**
@@ -158,10 +174,12 @@ git commit -m "feat: add subscriptions table and profiles.paddle_customer_id"
 ### Task 2: Update generated Supabase types
 
 **Files:**
+
 - Modify: `src/integrations/supabase/types.ts:296` (insert `paddle_customer_id` into `profiles`)
 - Modify: `src/integrations/supabase/types.ts:428` (insert new `subscriptions` entry after `subscription_plans`)
 
 **Interfaces:**
+
 - Consumes: schema from Task 1.
 - Produces: `Database["public"]["Tables"]["subscriptions"]` and `Database["public"]["Tables"]["profiles"]["Row"].paddle_customer_id`, used by Task 4's `MilaSupabaseClient`.
 
@@ -292,9 +310,11 @@ Immediately after the `subscription_plans` block's closing `};` (right before th
 - [ ] **Step 3: Typecheck**
 
 Run:
+
 ```bash
 bun run typecheck
 ```
+
 Expected: no new errors referencing `types.ts`, `profiles`, or `subscriptions`.
 
 - [ ] **Step 4: Commit**
@@ -309,10 +329,12 @@ git commit -m "feat: add subscriptions and profiles.paddle_customer_id to genera
 ### Task 3: Signature verification
 
 **Files:**
+
 - Create: `src/lib/paddle-webhook.server.ts`
 - Test: `src/lib/paddle-webhook.server.test.ts`
 
 **Interfaces:**
+
 - Produces: `export function verifyPaddleSignature(rawBody: string, header: string | null, secret: string): boolean`
 
 - [ ] **Step 1: Write the failing tests**
@@ -381,7 +403,11 @@ function parseSignatureHeader(header: string): { ts?: string; h1?: string } {
   return parsed;
 }
 
-export function verifyPaddleSignature(rawBody: string, header: string | null, secret: string): boolean {
+export function verifyPaddleSignature(
+  rawBody: string,
+  header: string | null,
+  secret: string,
+): boolean {
   if (!header) return false;
   const { ts, h1 } = parseSignatureHeader(header);
   if (!ts || !h1) return false;
@@ -412,10 +438,12 @@ git commit -m "feat: add Paddle webhook signature verification"
 ### Task 4: Event application logic + entitlement sync
 
 **Files:**
+
 - Modify: `src/lib/paddle-webhook.server.ts` (append to the file from Task 3)
 - Test: `src/lib/paddle-webhook.server.test.ts` (append to the file from Task 3)
 
 **Interfaces:**
+
 - Consumes: `verifyPaddleSignature` (Task 3, same file, unaffected).
 - Produces:
   - `export type PaddleSubscriptionWebhookEvent = { event_type: "subscription.created" | "subscription.updated" | "subscription.canceled"; data: { id: string; customer_id: string; status: string; current_billing_period: { ends_at: string } | null; scheduled_change: { action: string } | null; items: Array<{ price: { id: string } }>; custom_data: { user_id?: string } | null; }; }`
@@ -427,7 +455,10 @@ Append to `src/lib/paddle-webhook.server.test.ts`:
 
 ```ts
 import { mock } from "bun:test";
-import { applyPaddleSubscriptionEvent, type PaddleSubscriptionWebhookEvent } from "./paddle-webhook.server";
+import {
+  applyPaddleSubscriptionEvent,
+  type PaddleSubscriptionWebhookEvent,
+} from "./paddle-webhook.server";
 
 type Terminal = { data: unknown; error: unknown };
 
@@ -450,10 +481,7 @@ function fakeChain(terminal: Terminal, onWrite?: (payload: unknown) => void) {
   return chain;
 }
 
-function fakeDb(config: {
-  plan: Terminal;
-  existingSubscription?: Terminal;
-}) {
+function fakeDb(config: { plan: Terminal; existingSubscription?: Terminal }) {
   const subscriptionUpserts: unknown[] = [];
   const profileUpdates: unknown[] = [];
   const entitlementUpdates: unknown[] = [];
@@ -480,7 +508,9 @@ function fakeDb(config: {
   return { db: { from } as never, subscriptionUpserts, profileUpdates, entitlementUpdates };
 }
 
-function baseEvent(overrides: Partial<PaddleSubscriptionWebhookEvent["data"]>): PaddleSubscriptionWebhookEvent {
+function baseEvent(
+  overrides: Partial<PaddleSubscriptionWebhookEvent["data"]>,
+): PaddleSubscriptionWebhookEvent {
   return {
     event_type: "subscription.created",
     data: {
@@ -551,7 +581,10 @@ describe("applyPaddleSubscriptionEvent", () => {
     });
     await applyPaddleSubscriptionEvent(
       db,
-      baseEvent({ status: "past_due", current_billing_period: { ends_at: "2026-08-24T00:00:00Z" } }),
+      baseEvent({
+        status: "past_due",
+        current_billing_period: { ends_at: "2026-08-24T00:00:00Z" },
+      }),
     );
 
     expect(entitlementUpdates).toEqual([{ ads_removed: true }]);
@@ -699,10 +732,12 @@ git commit -m "feat: sync Paddle subscription events into subscriptions and user
 ### Task 5: Webhook route + env wiring
 
 **Files:**
+
 - Create: `src/routes/api/webhooks/paddle.ts`
 - Modify: `.env.example`
 
 **Interfaces:**
+
 - Consumes: `verifyPaddleSignature`, `applyPaddleSubscriptionEvent`, `PaddleSubscriptionWebhookEvent` (Task 3 & 4); `requireEnv` (`src/lib/env.ts`); `supabaseAdmin` (`src/integrations/supabase/client.server.ts`).
 - Produces: `POST /api/webhooks/paddle` HTTP endpoint.
 
@@ -730,7 +765,11 @@ import {
   type PaddleSubscriptionWebhookEvent,
 } from "@/lib/paddle-webhook.server";
 
-const HANDLED_EVENT_TYPES = new Set(["subscription.created", "subscription.updated", "subscription.canceled"]);
+const HANDLED_EVENT_TYPES = new Set([
+  "subscription.created",
+  "subscription.updated",
+  "subscription.canceled",
+]);
 
 export const Route = createFileRoute("/api/webhooks/paddle")({
   server: {
@@ -761,19 +800,23 @@ export const Route = createFileRoute("/api/webhooks/paddle")({
 - [ ] **Step 3: Typecheck and confirm the route registers**
 
 Run:
+
 ```bash
 bun run typecheck
 ```
+
 Expected: no errors on the new route file. (`src/routeTree.gen.ts` is auto-generated by the TanStack Router Vite plugin on next dev/build — no manual edit needed.)
 
 Run (the dev server uses `vite-plugin-mkcert`, so it serves HTTPS on port 8080 — see `vite.config.ts:57`; `-k` skips local cert verification):
+
 ```bash
 bun run dev &
 sleep 3
 curl -sk -o /dev/null -w "%{http_code}\n" -X POST https://localhost:8080/api/webhooks/paddle -d '{}'
 kill %1
 ```
-Expected: `401` (missing/invalid signature — proves the route is wired and the env var is being read; confirms this *before* a real secret is configured). If it prints `500` with `Missing environment variable(s): PADDLE_SANDBOX_WEBHOOK_SECRET...`, add a placeholder value to your local `.env` and rerun.
+
+Expected: `401` (missing/invalid signature — proves the route is wired and the env var is being read; confirms this _before_ a real secret is configured). If it prints `500` with `Missing environment variable(s): PADDLE_SANDBOX_WEBHOOK_SECRET...`, add a placeholder value to your local `.env` and rerun.
 
 - [ ] **Step 4: Commit**
 
@@ -795,15 +838,18 @@ This is the "does it actually work end-to-end" check the design doc calls for �
 - [ ] **Step 1: Start a local tunnel**
 
 Run (any tunnel tool works; example uses `cloudflared`, no account needed for a quick tunnel; the dev server is HTTPS on port 8080 per `vite.config.ts:57`):
+
 ```bash
 bun run dev &
 cloudflared tunnel --url https://localhost:8080
 ```
+
 Note the printed `https://<random>.trycloudflare.com` URL.
 
 - [ ] **Step 2: Register the notification destination in Paddle sandbox**
 
 Paddle sandbox dashboard → **Developer tools → Notifications** → **New destination**:
+
 - URL: `https://<tunnel-url>/api/webhooks/paddle`
 - Events: `subscription.created`, `subscription.updated`, `subscription.canceled`
 
@@ -816,6 +862,7 @@ In the same Notifications page, open the new destination and use **Send test eve
 - [ ] **Step 4: Confirm it landed**
 
 Run:
+
 ```bash
 set -a && source .env && set +a && node -e '
 const { createClient } = require("@supabase/supabase-js");
@@ -824,6 +871,7 @@ db.from("subscriptions").select("*").order("created_at", { ascending: false }).l
   .then(({ data, error }) => console.log(JSON.stringify({ data, error }, null, 2)));
 '
 ```
+
 Expected: the simulator's test subscription appears. (The simulator sends placeholder `custom_data`, so this may log a `[paddle-webhook] missing custom_data.user_id` and return `200` with no row inserted — that in itself confirms the route, signature check, and error-handling path all work; a full end-to-end row only appears once real checkout traffic — sub-project #2 — sets `custom_data.user_id`.)
 
 - [ ] **Step 5: Stop the tunnel and dev server**
@@ -836,11 +884,11 @@ kill %1 %2 2>/dev/null
 
 ## Summary
 
-| Task | Deliverable |
-|---|---|
-| 1 | `subscriptions` table + `profiles.paddle_customer_id`, migration history repaired and pushed |
-| 2 | Generated types updated to match |
-| 3 | `verifyPaddleSignature` — signed/tampered/wrong-secret/missing/malformed, 5 tests |
-| 4 | `applyPaddleSubscriptionEvent` — renewal detection, grace period, revoke-without-clawback, missing identity, unknown plan, 6 tests |
-| 5 | `POST /api/webhooks/paddle` wired to both, `.env.example` documented |
-| 6 | Manual sandbox round-trip via tunnel + notification simulator |
+| Task | Deliverable                                                                                                                        |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | `subscriptions` table + `profiles.paddle_customer_id`, migration history repaired and pushed                                       |
+| 2    | Generated types updated to match                                                                                                   |
+| 3    | `verifyPaddleSignature` — signed/tampered/wrong-secret/missing/malformed, 5 tests                                                  |
+| 4    | `applyPaddleSubscriptionEvent` — renewal detection, grace period, revoke-without-clawback, missing identity, unknown plan, 6 tests |
+| 5    | `POST /api/webhooks/paddle` wired to both, `.env.example` documented                                                               |
+| 6    | Manual sandbox round-trip via tunnel + notification simulator                                                                      |

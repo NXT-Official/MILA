@@ -17,13 +17,15 @@ it's back in scope here because a cancel action has nowhere sensible to live wit
 ## Scope
 
 In scope:
+
 - `mySubscriptionQueryOptions` — read the caller's own in-force subscription (RLS-scoped)
 - `cancelMySubscription` server function — cancels via Paddle's API, `effective_from:
-  "next_billing_period"` only
+"next_billing_period"` only
 - `StudioMembershipDrawer` membership view: real plan/renewal display + Cancel button +
   confirmation dialog
 
 Out of scope (future sub-projects, unchanged from prior specs):
+
 - Resume / undo a scheduled cancellation
 - "Cancel immediately" (with proration/refund)
 - Plan upgrade/downgrade

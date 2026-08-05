@@ -15,14 +15,14 @@ write the schema.
 
 ## Project facts
 
-| | |
-|---|---|
-| Sanity project | Mila — `8bkzi9bn` |
-| Dataset | `production` |
-| Studio path | `/Users/user/nxt/MILA/studio-mila` (standalone, create it — it does not exist yet) |
-| App path | `/Users/user/nxt/MILA/app` |
-| App stack | React 19 · TanStack Start + Router · Vite 7 · Nitro · Tailwind v4 · Bun |
-| Package manager | **bun** (`bun add`, `bun run`) — there is a `bun.lock`, no `package-lock.json` |
+|                 |                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------- |
+| Sanity project  | Mila — `8bkzi9bn`                                                                  |
+| Dataset         | `production`                                                                       |
+| Studio path     | `/Users/user/nxt/MILA/studio-mila` (standalone, create it — it does not exist yet) |
+| App path        | `/Users/user/nxt/MILA/app`                                                         |
+| App stack       | React 19 · TanStack Start + Router · Vite 7 · Nitro · Tailwind v4 · Bun            |
+| Package manager | **bun** (`bun add`, `bun run`) — there is a `bun.lock`, no `package-lock.json`     |
 
 ## Framework reality check — do not skip this
 
@@ -57,7 +57,7 @@ Two options, in order of preference:
    loader. Nothing Sanity-related reaches the browser, the CSP never applies, and any read token
    stays on the server. This is the answer unless you add Visual Editing later.
 2. If you genuinely need browser-side reads, add `https://8bkzi9bn.api.sanity.io` and
-   `https://8bkzi9bn.apicdn.sanity.io` to `connect-src` in `buildCsp()`. Do this *deliberately*,
+   `https://8bkzi9bn.apicdn.sanity.io` to `connect-src` in `buildCsp()`. Do this _deliberately_,
    not as a reflex to a console error.
 
 `img-src` already allows `https:`, so `cdn.sanity.io` images are fine either way.
@@ -74,17 +74,17 @@ The landing page is `app/src/routes/index.tsx`, which composes nine components f
 
 Full inventory, section by section — this is your migration checklist:
 
-| Component | Content to move |
-|---|---|
-| `hero-section.tsx` | kicker, headline (renders as two lines via `<br />`), subhead, CTA note ("Takes under a minute"), and the whole preview card: season tag, weather line, outfit title + description, hair note, makeup note |
-| `testimonials-section.tsx` | the `TESTIMONIALS` array |
-| `how-it-works-section.tsx` | kicker, heading, the `STEPS` array |
-| `dossier-section.tsx` | kicker, heading, body, card title, season tag, 3 label/value rows, completion label + percentage (currently `80%`, hardcoded twice — the text *and* the `w-4/5` bar width) |
-| `dupe-hunter-section.tsx` | kicker, heading, body, and both comparison cards (label, title, price; the left price is struck through) |
-| `community-section.tsx` | kicker, heading, body, the season chip list |
-| `final-cta-section.tsx` | heading, body, privacy line |
-| `site-footer.tsx` | wordmark, tagline (leave the `© {year}` as computed JS) |
-| `site-header.tsx` | **leave alone.** Its labels are auth-state-driven, not marketing copy. |
+| Component                  | Content to move                                                                                                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hero-section.tsx`         | kicker, headline (renders as two lines via `<br />`), subhead, CTA note ("Takes under a minute"), and the whole preview card: season tag, weather line, outfit title + description, hair note, makeup note |
+| `testimonials-section.tsx` | the `TESTIMONIALS` array                                                                                                                                                                                   |
+| `how-it-works-section.tsx` | kicker, heading, the `STEPS` array                                                                                                                                                                         |
+| `dossier-section.tsx`      | kicker, heading, body, card title, season tag, 3 label/value rows, completion label + percentage (currently `80%`, hardcoded twice — the text _and_ the `w-4/5` bar width)                                 |
+| `dupe-hunter-section.tsx`  | kicker, heading, body, and both comparison cards (label, title, price; the left price is struck through)                                                                                                   |
+| `community-section.tsx`    | kicker, heading, body, the season chip list                                                                                                                                                                |
+| `final-cta-section.tsx`    | heading, body, privacy line                                                                                                                                                                                |
+| `site-footer.tsx`          | wordmark, tagline (leave the `© {year}` as computed JS)                                                                                                                                                    |
+| `site-header.tsx`          | **leave alone.** Its labels are auth-state-driven, not marketing copy.                                                                                                                                     |
 
 ## Content model
 
@@ -128,7 +128,7 @@ Rules:
    singleton to Studio Structure (`studio-structure.md`).
 4. **Deploy the schema** — `npx sanity schemas deploy` from `studio-mila`. Required before any MCP
    content tool can see the new type.
-5. **Seed the content** with the *exact* strings currently in the components and
+5. **Seed the content** with the _exact_ strings currently in the components and
    `src/constants/landing.ts`. This is a lift-and-shift: the rendered page must be byte-identical
    before and after. Do not improve the copy. If you think a line reads badly, say so at the end —
    do not edit it.
@@ -155,7 +155,7 @@ Rules:
 ## Constraints
 
 - **Do not touch anything outside the landing page.** No auth, no Supabase, no Paddle, no
-  authenticated routes. The dossier and dupe-hunter *sections* are marketing mockups of real
+  authenticated routes. The dossier and dupe-hunter _sections_ are marketing mockups of real
   features; you are editing the mockup copy, not the features.
 - **Do not restyle.** No className changes beyond the one dynamic width mentioned above. The repo
   has a settled `atelier-*` design system (see `docs/component-adoption-prompt.md`) — respect it.

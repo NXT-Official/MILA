@@ -20,6 +20,7 @@ Use this contents list to jump to the query concern you need to solve.
 ## 1. Query Definition & Imports
 
 ### The `defineQuery` Function
+
 **ALWAYS** wrap GROQ queries in `defineQuery` for TypeGen support. The import location depends on your framework:
 
 ```typescript
@@ -31,7 +32,9 @@ import { defineQuery } from "next-sanity";
 ```
 
 ### Syntax Highlighting
+
 For VS Code syntax highlighting, either:
+
 1. Use the `groq` tagged template (recommended): `groq\`...\``
 2. Or prefix with `/* groq */` comment when using `defineQuery`
 
@@ -50,6 +53,7 @@ const QUERY = defineQuery(`*[_type == "post"]`);
 ```
 
 ## 2. Query Fragments
+
 Use string interpolation to reuse query logic and keep queries maintainable.
 
 ```typescript
@@ -78,6 +82,7 @@ export const POST_QUERY = defineQuery(/* groq */ `
 ```
 
 ## 3. Expansion Patterns (Page Builder)
+
 When building a Page Builder query, expand all potential component types.
 
 **Best Practice:** Use a `pageFields` fragment or similar strategy to keep the main query clean.
@@ -98,7 +103,9 @@ const pageBuilderExpansion = /* groq */ `
 ```
 
 ## 4. Maintenance Workflow
+
 When you add a new field or component to the Schema:
+
 1.  **Update the Query:** Add the new field/expansion to the relevant GROQ query immediately.
 2.  **Run TypeGen:** If you have `typegen.enabled: true` in `sanity.cli.ts`, types regenerate automatically during `sanity dev`/`sanity build`. Otherwise, run `npm run typegen` manually.
 3.  **Verify:** Ensure the new field is available in the generated types.
@@ -106,6 +113,7 @@ When you add a new field or component to the Schema:
 ## 5. Common Patterns
 
 ### Ordering
+
 ```groq
 // Single field
 *[_type == "post"] | order(publishedAt desc)
@@ -119,6 +127,7 @@ When you add a new field or component to the Schema:
 ```
 
 ### Slice Notation
+
 ```groq
 *[_type == "post"][0]       // Single document (object, not array)
 *[_type == "post"][0...5]   // First 5 (exclusive) ← Most common
@@ -127,13 +136,14 @@ When you add a new field or component to the Schema:
 Slice bounds must be constant numbers — `$params` aren't allowed. For dynamic pagination, validate the numbers in application code and interpolate them directly into the query string:
 
 ```typescript
-const start = Number.isInteger(page) && page >= 0 ? page * pageSize : 0
-const end = start + pageSize
+const start = Number.isInteger(page) && page >= 0 ? page * pageSize : 0;
+const end = start + pageSize;
 
-const query = `*[_type == "post"] | order(publishedAt desc)[${start}...${end}]`
+const query = `*[_type == "post"] | order(publishedAt desc)[${start}...${end}]`;
 ```
 
 ### Default Values with `coalesce()`
+
 ```groq
 *[_type == "page"]{
   "title": coalesce(seoTitle, title, "Untitled"),
@@ -142,6 +152,7 @@ const query = `*[_type == "post"] | order(publishedAt desc)[${start}...${end}]`
 ```
 
 ### Conditionals with `select()`
+
 ```groq
 *[_type == "product"]{
   title,
@@ -154,6 +165,7 @@ const query = `*[_type == "post"] | order(publishedAt desc)[${start}...${end}]`
 ```
 
 ### Aggregation with `count()`
+
 ```groq
 // Total count
 count(*[_type == "post" && defined(slug.current)])
@@ -166,6 +178,7 @@ count(*[_type == "post" && defined(slug.current)])
 ```
 
 ### Reverse References
+
 ```groq
 *[_type == "author"]{
   name,
@@ -174,6 +187,7 @@ count(*[_type == "post" && defined(slug.current)])
 ```
 
 ### Array Filtering
+
 ```groq
 *[_type == "movie"]{
   title,
@@ -185,6 +199,7 @@ count(*[_type == "post" && defined(slug.current)])
 ```
 
 ### Special Variables
+
 ```groq
 // ^ = parent document (in nested queries)
 *[_type == "author"]{
@@ -201,25 +216,28 @@ count(*[_type == "post" && defined(slug.current)])
 ## 6. Performance Rules
 
 ### Optimizable vs Non-Optimizable Filters
+
 GROQ uses indexes for **optimizable** filters. Non-optimizable filters scan ALL documents.
 
-| Pattern | Optimizable | Example |
-|---------|-------------|---------|
-| `_type == "x"` | ✅ Yes | `*[_type == "post"]` |
-| `_id == "x"` | ✅ Yes | `*[_id == "abc123"]` |
-| `slug.current == $slug` | ✅ Yes | `*[slug.current == "hello"]` |
-| `defined(field)` | ✅ Yes | `*[defined(publishedAt)]` |
-| `references($id)` | ✅ Yes | `*[references("author-123")]` |
-| `field->attr == x` | ❌ No | Resolves reference for every doc |
-| `fieldA < fieldB` | ❌ No | Compares two attributes |
+| Pattern                 | Optimizable | Example                          |
+| ----------------------- | ----------- | -------------------------------- |
+| `_type == "x"`          | ✅ Yes      | `*[_type == "post"]`             |
+| `_id == "x"`            | ✅ Yes      | `*[_id == "abc123"]`             |
+| `slug.current == $slug` | ✅ Yes      | `*[slug.current == "hello"]`     |
+| `defined(field)`        | ✅ Yes      | `*[defined(publishedAt)]`        |
+| `references($id)`       | ✅ Yes      | `*[references("author-123")]`    |
+| `field->attr == x`      | ❌ No       | Resolves reference for every doc |
+| `fieldA < fieldB`       | ❌ No       | Compares two attributes          |
 
 **Fix non-optimizable filters by stacking:**
+
 ```groq
 // Stack optimizable filters FIRST to reduce search space
 *[_type == "product" && defined(salePrice) && salePrice < displayPrice]
 ```
 
 ### Avoid Joins in Filters
+
 Reference resolution (`->`) in filters is expensive. Use `_ref` instead:
 
 ```groq
@@ -245,6 +263,7 @@ Reference resolution (`->`) in filters is expensive. Use `_ref` instead:
 ```
 
 ### Merge Repeated Reference Resolutions
+
 Each `->` is a subquery. Don't repeat it:
 
 ```groq
@@ -261,6 +280,7 @@ Each `->` is a subquery. Don't repeat it:
 ```
 
 ### Cursor-Based Pagination (Not Deep Slicing)
+
 Deep slices are slow because all skipped docs must be sorted first.
 
 ```groq
@@ -276,12 +296,13 @@ Deep slices are slow because all skipped docs must be sorted first.
 ```groq
 // Compound cursor: publishedAt + _id for deterministic pagination
 *[_type == "article" && (
-  publishedAt < $lastDate || 
+  publishedAt < $lastDate ||
   (publishedAt == $lastDate && _id > $lastId)
 )] | order(publishedAt desc, _id)[0...20]
 ```
 
 ### Always Project Fields
+
 Always use projections to return only the fields your application needs. Fetching entire documents wastes bandwidth and processing time.
 
 ```groq
@@ -320,6 +341,7 @@ Use conditional projections for different contexts:
 ```
 
 ### Don't Filter/Sort on Projected Values
+
 Computed attributes can't use indexes:
 
 ```groq
@@ -333,15 +355,16 @@ Computed attributes can't use indexes:
 ```
 
 ### Quick Checklist
-| Rule | Why |
-|------|-----|
-| Always project `{ fields }` | Reduces data returned |
-| Use `defined()` checks | Filters use indexes |
-| Use `$params` not interpolation | Prevents query manipulation + enables caching (exception: slice bounds — see Slice Notation) |
-| Order BEFORE slice | `order()[0...N]` not `[0...N] order()` |
-| Use `_ref` not `->field` in filters | Avoids expensive joins |
-| Merge repeated `->` calls | Single subquery vs many |
-| Cursor pagination for deep pages | Avoids sorting entire dataset |
+
+| Rule                                | Why                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| Always project `{ fields }`         | Reduces data returned                                                                        |
+| Use `defined()` checks              | Filters use indexes                                                                          |
+| Use `$params` not interpolation     | Prevents query manipulation + enables caching (exception: slice bounds — see Slice Notation) |
+| Order BEFORE slice                  | `order()[0...N]` not `[0...N] order()`                                                       |
+| Use `_ref` not `->field` in filters | Avoids expensive joins                                                                       |
+| Merge repeated `->` calls           | Single subquery vs many                                                                      |
+| Cursor pagination for deep pages    | Avoids sorting entire dataset                                                                |
 
 ## 7. API Version Best Practices
 
@@ -349,8 +372,8 @@ Always use dated versions (`YYYY-MM-DD`) for consistent behavior:
 
 ```typescript
 const client = createClient({
-  apiVersion: '2026-02-01', // Use current date for new projects
-})
+  apiVersion: "2026-02-01", // Use current date for new projects
+});
 ```
 
 - **New projects:** Use current date (e.g., `2026-02-01`)

@@ -21,10 +21,12 @@
 ### Task 1: `mySubscriptionQueryOptions`
 
 **Files:**
+
 - Modify: `src/constants/query-keys.ts`
 - Create: `src/lib/queries/subscriptions.ts`
 
 **Interfaces:**
+
 - Produces: `queryKeys.mySubscription(userId)`; `export interface MySubscription { status: string; current_period_end: string | null; cancel_at_period_end: boolean; plan_title: string; price_amount: number; currency: string; billing_interval: BillingInterval }`; `export function mySubscriptionQueryOptions(userId: string | undefined)` — used by Task 4.
 
 Two plain queries (subscription row, then its plan), not a PostgREST embedded select. The
@@ -125,10 +127,12 @@ git commit -m "feat: add mySubscriptionQueryOptions"
 ### Task 2: `cancelSubscriptionForUser` + `cancelMySubscription`
 
 **Files:**
+
 - Create: `src/lib/subscriptions.functions.ts`
 - Test: `src/lib/subscriptions.functions.test.ts`
 
 **Interfaces:**
+
 - Consumes: `requireEnv` (`src/lib/env.ts`), `requireSupabaseAuth` (`src/integrations/supabase/auth-middleware.ts`).
 - Produces:
   - `export type CancelSubscriptionResult = { success: true; endsAt: string } | { error: string }`
@@ -211,7 +215,9 @@ export type CancelSubscriptionResult = { success: true; endsAt: string } | { err
 
 export async function cancelSubscriptionForUser(
   db: MilaSupabaseClient,
-  cancelViaPaddle: (paddleSubscriptionId: string) => Promise<{ endsAt: string } | { error: unknown }>,
+  cancelViaPaddle: (
+    paddleSubscriptionId: string,
+  ) => Promise<{ endsAt: string } | { error: unknown }>,
   userId: string,
 ): Promise<CancelSubscriptionResult> {
   const { data: subscription, error } = await db
@@ -245,7 +251,10 @@ async function cancelViaPaddleApi(
     `https://sandbox-api.paddle.com/subscriptions/${paddleSubscriptionId}/cancel`,
     {
       method: "POST",
-      headers: { Authorization: `Bearer ${PADDLE_SANDBOX_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${PADDLE_SANDBOX_API_KEY}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ effective_from: "next_billing_period" }),
     },
   );
@@ -293,9 +302,11 @@ git commit -m "feat: add cancelMySubscription server function"
 ### Task 3: `CancelMembershipDialog`
 
 **Files:**
+
 - Create: `src/components/account/cancel-membership-dialog.tsx`
 
 **Interfaces:**
+
 - Consumes: `Dialog`/`DialogContent`/`DialogDescription`/`DialogFooter`/`DialogHeader`/`DialogTitle` (`src/components/ui/dialog.tsx`), `Button` (`src/components/ui/button.tsx`, has a built-in `loading` prop).
 - Produces: `export function CancelMembershipDialog({ open, endsAt, pending, onOpenChange, onConfirm }: { open: boolean; endsAt: string; pending: boolean; onOpenChange: (open: boolean) => void; onConfirm: () => void })` — used by Task 4.
 
@@ -335,8 +346,8 @@ export function CancelMembershipDialog({
         <DialogHeader>
           <DialogTitle>Cancel your membership?</DialogTitle>
           <DialogDescription>
-            You'll keep access until {new Date(endsAt).toLocaleDateString()}. After that, your
-            plan won't renew.
+            You'll keep access until {new Date(endsAt).toLocaleDateString()}. After that, your plan
+            won't renew.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -376,9 +387,11 @@ git commit -m "feat: add CancelMembershipDialog"
 ### Task 4: Wire `StudioMembershipDrawer`
 
 **Files:**
+
 - Modify: `src/components/account/studio-membership-drawer.tsx`
 
 **Interfaces:**
+
 - Consumes: `mySubscriptionQueryOptions`, `MySubscription` (Task 1); `cancelMySubscription`, `CancelSubscriptionResult` (Task 2); `CancelMembershipDialog` (Task 3).
 
 - [ ] **Step 1: Add imports**
@@ -400,38 +413,38 @@ import { CancelMembershipDialog } from "@/components/account/cancel-membership-d
 In the `StudioMembershipDrawer` component body, immediately after this existing line:
 
 ```ts
-  const { user: authUser, signOut, signingOut } = useAuth();
+const { user: authUser, signOut, signingOut } = useAuth();
 ```
 
 add:
 
 ```ts
-  const queryClient = useQueryClient();
-  const { data: subscription } = useQuery({
-    ...mySubscriptionQueryOptions(authUser?.id),
-    enabled: !!authUser,
-  });
-  const cancelSubscription = useServerFn(cancelMySubscription);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [canceling, setCanceling] = useState(false);
+const queryClient = useQueryClient();
+const { data: subscription } = useQuery({
+  ...mySubscriptionQueryOptions(authUser?.id),
+  enabled: !!authUser,
+});
+const cancelSubscription = useServerFn(cancelMySubscription);
+const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+const [canceling, setCanceling] = useState(false);
 
-  async function handleConfirmCancel() {
-    setCanceling(true);
-    try {
-      const result = await cancelSubscription();
-      if ("error" in result) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(`Your membership ends on ${new Date(result.endsAt).toLocaleDateString()}.`);
-      setCancelDialogOpen(false);
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
-      }, 4000);
-    } finally {
-      setCanceling(false);
+async function handleConfirmCancel() {
+  setCanceling(true);
+  try {
+    const result = await cancelSubscription();
+    if ("error" in result) {
+      toast.error(result.error);
+      return;
     }
+    toast.success(`Your membership ends on ${new Date(result.endsAt).toLocaleDateString()}.`);
+    setCancelDialogOpen(false);
+    setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
+    }, 4000);
+  } finally {
+    setCanceling(false);
   }
+}
 ```
 
 - [ ] **Step 3: Replace the "Current Tier" block**
@@ -439,95 +452,85 @@ add:
 Find this exact block (inside the `view === "membership"` branch):
 
 ```tsx
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="uppercase tracking-[0.2em] text-stone text-[10px]">
-                        Current Tier
-                      </span>
-                      <span className="font-semibold text-ink">Free</span>
-                    </div>
-                    {credits != null && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="uppercase tracking-[0.2em text-[10px] text-stone">
-                          Styling Credits
-                        </span>
-                        <span className="font-semibold text-ink tabular-nums">{credits}</span>
-                      </div>
-                    )}
-                    <p className="pt-1 text-xs leading-relaxed text-stone">
-                      Compare Atelier memberships and their included styling credits on the plans
-                      page.
-                    </p>
-                    <Link
-                      to="/pricing"
-                      onClick={onClose}
-                      className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                    >
-                      View Membership Plans
-                      <span aria-hidden="true">→</span>
-                    </Link>
-                  </div>
+<div className="space-y-2">
+  <div className="flex items-center justify-between text-xs">
+    <span className="uppercase tracking-[0.2em] text-stone text-[10px]">Current Tier</span>
+    <span className="font-semibold text-ink">Free</span>
+  </div>
+  {credits != null && (
+    <div className="flex items-center justify-between text-xs">
+      <span className="uppercase tracking-[0.2em text-[10px] text-stone">Styling Credits</span>
+      <span className="font-semibold text-ink tabular-nums">{credits}</span>
+    </div>
+  )}
+  <p className="pt-1 text-xs leading-relaxed text-stone">
+    Compare Atelier memberships and their included styling credits on the plans page.
+  </p>
+  <Link
+    to="/pricing"
+    onClick={onClose}
+    className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+  >
+    View Membership Plans
+    <span aria-hidden="true">→</span>
+  </Link>
+</div>
 ```
 
 Replace it with:
 
 ```tsx
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="uppercase tracking-[0.2em] text-stone text-[10px]">
-                        Current Tier
-                      </span>
-                      <span className="font-semibold text-ink">
-                        {subscription ? subscription.plan_title : "Free"}
-                      </span>
-                    </div>
-                    {credits != null && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="uppercase tracking-[0.2em text-[10px] text-stone">
-                          Styling Credits
-                        </span>
-                        <span className="font-semibold text-ink tabular-nums">{credits}</span>
-                      </div>
-                    )}
-                    {subscription ? (
-                      <>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="uppercase tracking-[0.2em] text-[10px] text-stone">
-                            {subscription.cancel_at_period_end ? "Ends" : "Renews"}
-                          </span>
-                          <span className="font-semibold text-ink">
-                            {subscription.current_period_end
-                              ? new Date(subscription.current_period_end).toLocaleDateString()
-                              : "—"}
-                          </span>
-                        </div>
-                        {!subscription.cancel_at_period_end && (
-                          <button
-                            type="button"
-                            onClick={() => setCancelDialogOpen(true)}
-                            className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
-                          >
-                            Cancel Membership
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <p className="pt-1 text-xs leading-relaxed text-stone">
-                          Compare Atelier memberships and their included styling credits on the plans
-                          page.
-                        </p>
-                        <Link
-                          to="/pricing"
-                          onClick={onClose}
-                          className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                        >
-                          View Membership Plans
-                          <span aria-hidden="true">→</span>
-                        </Link>
-                      </>
-                    )}
-                  </div>
+<div className="space-y-2">
+  <div className="flex items-center justify-between text-xs">
+    <span className="uppercase tracking-[0.2em] text-stone text-[10px]">Current Tier</span>
+    <span className="font-semibold text-ink">
+      {subscription ? subscription.plan_title : "Free"}
+    </span>
+  </div>
+  {credits != null && (
+    <div className="flex items-center justify-between text-xs">
+      <span className="uppercase tracking-[0.2em text-[10px] text-stone">Styling Credits</span>
+      <span className="font-semibold text-ink tabular-nums">{credits}</span>
+    </div>
+  )}
+  {subscription ? (
+    <>
+      <div className="flex items-center justify-between text-xs">
+        <span className="uppercase tracking-[0.2em] text-[10px] text-stone">
+          {subscription.cancel_at_period_end ? "Ends" : "Renews"}
+        </span>
+        <span className="font-semibold text-ink">
+          {subscription.current_period_end
+            ? new Date(subscription.current_period_end).toLocaleDateString()
+            : "—"}
+        </span>
+      </div>
+      {!subscription.cancel_at_period_end && (
+        <button
+          type="button"
+          onClick={() => setCancelDialogOpen(true)}
+          className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors"
+        >
+          Cancel Membership
+        </button>
+      )}
+    </>
+  ) : (
+    <>
+      <p className="pt-1 text-xs leading-relaxed text-stone">
+        Compare Atelier memberships and their included styling credits on the plans page.
+      </p>
+      <Link
+        to="/pricing"
+        onClick={onClose}
+        className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-[11px] uppercase tracking-[0.25em] text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+      >
+        View Membership Plans
+        <span aria-hidden="true">→</span>
+      </Link>
+    </>
+  )}
+</div>
 ```
 
 - [ ] **Step 4: Render the confirmation dialog**
@@ -613,6 +616,7 @@ sub-project #1/#2's Task 6 (tunnel + `notification-settings` destination pointin
 server restarted) if one isn't already live.
 
 Run, a few seconds after confirming cancel:
+
 ```bash
 set -a && source .env && set +a && node -e '
 const { createClient } = require("@supabase/supabase-js");
@@ -622,6 +626,7 @@ db.from("subscriptions").select("status, cancel_at_period_end, current_period_en
   .then(({ data, error }) => console.log(JSON.stringify({ data, error }, null, 2)));
 '
 ```
+
 Expected: `cancel_at_period_end: true`, `status` still `active` (not yet the terminal
 state — that only happens once the real billing period ends). Reopen the drawer in the
 browser (or wait ~4s for the automatic invalidation) and confirm it now shows "Ends
@@ -631,6 +636,7 @@ browser (or wait ~4s for the automatic invalidation) and confirm it now shows "E
 
 Delete any test notification destination created for this test (same pattern as prior
 sub-projects' Task 6):
+
 ```bash
 set -a && source .env && set +a && node -e '
 const key = process.env.PADDLE_SANDBOX_API_KEY;
@@ -639,18 +645,20 @@ fetch("https://sandbox-api.paddle.com/notification-settings", {
 }).then(async r => console.log(JSON.stringify(await r.json())));
 '
 ```
+
 Note any `id` returned and `DELETE` it the same way prior sub-projects did. Stop the dev
 server and any tunnel:
+
 ```bash
 kill %1 %2 2>/dev/null
 ```
 
 ## Summary
 
-| Task | Deliverable |
-|---|---|
-| 1 | `mySubscriptionQueryOptions` — reads the caller's own in-force subscription + plan |
-| 2 | `cancelSubscriptionForUser` (3 unit tests) + `cancelMySubscription` server function |
-| 3 | `CancelMembershipDialog` confirmation component |
-| 4 | Drawer shows real plan/renewal state, Cancel Membership wired end to end |
-| 5 | Full sandbox cancel completed, webhook-driven state update confirmed |
+| Task | Deliverable                                                                         |
+| ---- | ----------------------------------------------------------------------------------- |
+| 1    | `mySubscriptionQueryOptions` — reads the caller's own in-force subscription + plan  |
+| 2    | `cancelSubscriptionForUser` (3 unit tests) + `cancelMySubscription` server function |
+| 3    | `CancelMembershipDialog` confirmation component                                     |
+| 4    | Drawer shows real plan/renewal state, Cancel Membership wired end to end            |
+| 5    | Full sandbox cancel completed, webhook-driven state update confirmed                |

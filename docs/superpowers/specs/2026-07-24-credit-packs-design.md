@@ -16,6 +16,7 @@ day instead of waiting for tomorrow's reset or upgrading their plan.
 ## Scope
 
 In scope:
+
 - Admin-managed `credit_packs` catalog (mirrors `subscription_plans`'s pattern: DB table,
   admin CRUD UI, public read of active packs) — two packs to start: "Mila Daily Pack"
   (+10 credits) and "Mila Studio Pack" (+50 credits), same names/prices as the old removed
@@ -26,6 +27,7 @@ In scope:
 - `grant_ai_credits` Postgres RPC that adds credits on top of the user's current balance.
 
 Out of scope:
+
 - "Mila Unlimited" tier from the old stub — dropped. Doesn't fit the daily-reset credit
   model cleanly (what does "unlimited" mean against a balance that resets to a plan
   allowance every day?) and the user confirmed it isn't needed.
@@ -129,7 +131,7 @@ INTEGER` (remaining balance) — `SECURITY DEFINER`, `service_role`-only execute
    - Read `data.custom_data.user_id`; if missing, log and return (same guard the
      subscription handler already has).
    - `INSERT INTO credit_pack_purchases (..., paddle_transaction_id = data.id) ON CONFLICT
-     (paddle_transaction_id) DO NOTHING` — if no row was actually inserted (retry), return
+(paddle_transaction_id) DO NOTHING` — if no row was actually inserted (retry), return
      without granting again.
    - Otherwise resolve the user's daily allowance (extract the existing inline logic in
      `credits.server.ts` into an exported `resolveDailyCreditAllowance`, reused here) and
@@ -141,13 +143,14 @@ INTEGER` (remaining balance) — `SECURITY DEFINER`, `service_role`-only execute
 ## Admin UI
 
 New route `src/routes/_authenticated/admin/credit-packs.tsx` + `credit-pack-columns.tsx`
-+ `credit-pack-form-dialog.tsx`, structurally identical to the subscription-plans admin
-trio (list, create, edit, archive — no "featured" concept, no reorder-by-drag beyond
-`sort_order` edits in the form). Server fns in `src/lib/credit-packs.functions.ts` mirror
-`subscription-plans.functions.ts`: `adminListCreditPacks`, `adminCreateCreditPack`,
-`adminUpdateCreditPack`, `adminSetCreditPackArchived`, `adminDeleteCreditPack` — every
-mutation gated by `assertAdmin` and logged via `recordStaffAction`. Nav link added
-alongside the existing "Subscription Plans" admin link.
+
+- `credit-pack-form-dialog.tsx`, structurally identical to the subscription-plans admin
+  trio (list, create, edit, archive — no "featured" concept, no reorder-by-drag beyond
+  `sort_order` edits in the form). Server fns in `src/lib/credit-packs.functions.ts` mirror
+  `subscription-plans.functions.ts`: `adminListCreditPacks`, `adminCreateCreditPack`,
+  `adminUpdateCreditPack`, `adminSetCreditPackArchived`, `adminDeleteCreditPack` — every
+  mutation gated by `assertAdmin` and logged via `recordStaffAction`. Nav link added
+  alongside the existing "Subscription Plans" admin link.
 
 ## Testing
 

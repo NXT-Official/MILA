@@ -22,24 +22,29 @@
 ### Task 1: Install `@paddle/paddle-js` and provision the client token
 
 **Files:**
+
 - Modify: `package.json`, `bun.lock` (via `bun add`)
 - Modify: `.env` (local, untracked), `.env.example`
 
 **Interfaces:**
+
 - Produces: `VITE_PADDLE_CLIENT_TOKEN`, `VITE_PADDLE_ENV` available via `import.meta.env` for Task 3.
 
 - [ ] **Step 1: Install the package**
 
 Run:
+
 ```bash
 bun add @paddle/paddle-js
 ```
+
 Expected: `package.json` gains a `"@paddle/paddle-js": "^..."` dependency; `bun.lock` updates.
 
 - [ ] **Step 2: Create a client-side token via the Paddle API**
 
 The sandbox API key in `.env` (`PADDLE_SANDBOX_API_KEY`) already works for direct API calls
 (proven in sub-project #1). Run:
+
 ```bash
 set -a && source .env && set +a && node -e '
 const key = process.env.PADDLE_SANDBOX_API_KEY;
@@ -53,6 +58,7 @@ fetch("https://sandbox-api.paddle.com/client-tokens", {
 });
 '
 ```
+
 Expected: `201` with `data.token` starting with `test_...`. If it prints `403 forbidden`, the
 API key needs the **Client-side tokens** permission added — ask the user to add it under
 **Paddle > Developer tools > Authentication**, the same way `notification-settings` and
@@ -61,12 +67,14 @@ API key needs the **Client-side tokens** permission added — ask the user to ad
 - [ ] **Step 3: Add the env vars**
 
 In `.env` (local only, not committed), add:
+
 ```
 VITE_PADDLE_CLIENT_TOKEN="<data.token from Step 2>"
 VITE_PADDLE_ENV="sandbox"
 ```
 
 In `.env.example`, add:
+
 ```
 VITE_PADDLE_CLIENT_TOKEN=
 VITE_PADDLE_ENV=
@@ -84,13 +92,15 @@ git commit -m "feat: add @paddle/paddle-js and Paddle client token env vars"
 ### Task 2: Expose `paddle_price_id` on the public plans query
 
 **Files:**
+
 - Modify: `src/lib/subscription-plans.ts:44-58` (`PublicSubscriptionPlan`, `PUBLIC_PLAN_COLUMNS`)
 
 **Interfaces:**
+
 - Produces: `PublicSubscriptionPlan.paddle_price_id: string | null`, used by Task 3's `buildCheckoutOptions` and Task 4's `PricingCard`.
 
 `paddle_price_id` is not sensitive (RLS already allows authenticated read of active plan
-rows; this only changes which *columns* the public query selects), and it's read-only
+rows; this only changes which _columns_ the public query selects), and it's read-only
 column exposure — no RLS/migration change needed.
 
 - [ ] **Step 1: Add the field**
@@ -134,10 +144,12 @@ git commit -m "feat: expose paddle_price_id on the public subscription plans que
 ### Task 3: `buildCheckoutOptions` + `usePaddleCheckout` hook
 
 **Files:**
+
 - Create: `src/hooks/use-paddle-checkout.ts`
 - Test: `src/hooks/use-paddle-checkout.test.ts`
 
 **Interfaces:**
+
 - Consumes: `PublicSubscriptionPlan` (Task 2), `queryKeys.credits` (`src/constants/query-keys.ts`, already exists).
 - Produces:
   - `export function buildCheckoutOptions(plan: Pick<PublicSubscriptionPlan, "paddle_price_id">, user: { id: string; email?: string }): Parameters<Paddle["Checkout"]["open"]>[0]`
@@ -258,7 +270,10 @@ export function usePaddleCheckout(userId: string | undefined) {
   }, [queryClient, userId]);
 
   const openCheckout = useCallback(
-    (plan: Pick<PublicSubscriptionPlan, "paddle_price_id">, user: { id: string; email?: string }) => {
+    (
+      plan: Pick<PublicSubscriptionPlan, "paddle_price_id">,
+      user: { id: string; email?: string },
+    ) => {
       if (!paddle || !plan.paddle_price_id) return;
       paddle.Checkout.open(buildCheckoutOptions(plan, user));
     },
@@ -293,21 +308,26 @@ git commit -m "feat: add Paddle checkout hook with pure options builder"
 ### Task 4: Wire `PricingCard`, remove development-mode UI, flip the feature flag
 
 **Files:**
+
 - Modify: `src/components/pricing/pricing-card.tsx`
 - Modify: `src/routes/_authenticated/_app/pricing.tsx`
 - Modify: `src/config/features.ts`
 
 **Interfaces:**
+
 - Consumes: `usePaddleCheckout` (Task 3), `useAuth` (`src/hooks/use-auth.tsx`, existing).
 
 - [ ] **Step 1: Flip the feature flag**
 
 In `src/config/features.ts`, change:
+
 ```ts
   membershipPurchasing: {
     status: "development",
 ```
+
 to:
+
 ```ts
   membershipPurchasing: {
     status: "available",
@@ -513,6 +533,7 @@ git commit -m "feat: wire pricing page Choose Plan buttons to Paddle checkout"
 ### Task 5: CSP allowance for Paddle + browser verification
 
 **Files:**
+
 - Modify: `vite.config.ts:9-33` (`buildCsp`)
 
 **Interfaces:** none (config only)
@@ -526,41 +547,42 @@ CSP (not ours), so only `script-src` and `frame-src` are needed from our side.
 In `vite.config.ts`, update the `directives` object in `buildCsp`:
 
 ```ts
-  const directives: Record<string, string[]> = {
-    "default-src": ["'self'"],
-    "script-src": [
-      "'self'",
-      "'unsafe-inline'",
-      "https://hcaptcha.com",
-      "https://*.hcaptcha.com",
-      "https://cdn.paddle.com",
-    ],
-    "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-    "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
-    "img-src": ["'self'", "data:", "blob:", "https:"],
-    "connect-src": [
-      "'self'",
-      ...(supabaseOrigin ? [supabaseOrigin] : []),
-      "https://api.open-meteo.com",
-      "https://hcaptcha.com",
-      "https://*.hcaptcha.com",
-    ],
-    "frame-src": [
-      "https://hcaptcha.com",
-      "https://*.hcaptcha.com",
-      "https://buy.paddle.com",
-      "https://sandbox-buy.paddle.com",
-    ],
-    "object-src": ["'none'"],
-    "base-uri": ["'self'"],
-    "form-action": ["'self'"],
-    "frame-ancestors": ["'none'"],
-  };
+const directives: Record<string, string[]> = {
+  "default-src": ["'self'"],
+  "script-src": [
+    "'self'",
+    "'unsafe-inline'",
+    "https://hcaptcha.com",
+    "https://*.hcaptcha.com",
+    "https://cdn.paddle.com",
+  ],
+  "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+  "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+  "img-src": ["'self'", "data:", "blob:", "https:"],
+  "connect-src": [
+    "'self'",
+    ...(supabaseOrigin ? [supabaseOrigin] : []),
+    "https://api.open-meteo.com",
+    "https://hcaptcha.com",
+    "https://*.hcaptcha.com",
+  ],
+  "frame-src": [
+    "https://hcaptcha.com",
+    "https://*.hcaptcha.com",
+    "https://buy.paddle.com",
+    "https://sandbox-buy.paddle.com",
+  ],
+  "object-src": ["'none'"],
+  "base-uri": ["'self'"],
+  "form-action": ["'self'"],
+  "frame-ancestors": ["'none'"],
+};
 ```
 
 - [ ] **Step 2: Verify in a real browser and fix any remaining CSP violations**
 
 Run:
+
 ```bash
 bun run dev > /tmp/dev-server.log 2>&1 &
 sleep 4
@@ -579,6 +601,7 @@ here), add that exact domain to the relevant directive in `vite.config.ts` and r
 step. Repeat until no CSP violations appear when opening checkout.
 
 Stop the dev server when done:
+
 ```bash
 kill %1 2>/dev/null
 ```
@@ -620,6 +643,7 @@ plan's `credits_included` value — confirming the full loop: checkout → webho
 - [ ] **Step 3: Confirm the subscription row landed**
 
 Run:
+
 ```bash
 set -a && source .env && set +a && node -e '
 const { createClient } = require("@supabase/supabase-js");
@@ -628,6 +652,7 @@ db.from("subscriptions").select("*").order("created_at", { ascending: false }).l
   .then(({ data, error }) => console.log(JSON.stringify({ data, error }, null, 2)));
 '
 ```
+
 Expected: one row with `status: "active"` (or `"trialing"`), the correct `plan_id`, and a
 `paddle_customer_id` — this time with a real `user_id` populated (unlike sub-project #1's
 Task 6 simulation, which had no `custom_data` and correctly produced no row).
@@ -640,11 +665,11 @@ kill %1 2>/dev/null
 
 ## Summary
 
-| Task | Deliverable |
-|---|---|
-| 1 | `@paddle/paddle-js` installed, client token provisioned via API, env vars set |
-| 2 | `paddle_price_id` exposed on the public plans query |
-| 3 | `buildCheckoutOptions` (3 unit tests) + `usePaddleCheckout` hook |
-| 4 | `PricingCard` + `pricing.tsx` wired to checkout, feature flag flipped, dev-mode UI removed |
-| 5 | CSP allows Paddle's script + checkout iframe, verified with a real browser |
-| 6 | Full sandbox checkout completed, credits badge and `subscriptions` row confirmed |
+| Task | Deliverable                                                                                |
+| ---- | ------------------------------------------------------------------------------------------ |
+| 1    | `@paddle/paddle-js` installed, client token provisioned via API, env vars set              |
+| 2    | `paddle_price_id` exposed on the public plans query                                        |
+| 3    | `buildCheckoutOptions` (3 unit tests) + `usePaddleCheckout` hook                           |
+| 4    | `PricingCard` + `pricing.tsx` wired to checkout, feature flag flipped, dev-mode UI removed |
+| 5    | CSP allows Paddle's script + checkout iframe, verified with a real browser                 |
+| 6    | Full sandbox checkout completed, credits badge and `subscriptions` row confirmed           |

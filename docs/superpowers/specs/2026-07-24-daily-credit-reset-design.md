@@ -23,6 +23,7 @@ UI change.
 ## Scope
 
 In scope:
+
 - Plan data: uniform feature bullets across the 3 tiers, Atelier Elite's
   `credits_included` changed from 1500 (framed as "per year") to 150 (a daily allowance)
 - `user_entitlements.credits_reset_at` column + an atomic `consume_ai_credit` Postgres
@@ -33,6 +34,7 @@ In scope:
 - `UpgradeSlotsDialog` gets a working "View Membership Plans" link to `/pricing`
 
 Out of scope:
+
 - One-time credit packs (`UpgradeSlotsDialog`'s existing disabled section) — separate,
   still-unbuilt feature, untouched here
 - Timezone-aware reset (boundary is UTC midnight for everyone — see below)
@@ -69,12 +71,12 @@ exactly (`SECURITY DEFINER`, `SET search_path = pg_catalog, public`, `service_ro
 execute grant, no client access whatsoever):
 
 1. `SELECT ai_credits, credits_reset_at FROM user_entitlements WHERE user_id = _user_id
-   FOR UPDATE` — locks the row. This lock is what makes concurrent calls for the same
+FOR UPDATE` — locks the row. This lock is what makes concurrent calls for the same
    user safe (two requests racing can't both observe pre-reset credits), the same way
    `check_rate_limit`'s single-statement upsert gets atomicity from Postgres serializing
    conflicting writes on one key.
 2. Compute the post-reset credit count: `_daily_allowance` if `credits_reset_at IS
-   DISTINCT FROM CURRENT_DATE`, else the existing `ai_credits` value.
+DISTINCT FROM CURRENT_DATE`, else the existing `ai_credits` value.
 3. If that's `<= 0`: persist `ai_credits = 0, credits_reset_at = CURRENT_DATE`, return
    `(false, 0)`.
 4. Otherwise: persist `ai_credits = post_reset - 1, credits_reset_at = CURRENT_DATE`,
