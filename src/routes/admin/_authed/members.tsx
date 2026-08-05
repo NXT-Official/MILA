@@ -19,7 +19,7 @@ import {
 } from "@/components/admin/role-confirmation-dialog";
 import { errorMessage } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/admin/members")({
+export const Route = createFileRoute("/admin/_authed/members")({
   beforeLoad: ({ context }) => requireStaffRoutePermission(context.queryClient, "members.view"),
   component: MembersPage,
 });

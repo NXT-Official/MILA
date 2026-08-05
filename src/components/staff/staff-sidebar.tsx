@@ -31,10 +31,10 @@ interface StaffNavItem {
 // admin gets /admin/moderation and a moderator gets /moderator/moderation.
 const STAFF_LINKS: StaffNavItem[] = [
   {
-    to: "/admin",
+    to: "/admin/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
-    permission: STAFF_ROUTE_PERMISSIONS["/admin"],
+    permission: STAFF_ROUTE_PERMISSIONS["/admin/dashboard"],
   },
   {
     to: "/admin/members",

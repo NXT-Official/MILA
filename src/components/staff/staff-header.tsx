@@ -2,7 +2,7 @@ import { Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  "/admin": { title: "Dashboard", subtitle: "Overview & analytics" },
+  "/admin/dashboard": { title: "Dashboard", subtitle: "Overview & analytics" },
   "/admin/members": { title: "Members", subtitle: "Manage accounts & stewardship" },
   "/admin/subscription-plans": {
     title: "Subscription Plans",

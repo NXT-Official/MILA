@@ -10,7 +10,7 @@ export function SiteHeader() {
   const { session } = useAuth();
   const { data: gate } = useQuery({ ...staffGateQueryOptions(), enabled: !!session });
   // Moderators have staff access but no /admin tree.
-  const staffHome = gate?.is_admin ? "/admin" : MODERATOR_HOME;
+  const staffHome = gate?.is_admin ? "/admin/dashboard" : MODERATOR_HOME;
   const destination = session ? (gate?.can_access_staff_area ? staffHome : "/dashboard") : "/login";
   const label = session ? (gate?.can_access_staff_area ? "Staff" : "Dashboard") : "Sign in";
 
