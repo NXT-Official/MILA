@@ -20,7 +20,7 @@ import type { SubscriptionPlan } from "@/lib/subscription-plans";
 import { requireStaffRoutePermission } from "@/lib/staff-route";
 import { errorMessage } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/admin/subscription-plans")({
+export const Route = createFileRoute("/admin/_authed/subscription-plans")({
   beforeLoad: ({ context }) =>
     requireStaffRoutePermission(context.queryClient, "subscriptionPlans.manage"),
   component: SubscriptionPlansPage,

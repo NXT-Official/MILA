@@ -5,7 +5,7 @@ import { adminDashboardQueryOptions } from "@/lib/queries/admin";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { requireStaffRoutePermission } from "@/lib/staff-route";
 
-export const Route = createFileRoute("/_authenticated/admin/")({
+export const Route = createFileRoute("/admin/_authed/dashboard")({
   beforeLoad: ({ context }) =>
     requireStaffRoutePermission(context.queryClient, "admin.dashboard.view"),
   component: AdminDashboard,
