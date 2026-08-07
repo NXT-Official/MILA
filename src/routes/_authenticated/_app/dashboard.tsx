@@ -58,8 +58,11 @@ function getGreeting() {
   return "Good evening";
 }
 
-// Framer Motion animates inline transforms, so the prefers-reduced-motion rule in
-// styles.css never reaches it. Reduced motion drops the slide and keeps a crossfade.
+function greetingSuffix(fullName: string | null | undefined) {
+  const first = fullName?.trim().split(/\s+/)[0];
+  return first ? `, ${first}` : "";
+}
+
 const containerVariants = (reduce: boolean, stagger: number): Variants => ({
   hidden: { opacity: 1 },
   visible: { opacity: 1, transition: { staggerChildren: reduce ? 0 : stagger } },
@@ -114,12 +117,15 @@ function Dashboard() {
     setImageLoading(true);
     try {
       const res = await regenerateImage({ data: outfit });
-      setLook((prev) => (prev ? { ...prev, ...res } : prev));
+      setLook((prev) => (prev ? { ...prev, imageGenerationError: undefined, ...res } : prev));
+      setSavedLook(null);
       return res;
     } catch (e) {
       if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
-        setLook((prev) => (prev ? { ...prev, imageDataUri: null } : prev));
+        setLook((prev) =>
+          prev ? { ...prev, imageDataUri: null, imageGenerationError: undefined } : prev,
+        );
         return { imageDataUri: null, imageGenerationError: undefined };
       }
       const message = errorMessage(e, "Your look is ready, but Mila couldn’t create the visual.");
@@ -134,6 +140,7 @@ function Dashboard() {
   }
 
   async function generateLook() {
+    if (generating || imageLoading) return;
     if (!user || !profile?.body_type || !profile?.color_season) {
       toast.error("Complete your Style Profile first.");
       return;
@@ -178,7 +185,7 @@ function Dashboard() {
   }
 
   async function retryImage() {
-    if (!look) return;
+    if (!look || imageLoading || generating) return;
     const { outfit, hair, makeup, vibe_alignment_score } = look;
     const res = await fetchImage({ outfit, hair, makeup, vibe_alignment_score });
     if (res.imageDataUri) {
@@ -216,11 +223,15 @@ function Dashboard() {
     }
   }
 
-  // Presentation only: names the condition already disabling the button below.
   const blockedReason = !profileComplete
     ? "Complete your Style Profile first."
     : !climate
       ? "Still finding today’s weather. Choose a city in the weather panel to continue."
+      : null;
+
+  const saveBlockedReason =
+    look && !look.imageDataUri && !savingLook && !lookSaved
+      ? "Your look needs its visual before it can be saved."
       : null;
 
   return (
@@ -240,10 +251,10 @@ function Dashboard() {
               <div>
                 <h1
                   suppressHydrationWarning
-                  className="atelier-title text-4xl leading-none md:text-5xl text-balance"
+                  className="atelier-title text-4xl leading-none md:text-5xl text-balance wrap-break-word"
                 >
                   {getGreeting()}
-                  {profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}.
+                  {greetingSuffix(profile?.full_name)}.
                 </h1>
                 <p className="text-base text-muted-foreground mt-2 max-w-md text-pretty">
                   Let Mila compose an ideal OOTD for today's weather, your palette, and your
@@ -359,6 +370,7 @@ function Dashboard() {
                         variant="outline"
                         onClick={saveLookToHistory}
                         disabled={savingLook || lookSaved || !look.imageDataUri}
+                        aria-describedby={saveBlockedReason ? "save-blocked" : undefined}
                         size="pill"
                       >
                         {lookSaved ? (
@@ -416,6 +428,11 @@ function Dashboard() {
                         </Button>
                       )}
                     </div>
+                    {saveBlockedReason && (
+                      <p id="save-blocked" className="sr-only">
+                        {saveBlockedReason}
+                      </p>
+                    )}
                     <p className="mt-3 text-xs text-muted-foreground">
                       Each new look or visual uses one credit.
                     </p>
