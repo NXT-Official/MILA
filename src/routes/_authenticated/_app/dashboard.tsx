@@ -122,10 +122,7 @@ function Dashboard() {
         setLook((prev) => (prev ? { ...prev, imageDataUri: null } : prev));
         return { imageDataUri: null, imageGenerationError: undefined };
       }
-      const message = errorMessage(
-        e,
-        "The outfit is ready, but the visual could not be generated.",
-      );
+      const message = errorMessage(e, "Your look is ready, but Mila couldn’t create the visual.");
       setLook((prev) =>
         prev ? { ...prev, imageDataUri: null, imageGenerationError: message } : prev,
       );
@@ -142,7 +139,7 @@ function Dashboard() {
       return;
     }
     if (!climate) {
-      toast.error("Still detecting your local weather — try again in a moment.");
+      toast.error("Still finding today’s weather. Choose a city in the weather panel to continue.");
       return;
     }
     setGenerating(true);
@@ -171,7 +168,7 @@ function Dashboard() {
       if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
       } else {
-        toast.error(errorMessage(e, "Couldn't generate a look."));
+        toast.error(errorMessage(e, "Couldn’t compose a look. Please try again."));
       }
       return;
     }
@@ -185,7 +182,7 @@ function Dashboard() {
     const { outfit, hair, makeup, vibe_alignment_score } = look;
     const res = await fetchImage({ outfit, hair, makeup, vibe_alignment_score });
     if (res.imageDataUri) {
-      toast.success("Visual updated.");
+      toast.success("Visual ready.");
     } else if (res.imageGenerationError) {
       toast.error(res.imageGenerationError);
     }
@@ -194,7 +191,7 @@ function Dashboard() {
   async function saveLookToHistory() {
     if (!user || !look || !climate) return;
     if (!look.imageDataUri) {
-      toast.error("Wait for the visual to finish generating before saving.");
+      toast.error("Your look needs its visual before it can be saved.");
       return;
     }
     setSavingLook(true);
@@ -213,7 +210,7 @@ function Dashboard() {
       setSavedLook({ id: row.id, imageUrl: row.image_url });
       toast.success("Saved to your history.");
     } catch (e) {
-      toast.error(errorMessage(e, "The look could not be saved. Please try again."));
+      toast.error(errorMessage(e, "We couldn’t save that look. Please try again."));
     } finally {
       setSavingLook(false);
     }
@@ -221,9 +218,9 @@ function Dashboard() {
 
   // Presentation only: names the condition already disabling the button below.
   const blockedReason = !profileComplete
-    ? "Complete your style profile to unlock."
+    ? "Complete your Style Profile first."
     : !climate
-      ? "Still finding today's weather — choose a city in the weather panel to continue."
+      ? "Still finding today’s weather. Choose a city in the weather panel to continue."
       : null;
 
   return (
@@ -241,9 +238,6 @@ function Dashboard() {
           <div className="relative p-6 sm:p-8 md:p-10">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
-                {/* Greeting is derived from local time, so the SSR pass (server TZ) and
-                    hydration (browser TZ) legitimately disagree. React corrects it on the
-                    first client render; this just silences the expected warning. */}
                 <h1
                   suppressHydrationWarning
                   className="atelier-title text-4xl leading-none md:text-5xl text-balance"
@@ -322,15 +316,10 @@ function Dashboard() {
                   initial="hidden"
                   animate="visible"
                 >
-                  {/* WCAG 4.1.3: the skeleton announces the start, this announces the end.
-                      Scoped to its own node so later state changes inside the result
-                      (image retry, save) don't re-announce the whole subtree. */}
                   <p role="status" aria-live="polite" className="sr-only">
                     Your look is ready: {look.outfit.headline}
                   </p>
 
-                  {/* Three chips, not one: the combined string's min-content width
-                      exceeds the card on narrow viewports, and the card clips. */}
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label text-muted-foreground">
                       {vibe}
@@ -364,70 +353,72 @@ function Dashboard() {
                     />
                   </motion.div>
 
-                  <motion.div
-                    variants={resultItemVariants}
-                    className="flex flex-wrap items-center gap-3 border-t border-border pt-6"
-                  >
-                    <Button
-                      variant="outline"
-                      onClick={saveLookToHistory}
-                      disabled={savingLook || lookSaved || !look.imageDataUri}
-                      size="pill"
-                    >
-                      {lookSaved ? (
-                        <>
-                          <CheckCircle2 aria-hidden="true" /> Saved
-                        </>
-                      ) : savingLook ? (
-                        <>
-                          <Loader2 className="animate-spin" aria-hidden="true" /> Saving…
-                        </>
-                      ) : (
-                        <>
-                          <Bookmark aria-hidden="true" /> Save to history
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={retryImage}
-                      disabled={imageLoading || generating}
-                      size="pill"
-                    >
-                      {imageLoading ? (
-                        <>
-                          <Loader2 className="animate-spin" aria-hidden="true" /> Retrying…
-                        </>
-                      ) : (
-                        <>
-                          <RotateCcw aria-hidden="true" /> Retry visual
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={generateLook}
-                      disabled={imageLoading}
-                      size="pill"
-                    >
-                      <Sparkles aria-hidden="true" /> Try another
-                    </Button>
-                    {savedLook && (
+                  <motion.div variants={resultItemVariants} className="border-t border-border pt-6">
+                    <div className="flex flex-wrap items-center gap-3">
                       <Button
                         variant="outline"
-                        onClick={() =>
-                          openConcierge({
-                            lookId: savedLook.id,
-                            imageUrl: savedLook.imageUrl,
-                            title: look.outfit.headline,
-                            source: "Today's look",
-                          })
-                        }
+                        onClick={saveLookToHistory}
+                        disabled={savingLook || lookSaved || !look.imageDataUri}
                         size="pill"
                       >
-                        <Sparkles aria-hidden="true" /> Ask Mila about this look
+                        {lookSaved ? (
+                          <>
+                            <CheckCircle2 aria-hidden="true" /> Saved
+                          </>
+                        ) : savingLook ? (
+                          <>
+                            <Loader2 className="animate-spin" aria-hidden="true" /> Saving…
+                          </>
+                        ) : (
+                          <>
+                            <Bookmark aria-hidden="true" /> Save to history
+                          </>
+                        )}
                       </Button>
-                    )}
+                      <Button
+                        variant="ghost"
+                        onClick={retryImage}
+                        disabled={imageLoading || generating}
+                        size="pill"
+                      >
+                        {imageLoading ? (
+                          <>
+                            <Loader2 className="animate-spin" aria-hidden="true" /> Drawing…
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw aria-hidden="true" /> New visual
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={generateLook}
+                        disabled={imageLoading}
+                        size="pill"
+                      >
+                        <Sparkles aria-hidden="true" /> Try another look
+                      </Button>
+                      {savedLook && (
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            openConcierge({
+                              lookId: savedLook.id,
+                              imageUrl: savedLook.imageUrl,
+                              title: look.outfit.headline,
+                              source: "Today's look",
+                            })
+                          }
+                          size="pill"
+                        >
+                          <Sparkles aria-hidden="true" /> Ask Mila about this look
+                        </Button>
+                      )}
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Each new look or visual uses one credit.
+                    </p>
                   </motion.div>
                 </motion.div>
               ) : (
@@ -436,7 +427,7 @@ function Dashboard() {
                     Set the mood. Mila will compose the rest.
                   </h2>
                   <p className="text-base text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
-                    Each look is composed from first principles — tuned to your palette, body
+                    Each look is composed from first principles - tuned to your palette, body
                     architecture, and the weather outside.
                   </p>
                 </div>
