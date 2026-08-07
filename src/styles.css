@@ -260,8 +260,10 @@
     );
   }
 
+  /* Gold-Is-Not-Ink: accent fails AA as text on light grounds (1.97:1 on canvas).
+     Muted holds 5.26:1 on canvas, 4.82:1 on the hero gradient, 6.71:1 in dark. */
   .atelier-kicker {
-    @apply text-xs font-semibold uppercase tracking-label-tight text-accent;
+    @apply text-xs font-semibold uppercase tracking-label-tight text-muted-foreground;
   }
 
   .atelier-title {
