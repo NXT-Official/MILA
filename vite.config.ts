@@ -7,6 +7,9 @@ import { nitro } from "nitro/vite";
 import mkcert from "vite-plugin-mkcert";
 
 function buildCsp(supabaseUrl: string | undefined): string {
+  // Dev-only allowance so impeccable live mode can load. Guarded by NODE_ENV.
+  const live = process.env.NODE_ENV === "development" ? ["http://localhost:8400"] : [];
+
   let supabaseOrigin = "";
   try {
     supabaseOrigin = supabaseUrl ? new URL(supabaseUrl).origin : "";
@@ -19,6 +22,7 @@ function buildCsp(supabaseUrl: string | undefined): string {
     "script-src": [
       "'self'",
       "'unsafe-inline'",
+      ...live,
       "https://hcaptcha.com",
       "https://*.hcaptcha.com",
       "https://cdn.paddle.com",
@@ -28,6 +32,7 @@ function buildCsp(supabaseUrl: string | undefined): string {
     "img-src": ["'self'", "data:", "blob:", "https:"],
     "connect-src": [
       "'self'",
+      ...live,
       ...(supabaseOrigin ? [supabaseOrigin] : []),
       "https://api.open-meteo.com",
       "https://hcaptcha.com",
