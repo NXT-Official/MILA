@@ -25,7 +25,7 @@ export function SiteHeader() {
         <Button
           asChild
           variant="outline"
-          size="sm"
+          size="md"
           className="rounded-full text-label uppercase tracking-label"
         >
           <Link to={destination}>{label}</Link>

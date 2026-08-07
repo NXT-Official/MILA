@@ -9,7 +9,9 @@ export function FinalCtaSection({ content }: { content: FinalCtaContent }) {
     <Reveal className="mx-auto w-full max-w-6xl px-6 pb-24">
       <Card className="p-10 text-center sm:p-16">
         <h2 className="font-serif">{content.heading}</h2>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed">{content.body}</p>
+        <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-pretty">
+          {content.body}
+        </p>
         <div className="mt-8 flex justify-center">
           <CtaButton />
         </div>

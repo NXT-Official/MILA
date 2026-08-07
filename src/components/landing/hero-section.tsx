@@ -16,7 +16,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
           <br />
           {content.headlineLine2}
         </h1>
-        <p className="mt-5 max-w-md text-base leading-relaxed">{content.subhead}</p>
+        <p className="mt-5 max-w-md text-base leading-relaxed text-pretty">{content.subhead}</p>
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <CtaButton />
           <span className="text-xs text-muted-foreground">{content.ctaNote}</span>
@@ -36,10 +36,10 @@ export function HeroSection({ content }: { content: HeroContent }) {
             </span>
           </div>
           <p className="atelier-kicker mt-6">Outfit</p>
-          <h3 className="mt-1 font-serif text-2xl leading-snug text-foreground">
+          <p className="mt-1 font-serif text-2xl leading-snug text-foreground">
             {preview.outfitTitle}
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed">{preview.outfitBody}</p>
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-pretty">{preview.outfitBody}</p>
           <div className="mt-6 grid grid-cols-2 gap-6 border-t border-border pt-5">
             <div>
               <p className="atelier-kicker">Hair</p>

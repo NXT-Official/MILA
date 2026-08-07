@@ -17,7 +17,7 @@ export function TestimonialsSection({ testimonials }: { testimonials: Testimonia
                 ))}
               </div>
               <blockquote className="mt-3 font-serif text-base leading-snug text-foreground">
-                "{t.quote}"
+                &ldquo;{t.quote}&rdquo;
               </blockquote>
               <figcaption className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
                 {t.name} <SeasonTag season={t.season} />

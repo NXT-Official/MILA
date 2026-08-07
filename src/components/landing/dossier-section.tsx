@@ -9,7 +9,7 @@ export function DossierSection({ content }: { content: DossierContent }) {
       <div>
         <p className="atelier-kicker">{content.kicker}</p>
         <h2 className="mt-2 font-serif">{content.heading}</h2>
-        <p className="mt-4 max-w-md text-sm leading-relaxed">{content.body}</p>
+        <p className="mt-4 max-w-md text-base leading-relaxed text-pretty">{content.body}</p>
       </div>
 
       <Card className="p-7">

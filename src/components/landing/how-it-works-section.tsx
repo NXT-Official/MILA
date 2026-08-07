@@ -10,9 +10,9 @@ export function HowItWorksSection({ content }: { content: HowItWorksContent }) {
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         {content.steps.map((s) => (
           <Card key={s._key} className="p-6">
-            <span className="font-serif text-3xl text-accent">{s.number}</span>
+            <span className="font-serif text-3xl text-muted-foreground">{s.number}</span>
             <h3 className="mt-3 font-serif text-xl text-foreground">{s.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed">{s.body}</p>
+            <p className="mt-2 text-base leading-relaxed text-pretty">{s.body}</p>
           </Card>
         ))}
       </div>

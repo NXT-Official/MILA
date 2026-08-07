@@ -8,7 +8,7 @@ export function DupeHunterSection({ content }: { content: DupeHunterContent }) {
       <Card className="atelier-hero-card p-8 sm:p-12">
         <p className="atelier-kicker">{content.kicker}</p>
         <h2 className="mt-2 font-serif">{content.heading}</h2>
-        <p className="mt-3 max-w-lg text-sm leading-relaxed">{content.body}</p>
+        <p className="mt-3 max-w-lg text-base leading-relaxed text-pretty">{content.body}</p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 max-w-2xl">
           <div className="rounded-panel border border-border bg-card/70 p-5">
             <p className="text-micro uppercase tracking-label text-muted-foreground">
@@ -19,8 +19,8 @@ export function DupeHunterSection({ content }: { content: DupeHunterContent }) {
               {content.inspiration.price}
             </p>
           </div>
-          <div className="rounded-panel border border-line bg-accent-soft p-5">
-            <p className="text-micro uppercase tracking-label text-accent">
+          <div className="rounded-panel border border-border bg-accent-soft p-5">
+            <p className="text-micro uppercase tracking-label text-ink">
               {content.milaMatch.label}
             </p>
             <p className="mt-2 font-serif text-lg text-foreground">{content.milaMatch.title}</p>
