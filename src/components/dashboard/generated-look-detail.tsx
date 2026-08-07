@@ -15,7 +15,7 @@ export function GeneratedLookDetail({
   media: ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[42fr_58fr] lg:gap-8">
+    <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[42fr_58fr] md:gap-8">
       <div>{media}</div>
       <div className="space-y-4">
         <LookSection kicker="Outfit" title={outfit.headline}>
@@ -25,7 +25,7 @@ export function GeneratedLookDetail({
             className="font-serif text-lg leading-relaxed text-foreground/90"
           />
           <div className="mt-3 border-t border-border/70 pt-3">
-            <p className="mb-1 text-micro uppercase tracking-label text-accent">Styling notes</p>
+            <p className="mb-1 text-micro uppercase tracking-label text-ink">Styling notes</p>
             <ExpandableText
               text={outfit.styling_notes}
               clampClassName="line-clamp-3"
@@ -40,7 +40,7 @@ export function GeneratedLookDetail({
             className="font-serif text-base leading-relaxed text-foreground/90"
           />
           <div className="mt-3 border-t border-border/70 pt-3">
-            <p className="mb-1 text-micro uppercase tracking-label text-accent">How to</p>
+            <p className="mb-1 text-micro uppercase tracking-label text-ink">How to</p>
             <ExpandableText
               text={hair.execution_tip}
               clampClassName="line-clamp-2"
@@ -55,7 +55,7 @@ export function GeneratedLookDetail({
             className="font-serif text-base leading-relaxed text-foreground/90"
           />
           <div className="mt-3 border-t border-border/70 pt-3">
-            <p className="mb-1 text-micro uppercase tracking-label text-accent">How to</p>
+            <p className="mb-1 text-micro uppercase tracking-label text-ink">How to</p>
             <ExpandableText
               text={makeup.details}
               clampClassName="line-clamp-2"

@@ -146,7 +146,7 @@ export function StudioCameraDrawer({
     >
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t border-foreground/5 dark:border-white/10 px-6 pt-8 pb-10 max-h-[92vh] overflow-y-auto"
+        className="rounded-t-panel border-t border-foreground/5 dark:border-white/10 px-6 pt-8 pb-[max(2.5rem,calc(1rem+env(safe-area-inset-bottom)))] max-h-[92dvh] overflow-y-auto overscroll-contain"
       >
         {postingOpen ? (
           <>
@@ -165,7 +165,7 @@ export function StudioCameraDrawer({
               <button
                 type="button"
                 onClick={() => !postingSubmitting && setPostingOpen(false)}
-                className="inline-flex items-center gap-1.5 mx-auto text-micro uppercase tracking-label-xwide text-stone hover:text-ink"
+                className="inline-flex items-center gap-1.5 mx-auto text-micro uppercase tracking-label-xwide text-muted-foreground hover:text-ink"
               >
                 <ArrowLeft className="size-3" /> Back to Lens
               </button>
@@ -195,20 +195,20 @@ export function StudioCameraDrawer({
             <button
               type="button"
               onClick={() => setPostingOpen(true)}
-              className="group mx-auto mb-6 flex max-w-md w-full items-center justify-between gap-4 rounded-2xl border border-porcelain/60 bg-linear-to-r from-atelier-ivory via-background to-atelier-ivory/70 backdrop-blur-xl px-5 py-4 text-left shadow-atelier-soft hover:shadow-atelier-float transition-shadow"
+              className="group mx-auto mb-6 flex max-w-md w-full items-center justify-between gap-4 rounded-control border border-border bg-linear-to-r from-canvas via-background to-canvas/70 px-5 py-4 text-left shadow-paper hover:shadow-raised transition-shadow"
             >
               <span className="flex items-center gap-3">
-                <span className="size-10 rounded-full border border-porcelain/60 bg-background flex items-center justify-center">
+                <span className="size-10 rounded-full border border-border bg-background flex items-center justify-center">
                   <Camera className="size-4 text-ink" strokeWidth={1.75} />
                 </span>
                 <span className="flex flex-col">
-                  <span className="text-nano uppercase tracking-label-xwide text-stone">
+                  <span className="text-nano uppercase tracking-label-xwide text-muted-foreground">
                     Daily Drop
                   </span>
                   <span className="font-serif text-base text-ink">Post Today's OOTD</span>
                 </span>
               </span>
-              <span className="text-micro uppercase tracking-label-xwide text-stone group-hover:text-ink flex items-center gap-1">
+              <span className="text-micro uppercase tracking-label-xwide text-muted-foreground group-hover:text-ink flex items-center gap-1">
                 Dual capture <ArrowRight className="size-3.5" strokeWidth={1.75} />
               </span>
             </button>
@@ -219,12 +219,12 @@ export function StudioCameraDrawer({
           <div
             role="tablist"
             aria-label="Lens mode"
-            className="mx-auto mb-6 relative grid grid-cols-2 max-w-md rounded-full atelier-glass p-1 shadow-atelier-soft"
+            className="mx-auto mb-6 relative grid grid-cols-2 max-w-md rounded-full border border-border bg-canvas p-1 shadow-paper"
           >
             <span
               aria-hidden
               className={cn(
-                "absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-full bg-atelier-ivory shadow-atelier-soft transition-transform duration-500 ease-out",
+                "absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-full bg-canvas shadow-paper transition-transform duration-300 ease-editorial",
                 mode === "dupe-hunter" ? "translate-x-[calc(100%+0.25rem)]" : "translate-x-0",
               )}
             />
@@ -241,7 +241,7 @@ export function StudioCameraDrawer({
                     if (m.id !== "dupe-hunter") resetDupeState();
                   }}
                   className={cn(
-                    "relative z-10 py-2.5 text-xs uppercase tracking-label-xwide rounded-full transition-colors duration-300",
+                    "relative z-10 min-h-11 px-2 text-xs uppercase tracking-label-xwide rounded-full transition-colors duration-300",
                     active
                       ? "text-ink font-semibold"
                       : "text-muted-foreground hover:text-foreground",
@@ -292,10 +292,10 @@ export function StudioCameraDrawer({
                 {dupeLoading && (
                   <div className="flex flex-col items-center justify-center gap-4 py-12">
                     <div className="relative size-16">
-                      <span className="absolute inset-0 rounded-full border border-atelier-champagne/40 animate-ping" />
-                      <span className="absolute inset-2 rounded-full border border-atelier-champagne/60 animate-pulse" />
+                      <span className="absolute inset-0 rounded-full border border-accent/40 animate-ping" />
+                      <span className="absolute inset-2 rounded-full border border-accent/60 animate-pulse" />
                       <Loader2
-                        className="absolute inset-0 m-auto size-5 text-atelier-champagne animate-spin"
+                        className="absolute inset-0 m-auto size-5 text-accent animate-spin"
                         strokeWidth={1.25}
                       />
                     </div>
@@ -307,12 +307,12 @@ export function StudioCameraDrawer({
 
                 {dupeResult && !dupeLoading && (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-4 rounded-2xl atelier-glass p-4">
+                    <div className="flex items-center gap-4 rounded-control border border-border bg-canvas p-4">
                       {inspirationPreview && (
                         <img
                           src={inspirationPreview}
                           alt="Your inspiration"
-                          className="size-16 rounded-xl object-cover border border-porcelain/60"
+                          className="size-16 rounded-control object-cover border border-border"
                         />
                       )}
                       <div className="min-w-0">
@@ -326,7 +326,7 @@ export function StudioCameraDrawer({
                           {dupeResult.inspiration.silhouette_tags.slice(0, 3).map((t) => (
                             <span
                               key={t}
-                              className="text-nano uppercase tracking-label text-stone px-1.5 py-0.5 rounded-full border border-porcelain/60"
+                              className="text-nano uppercase tracking-label text-muted-foreground px-1.5 py-0.5 rounded-full border border-border"
                             >
                               {t}
                             </span>
@@ -360,8 +360,8 @@ export function StudioCameraDrawer({
                             key={d.id}
                             className="min-w-0 shrink-0 basis-[78%] snap-start sm:basis-[calc(50%-0.375rem)]"
                           >
-                            <div className="h-full rounded-2xl atelier-glass overflow-hidden flex flex-col shadow-atelier-soft">
-                              <div className="aspect-3/4 bg-atelier-ivory/60 overflow-hidden">
+                            <div className="h-full rounded-control border border-border bg-canvas overflow-hidden flex flex-col shadow-paper">
+                              <div className="aspect-3/4 bg-canvas/60 overflow-hidden">
                                 {d.image_url && (
                                   <img
                                     src={d.image_url}
@@ -379,7 +379,7 @@ export function StudioCameraDrawer({
                                 )}
                                 <div
                                   className={cn(
-                                    "h-full w-full flex-col items-center justify-center gap-2 text-stone",
+                                    "h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground",
                                     d.image_url ? "hidden" : "flex",
                                   )}
                                 >
@@ -407,7 +407,7 @@ export function StudioCameraDrawer({
                                   href={d.affiliate_link}
                                   target="_blank"
                                   rel="noopener noreferrer sponsored"
-                                  className="inline-flex items-center justify-center gap-1.5 h-9 rounded-full bg-ink text-atelier-ivory text-micro uppercase tracking-label-xwide hover:bg-ink/90 transition-colors"
+                                  className="atelier-focus-ring inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-ink text-canvas text-micro uppercase tracking-label-xwide transition-colors hover:bg-ink/90 active:bg-ink/80"
                                 >
                                   Shop the Dupe{" "}
                                   <ExternalLink className="size-3" strokeWidth={1.75} />
@@ -418,7 +418,7 @@ export function StudioCameraDrawer({
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-porcelain/60 p-6 text-center">
+                      <div className="rounded-control border border-dashed border-border p-6 text-center">
                         <p className="font-serif text-base text-ink">
                           No close matches in the catalog yet.
                         </p>

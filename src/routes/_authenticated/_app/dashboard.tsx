@@ -32,7 +32,7 @@ import { queryKeys } from "@/constants/query-keys";
 import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
-import { motion, type Variants } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { errorMessage } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
@@ -58,22 +58,20 @@ function getGreeting() {
   return "Good evening";
 }
 
-const cardContainerVariants: Variants = {
+// Framer Motion animates inline transforms, so the prefers-reduced-motion rule in
+// styles.css never reaches it. Reduced motion drops the slide and keeps a crossfade.
+const containerVariants = (reduce: boolean, stagger: number): Variants => ({
   hidden: { opacity: 1 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
-};
-const cardItemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
-};
-const resultContainerVariants: Variants = {
-  hidden: { opacity: 1 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-};
-const resultItemVariants: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
-};
+  visible: { opacity: 1, transition: { staggerChildren: reduce ? 0 : stagger } },
+});
+const itemVariants = (reduce: boolean, offset: number, duration: number): Variants => ({
+  hidden: { opacity: 0, y: reduce ? 0 : offset },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: reduce ? 0.2 : duration, ease: "easeOut" as const },
+  },
+});
 
 export const Route = createFileRoute("/_authenticated/_app/dashboard")({
   component: Dashboard,
@@ -84,6 +82,11 @@ type Vibe = (typeof VIBES)[number];
 function Dashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const reduce = useReducedMotion() ?? false;
+  const cardContainerVariants = containerVariants(reduce, 0.08);
+  const cardItemVariants = itemVariants(reduce, 12, 0.35);
+  const resultContainerVariants = containerVariants(reduce, 0.1);
+  const resultItemVariants = itemVariants(reduce, 16, 0.4);
 
   const { data: profile } = useQuery({
     ...profileQueryOptions(user?.id),
@@ -216,6 +219,13 @@ function Dashboard() {
     }
   }
 
+  // Presentation only: names the condition already disabling the button below.
+  const blockedReason = !profileComplete
+    ? "Complete your style profile to unlock."
+    : !climate
+      ? "Still finding today's weather — choose a city in the weather panel to continue."
+      : null;
+
   return (
     <motion.div
       className="atelier-page max-w-5xl"
@@ -231,11 +241,10 @@ function Dashboard() {
           <div className="relative p-6 sm:p-8 md:p-10">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
-                <p className="atelier-kicker">Today</p>
-                <h2 className="atelier-title mt-2">
+                <h1 className="atelier-title text-balance">
                   {getGreeting()}
                   {profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}.
-                </h2>
+                </h1>
                 <p className="text-sm text-muted-foreground mt-2 max-w-md">
                   Let Mila compose an ideal OOTD for today's weather, your palette, and your
                   silhouette.
@@ -246,9 +255,17 @@ function Dashboard() {
 
             <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
               <div className="w-full sm:max-w-xs">
-                <p className="atelier-kicker mb-2">Today's Mood</p>
+                <span
+                  id="vibe-label"
+                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
+                >
+                  Today's Mood
+                </span>
                 <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
-                  <SelectTrigger className="h-11 rounded-full border-border bg-card/60 backdrop-blur uppercase tracking-label text-label">
+                  <SelectTrigger
+                    aria-labelledby="vibe-label"
+                    className="h-11 rounded-full border-border bg-card/60 backdrop-blur uppercase tracking-label text-label"
+                  >
                     <SelectValue placeholder="Select an occasion" />
                   </SelectTrigger>
                   <SelectContent>
@@ -263,6 +280,7 @@ function Dashboard() {
               <Button
                 onClick={generateLook}
                 disabled={generating || !profileComplete || !climate || imageLoading}
+                aria-describedby={blockedReason ? "generate-blocked" : undefined}
                 className="w-full sm:w-auto h-11 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90 uppercase tracking-label text-xs whitespace-normal text-center leading-snug"
               >
                 {generating ? (
@@ -282,9 +300,9 @@ function Dashboard() {
                   </>
                 )}
               </Button>
-              {!profileComplete && (
-                <span className="text-xs text-muted-foreground">
-                  Complete your style profile to unlock.
+              {blockedReason && (
+                <span id="generate-blocked" className="text-xs text-muted-foreground">
+                  {blockedReason}
                 </span>
               )}
             </div>
@@ -299,6 +317,13 @@ function Dashboard() {
                   initial="hidden"
                   animate="visible"
                 >
+                  {/* WCAG 4.1.3: the skeleton announces the start, this announces the end.
+                      Scoped to its own node so later state changes inside the result
+                      (image retry, save) don't re-announce the whole subtree. */}
+                  <p role="status" aria-live="polite" className="sr-only">
+                    Your look is ready: {look.outfit.headline}
+                  </p>
+
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 backdrop-blur px-3 py-1 text-micro uppercase tracking-label-wide">
                       <span className="text-muted-foreground">{vibe}</span>
@@ -378,7 +403,7 @@ function Dashboard() {
                       disabled={imageLoading}
                       size="pill"
                     >
-                      <Sparkles className="size-4 mr-2 text-accent" /> Try another
+                      <Sparkles className="size-4 mr-2" aria-hidden="true" /> Try another
                     </Button>
                     {savedLook && (
                       <Button
@@ -393,15 +418,17 @@ function Dashboard() {
                         }
                         size="pill"
                       >
-                        <Sparkles className="size-4 mr-2 text-accent" /> Ask Mila about this look
+                        <Sparkles className="size-4 mr-2" aria-hidden="true" /> Ask Mila about this
+                        look
                       </Button>
                     )}
                   </motion.div>
                 </motion.div>
               ) : (
-                <div className="rounded-2xl border border-border bg-card p-10 text-center">
-                  <p className="atelier-kicker">ready when you are</p>
-                  <p className="atelier-title mt-2">Set the mood. Mila will compose the rest.</p>
+                <div className="p-10 text-center">
+                  <h2 className="atelier-title text-balance">
+                    Set the mood. Mila will compose the rest.
+                  </h2>
                   <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
                     Each look is composed from first principles — tuned to your palette, body
                     architecture, and the weather outside.

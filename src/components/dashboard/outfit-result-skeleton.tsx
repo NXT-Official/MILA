@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function SkeletonCard({ compact }: { compact?: boolean }) {
   return (
-    <div className="rounded-card border border-border bg-card p-5 md:p-6 shadow-paper">
+    <div className="rounded-card border border-border bg-card p-5 md:p-6">
       <Skeleton className="rounded-full bg-foreground/8 h-2.5 w-16" />
       {compact ? (
         <div className="mt-4 space-y-2">
@@ -28,11 +28,11 @@ export function OutfitResultSkeleton() {
   return (
     <div className="space-y-6" role="status" aria-live="polite">
       <span className="sr-only">Creating your outfit and visual…</span>
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[42fr_58fr] lg:gap-8">
+      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[42fr_58fr] md:gap-8">
         <div className="atelier-media-frame max-w-lg" aria-hidden="true">
           <Skeleton className="absolute inset-0 bg-accent-soft/50" />
           <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-            <Loader2 className="size-5 animate-spin text-accent" />
+            <Loader2 className="size-5 animate-spin text-ink" />
             <p className="font-serif text-lg text-foreground">Visualizing your look…</p>
             <p className="text-xs text-muted-foreground">
               Creating your personalized outfit visual.

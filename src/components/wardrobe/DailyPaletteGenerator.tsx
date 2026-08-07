@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { RefreshCw, Sparkles, Bookmark } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { generateDailyPalette } from "@/lib/color-analysis/paletteGenerator";
 import { migrateLegacySeason } from "@/lib/color-analysis/schemaMigration";
 import { useAuth } from "@/hooks/use-auth";
@@ -29,6 +29,7 @@ function hexToRgba(hex: string, alpha: number): string {
 export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: string | null }) {
   const [isRotating, setIsRotating] = useState(false);
   const [mixCount, setMixCount] = useState(1);
+  const reduce = useReducedMotion() ?? false;
 
   const normalizedSeason = userColorSeason
     ? migrateLegacySeason(userColorSeason)
@@ -105,7 +106,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
     <div className="bg-card rounded-card shadow-paper border border-border p-5 space-y-5">
       <div className="flex items-center justify-between">
         <span className="atelier-kicker">{today}</span>
-        <span className="inline-flex items-center rounded-pill bg-accent-soft px-2.5 py-0.5 text-micro uppercase tracking-label text-accent">
+        <span className="inline-flex items-center rounded-pill bg-accent-soft px-2.5 py-0.5 text-micro uppercase tracking-label text-ink">
           {look.styleVibe}
         </span>
         <span className="atelier-kicker">Mix {String(mixCount).padStart(2, "0")}</span>
@@ -120,9 +121,13 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
           >
             <motion.div
               key={`${look.baseHex}-${look.statementHex}-${look.accentHex}-${i}`}
-              initial={{ scale: 0.85, opacity: 0 }}
+              initial={{ scale: reduce ? 1 : 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 18, delay: i * 0.06 }}
+              transition={{
+                duration: reduce ? 0.2 : 0.35,
+                ease: [0.22, 1, 0.36, 1],
+                delay: reduce ? 0 : i * 0.06,
+              }}
               className="size-10 rounded-full border-2 border-white shadow-sm"
               style={{ backgroundColor: s.hex }}
             />
@@ -136,11 +141,11 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
         ))}
       </div>
 
-      <div className="rounded-xl bg-accent-soft border-l-[3px] border-l-accent p-3">
+      <div className="rounded-xl border border-accent/60 bg-accent-soft p-3">
         <div className="flex items-start gap-2">
-          <Sparkles className="size-4 text-accent mt-0.5 shrink-0" />
+          <Sparkles className="size-4 text-ink mt-0.5 shrink-0" aria-hidden="true" />
           <p className="text-[13px] text-muted-foreground leading-snug">
-            <strong className="text-accent">Mila&apos;s take —</strong>{" "}
+            <strong className="text-ink">Mila&apos;s take —</strong>{" "}
             {look.isSisterSeasonIncluded
               ? "I borrowed the accent from your Sister Season for a little range without leaving your palette."
               : look.insight}

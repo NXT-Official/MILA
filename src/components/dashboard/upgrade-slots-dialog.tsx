@@ -20,7 +20,7 @@ export function UpgradeSlotsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <div className="mx-auto sm:mx-0 mb-2 inline-flex items-center justify-center size-12 rounded-full bg-atelier-champagne/20 ring-1 ring-atelier-champagne/40">
+          <div className="mx-auto sm:mx-0 mb-2 inline-flex items-center justify-center size-12 rounded-full bg-accent/20 ring-1 ring-accent/40">
             <Zap className="size-5 text-foreground" strokeWidth={1.75} />
           </div>
           <DialogTitle className="font-serif text-2xl">Studio Energy Depleted</DialogTitle>

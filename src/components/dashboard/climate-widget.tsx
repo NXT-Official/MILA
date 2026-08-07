@@ -125,9 +125,9 @@ export function ClimateWidget({
     : (value?.label ?? (error ? "Weather unavailable" : "Detecting weather…"));
 
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-white/20 bg-background/40 backdrop-blur px-4 py-3 min-w-55">
+    <div className="flex w-full flex-col gap-2 rounded-control border border-border bg-card px-4 py-3 sm:w-auto sm:min-w-55">
       <div className="flex items-center gap-3">
-        <span className="grid place-items-center size-8 rounded-full border border-white/20 bg-foreground/4 text-foreground">
+        <span className="grid place-items-center size-8 rounded-full border border-border bg-foreground/4 text-foreground">
           <ClimateGlyph icon={value?.icon ?? "cloud"} className="size-4" />
         </span>
         <div className="leading-tight">
@@ -139,7 +139,7 @@ export function ClimateWidget({
       </div>
       <div className="flex items-center gap-2">
         <Select value={hubId} onValueChange={selectHub}>
-          <SelectTrigger className="h-8 rounded-full text-label uppercase tracking-label bg-background/60">
+          <SelectTrigger className="rounded-full text-label uppercase tracking-label bg-background/60">
             <SelectValue placeholder="Pick a hub">
               {HUBS.find((h) => h.id === hubId)?.city.toUpperCase()}
             </SelectValue>
@@ -156,8 +156,8 @@ export function ClimateWidget({
           type="button"
           onClick={detect}
           disabled={loading}
-          title="Use my location"
-          className="shrink-0 inline-flex items-center justify-center size-8 rounded-full border border-white/20 bg-background/60 hover:bg-foreground hover:text-background transition-colors"
+          aria-label="Use my location"
+          className="atelier-focus-ring shrink-0 inline-flex items-center justify-center size-11 rounded-full border border-border bg-background/60 transition-colors hover:bg-foreground hover:text-background active:bg-foreground active:text-background disabled:opacity-50"
         >
           {loading ? (
             <Loader2 className="size-3.5 animate-spin" />

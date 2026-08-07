@@ -22,7 +22,7 @@ export function OutfitVisual({
       <div className="atelier-media-frame max-w-lg" role="status">
         <Skeleton className="absolute inset-0 bg-accent-soft/50" />
         <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-          <Loader2 className="size-5 animate-spin text-accent" aria-hidden="true" />
+          <Loader2 className="size-5 animate-spin text-ink" aria-hidden="true" />
           <p className="font-serif text-lg text-foreground">Visualizing your look…</p>
           <p className="text-xs text-muted-foreground">Creating your personalized outfit visual.</p>
         </div>
@@ -52,7 +52,7 @@ export function OutfitVisual({
         {onRetry ? (
           <Button
             variant="outline"
-            size="sm"
+            size="md"
             onClick={onRetry}
             disabled={retryDisabled}
             className="rounded-full uppercase tracking-label text-label"

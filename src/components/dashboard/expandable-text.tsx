@@ -18,10 +18,13 @@ export function ExpandableText({
   useEffect(() => {
     const el = ref.current;
     if (!el || expanded) return;
+    // Observe the element, not the window: mobile browser chrome collapsing fires
+    // resize continuously, and only this element's box actually matters.
     const check = () => setOverflowing(el.scrollHeight - el.clientHeight > 1);
     check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [text, clampClassName, expanded]);
 
   return (
@@ -35,7 +38,7 @@ export function ExpandableText({
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-controls={id}
-          className="atelier-focus-ring mt-1 rounded-control text-label font-medium uppercase tracking-label text-accent hover:underline"
+          className="atelier-focus-ring mt-1 rounded-control text-label font-medium uppercase tracking-label text-ink underline decoration-1 underline-offset-4 hover:decoration-2"
         >
           {expanded ? "Show less" : "Read more"}
         </button>
