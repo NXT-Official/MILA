@@ -235,17 +235,23 @@ function Dashboard() {
     >
       <Card asChild className="relative mb-10 sm:mb-14 overflow-hidden atelier-hero-card">
         <motion.section variants={cardItemVariants}>
-          <div className="pointer-events-none absolute -top-32 -right-20 h-80 w-80 rounded-full bg-atelier-champagne/25 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-atelier-rose/15 blur-3xl" />
+          <div className="pointer-events-none absolute -top-32 -right-20 h-80 w-80 rounded-full bg-accent/25 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-rose/15 blur-3xl" />
 
           <div className="relative p-6 sm:p-8 md:p-10">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div>
-                <h1 className="atelier-title text-balance">
+                {/* Greeting is derived from local time, so the SSR pass (server TZ) and
+                    hydration (browser TZ) legitimately disagree. React corrects it on the
+                    first client render; this just silences the expected warning. */}
+                <h1
+                  suppressHydrationWarning
+                  className="atelier-title text-4xl leading-none md:text-5xl text-balance"
+                >
                   {getGreeting()}
                   {profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}.
                 </h1>
-                <p className="text-sm text-muted-foreground mt-2 max-w-md">
+                <p className="text-base text-muted-foreground mt-2 max-w-md text-pretty">
                   Let Mila compose an ideal OOTD for today's weather, your palette, and your
                   silhouette.
                 </p>
@@ -264,13 +270,13 @@ function Dashboard() {
                 <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
                   <SelectTrigger
                     aria-labelledby="vibe-label"
-                    className="h-11 rounded-full border-border bg-card/60 backdrop-blur uppercase tracking-label text-label"
+                    className="h-11 rounded-full border-border bg-card text-sm"
                   >
                     <SelectValue placeholder="Select an occasion" />
                   </SelectTrigger>
                   <SelectContent>
                     {VIBES.map((v) => (
-                      <SelectItem key={v} value={v} className="uppercase tracking-label text-label">
+                      <SelectItem key={v} value={v} className="text-sm">
                         {v}
                       </SelectItem>
                     ))}
@@ -281,27 +287,26 @@ function Dashboard() {
                 onClick={generateLook}
                 disabled={generating || !profileComplete || !climate || imageLoading}
                 aria-describedby={blockedReason ? "generate-blocked" : undefined}
-                className="w-full sm:w-auto h-11 px-6 rounded-full bg-foreground text-background hover:bg-foreground/90 uppercase tracking-label text-xs whitespace-normal text-center leading-snug"
+                size="pill"
+                className="w-full sm:w-auto whitespace-normal text-center leading-snug"
               >
                 {generating ? (
                   <>
-                    <Loader2 className="size-4 mr-2 animate-spin" /> Composing…
+                    <Loader2 className="animate-spin" aria-hidden="true" /> Composing…
                   </>
                 ) : climate ? (
                   <>
-                    <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Create my look —{" "}
-                    {climate.tempC}°C{" "}
-                    {climate.label.replace(/^[-\d.]+\s*°[CF]\s*/i, "").split(/[\s,]+/)[0] ||
-                      climate.condition}
+                    <Wand2 className="text-accent" aria-hidden="true" /> Create my look —{" "}
+                    {climate.tempC}°C {climate.condition}
                   </>
                 ) : (
                   <>
-                    <Wand2 className="size-4 mr-2 shrink-0 text-accent" /> Create my look
+                    <Wand2 className="text-accent" aria-hidden="true" /> Create my look
                   </>
                 )}
               </Button>
               {blockedReason && (
-                <span id="generate-blocked" className="text-xs text-muted-foreground">
+                <span id="generate-blocked" className="text-sm text-muted-foreground text-pretty">
                   {blockedReason}
                 </span>
               )}
@@ -324,19 +329,21 @@ function Dashboard() {
                     Your look is ready: {look.outfit.headline}
                   </p>
 
+                  {/* Three chips, not one: the combined string's min-content width
+                      exceeds the card on narrow viewports, and the card clips. */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 backdrop-blur px-3 py-1 text-micro uppercase tracking-label-wide">
-                      <span className="text-muted-foreground">{vibe}</span>
-                      <span className="h-1 w-1 rounded-full bg-foreground/40" />
-                      <span className="font-medium">Vibe fit {look.vibe_alignment_score}/10</span>
-                      {climate && (
-                        <>
-                          <span className="h-1 w-1 rounded-full bg-foreground/40" />
-                          <ClimateGlyph icon={climate.icon} className="size-3" />
-                          <span className="text-muted-foreground">{climate.label}</span>
-                        </>
-                      )}
+                    <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label text-muted-foreground">
+                      {vibe}
                     </span>
+                    <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium uppercase tracking-label tabular-nums">
+                      Vibe fit {look.vibe_alignment_score}/10
+                    </span>
+                    {climate && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label tabular-nums text-muted-foreground">
+                        <ClimateGlyph icon={climate.icon} className="size-3" />
+                        {climate.label}
+                      </span>
+                    )}
                   </div>
 
                   <motion.div variants={resultItemVariants}>
@@ -359,7 +366,7 @@ function Dashboard() {
 
                   <motion.div
                     variants={resultItemVariants}
-                    className="flex flex-wrap items-center gap-3 border-t border-border pt-5"
+                    className="flex flex-wrap items-center gap-3 border-t border-border pt-6"
                   >
                     <Button
                       variant="outline"
@@ -369,15 +376,15 @@ function Dashboard() {
                     >
                       {lookSaved ? (
                         <>
-                          <CheckCircle2 className="size-4 mr-2" /> Saved
+                          <CheckCircle2 aria-hidden="true" /> Saved
                         </>
                       ) : savingLook ? (
                         <>
-                          <Loader2 className="size-4 mr-2 animate-spin" /> Saving
+                          <Loader2 className="animate-spin" aria-hidden="true" /> Saving…
                         </>
                       ) : (
                         <>
-                          <Bookmark className="size-4 mr-2" /> Save to history
+                          <Bookmark aria-hidden="true" /> Save to history
                         </>
                       )}
                     </Button>
@@ -389,11 +396,11 @@ function Dashboard() {
                     >
                       {imageLoading ? (
                         <>
-                          <Loader2 className="size-4 mr-2 animate-spin" /> Retrying
+                          <Loader2 className="animate-spin" aria-hidden="true" /> Retrying…
                         </>
                       ) : (
                         <>
-                          <RotateCcw className="size-4 mr-2" /> Retry visual
+                          <RotateCcw aria-hidden="true" /> Retry visual
                         </>
                       )}
                     </Button>
@@ -403,7 +410,7 @@ function Dashboard() {
                       disabled={imageLoading}
                       size="pill"
                     >
-                      <Sparkles className="size-4 mr-2" aria-hidden="true" /> Try another
+                      <Sparkles aria-hidden="true" /> Try another
                     </Button>
                     {savedLook && (
                       <Button
@@ -418,18 +425,17 @@ function Dashboard() {
                         }
                         size="pill"
                       >
-                        <Sparkles className="size-4 mr-2" aria-hidden="true" /> Ask Mila about this
-                        look
+                        <Sparkles aria-hidden="true" /> Ask Mila about this look
                       </Button>
                     )}
                   </motion.div>
                 </motion.div>
               ) : (
-                <div className="p-10 text-center">
-                  <h2 className="atelier-title text-balance">
+                <div className="py-10 text-center">
+                  <h2 className="font-serif text-2xl md:text-3xl font-semibold tracking-tight leading-snug text-balance">
                     Set the mood. Mila will compose the rest.
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+                  <p className="text-base text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
                     Each look is composed from first principles — tuned to your palette, body
                     architecture, and the weather outside.
                   </p>

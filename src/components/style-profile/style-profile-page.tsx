@@ -640,7 +640,8 @@ export function StyleProfile() {
                 <div className="mt-8 flex flex-col items-center">
                   <Button
                     disabled={!knownTileId || confirmingKnown}
-                    className="w-full sm:w-auto text-xs uppercase tracking-widest h-11 px-8 rounded-card bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40"
+                    size="md"
+                    className="w-full sm:w-auto px-8"
                     onClick={async () => {
                       if (!knownTileId) return;
                       const tile = KNOWN_SEASON_GROUPS.flatMap((g) => g.tiles).find(
@@ -656,9 +657,9 @@ export function StyleProfile() {
                     }}
                   >
                     {confirmingKnown ? (
-                      <Loader2 className="size-3.5 mr-2 animate-spin" />
+                      <Loader2 className="animate-spin" aria-hidden="true" />
                     ) : (
-                      <Check className="size-3.5 mr-2" />
+                      <Check aria-hidden="true" />
                     )}
                     Confirm Selection
                   </Button>
@@ -691,10 +692,11 @@ export function StyleProfile() {
                     <AccordionContent className="px-6 sm:px-8 pb-8">
                       <div className="flex flex-col items-center text-center pt-2">
                         <Button
-                          className="w-full sm:w-auto text-xs uppercase tracking-widest h-11 px-8 rounded-card bg-foreground text-background hover:bg-foreground/90"
+                          size="md"
+                          className="w-full sm:w-auto px-8"
                           onClick={() => setDiagOpen(true)}
                         >
-                          <Camera className="size-3.5 mr-2" />
+                          <Camera aria-hidden="true" />
                           Open the camera
                         </Button>
                         <button

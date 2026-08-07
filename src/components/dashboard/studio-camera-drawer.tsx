@@ -7,6 +7,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { CameraCapture } from "@/components/capture/camera-capture";
 import { DualCapture } from "@/components/capture/dual-capture";
 import { cn, errorMessage, formatPrice } from "@/lib/utils";
@@ -165,7 +166,7 @@ export function StudioCameraDrawer({
               <button
                 type="button"
                 onClick={() => !postingSubmitting && setPostingOpen(false)}
-                className="inline-flex items-center gap-1.5 mx-auto text-micro uppercase tracking-label-xwide text-muted-foreground hover:text-ink"
+                className="atelier-focus-ring rounded-control inline-flex items-center gap-1.5 mx-auto text-micro uppercase tracking-label-xwide text-muted-foreground hover:text-ink"
               >
                 <ArrowLeft className="size-3" /> Back to Lens
               </button>
@@ -195,7 +196,7 @@ export function StudioCameraDrawer({
             <button
               type="button"
               onClick={() => setPostingOpen(true)}
-              className="group mx-auto mb-6 flex max-w-md w-full items-center justify-between gap-4 rounded-control border border-border bg-linear-to-r from-canvas via-background to-canvas/70 px-5 py-4 text-left shadow-paper hover:shadow-raised transition-shadow"
+              className="atelier-focus-ring group mx-auto mb-6 flex max-w-md w-full items-center justify-between gap-4 rounded-control border border-border bg-linear-to-r from-canvas via-background to-canvas/70 px-5 py-4 text-left shadow-paper hover:shadow-raised transition-shadow"
             >
               <span className="flex items-center gap-3">
                 <span className="size-10 rounded-full border border-border bg-background flex items-center justify-center">
@@ -342,7 +343,7 @@ export function StudioCameraDrawer({
                       <button
                         type="button"
                         onClick={resetDupeState}
-                        className="atelier-label hover:text-ink"
+                        className="atelier-focus-ring rounded-control atelier-label hover:text-ink"
                       >
                         Hunt again
                       </button>
@@ -403,15 +404,16 @@ export function StudioCameraDrawer({
                                     {d.match_reasons[0]}
                                   </p>
                                 )}
-                                <a
-                                  href={d.affiliate_link}
-                                  target="_blank"
-                                  rel="noopener noreferrer sponsored"
-                                  className="atelier-focus-ring inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-full bg-ink text-canvas text-micro uppercase tracking-label-xwide transition-colors hover:bg-ink/90 active:bg-ink/80"
-                                >
-                                  Shop the Dupe{" "}
-                                  <ExternalLink className="size-3" strokeWidth={1.75} />
-                                </a>
+                                <Button asChild size="pill">
+                                  <a
+                                    href={d.affiliate_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer sponsored"
+                                  >
+                                    Shop the Dupe
+                                    <ExternalLink aria-hidden="true" strokeWidth={1.75} />
+                                  </a>
+                                </Button>
                               </div>
                             </div>
                           </div>

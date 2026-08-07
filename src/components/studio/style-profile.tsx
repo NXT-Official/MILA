@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { SEASONS_DATA } from "../../lib/color-analysis/seasonsData";
 import { migrateLegacySeason } from "../../lib/color-analysis/schemaMigration";
 
@@ -18,17 +19,18 @@ export function ColorDossierSection({ colorSeason }: { colorSeason: string }) {
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
           Complete your color analysis mapping to unlock your expert color dossier.
         </p>
-        <button
+        <Button
           type="button"
           onClick={() => {
             if (typeof window !== "undefined") {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }
           }}
-          className="mt-5 inline-flex items-center justify-center h-11 px-6 rounded-none bg-foreground text-background text-xs uppercase tracking-widest hover:bg-foreground/90 transition-colors"
+          size="md"
+          className="mt-5 rounded-none px-6"
         >
           Start Color Analysis
-        </button>
+        </Button>
       </div>
     );
   }

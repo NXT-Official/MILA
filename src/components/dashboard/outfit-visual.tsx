@@ -50,14 +50,8 @@ export function OutfitVisual({
           {imageGenerationError ?? "The outfit is ready, but the visual could not be generated."}
         </p>
         {onRetry ? (
-          <Button
-            variant="outline"
-            size="md"
-            onClick={onRetry}
-            disabled={retryDisabled}
-            className="rounded-full uppercase tracking-label text-label"
-          >
-            <RotateCcw className="size-3.5 mr-2" aria-hidden="true" />
+          <Button variant="outline" size="pill" onClick={onRetry} disabled={retryDisabled}>
+            <RotateCcw aria-hidden="true" />
             Retry visual
           </Button>
         ) : null}

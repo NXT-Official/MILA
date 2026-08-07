@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/constants/query-keys";
+import { Button } from "@/components/ui/button";
 import {
   Camera,
   X as XIcon,
@@ -369,17 +370,18 @@ export function VisualDiagnosticViewfinder({
               I'm in soft, indirect natural daylight. Let's go.
             </span>
           </label>
-          <button
+          <Button
             type="button"
             disabled={!lightingConfirmed}
             onClick={() => {
               pushLog("Light is good. Let's go.");
               setCalibrated(true);
             }}
-            className="mt-6 w-full h-11 bg-foreground text-background text-micro uppercase tracking-label-xwide hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            size="md"
+            className="mt-6 w-full"
           >
             Open the camera
-          </button>
+          </Button>
           <p className="mt-4 text-center text-nano uppercase tracking-label-xwide text-accent">
             Your camera stays off until you're ready.
           </p>

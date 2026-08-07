@@ -564,10 +564,7 @@ function DetailedColorResultView({
         </div>
       </div>
 
-      <Button
-        onClick={onClose}
-        className="w-full text-xs uppercase tracking-widest h-11 rounded-none bg-foreground text-background"
-      >
+      <Button onClick={onClose} size="md" className="w-full rounded-none">
         Save My Results
       </Button>
     </div>
