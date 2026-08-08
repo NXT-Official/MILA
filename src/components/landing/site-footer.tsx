@@ -3,8 +3,9 @@ import type { FooterContent } from "@/lib/landing-content";
 export function SiteFooter({ content }: { content: FooterContent }) {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-6 py-8 text-center sm:flex-row sm:justify-between">
-        <span className="font-serif text-sm tracking-label-xwide text-foreground">
+      <div className="atelier-container flex flex-col items-center gap-3 py-10 text-center sm:flex-row sm:justify-between sm:text-left">
+        <span className="flex items-center gap-2.5 font-serif text-sm tracking-label-xwide text-foreground">
+          <img src="/favicon.svg" alt="" className="size-5" />
           {content.wordmark}
         </span>
         <p className="text-xs text-muted-foreground">

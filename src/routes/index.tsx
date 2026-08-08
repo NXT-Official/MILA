@@ -43,16 +43,26 @@ function LandingPage() {
     return <AtelierSplash />;
   }
 
+  const sections = [
+    { id: "how-it-works", label: content.howItWorks.kicker },
+    { id: "dossier", label: content.dossier.kicker },
+    { id: "dupe-hunter", label: content.dupeHunter.kicker },
+    { id: "community", label: content.community.kicker },
+  ];
+
   return (
     <div className="min-h-screen">
-      <SiteHeader />
-      <HeroSection content={content.hero} />
-      <TestimonialsSection testimonials={content.testimonials} />
-      <HowItWorksSection content={content.howItWorks} />
-      <DossierSection content={content.dossier} />
-      <DupeHunterSection content={content.dupeHunter} />
-      <CommunitySection content={content.community} />
-      <FinalCtaSection content={content.finalCta} />
+      <SiteHeader sections={sections} />
+      <main className="overflow-x-clip">
+        <HeroSection content={content.hero} />
+        <HowItWorksSection content={content.howItWorks} />
+        <DossierSection content={content.dossier} />
+        <DupeHunterSection content={content.dupeHunter} />
+        <CommunitySection content={content.community}>
+          <TestimonialsSection testimonials={content.testimonials} />
+        </CommunitySection>
+        <FinalCtaSection content={content.finalCta} />
+      </main>
       <SiteFooter content={content.footer} />
     </div>
   );

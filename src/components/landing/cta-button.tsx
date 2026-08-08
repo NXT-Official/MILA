@@ -1,10 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function CtaButton() {
+export function CtaButton({ className }: { className?: string }) {
   return (
-    <Button asChild size="lg" className="rounded-full px-8 text-xs uppercase tracking-label">
+    <Button
+      asChild
+      size="lg"
+      className={cn("rounded-full px-8 text-xs uppercase tracking-label", className)}
+    >
       <Link to="/login">
         Get your first look
         <ArrowRight className="ml-2 size-4 text-accent" aria-hidden="true" />

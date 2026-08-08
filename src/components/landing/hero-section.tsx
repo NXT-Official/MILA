@@ -1,57 +1,81 @@
+import { Brush, Scissors, Shirt, Sparkles, type LucideIcon } from "lucide-react";
 import { Reveal } from "@/components/landing/reveal";
 import { SeasonTag } from "@/components/landing/season-tag";
 import { CtaButton } from "@/components/landing/cta-button";
-import { Card } from "@/components/ui/card";
+import { Eyebrow } from "@/components/landing/section";
 import type { HeroContent } from "@/lib/landing-content";
+
+function Facet({ label, value, icon }: { label: string; value: string; icon: LucideIcon }) {
+  return (
+    <div className="flex-1 p-8">
+      <Eyebrow icon={icon}>{label}</Eyebrow>
+      <p className="mt-3 text-base leading-relaxed text-foreground">{value}</p>
+    </div>
+  );
+}
 
 export function HeroSection({ content }: { content: HeroContent }) {
   const { preview } = content;
 
   return (
-    <Reveal className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 pb-20 pt-10 sm:pt-16 lg:grid-cols-2">
-      <div>
-        <p className="atelier-kicker">{content.kicker}</p>
-        <h1 className="atelier-title mt-3 text-[clamp(2.75rem,7vw,4.25rem)]">
-          {content.headlineLine1}
-          <br />
-          {content.headlineLine2}
-        </h1>
-        <p className="mt-5 max-w-md text-base leading-relaxed text-pretty">{content.subhead}</p>
-        <div className="mt-8 flex flex-wrap items-center gap-4">
-          <CtaButton />
-          <span className="text-xs text-muted-foreground">{content.ctaNote}</span>
+    <Reveal id="top" className="relative isolate pb-20 pt-16 sm:pb-28 sm:pt-24">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 -top-48 -z-10 mx-auto h-[26rem] max-w-2xl rounded-full bg-accent/15 blur-[130px]"
+      />
+
+      <div className="atelier-container">
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="inline-flex items-center gap-2 rounded-pill border border-border bg-surface px-3.5 py-1.5 text-label font-semibold uppercase tracking-label text-ink">
+            <Sparkles className="size-3.5 text-accent" aria-hidden="true" />
+            {content.kicker}
+          </span>
+
+          <h1 className="mt-8 text-[clamp(3rem,8vw,5rem)] leading-[0.95]">
+            {content.headlineLine1}
+            <br />
+            <span className="text-muted-foreground">{content.headlineLine2}</span>
+          </h1>
+
+          <p className="mx-auto mt-7 max-w-lg text-lg leading-relaxed text-pretty text-muted-foreground">
+            {content.subhead}
+          </p>
+
+          <div className="mt-10 flex flex-col items-center gap-3.5">
+            <CtaButton className="w-full sm:w-auto" />
+            <span className="text-xs text-muted-foreground">{content.ctaNote}</span>
+          </div>
+        </div>
+
+        {/* The artifact: one composed look, laid out as the product panel itself. */}
+        <div className="mx-auto mt-20 max-w-5xl sm:mt-24">
+          <div className="overflow-hidden rounded-card border border-border bg-surface shadow-raised">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 sm:px-8">
+              <SeasonTag season={preview.season} />
+              <span className="text-micro uppercase tracking-label-wide text-muted-foreground">
+                {preview.weather}
+              </span>
+            </div>
+
+            <div className="grid lg:grid-cols-[1.6fr_1fr]">
+              <div className="p-8 sm:p-12">
+                <Eyebrow icon={Shirt}>Outfit</Eyebrow>
+                <p className="mt-4 font-serif text-[clamp(1.625rem,3.2vw,2.25rem)] leading-[1.15] text-balance text-foreground">
+                  {preview.outfitTitle}
+                </p>
+                <p className="mt-5 max-w-md text-base leading-relaxed text-pretty text-muted-foreground">
+                  {preview.outfitBody}
+                </p>
+              </div>
+
+              <div className="flex flex-col divide-y divide-border border-t border-border lg:border-l lg:border-t-0">
+                <Facet label="Hair" value={preview.hair} icon={Scissors} />
+                <Facet label="Makeup" value={preview.makeup} icon={Brush} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <Card className="relative overflow-hidden p-7 sm:p-9">
-        <div
-          className="pointer-events-none absolute -top-24 -right-16 h-64 w-64 rounded-full bg-accent/25 blur-3xl"
-          aria-hidden="true"
-        />
-        <div className="relative">
-          <div className="flex items-center justify-between">
-            <SeasonTag season={preview.season} />
-            <span className="text-micro uppercase tracking-label-wide text-muted-foreground">
-              {preview.weather}
-            </span>
-          </div>
-          <p className="atelier-kicker mt-6">Outfit</p>
-          <p className="mt-1 font-serif text-2xl leading-snug text-foreground">
-            {preview.outfitTitle}
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-pretty">{preview.outfitBody}</p>
-          <div className="mt-6 grid grid-cols-2 gap-6 border-t border-border pt-5">
-            <div>
-              <p className="atelier-kicker">Hair</p>
-              <p className="mt-1 text-sm text-foreground">{preview.hair}</p>
-            </div>
-            <div>
-              <p className="atelier-kicker">Makeup</p>
-              <p className="mt-1 text-sm text-foreground">{preview.makeup}</p>
-            </div>
-          </div>
-        </div>
-      </Card>
     </Reveal>
   );
 }

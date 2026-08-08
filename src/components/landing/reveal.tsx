@@ -1,6 +1,16 @@
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 
-export function Reveal({ children, className }: { children: React.ReactNode; className?: string }) {
+export function Reveal({
+  children,
+  className,
+  id,
+  "aria-label": ariaLabel,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+  "aria-label"?: string;
+}) {
   const reduce = useReducedMotion() ?? false;
   const sectionVariants: Variants = {
     hidden: { y: reduce ? 0 : 16 },
@@ -9,6 +19,8 @@ export function Reveal({ children, className }: { children: React.ReactNode; cla
 
   return (
     <motion.section
+      id={id}
+      aria-label={ariaLabel}
       className={className}
       variants={sectionVariants}
       initial="hidden"

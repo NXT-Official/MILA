@@ -1,33 +1,47 @@
-import { Reveal } from "@/components/landing/reveal";
-import { Card } from "@/components/ui/card";
-import type { DupeHunterContent } from "@/lib/landing-content";
+import { BadgeCheck, Camera } from "lucide-react";
+import { Section, SectionHeading, Eyebrow } from "@/components/landing/section";
+import { cn } from "@/lib/utils";
+import type { DupeCard, DupeHunterContent } from "@/lib/landing-content";
+
+function DupeRow({ card, isMatch }: { card: DupeCard; isMatch?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center justify-between gap-x-6 gap-y-3 p-8 sm:p-10",
+        isMatch && "bg-accent-soft/50",
+      )}
+    >
+      <div>
+        <Eyebrow icon={isMatch ? BadgeCheck : Camera} className={isMatch ? "text-ink" : undefined}>
+          {card.label}
+        </Eyebrow>
+        <p className="mt-3 font-serif text-xl leading-snug text-balance text-foreground">
+          {card.title}
+        </p>
+      </div>
+      <p
+        className={cn(
+          "font-serif text-3xl",
+          isMatch ? "text-foreground" : "text-muted-foreground line-through",
+        )}
+      >
+        {card.price}
+      </p>
+    </div>
+  );
+}
 
 export function DupeHunterSection({ content }: { content: DupeHunterContent }) {
   return (
-    <Reveal className="mx-auto w-full max-w-6xl px-6 pb-24">
-      <Card className="atelier-hero-card p-8 sm:p-12">
-        <p className="atelier-kicker">{content.kicker}</p>
-        <h2 className="mt-2 font-serif">{content.heading}</h2>
-        <p className="mt-3 max-w-lg text-base leading-relaxed text-pretty">{content.body}</p>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 max-w-2xl">
-          <div className="rounded-panel border border-border bg-card/70 p-5">
-            <p className="text-micro uppercase tracking-label text-muted-foreground">
-              {content.inspiration.label}
-            </p>
-            <p className="mt-2 font-serif text-lg text-foreground">{content.inspiration.title}</p>
-            <p className="mt-1 text-sm text-muted-foreground line-through">
-              {content.inspiration.price}
-            </p>
-          </div>
-          <div className="rounded-panel border border-border bg-accent-soft p-5">
-            <p className="text-micro uppercase tracking-label text-ink">
-              {content.milaMatch.label}
-            </p>
-            <p className="mt-2 font-serif text-lg text-foreground">{content.milaMatch.title}</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{content.milaMatch.price}</p>
-          </div>
+    <Section id="dupe-hunter">
+      <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
+        <div className="order-last divide-y divide-border overflow-hidden rounded-card border border-border bg-surface transition-shadow duration-200 ease-editorial hover:shadow-paper lg:order-first">
+          <DupeRow card={content.inspiration} />
+          <DupeRow card={content.milaMatch} isMatch />
         </div>
-      </Card>
-    </Reveal>
+
+        <SectionHeading kicker={content.kicker} heading={content.heading} body={content.body} />
+      </div>
+    </Section>
   );
 }

@@ -1,31 +1,27 @@
-import { Star } from "lucide-react";
-import { Reveal } from "@/components/landing/reveal";
+import { Quote } from "lucide-react";
 import { SeasonTag } from "@/components/landing/season-tag";
-import { Card } from "@/components/ui/card";
 import type { Testimonial } from "@/lib/landing-content";
 
 export function TestimonialsSection({ testimonials }: { testimonials: Testimonial[] }) {
   return (
-    <Reveal className="mx-auto w-full max-w-6xl px-6 pb-24">
-      <div className="flex snap-x gap-4 overflow-x-auto pb-2">
-        {testimonials.map((t) => (
-          <Card asChild key={t._key} className="w-72 shrink-0 snap-start p-5">
-            <figure>
-              <div className="flex gap-0.5 text-accent" aria-hidden="true">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="size-3.5 fill-current" />
-                ))}
-              </div>
-              <blockquote className="mt-3 font-serif text-base leading-snug text-foreground">
-                &ldquo;{t.quote}&rdquo;
-              </blockquote>
-              <figcaption className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                {t.name} <SeasonTag season={t.season} />
-              </figcaption>
-            </figure>
-          </Card>
-        ))}
-      </div>
-    </Reveal>
+    <ul className="mt-14 grid gap-5 sm:mt-16 sm:grid-cols-2 lg:grid-cols-3">
+      {testimonials.map((t) => (
+        <li key={t._key}>
+          <figure className="flex h-full flex-col rounded-card border border-border bg-surface p-8 transition-[transform,border-color,box-shadow] duration-200 ease-editorial hover:-translate-y-1 hover:border-accent hover:shadow-paper">
+            <Quote
+              className="size-5 shrink-0 fill-accent/25 text-accent"
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <blockquote className="mt-5 flex-1 font-serif text-lg leading-snug text-pretty text-foreground">
+              &ldquo;{t.quote}&rdquo;
+            </blockquote>
+            <figcaption className="mt-7 flex flex-wrap items-center gap-2.5 border-t border-border pt-5 text-sm text-muted-foreground">
+              {t.name} <SeasonTag season={t.season} />
+            </figcaption>
+          </figure>
+        </li>
+      ))}
+    </ul>
   );
 }
