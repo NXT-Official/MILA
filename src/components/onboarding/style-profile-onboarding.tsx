@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { profileQueryOptions } from "@/lib/queries/profile";
 import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 import { normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
+import { requestFirstLook } from "@/lib/first-look";
 import { type StudioColorProfile } from "@/lib/analyzePersonalColor.functions";
 import {
   BODY_OPTIONS,
@@ -150,6 +151,7 @@ export function StyleProfileOnboarding({
         goTo(firstIncomplete === "welcome" ? "color-path" : firstIncomplete);
         return;
       }
+      requestFirstLook();
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       setCompletionError(errorMessage(err, "We couldn't confirm your profile. Please try again."));

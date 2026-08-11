@@ -109,3 +109,13 @@ test("every hCaptcha form goes through that hook rather than mounting its own wi
     expect(component).not.toContain("<HCaptcha");
   }
 });
+
+test("the feed withholds other members' posts until the viewer has posted today", () => {
+  // A client-side blur would still ship every signed image URL to a lurker, so
+  // the early return has to sit above the rows query, not in the component.
+  const feed = source("./posts.functions.ts");
+  const handler = feed.slice(feed.indexOf("export const getFeed"));
+  const gate = handler.indexOf("if (!todayCount) return { has_posted_today: false, posts: [] };");
+  expect(gate).toBeGreaterThan(-1);
+  expect(gate).toBeLessThan(handler.indexOf("createSignedUrls"));
+});

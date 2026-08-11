@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, Images } from "lucide-react";
+import { Camera, Images, Lock } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -44,6 +44,7 @@ function FeedPage() {
   });
 
   const posts = data?.posts ?? [];
+  const locked = !!data && !data.has_posted_today;
 
   async function handleSubmit(back: File, front: File, caption: string) {
     if (!user) return;
@@ -97,7 +98,17 @@ function FeedPage() {
 
         {isError && <LoadErrorPanel title="Feed couldn't load." onRetry={() => refetch()} />}
 
-        {!isLoading && !isError && posts.length === 0 && (
+        {!isLoading && !isError && locked && (
+          <EmptyState
+            role="status"
+            className="mx-auto max-w-xl"
+            icon={<Lock className="size-8" strokeWidth={1.25} />}
+            title="Post today's look to open the feed."
+            description="The Atelier trades in kind — everyone here has shown their mirror today. Yours unlocks theirs."
+          />
+        )}
+
+        {!isLoading && !isError && !locked && posts.length === 0 && (
           <EmptyState
             role="status"
             className="mx-auto max-w-xl"
@@ -107,7 +118,7 @@ function FeedPage() {
           />
         )}
 
-        {!isLoading && posts.length > 0 && (
+        {!isLoading && !locked && posts.length > 0 && (
           <div className="space-y-6">
             {posts.map((p) => (
               <PostCanvas key={p.id} post={p} />

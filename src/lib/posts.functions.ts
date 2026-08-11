@@ -149,6 +149,10 @@ export const getFeed = createServerFn({ method: "GET" })
       .gte("created_at", startOfToday.toISOString());
     if (todayErr) throw new Error(todayErr.message);
 
+    // Post today, or the feed stays shut. Enforced here rather than in the UI:
+    // withholding the rows is the only version a lurker can't read off the wire.
+    if (!todayCount) return { has_posted_today: false, posts: [] };
+
     const { data: rows, error } = await supabase
       .from("posts")
       .select("id,user_id,caption,created_at,generated_look_id,image_url_back,image_url_front")
@@ -190,7 +194,7 @@ export const getFeed = createServerFn({ method: "GET" })
       items: itemMap.get(r.id) ?? [],
     }));
 
-    return { has_posted_today: (todayCount ?? 0) > 0, posts };
+    return { has_posted_today: true, posts };
   });
 
 const MemberProfileInput = z.object({ user_id: z.string().uuid() });

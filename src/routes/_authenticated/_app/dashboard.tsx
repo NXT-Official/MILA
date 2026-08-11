@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, Loader2, CheckCircle2, Wand2, Bookmark, RotateCcw } from "lucide-react";
@@ -32,6 +32,8 @@ import { queryKeys } from "@/constants/query-keys";
 import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
+import { DossierCompletionBanner } from "@/components/dashboard/dossier-completion-banner";
+import { takeFirstLookHandoff } from "@/lib/first-look";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { errorMessage } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -223,6 +225,18 @@ function Dashboard() {
     }
   }
 
+  // Arriving straight from onboarding: compose the first look as soon as the
+  // weather lands, so the dashboard proves itself before it asks for anything.
+  const [pendingFirstLook, setPendingFirstLook] = useState(false);
+  useEffect(() => setPendingFirstLook(takeFirstLookHandoff()), []);
+  useEffect(() => {
+    if (!pendingFirstLook || !climate || !profileComplete || generating || look) return;
+    setPendingFirstLook(false);
+    void generateLook();
+    // generateLook is recreated every render; the flag above is the real guard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFirstLook, climate, profileComplete, generating, look]);
+
   const blockedReason = !profileComplete
     ? "Complete your Style Profile first."
     : !climate
@@ -241,6 +255,10 @@ function Dashboard() {
       initial="hidden"
       animate="visible"
     >
+      <motion.div variants={cardItemVariants}>
+        <DossierCompletionBanner profile={profile} />
+      </motion.div>
+
       <Card asChild className="relative mb-10 sm:mb-14 overflow-hidden atelier-hero-card">
         <motion.section variants={cardItemVariants}>
           <div className="pointer-events-none absolute -top-32 -right-20 h-80 w-80 rounded-full bg-accent/25 blur-3xl" />

@@ -68,6 +68,7 @@ import { ColorQuiz } from "@/components/style-profile/color-quiz";
 import { BodyTypeQuiz } from "@/components/style-profile/body-type-quiz";
 import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-diagnostic-viewfinder";
 import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio-view";
+import { PhotoTryOn } from "@/components/style-profile/photo-try-on";
 import { studioToDossier, normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
 
 function readString(value: Json | undefined): string | null {
@@ -452,6 +453,7 @@ export function StyleProfile() {
             {form.color_season && (
               <div className="mb-10 space-y-8">
                 <ColorDossierSection colorSeason={form.color_season} />
+                {hasRealDossier && <PhotoTryOn dossier={dossier} />}
               </div>
             )}
             <div className="mb-12 ">

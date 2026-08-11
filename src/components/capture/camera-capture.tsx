@@ -9,6 +9,9 @@ interface Props {
   disabled?: boolean;
   analyzing?: boolean;
   frozenPreview?: string | null;
+  /** "user" for anything aimed at the member's own face. */
+  facingMode?: "user" | "environment";
+  copy?: { idle?: string; hint?: string; frame?: string };
 }
 
 export function CameraCapture({
@@ -17,6 +20,8 @@ export function CameraCapture({
   disabled,
   analyzing,
   frozenPreview,
+  facingMode = "environment",
+  copy,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -38,7 +43,7 @@ export function CameraCapture({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { ideal: facingMode },
           width: { ideal: 1280 },
           height: { ideal: 1280 },
         },
@@ -108,12 +113,12 @@ export function CameraCapture({
               )}
             </div>
             <p className="font-serif text-2xl md:text-3xl mb-2">
-              {disabled ? "Complete your profile first" : "Open Camera & Scan"}
+              {disabled ? "Complete your profile first" : (copy?.idle ?? "Open Camera & Scan")}
             </p>
             <p className="text-sm text-muted-foreground max-w-sm">
               {disabled
                 ? "Set body type & color season above to unlock the scanner."
-                : "Capture your outfit in real time for instant stylist analysis."}
+                : (copy?.hint ?? "Capture your outfit in real time for instant stylist analysis.")}
             </p>
             {error && <p className="mt-4 text-xs text-destructive max-w-sm">{error}</p>}
           </div>
@@ -149,7 +154,7 @@ export function CameraCapture({
 
       <div className="pointer-events-none absolute top-8 left-4 right-4 flex justify-center">
         <span className="text-micro uppercase tracking-label-wide text-white/80 bg-black/40 backdrop-blur px-3 py-1 rounded-full">
-          Align outfit inside the frame
+          {copy?.frame ?? "Align outfit inside the frame"}
         </span>
       </div>
 
