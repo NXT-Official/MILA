@@ -34,7 +34,7 @@ import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
 import { DossierCompletionBanner } from "@/components/dashboard/dossier-completion-banner";
 import { takeFirstLookHandoff } from "@/lib/first-look";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { Stagger, StaggerItem } from "@/components/ui/stagger";
 import { errorMessage } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
@@ -65,19 +65,6 @@ function greetingSuffix(fullName: string | null | undefined) {
   return first ? `, ${first}` : "";
 }
 
-const containerVariants = (reduce: boolean, stagger: number): Variants => ({
-  hidden: { opacity: 1 },
-  visible: { opacity: 1, transition: { staggerChildren: reduce ? 0 : stagger } },
-});
-const itemVariants = (reduce: boolean, offset: number, duration: number): Variants => ({
-  hidden: { opacity: 0, y: reduce ? 0 : offset },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: reduce ? 0.2 : duration, ease: "easeOut" as const },
-  },
-});
-
 export const Route = createFileRoute("/_authenticated/_app/dashboard")({
   component: Dashboard,
 });
@@ -87,11 +74,6 @@ type Vibe = (typeof VIBES)[number];
 function Dashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const reduce = useReducedMotion() ?? false;
-  const cardContainerVariants = containerVariants(reduce, 0.08);
-  const cardItemVariants = itemVariants(reduce, 12, 0.35);
-  const resultContainerVariants = containerVariants(reduce, 0.1);
-  const resultItemVariants = itemVariants(reduce, 16, 0.4);
 
   const { data: profile } = useQuery({
     ...profileQueryOptions(user?.id),
@@ -249,18 +231,13 @@ function Dashboard() {
       : null;
 
   return (
-    <motion.div
-      className="atelier-page max-w-5xl"
-      variants={cardContainerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <motion.div variants={cardItemVariants}>
+    <Stagger className="atelier-page max-w-5xl" stagger={0.08}>
+      <StaggerItem offset={12} duration={0.35}>
         <DossierCompletionBanner profile={profile} />
-      </motion.div>
+      </StaggerItem>
 
       <Card asChild className="relative mb-10 sm:mb-14 overflow-hidden atelier-hero-card">
-        <motion.section variants={cardItemVariants}>
+        <StaggerItem as="section" offset={12} duration={0.35}>
           <div className="pointer-events-none absolute -top-32 -right-20 h-80 w-80 rounded-full bg-accent/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-rose/15 blur-3xl" />
 
@@ -339,12 +316,7 @@ function Dashboard() {
               {generating ? (
                 <OutfitResultSkeleton />
               ) : look ? (
-                <motion.div
-                  className="space-y-6"
-                  variants={resultContainerVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
+                <Stagger className="space-y-6" stagger={0.1}>
                   <p role="status" aria-live="polite" className="sr-only">
                     Your look is ready: {look.outfit.headline}
                   </p>
@@ -364,7 +336,7 @@ function Dashboard() {
                     )}
                   </div>
 
-                  <motion.div variants={resultItemVariants}>
+                  <StaggerItem offset={16} duration={0.4}>
                     <GeneratedLookDetail
                       outfit={look.outfit}
                       hair={look.hair}
@@ -380,9 +352,9 @@ function Dashboard() {
                         />
                       }
                     />
-                  </motion.div>
+                  </StaggerItem>
 
-                  <motion.div variants={resultItemVariants} className="border-t border-border pt-6">
+                  <StaggerItem offset={16} duration={0.4} className="border-t border-border pt-6">
                     <div className="flex flex-wrap items-center gap-3">
                       <Button
                         variant="outline"
@@ -454,8 +426,8 @@ function Dashboard() {
                     <p className="mt-3 text-xs text-muted-foreground">
                       Each new look or visual uses one credit.
                     </p>
-                  </motion.div>
-                </motion.div>
+                  </StaggerItem>
+                </Stagger>
               ) : (
                 <div className="py-10 text-center">
                   <h2 className="font-serif text-2xl md:text-3xl font-semibold tracking-tight leading-snug text-balance">
@@ -469,16 +441,16 @@ function Dashboard() {
               )}
             </div>
           </div>
-        </motion.section>
+        </StaggerItem>
       </Card>
 
       {profile?.color_season && (
-        <motion.section variants={cardItemVariants}>
+        <StaggerItem as="section" offset={12} duration={0.35}>
           <DailyPaletteGenerator userColorSeason={profile.color_season} />
-        </motion.section>
+        </StaggerItem>
       )}
 
       <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
-    </motion.div>
+    </Stagger>
   );
 }

@@ -12,6 +12,7 @@ import { queryKeys } from "@/constants/query-keys";
 import { deletePost, getMemberProfile, updatePostCaption } from "@/lib/posts.functions";
 import { errorMessage } from "@/lib/utils";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
+import { Stagger, StaggerItem } from "@/components/ui/stagger";
 
 export const Route = createFileRoute("/_authenticated/_app/profile/$userId")({
   component: MemberProfilePage,
@@ -131,9 +132,9 @@ function MemberProfilePage() {
       </Tabs>
 
       {activePosts.length ? (
-        <div className="space-y-6">
+        <Stagger className="space-y-6">
           {activePosts.map((post) => (
-            <div key={post.id} className="space-y-3">
+            <StaggerItem key={post.id} className="space-y-3">
               {post.hidden && (
                 <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3">
                   <p className="text-nano uppercase tracking-label-wide text-destructive">
@@ -200,9 +201,9 @@ function MemberProfilePage() {
                     </button>
                   </div>
                 ))}
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       ) : (
         <div className="rounded-3xl border border-dashed border-porcelain/60 p-10 text-center text-sm text-stone">
           {tab === "hidden" ? "No hidden posts." : "No visible posts yet."}

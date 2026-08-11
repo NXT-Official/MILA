@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadErrorPanel } from "@/components/ui/error-state";
+import { Stagger, StaggerItem } from "@/components/ui/stagger";
 import { queryKeys } from "@/constants/query-keys";
 import {
   deleteSavedPalette,
@@ -32,7 +33,7 @@ function PaletteCard({ row, onDelete }: { row: SavedPalette; onDelete: () => Pro
   ];
 
   return (
-    <Card className="flex flex-col p-5">
+    <Card className="flex w-full flex-col p-5">
       <div className="flex items-center justify-between gap-3">
         <span className="inline-flex items-center rounded-pill bg-accent-soft px-2.5 py-0.5 text-micro uppercase tracking-label text-accent">
           {palette.styleVibe}
@@ -138,11 +139,13 @@ function SavedPalettes() {
           description="Tap the bookmark on your daily palette and it will be waiting here."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {palettes.map((row) => (
-            <PaletteCard key={row.id} row={row} onDelete={() => remove(row.id)} />
+            <StaggerItem key={row.id} className="flex">
+              <PaletteCard row={row} onDelete={() => remove(row.id)} />
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
     </div>
   );

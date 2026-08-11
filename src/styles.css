@@ -284,7 +284,7 @@
 }
 
 @utility atelier-label {
-  @apply text-micro uppercase tracking-label-wide text-stone;
+  @apply text-micro font-semibold uppercase tracking-label-wide text-stone;
 }
 
 @utility atelier-glass {

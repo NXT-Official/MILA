@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { Card } from "@/components/ui/card";
+import { Stagger, StaggerItem } from "@/components/ui/stagger";
 
 export const Route = createFileRoute("/_authenticated/_app/history")({
   validateSearch: (search: Record<string, unknown>): { look?: string } =>
@@ -338,11 +339,16 @@ function History() {
           description="Analyzed outfits will be collected here."
         />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Stagger
+          stagger={0.05}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
+        >
           {items.map((item) => (
-            <HistoryCard key={item.id} item={item} onOpen={() => setSelected(item)} />
+            <StaggerItem key={item.id}>
+              <HistoryCard item={item} onOpen={() => setSelected(item)} />
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>

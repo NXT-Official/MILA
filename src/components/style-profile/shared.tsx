@@ -172,7 +172,7 @@ export function PillRow({
               "text-label uppercase tracking-label-wide rounded-full",
               active
                 ? "bg-accent-soft border-accent text-ink"
-                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-[#C9A96E]/40",
+                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-accent/40",
             ].join(" ")}
           >
             <span>{o}</span>
@@ -247,7 +247,7 @@ export function BeautyPillTray({
               "text-label uppercase tracking-label-wide",
               isActive
                 ? "bg-accent-soft border-accent text-ink"
-                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-[#C9A96E]/40",
+                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-accent/40",
             ].join(" ")}
           >
             <span>{tag}</span>

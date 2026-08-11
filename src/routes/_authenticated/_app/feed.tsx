@@ -23,6 +23,7 @@ import { errorMessage } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadErrorPanel } from "@/components/ui/error-state";
+import { Stagger, StaggerItem } from "@/components/ui/stagger";
 
 export const Route = createFileRoute("/_authenticated/_app/feed")({
   component: FeedPage,
@@ -119,11 +120,13 @@ function FeedPage() {
         )}
 
         {!isLoading && !locked && posts.length > 0 && (
-          <div className="space-y-6">
+          <Stagger className="space-y-6">
             {posts.map((p) => (
-              <PostCanvas key={p.id} post={p} />
+              <StaggerItem key={p.id}>
+                <PostCanvas post={p} />
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         )}
       </section>
 
