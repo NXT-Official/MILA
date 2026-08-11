@@ -165,7 +165,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
 
         <Button onClick={handleShuffle} loading={isRotating} className="flex-1">
           <RefreshCw className="size-3.5" aria-hidden="true" />
-          <span>Generate Next Look</span>
+          <span>Generate</span>
         </Button>
       </div>
 
