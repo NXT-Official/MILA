@@ -1,10 +1,4 @@
-import {
-  createFileRoute,
-  Outlet,
-  redirect,
-  useNavigate,
-  useRouterState,
-} from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,17 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { AtelierSplash } from "@/components/layout/atelier-splash";
 
 export const Route = createFileRoute("/_authenticated/_app")({
-  beforeLoad: async ({ context, location }) => {
+  beforeLoad: async ({ context }) => {
     if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getSession();
     const userId = data.session?.user.id;
     if (!userId) return;
     const viewer = await loadAuthenticatedViewerState(context.queryClient, userId);
-    const isProfileRoute = location.pathname.startsWith("/profile/");
-    if (viewer.canAccessStaffArea && !isProfileRoute) {
+    if (viewer.canAccessStaffArea) {
       throw redirect({ to: viewer.destination, replace: true });
     }
-    if (!viewer.isStyleProfileComplete && !isProfileRoute) {
+    if (!viewer.isStyleProfileComplete) {
       throw redirect({ to: "/onboarding/style-profile", replace: true });
     }
   },
@@ -33,17 +26,15 @@ export const Route = createFileRoute("/_authenticated/_app")({
 function AppLayout() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const path = useRouterState({ select: (state) => state.location.pathname });
   const viewer = useAuthenticatedViewerState(user?.id);
-  const isProfileRoute = path.startsWith("/profile/");
 
   useEffect(() => {
     if (!user || viewer.isLoading) return;
-    if (viewer.canAccessStaffArea && !isProfileRoute) {
+    if (viewer.canAccessStaffArea) {
       navigate({ to: viewer.destination, replace: true });
       return;
     }
-    if (!viewer.isStyleProfileComplete && !isProfileRoute) {
+    if (!viewer.isStyleProfileComplete) {
       navigate({ to: "/onboarding/style-profile", replace: true });
     }
   }, [
@@ -52,16 +43,10 @@ function AppLayout() {
     viewer.canAccessStaffArea,
     viewer.destination,
     viewer.isStyleProfileComplete,
-    isProfileRoute,
     navigate,
   ]);
 
-  if (
-    !user ||
-    viewer.isLoading ||
-    (viewer.canAccessStaffArea && !isProfileRoute) ||
-    (!viewer.isStyleProfileComplete && !isProfileRoute)
-  ) {
+  if (!user || viewer.isLoading || viewer.canAccessStaffArea || !viewer.isStyleProfileComplete) {
     return <AtelierSplash />;
   }
 

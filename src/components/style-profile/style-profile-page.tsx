@@ -7,8 +7,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
-import { Camera, Loader2, Check } from "lucide-react";
-import { ColorDossierSection } from "@/components/studio/style-profile";
+import { Camera, Loader2, Check, Sparkles, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   FACE_SHAPES as HOLISTIC_FACE_SHAPES,
   HAIR_TYPES as HOLISTIC_HAIR_TYPES,
@@ -49,6 +49,12 @@ import {
   KNOWN_SEASON_GROUPS,
   STYLE_GOALS,
   STYLE_GOAL_LIMIT,
+  SEASON_ONE_LINER,
+  SILHOUETTE_STRATEGY,
+  HAIR_DIRECTION,
+  MAKEUP_HARMONY,
+  TEXTILE_DIRECTION,
+  NAMED_PALETTE,
 } from "@/constants/style-profile";
 import {
   matrixForSubSeason,
@@ -59,6 +65,11 @@ import {
 } from "@/lib/style-profile";
 import {
   SyncBadge,
+  DossierTopBar,
+  SectionHeader,
+  DetailChip,
+  DNACard,
+  PaletteBand,
   MissingDetailsNudge,
   PerspectiveSwitcher,
   DossierField,
@@ -70,9 +81,8 @@ import {
 import { ColorQuiz } from "@/components/style-profile/color-quiz";
 import { BodyTypeQuiz } from "@/components/style-profile/body-type-quiz";
 import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-diagnostic-viewfinder";
-import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio-view";
-import { PhotoTryOn } from "@/components/style-profile/photo-try-on";
 import { studioToDossier, normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
+import { combosFor } from "@/lib/style-profile/outfit-combos";
 
 function readString(value: Json | undefined): string | null {
   return typeof value === "string" ? value : null;
@@ -100,12 +110,10 @@ export function StyleProfile() {
   const [manualSeason, setManualSeason] = useState<string>("");
   const [dossier, setDossier] = useState<StudioDossier>(MOOD_COLLECT_DEFAULT);
   const [hasRealDossier, setHasRealDossier] = useState(false);
-  const [profileRevision, setProfileRevision] = useState(0);
   const [dashCalibrateOpen, setDashCalibrateOpen] = useState(false);
-  const [telemetry, setTelemetry] = useState<StudioTelemetry | null>(null);
   const [knownTileId, setKnownTileId] = useState<string | null>(null);
   const [confirmingKnown, setConfirmingKnown] = useState(false);
-  const portfolioRef = useRef<HTMLDivElement | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const localStudioUpdateRef = useRef(false);
 
   const [viewMode, setViewMode] = useState<"streamlined" | "detailed">("streamlined");
@@ -362,7 +370,9 @@ export function StyleProfile() {
     setBeautyPrefs((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   }
 
-  async function handleStudioComplete(p: StudioColorProfile, t?: StudioTelemetry) {
+  // Telemetry is still handed over by the viewfinder, but the record that
+  // displayed it is no longer on this page, so it is deliberately dropped.
+  async function handleStudioComplete(p: StudioColorProfile, _telemetry?: StudioTelemetry) {
     if (!user) return;
     localStudioUpdateRef.current = true;
     const next = studioToDossier(p, hasRealDossier ? dossier : undefined);
@@ -394,10 +404,8 @@ export function StyleProfile() {
       return;
     }
 
-    if (t) setTelemetry(t);
     setDossier({ ...next });
     setHasRealDossier(true);
-    setProfileRevision((n) => n + 1);
     const updatedSkinUndertone = form.skin_undertone || undertone;
     setForm((f) => ({
       ...f,
@@ -420,9 +428,8 @@ export function StyleProfile() {
     setSyncStatus("synced");
     void queryClient.invalidateQueries({ queryKey: queryKeys.profile(user.id) });
 
-    window.setTimeout(() => {
-      portfolioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 0);
+    // Open the archive so the freshly calibrated master palette is visible.
+    setArchiveOpen(true);
     toast.success("Your seasonal palette is ready.");
   }
 
@@ -442,40 +449,203 @@ export function StyleProfile() {
     await handleStudioComplete(profile);
   }
 
+  // The goals live in the streamlined view, so the chip has to switch back to it
+  // before scrolling — the element does not exist while Detailed is mounted.
+  function goToStyleGoals() {
+    setViewMode("streamlined");
+    requestAnimationFrame(() =>
+      document
+        .getElementById("style-goal-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+    );
+  }
+
+  // The four-family palette the DNA cards and bands read from.
+  const family: Season = ((form.color_season || dossier.season) as Season) ?? "Summer";
+  const namedPalette = NAMED_PALETTE[family] ?? NAMED_PALETTE.Summer;
+  const masterPalette = dossier.fullPalette ?? matrixForSubSeason(family, dossier.subSeason);
+  const combos = combosFor(family);
+
+  // Hero copy: the tuned sub-season when there is a real dossier, the plain
+  // season otherwise, and nothing invented when neither exists yet.
+  const heroSeasonName = hasRealDossier ? dossier.subSeason : form.color_season || "Season not set";
+  const heroSeasonLine =
+    hasRealDossier || form.color_season
+      ? (SEASON_ONE_LINER[family] ??
+        "Your palette is set — every look below is composed against it.")
+      : "Run the colour diagnostic below and Mila will build your palette from it.";
+
   return (
-    <div className="bg-[#F5F5F0] text-[#6B6259] dark:bg-background dark:text-muted-foreground min-h-screen">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-12 py-10 md:py-20">
-        <header className="mb-12 pb-8 border-b-[0.5px] border-border">
-          <div className="flex items-start justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="h-px w-8 bg-foreground/60" />
-                <p className="atelier-kicker">Digital Style Dossier · Atelier Record</p>
-              </div>
-              <h1 className="atelier-title mt-4">Your signature blueprint.</h1>
-              <p className="text-label uppercase tracking-label-xwide text-accent font-semibold mt-4">
-                A living portrait — kept in sync, automatically.
-              </p>
-            </div>
-            <SyncBadge status={syncStatus} />
-          </div>
-        </header>
+    <div className="min-h-screen bg-background text-muted-foreground">
+      <div className="mx-auto max-w-2xl px-4 pt-6 pb-24">
+        <DossierTopBar counterpart="studio" />
+        <div className="mt-4 mb-6 flex items-center justify-between gap-4">
+          <p className="atelier-kicker">Digital Style Dossier</p>
+          <SyncBadge status={syncStatus} />
+        </div>
         {loading ? (
           <div className="text-xs tracking-widest text-muted-foreground animate-pulse">
             Loading your profile…
           </div>
         ) : (
-          <>
-            <div className="mb-10">
+          <div className="space-y-10">
+            {/* HERO — PERSONAL SEASON */}
+            <section className="rounded-card border-[0.5px] border-border bg-card p-6 shadow-paper">
+              <p className="text-center text-nano uppercase tracking-label-xwide text-muted-foreground">
+                Your Personal Season
+              </p>
+
+              <div className="mt-5 flex flex-col items-center gap-4">
+                <span
+                  aria-hidden="true"
+                  className="flex size-28 items-center justify-center rounded-full bg-ink font-serif text-4xl text-surface ring-1 ring-accent/50 ring-offset-4 ring-offset-card"
+                >
+                  {(form.full_name || user?.email || "M")[0]?.toUpperCase()}
+                </span>
+                <div className="text-center">
+                  <h1 className="font-serif text-3xl leading-tight tracking-tight text-foreground">
+                    {heroSeasonName}
+                  </h1>
+                  <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    {heroSeasonLine}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                <DetailChip label="Undertone" value={form.skin_undertone || null} />
+                <DetailChip
+                  label="Skin Lightness"
+                  value={hasRealDossier ? dossier.brightness : null}
+                />
+                <DetailChip
+                  label="Contrast"
+                  value={hasRealDossier ? dossier.contrastScale : null}
+                />
+                <DetailChip
+                  label="Silhouette"
+                  value={form.body_type || null}
+                  onAdd={() => setViewMode("detailed")}
+                />
+                <DetailChip
+                  label="Face Shape"
+                  value={holistic.face_shape}
+                  onAdd={() => setViewMode("detailed")}
+                />
+                <DetailChip
+                  label="Hair Texture"
+                  value={holistic.hair_type}
+                  onAdd={() => setViewMode("detailed")}
+                />
+                <DetailChip
+                  label="Beauty"
+                  value={beautyPrefs[0] ?? null}
+                  onAdd={() => setViewMode("detailed")}
+                />
+                <DetailChip
+                  label="Style Goal"
+                  value={styleGoals[0] ?? null}
+                  onAdd={goToStyleGoals}
+                />
+              </div>
+            </section>
+
+            <div>
               <PerspectiveSwitcher value={viewMode} onChange={setViewMode} />
             </div>
-            {form.color_season && (
-              <div className="mb-10 space-y-8">
-                <ColorDossierSection colorSeason={form.color_season} />
-                {hasRealDossier && <PhotoTryOn dossier={dossier} />}
+            <section className="space-y-4">
+              <SectionHeader eyebrow="Reference" title="Style DNA" />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <DNACard
+                  title="Color Season"
+                  body={`${heroSeasonName} · ${family}`}
+                  swatches={(dossier.fullPalette ?? []).slice(0, 5)}
+                />
+                <DNACard
+                  title="Best Colors"
+                  body={namedPalette.primary.map((s) => s.name).join(", ")}
+                  swatches={namedPalette.primary.map((s) => s.hex)}
+                />
+                <DNACard
+                  title="Colors to Avoid"
+                  body={namedPalette.avoid.map((s) => s.name).join(", ")}
+                  swatches={namedPalette.avoid.map((s) => s.hex)}
+                  tone="muted"
+                />
+                <DNACard
+                  title="Silhouette Strategy"
+                  body={
+                    SILHOUETTE_STRATEGY[form.body_type] ??
+                    "Add your silhouette below for tailored guidance."
+                  }
+                  action={
+                    form.body_type
+                      ? undefined
+                      : { label: "Add silhouette", onClick: () => setViewMode("detailed") }
+                  }
+                />
+                <DNACard
+                  title="Hair Direction"
+                  body={
+                    HAIR_DIRECTION[holistic.hair_type ?? ""] ??
+                    "Add your hair texture below to unlock this."
+                  }
+                  action={
+                    holistic.hair_type
+                      ? undefined
+                      : { label: "Add hair texture", onClick: () => setViewMode("detailed") }
+                  }
+                />
+                <DNACard title="Makeup Harmony" body={MAKEUP_HARMONY[family]} />
+                <DNACard title="Textile Direction" body={TEXTILE_DIRECTION[family]} />
               </div>
+            </section>
+
+            <section className="space-y-4">
+              <SectionHeader
+                eyebrow="Explore"
+                title="Your Palette"
+                subtitle="Tap any swatch for the name and a short Mila tip."
+              />
+              <div className="space-y-5">
+                <PaletteBand label="Primary tones" swatches={namedPalette.primary} />
+                <PaletteBand label="Accents" swatches={namedPalette.accents} />
+                <PaletteBand label="Neutrals" swatches={namedPalette.neutrals} />
+                <PaletteBand label="Colours to avoid" swatches={namedPalette.avoid} muted />
+              </div>
+            </section>
+
+            {combos.length > 0 && (
+              <section className="space-y-4">
+                <SectionHeader eyebrow="Wear it" title="Color Combinations to Try" />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {combos.map((c) => (
+                    <div
+                      key={c.id}
+                      className="rounded-card border-[0.5px] border-border bg-card p-4 transition-shadow hover:shadow-paper"
+                    >
+                      <div className="flex overflow-hidden rounded-lg" aria-hidden="true">
+                        {c.hexes.map((hex, i) => (
+                          <div
+                            key={`${c.id}-${hex}-${i}`}
+                            className="h-14 flex-1"
+                            style={{ backgroundColor: hex }}
+                          />
+                        ))}
+                      </div>
+                      <p className="mt-3 text-nano uppercase tracking-label-wide text-muted-foreground">
+                        {c.names.join(" · ")}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-foreground/85">
+                        &ldquo;{c.note}&rdquo;
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
             )}
-            <div className="mb-12 ">
+
+            <div>
               <AnimatePresence mode="wait" initial={false}>
                 {viewMode === "streamlined" ? (
                   <motion.div
@@ -527,9 +697,10 @@ export function StyleProfile() {
                       />
                     </DossierField>
                     <DossierField
-                      eyebrow="Core · 04"
-                      title="Style Goals"
-                      caption={`What you want your wardrobe to do for you. Pick up to ${STYLE_GOAL_LIMIT} — they save as you tap.`}
+                      id="style-goal-section"
+                      eyebrow="Direction"
+                      title="What are you working toward?"
+                      caption={`Mila uses this to shape your looks. Pick up to ${STYLE_GOAL_LIMIT} — they save as you tap.`}
                     >
                       <BeautyPillTray
                         active={styleGoals}
@@ -618,18 +789,13 @@ export function StyleProfile() {
                 )}
               </AnimatePresence>
             </div>
-            <div className="mb-10">
-              <div className="bg-card rounded-card border border-border shadow-paper p-6 sm:p-8">
-                <div className="text-center">
-                  <p className="atelier-kicker">Path 01 · Know Your Season</p>
-                  <h2 className="font-serif text-2xl sm:text-3xl tracking-tight mt-2">
-                    Select Your Known Color Profile
-                  </h2>
-                  <p className="text-xs text-muted-foreground leading-relaxed mt-2 max-w-md mx-auto">
-                    Already know your seasonal palette? Tap your look below and confirm — your
-                    palette loads instantly, no camera needed.
-                  </p>
-                </div>
+            <section>
+              <SectionHeader
+                eyebrow="Calibrate"
+                title="Select your known colour profile"
+                subtitle="Already know your seasonal palette? Tap your look and confirm — it loads instantly, no camera needed."
+              />
+              <div className="mt-4 rounded-card border-[0.5px] border-border bg-card p-6 shadow-paper sm:p-8">
                 <div className="mt-8 space-y-7">
                   {KNOWN_SEASON_GROUPS.map((group) => (
                     <div key={group.season}>
@@ -711,11 +877,11 @@ export function StyleProfile() {
                 </div>
               </div>
 
-              <div className="mt-8">
+              <div className="mt-4">
                 <Accordion
                   type="single"
                   collapsible
-                  className="bg-card rounded-card border border-border shadow-paper"
+                  className="rounded-card border-[0.5px] border-border bg-card shadow-paper"
                 >
                   <AccordionItem value="studio-camera" className="border-b-0">
                     <AccordionTrigger className="px-6 sm:px-8 py-5 hover:no-underline">
@@ -867,7 +1033,7 @@ export function StyleProfile() {
                   </AccordionItem>
                 </Accordion>
               </div>
-            </div>
+            </section>
             {quizOpen && (
               <ColorQuiz
                 onClose={() => setQuizOpen(false)}
@@ -895,18 +1061,69 @@ export function StyleProfile() {
                 onComplete={handleStudioComplete}
               />
             )}
-            <div ref={portfolioRef}>
-              <StudioPortfolioView
-                key={
-                  hasRealDossier
-                    ? `live-${profileRevision}-${dossier.season}-${dossier.subSeason}`
-                    : "demo"
-                }
-                profile={dossier}
-                isDemo={!hasRealDossier}
-                telemetry={telemetry}
-              />
-            </div>
+            {hasRealDossier && dossier.stylistNote && (
+              <section className="space-y-4">
+                <SectionHeader eyebrow="Personal brief" title="Mila&rsquo;s Styling Notes" />
+                <div className="rounded-card border-[0.5px] border-border bg-accent-soft/40 p-6 sm:p-8">
+                  <Sparkles className="size-5 text-accent" strokeWidth={1.5} aria-hidden="true" />
+                  <p className="mt-4 font-serif text-lg leading-relaxed text-foreground">
+                    {dossier.stylistNote}
+                  </p>
+                </div>
+              </section>
+            )}
+            <section>
+              <button
+                type="button"
+                onClick={() => setArchiveOpen((v) => !v)}
+                aria-expanded={archiveOpen}
+                className="atelier-focus-ring flex w-full items-center justify-between rounded-card border-[0.5px] border-border bg-surface/40 px-5 py-4 text-left"
+              >
+                <div>
+                  <p className="text-nano uppercase tracking-label-max text-muted-foreground">
+                    Reference archive
+                  </p>
+                  <p className="font-serif text-lg text-foreground">Detailed Dossier</p>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-4 text-muted-foreground transition-transform",
+                    archiveOpen && "rotate-180",
+                  )}
+                  aria-hidden="true"
+                />
+              </button>
+              <AnimatePresence initial={false}>
+                {archiveOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    {masterPalette.length > 0 && (
+                      <div className="mt-3 space-y-4 rounded-card border-[0.5px] border-border bg-card p-5">
+                        <p className="text-sm text-muted-foreground">
+                          Your full {masterPalette.length}-hex master palette. Useful for shopping
+                          references and mood boards.
+                        </p>
+                        <div className="grid grid-cols-10 gap-1">
+                          {masterPalette.map((hex, i) => (
+                            <div
+                              key={`${hex}-${i}`}
+                              className="aspect-square rounded-md border-[0.5px] border-border"
+                              style={{ backgroundColor: hex }}
+                              title={hex}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </section>
             {hasRealDossier && (
               <div className="mt-6 flex items-center justify-center gap-3">
                 <span className="h-px w-10 bg-foreground/20" />
@@ -979,7 +1196,7 @@ export function StyleProfile() {
                 </div>
               </SheetContent>
             </Sheet>
-          </>
+          </div>
         )}
       </div>
     </div>

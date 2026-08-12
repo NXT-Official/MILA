@@ -1,7 +1,102 @@
 import { motion } from "framer-motion";
-import { Check, CheckCircle2, Circle } from "lucide-react";
+import { Check, CheckCircle2, Circle, Plus, ArrowLeft } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { BEAUTY_PREFERENCE_TAGS, type MatrixOption } from "@/constants/style-profile";
+import {
+  BEAUTY_PREFERENCE_TAGS,
+  type MatrixOption,
+  type NamedSwatch,
+} from "@/constants/style-profile";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+
+/**
+ * Back to the dashboard on the left, the sibling page on the right — the
+ * dossier and Studio each point at the other.
+ */
+export function DossierTopBar({ counterpart }: { counterpart: "studio" | "profile" }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <Link
+        to="/dashboard"
+        className="atelier-focus-ring inline-flex items-center gap-1.5 rounded-control text-micro uppercase tracking-label-wide text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" aria-hidden="true" />
+        Back
+      </Link>
+      <Link
+        to={counterpart === "studio" ? "/style-profile" : "/profile"}
+        className="atelier-focus-ring rounded-control text-micro uppercase tracking-label-wide text-accent transition-colors hover:text-foreground"
+      >
+        {counterpart === "studio" ? "Open Studio" : "View Profile"} →
+      </Link>
+    </div>
+  );
+}
+
+/** Eyebrow + title + optional subtitle. One header shape for every section. */
+export function SectionHeader({
+  eyebrow,
+  title,
+  subtitle,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-nano uppercase tracking-label-max text-muted-foreground">{eyebrow}</p>
+      <h2 className="font-serif text-2xl leading-tight tracking-tight text-foreground">{title}</h2>
+      {subtitle ? (
+        <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">{subtitle}</p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * One dossier fact, at a glance. An unset field with somewhere to go shows the
+ * way there instead of an em dash — the grid doubles as the completion prompt.
+ */
+export function DetailChip({
+  label,
+  value,
+  onAdd,
+}: {
+  label: string;
+  value?: string | null;
+  onAdd?: () => void;
+}) {
+  const empty = !value;
+  return (
+    <div
+      className={cn(
+        "rounded-control px-3 py-2.5",
+        empty ? "border border-dashed border-border" : "border-[0.5px] border-border bg-card",
+      )}
+    >
+      <p className="text-nano uppercase tracking-label-xwide text-muted-foreground">{label}</p>
+      {value ? (
+        <p className="mt-0.5 truncate text-sm text-foreground" title={value}>
+          {value}
+        </p>
+      ) : onAdd ? (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="atelier-focus-ring mt-0.5 inline-flex items-center gap-1 rounded-control text-sm text-accent transition-colors hover:text-foreground"
+        >
+          <Plus className="size-3.5" strokeWidth={2} aria-hidden="true" />
+          Add
+        </button>
+      ) : (
+        <p className="mt-0.5 text-sm text-muted-foreground/60">—</p>
+      )}
+    </div>
+  );
+}
 
 /**
  * Soft nudge for dossier fields Mila can work without. Deliberately not an
@@ -16,21 +111,122 @@ export function MissingDetailsNudge({
   onOpenDetailed: () => void;
 }) {
   if (missing.length === 0) return null;
-  const names = missing.join(" and ");
+  const names = missing.join(" and ").toLowerCase();
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border-[0.5px] border-accent/40 bg-accent-soft/40 px-5 py-4">
-      <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
-        <span className="font-medium text-foreground">{names}</span>{" "}
-        {missing.length > 1 ? "are" : "is"} still blank. Mila composes without{" "}
-        {missing.length > 1 ? "them" : "it"} — the hair and framing notes just stay generic.
+    <div className="rounded-card border-[0.5px] border-border bg-accent-soft/60 p-6">
+      <p className="text-nano uppercase tracking-label-max text-muted-foreground">
+        Complete your profile
       </p>
-      <button
-        type="button"
-        onClick={onOpenDetailed}
-        className="atelier-focus-ring shrink-0 rounded-full border border-foreground/20 px-4 py-1.5 text-nano uppercase tracking-label-xwide text-foreground transition-colors hover:bg-foreground hover:text-background"
-      >
-        Fill {missing.length > 1 ? "them" : "it"} in
-      </button>
+      <p className="mt-3 font-serif text-xl leading-snug text-foreground">
+        Add your {names}
+        <span className="text-muted-foreground">
+          {" "}
+          · Mila&rsquo;s recommendations get more specific.
+        </span>
+      </p>
+      <Button size="pill" className="mt-5" onClick={onOpenDetailed}>
+        Complete details
+      </Button>
+    </div>
+  );
+}
+
+/** One Style DNA fact: title, optional swatch bar, body, optional gold action. */
+export function DNACard({
+  title,
+  body,
+  swatches,
+  tone,
+  action,
+}: {
+  title: string;
+  body: string;
+  swatches?: string[];
+  tone?: "muted";
+  action?: { label: string; onClick: () => void };
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-card border-[0.5px] p-4",
+        tone === "muted" ? "border-border/60 bg-surface/40" : "border-border bg-card shadow-paper",
+      )}
+    >
+      <h3 className="font-serif text-base text-foreground">{title}</h3>
+      {swatches && swatches.length > 0 ? (
+        <div className="mt-3 flex overflow-hidden rounded-md" aria-hidden="true">
+          {swatches.map((hex, i) => (
+            <div key={`${hex}-${i}`} className="h-6 flex-1" style={{ backgroundColor: hex }} />
+          ))}
+        </div>
+      ) : null}
+      <p className="mt-3 text-sm leading-relaxed text-foreground/85">{body}</p>
+      {action ? (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="atelier-focus-ring mt-3 inline-flex items-center gap-1 rounded-control text-xs font-medium text-accent hover:underline"
+        >
+          {action.label} →
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A named band of the season palette. Every swatch is a button because the
+ * guidance — why this colour, where to wear it — is the point; a grid of
+ * unlabelled squares is decoration.
+ */
+export function PaletteBand({
+  label,
+  swatches,
+  muted = false,
+}: {
+  label: string;
+  swatches: NamedSwatch[];
+  muted?: boolean;
+}) {
+  if (swatches.length === 0) return null;
+  return (
+    <div>
+      <p className="mb-2 text-nano uppercase tracking-label-max text-muted-foreground">{label}</p>
+      <div className={cn("grid grid-cols-4 gap-2 sm:grid-cols-6", muted && "opacity-80")}>
+        {swatches.map((s) => (
+          <Popover key={s.hex + s.name}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label={`${s.name} — ${s.tip}`}
+                className="atelier-focus-ring aspect-square rounded-control border-[0.5px] border-border transition-transform hover:scale-105"
+                style={{ backgroundColor: s.hex }}
+              />
+            </PopoverTrigger>
+            <PopoverContent side="top" align="center" className="w-64 rounded-card p-4">
+              <div className="flex items-center gap-3">
+                <div
+                  aria-hidden="true"
+                  className="size-10 shrink-0 rounded-lg border-[0.5px] border-border"
+                  style={{ backgroundColor: s.hex }}
+                />
+                <div className="min-w-0">
+                  <p className="font-serif text-base leading-tight text-foreground">{s.name}</p>
+                  <p className="text-nano uppercase tracking-label-wide text-muted-foreground">
+                    {s.hex}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-foreground/85">{s.tip}</p>
+              {s.use ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground/80">Best for:</span> {s.use}
+                </p>
+              ) : null}
+            </PopoverContent>
+          </Popover>
+        ))}
+      </div>
     </div>
   );
 }
@@ -100,18 +296,20 @@ export function PerspectiveSwitcher({
 }
 
 export function DossierField({
+  id,
   eyebrow,
   title,
   caption,
   children,
 }: {
+  id?: string;
   eyebrow?: string;
   title: string;
   caption?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-4">
+    <section id={id} className="space-y-4">
       <div className="space-y-1.5">
         {eyebrow && <p className="text-nano uppercase tracking-label-max text-accent">{eyebrow}</p>}
         <h3 className="font-serif text-2xl tracking-tight text-foreground">{title}</h3>
@@ -294,6 +492,7 @@ export function BeautyPillTray({
                   : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-accent/40",
             ].join(" ")}
           >
+            {isActive ? <Check className="size-3.5" aria-hidden="true" /> : null}
             <span>{tag}</span>
           </button>
         );

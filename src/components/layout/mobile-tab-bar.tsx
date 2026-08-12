@@ -48,14 +48,14 @@ export function MobileTabBar({
         <span>Lens</span>
       </button>
       <Link
-        to="/style-profile"
+        to="/profile"
         className={cn(
           "relative flex-1 flex flex-col items-center gap-0.5 py-1.5 text-[9px] uppercase tracking-label transition-colors",
-          path === "/style-profile" ? "text-accent" : "text-surface/50",
+          path === "/profile" ? "text-accent" : "text-surface/50",
         )}
       >
         <Palette className="size-4.5" strokeWidth={1.75} />
-        <span>Studio</span>
+        <span>Profile</span>
       </Link>
       <button
         type="button"

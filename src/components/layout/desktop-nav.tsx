@@ -37,15 +37,9 @@ export function DesktopNav({
       <Link to="/style-profile" className={itemClass(path === "/style-profile")}>
         Studio
       </Link>
-      {userId && (
-        <Link
-          to="/profile/$userId"
-          params={{ userId }}
-          className={itemClass(path === `/profile/${userId}`)}
-        >
-          Profile
-        </Link>
-      )}
+      <Link to="/profile" className={itemClass(path === "/profile")}>
+        Profile
+      </Link>
       <button
         type="button"
         onClick={onOpenConcierge}

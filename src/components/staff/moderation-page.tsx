@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -88,13 +87,9 @@ export function ModerationPage() {
             </div>
             <div className="p-4 flex-1 flex flex-col gap-3">
               <div>
-                <Link
-                  to="/profile/$userId"
-                  params={{ userId: p.user_id }}
-                  className="block truncate font-serif text-sm text-ink transition-colors hover:text-accent"
-                >
+                <p className="block truncate font-serif text-sm text-ink">
                   {p.author_name || "Unnamed"}
-                </Link>
+                </p>
                 <div className="text-micro uppercase tracking-label text-stone truncate">
                   {p.author_email}
                 </div>
