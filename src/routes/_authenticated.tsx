@@ -6,8 +6,9 @@ import { AtelierSplash } from "@/components/layout/atelier-splash";
 import { SuspendedGate } from "@/components/layout/suspended-gate";
 
 export const Route = createFileRoute("/_authenticated")({
+  // Client-only guard — see /admin/_authed for why.
+  ssr: false,
   beforeLoad: async () => {
-    if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       throw redirect({ to: "/login" });

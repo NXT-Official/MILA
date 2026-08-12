@@ -6,12 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { SuspendedGate } from "@/components/layout/suspended-gate";
 
 export const Route = createFileRoute("/admin/_authed")({
+  // Session lives in localStorage, so the guard can only run on the client.
+  // Without this the server SSRs the match as "success" and beforeLoad never
+  // re-runs on hydration — the tree renders signed out.
+  ssr: false,
   beforeLoad: async ({ context }) => {
-    if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getSession();
     const userId = data.session?.user.id;
-    // Signed out inside a staff tree goes back to the staff login, not /login.
-    if (!userId) throw redirect({ to: "/staff", replace: true });
+    if (!userId) throw redirect({ to: "/", replace: true });
     const viewer = await loadAuthenticatedViewerState(context.queryClient, userId);
     // Admin-only: a moderator has admin.access but no business in this tree,
     // and their destination sends them to /moderator instead.
