@@ -8,6 +8,7 @@ import {
   FACE_FULL_TO_SHORT,
 } from "@/constants/style-profile";
 import { DisruptiveToneCard } from "@/components/style-profile/shared";
+import { buildOutfitCombos } from "@/lib/style-profile/outfit-combos";
 
 export function StudioPortfolioView({
   profile,
@@ -31,6 +32,7 @@ export function StudioPortfolioView({
     "Apply near the face via luxury knitwear, silks, or lapel accents.",
     "Perfect for hardware choices, soft evening tailoring, and foundational silk linings.",
   ];
+  const combos = buildOutfitCombos(profile);
   const omitTones = profile.avoidColors.slice(0, 3).map((line) => {
     const [name] = line.split(/[—(]/);
     return name.trim();
@@ -461,6 +463,55 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
           ))}
         </div>
       </div>
+
+      {combos.length > 0 && (
+        <SectionBlock
+          numeral="IV"
+          title="Ready to Wear"
+          info="Three-colour outfits drawn from your own palette, ordered largest surface first — main piece, second piece, accent."
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {combos.map((combo) => (
+              <div
+                key={combo.id}
+                className="rounded-card border border-border bg-card shadow-paper overflow-hidden flex flex-col"
+              >
+                <div className="flex h-24" aria-hidden="true">
+                  {/* Widths mirror how much of the outfit each colour actually covers. */}
+                  {combo.colors.map((c, i) => (
+                    <div
+                      key={`${combo.id}-${c.hex}-${i}`}
+                      className={i === 0 ? "w-1/2" : i === 1 ? "w-1/3" : "flex-1"}
+                      style={{ backgroundColor: c.hex }}
+                    />
+                  ))}
+                </div>
+                <div className="p-5 flex-1 flex flex-col gap-2 border-t border-border">
+                  <h4 className="font-serif text-lg leading-tight text-foreground">
+                    {combo.title}
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{combo.caption}</p>
+                  <ul className="mt-auto pt-2 flex flex-wrap gap-x-3 gap-y-1">
+                    {combo.colors.map((c, i) => (
+                      <li
+                        key={`${combo.id}-name-${c.hex}-${i}`}
+                        className="inline-flex items-center gap-1.5 text-nano uppercase tracking-label text-muted-foreground"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="size-2.5 rounded-full border border-border"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        {c.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionBlock>
+      )}
 
       <SectionBlock
         numeral="V"
