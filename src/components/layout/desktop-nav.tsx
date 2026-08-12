@@ -43,7 +43,7 @@ export function DesktopNav({
       <button
         type="button"
         onClick={onOpenConcierge}
-        aria-label="Open Mila's Styling Studio"
+        aria-label="Open Mila's Concierge"
         className={itemClass(false)}
       >
         Concierge
