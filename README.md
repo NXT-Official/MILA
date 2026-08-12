@@ -94,7 +94,7 @@ flowchart TD
     C --> E[Supabase Auth issues a session]
     E --> D
     D --> F{Style profile complete?}
-    F -- No --> G["/style-profile — colour + body quiz"]
+    F -- No --> G["/onboarding/style-profile — 9-step flow"]
     F -- Yes --> H[Dashboard: daily look]
     G --> H
     H --> I["Server function calls the AI provider\n+ deterministic colour engine"]
@@ -234,36 +234,50 @@ the source tree to read or edit directly.
 
 ## Application Routes
 
-| Route                       | Access                    | Purpose                                                                          |
-| --------------------------- | ------------------------- | -------------------------------------------------------------------------------- |
-| `/`                         | Public                    | Landing/marketing page; redirects signed-in visitors to `/dashboard` or `/admin` |
-| `/login`                    | Public                    | Email/password and Google OAuth sign-in and sign-up (tabbed)                     |
-| `/auth/callback`            | Public                    | OAuth session exchange, then redirects to `next` (defaults to `/dashboard`)      |
-| `/dashboard`                | Authenticated             | Daily look generation, camera/gallery capture, credits, membership drawer        |
-| `/feed`                     | Authenticated             | Community feed of member outfit posts                                            |
-| `/history`                  | Authenticated             | Previously generated looks                                                       |
-| `/style-profile`            | Authenticated             | Colour-season and body-profile quiz; "digital style dossier"                     |
-| `/admin`                    | Authenticated, admin role | Dashboard stats (members, credits, posts, support)                               |
-| `/admin/members`            | Authenticated, admin role | Member list — grant/revoke roles, suspend, create/edit accounts                  |
-| `/admin/subscription-plans` | Authenticated, admin role | Membership plan catalog                                                          |
-| `/admin/moderation`         | Authenticated, admin role | Hide/restore/delete feed posts                                                   |
-| `/admin/support`            | Authenticated, admin role | Help-desk and feedback message triage                                            |
-| `/moderator`                | Authenticated, staff      | Redirects to `/moderator/moderation`                                             |
-| `/moderator/moderation`     | Authenticated, staff      | Hide/restore/delete feed posts                                                   |
-| `/moderator/support`        | Authenticated, staff      | Help-desk and feedback message triage                                            |
+| Route                       | Access                     | Purpose                                                                                   |
+| --------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
+| `/`                         | Public                     | Landing/marketing page; signed-in visitors go to their role's home (`viewer.destination`) |
+| `/login`                    | Public                     | Email/password and Google OAuth sign-in and sign-up (tabbed)                              |
+| `/auth/callback`            | Public                     | OAuth session exchange, then redirects to `next` (defaults to `/dashboard`)               |
+| `/staff`                    | Public                     | Separate staff sign-in; the staff trees bounce here when signed out                       |
+| `/api/webhooks/paddle`      | Public, signature-verified | `POST` server handler for Paddle subscription events                                      |
+| `/onboarding`               | Authenticated              | Redirects to `/onboarding/style-profile`                                                  |
+| `/onboarding/style-profile` | Authenticated              | 9-step style profile flow; current step lives in `?step=` so it is resumable              |
+| `/dashboard`                | Complete profile           | Daily look generation, camera/gallery capture, credits, membership drawer                 |
+| `/feed`                     | Complete profile           | Community OOTD feed; server-gated behind posting today                                    |
+| `/history`                  | Complete profile           | Archive of previously generated looks                                                     |
+| `/palettes`                 | Complete profile           | Saved daily palette mixes                                                                 |
+| `/concierge`                | Complete profile           | Chat with Mila about an anchored look                                                     |
+| `/pricing`                  | Complete profile           | Membership plans and checkout                                                             |
+| `/style-profile`            | Complete profile           | Studio — the digital style dossier, photo try-on, and re-calibration                      |
+| `/profile/$userId`          | Authenticated              | Public member profile — **exempt** from the completion gate below                         |
+| `/admin`                    | Admin role                 | Redirects to `/admin/dashboard`                                                           |
+| `/admin/dashboard`          | Admin role                 | Stats (members, credits, posts, support)                                                  |
+| `/admin/members`            | Admin role                 | Member list — grant/revoke roles, suspend, create/edit accounts                           |
+| `/admin/subscription-plans` | Admin role                 | Membership plan catalog                                                                   |
+| `/admin/moderation`         | Admin role                 | Hide/restore/delete feed posts                                                            |
+| `/admin/support`            | Admin role                 | Help-desk and feedback message triage                                                     |
+| `/moderator`                | Either staff role          | Redirects to `/moderator/moderation`                                                      |
+| `/moderator/moderation`     | Either staff role          | Hide/restore/delete feed posts                                                            |
+| `/moderator/support`        | Either staff role          | Help-desk and feedback message triage                                                     |
 
-`/dashboard`, `/feed`, `/history`, and `/style-profile` share a pathless `_authenticated/_app`
-layout route (top/bottom navigation chrome). Staff routes are split across **two** layout routes,
-`_authenticated/admin` and `_authenticated/moderator`, which both render the same `StaffShell`
-(sidebar + header) but gate differently: `/admin*` requires `admin.dashboard.view` (admins only),
-`/moderator*` requires `admin.access` (either staff role).
+**Member routes** share the pathless `_authenticated/_app` layout (navigation chrome). That layout
+enforces two things beyond the session check: staff are redirected to their own tree, and anyone
+whose style profile is incomplete is hard-redirected to `/onboarding/style-profile`. "Complete
+profile" in the table means both. `/profile/$userId` is deliberately exempt from the completion
+gate so a member arriving from a feed post can view a profile mid-onboarding.
 
-Moderation and support are mounted in **both** trees so each role stays on its own URLs — an
-admin works at `/admin/moderation`, a moderator at `/moderator/moderation`. The route files are
-thin; both point at one shared page component (`src/components/staff/moderation-page.tsx`,
+**Staff routes** are **not** nested under `_authenticated`. `src/routes/admin/_authed.tsx` and
+`src/routes/moderator/_authed.tsx` are separate layout routes that run their own session check and
+redirect to `/staff` (not `/login`) when signed out. Both render the same `StaffShell` but gate
+differently: `/admin/*` requires `admin.dashboard.view` (admins only), `/moderator/*` requires
+`admin.access` (either staff role).
+
+Moderation and support are mounted in **both** trees so each role stays on its own URLs — an admin
+works at `/admin/moderation`, a moderator at `/moderator/moderation`. The route files are thin;
+both point at one shared page component (`src/components/staff/moderation-page.tsx`,
 `support-page.tsx`), so there is one implementation per screen. `staffBase(roles)` in
-`src/lib/authorization.ts` decides which tree's links the sidebar shows. All of them nest under
-the `_authenticated` layout route that performs the actual session check — see below.
+`src/lib/authorization.ts` decides which tree's links the sidebar shows.
 
 ## Authentication and Authorization
 

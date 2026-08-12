@@ -20,6 +20,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AdminAuthedRouteImport } from './routes/admin/_authed'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
+import { Route as AuthenticatedOnboardingIndexRouteImport } from './routes/_authenticated/onboarding/index'
 import { Route as ModeratorAuthedSupportRouteImport } from './routes/moderator/_authed/support'
 import { Route as ModeratorAuthedModerationRouteImport } from './routes/moderator/_authed/moderation'
 import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
@@ -91,6 +92,12 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/_app',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedOnboardingIndexRoute =
+  AuthenticatedOnboardingIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOnboardingRoute,
+  } as any)
 const ModeratorAuthedSupportRoute = ModeratorAuthedSupportRouteImport.update({
   id: '/support',
   path: '/support',
@@ -211,13 +218,13 @@ export interface FileRoutesByFullPath {
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/moderator/moderation': typeof ModeratorAuthedModerationRoute
   '/moderator/support': typeof ModeratorAuthedSupportRoute
+  '/onboarding/': typeof AuthenticatedOnboardingIndexRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/staff': typeof StaffRoute
-  '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/admin': typeof AdminIndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/moderator': typeof ModeratorIndexRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/moderator/moderation': typeof ModeratorAuthedModerationRoute
   '/moderator/support': typeof ModeratorAuthedSupportRoute
+  '/onboarding': typeof AuthenticatedOnboardingIndexRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRoutesById {
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/moderator/_authed/moderation': typeof ModeratorAuthedModerationRoute
   '/moderator/_authed/support': typeof ModeratorAuthedSupportRoute
+  '/_authenticated/onboarding/': typeof AuthenticatedOnboardingIndexRoute
   '/_authenticated/_app/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRouteTypes {
@@ -298,13 +307,13 @@ export interface FileRouteTypes {
     | '/api/webhooks/paddle'
     | '/moderator/moderation'
     | '/moderator/support'
+    | '/onboarding/'
     | '/profile/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/staff'
-    | '/onboarding'
     | '/admin'
     | '/auth/callback'
     | '/moderator'
@@ -324,6 +333,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/paddle'
     | '/moderator/moderation'
     | '/moderator/support'
+    | '/onboarding'
     | '/profile/$userId'
   id:
     | '__root__'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/paddle'
     | '/moderator/_authed/moderation'
     | '/moderator/_authed/support'
+    | '/_authenticated/onboarding/'
     | '/_authenticated/_app/profile/$userId'
   fileRoutesById: FileRoutesById
 }
@@ -448,6 +459,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/onboarding/': {
+      id: '/_authenticated/onboarding/'
+      path: '/'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof AuthenticatedOnboardingIndexRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRoute
     }
     '/moderator/_authed/support': {
       id: '/moderator/_authed/support'
@@ -598,12 +616,14 @@ const AuthenticatedAppRouteWithChildren =
 
 interface AuthenticatedOnboardingRouteChildren {
   AuthenticatedOnboardingStyleProfileRoute: typeof AuthenticatedOnboardingStyleProfileRoute
+  AuthenticatedOnboardingIndexRoute: typeof AuthenticatedOnboardingIndexRoute
 }
 
 const AuthenticatedOnboardingRouteChildren: AuthenticatedOnboardingRouteChildren =
   {
     AuthenticatedOnboardingStyleProfileRoute:
       AuthenticatedOnboardingStyleProfileRoute,
+    AuthenticatedOnboardingIndexRoute: AuthenticatedOnboardingIndexRoute,
   }
 
 const AuthenticatedOnboardingRouteWithChildren =
