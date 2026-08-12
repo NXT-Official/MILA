@@ -31,7 +31,7 @@ import { profileQueryOptions } from "@/lib/queries/profile";
 import { queryKeys } from "@/constants/query-keys";
 import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 import { useConcierge } from "@/hooks/use-concierge";
-import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
+import { DailyPaletteGenerator } from "@/components/dashboard/daily-palette-generator";
 import { DossierCompletionBanner } from "@/components/dashboard/dossier-completion-banner";
 import { takeFirstLookHandoff } from "@/lib/first-look";
 import { Stagger, StaggerItem } from "@/components/ui/stagger";

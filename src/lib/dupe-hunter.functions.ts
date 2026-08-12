@@ -5,7 +5,7 @@ import { aiChatCompletion, aiFailure } from "./ai.server";
 import {
   CLOTHING_CATEGORIES as CATEGORIES,
   CLOTHING_UNDERTONES as UNDERTONES,
-} from "@/constants/wardrobe";
+} from "@/constants/clothing";
 import { withAiCredit } from "./credits.server";
 import { consumeRateLimit } from "./rate-limit.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";

@@ -347,6 +347,7 @@ export type Database = {
           id: string;
           paddle_customer_id: string | null;
           skin_undertone: string | null;
+          style_goals: string[];
           suspended: boolean;
           updated_at: string;
           username: string | null;
@@ -364,6 +365,7 @@ export type Database = {
           id: string;
           paddle_customer_id?: string | null;
           skin_undertone?: string | null;
+          style_goals?: string[];
           suspended?: boolean;
           updated_at?: string;
           username?: string | null;
@@ -381,6 +383,7 @@ export type Database = {
           id?: string;
           paddle_customer_id?: string | null;
           skin_undertone?: string | null;
+          style_goals?: string[];
           suspended?: boolean;
           updated_at?: string;
           username?: string | null;

@@ -47,6 +47,8 @@ import {
   BODY_OPTIONS,
   MANUAL_SEASON_GROUPS,
   KNOWN_SEASON_GROUPS,
+  STYLE_GOALS,
+  STYLE_GOAL_LIMIT,
 } from "@/constants/style-profile";
 import {
   matrixForSubSeason,
@@ -57,6 +59,7 @@ import {
 } from "@/lib/style-profile";
 import {
   SyncBadge,
+  MissingDetailsNudge,
   PerspectiveSwitcher,
   DossierField,
   DossierAccordion,
@@ -107,6 +110,7 @@ export function StyleProfile() {
 
   const [viewMode, setViewMode] = useState<"streamlined" | "detailed">("streamlined");
   const [beautyPrefs, setBeautyPrefs] = useState<string[]>([]);
+  const [styleGoals, setStyleGoals] = useState<string[]>([]);
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const lastSavedRef = useRef<string>("");
   const initialLoadedRef = useRef(false);
@@ -178,6 +182,8 @@ export function StyleProfile() {
           const bp = data.beauty_preferences;
           if (Array.isArray(bp))
             setBeautyPrefs(bp.filter((x): x is string => typeof x === "string"));
+          if (Array.isArray(data.style_goals))
+            setStyleGoals(data.style_goals.filter((x): x is string => typeof x === "string"));
           const normalized = normalizeStoredProfile(json);
           if (normalized && !localStudioUpdateRef.current) {
             setDossier(normalized);
@@ -201,6 +207,7 @@ export function StyleProfile() {
             beauty_preferences: Array.isArray(bp)
               ? bp.filter((x: unknown) => typeof x === "string")
               : [],
+            style_goals: Array.isArray(data.style_goals) ? data.style_goals : [],
           });
           if (persistedSeason) {
             setSyncStatus("synced");
@@ -309,6 +316,7 @@ export function StyleProfile() {
       face_shape: holistic.face_shape,
       hair_type: holistic.hair_type,
       beauty_preferences: beautyPrefs,
+      style_goals: styleGoals,
     };
     const sig = JSON.stringify(payload);
     if (sig === lastSavedRef.current) return;
@@ -336,8 +344,19 @@ export function StyleProfile() {
     holistic.face_shape,
     holistic.hair_type,
     beautyPrefs,
+    styleGoals,
     queryClient,
   ]);
+
+  function toggleGoal(goal: string) {
+    setStyleGoals((prev) =>
+      prev.includes(goal)
+        ? prev.filter((g) => g !== goal)
+        : prev.length >= STYLE_GOAL_LIMIT
+          ? prev
+          : [...prev, goal],
+    );
+  }
 
   function toggleBeauty(tag: string) {
     setBeautyPrefs((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -467,6 +486,13 @@ export function StyleProfile() {
                     transition={{ duration: 0.35 }}
                     className="space-y-10"
                   >
+                    <MissingDetailsNudge
+                      missing={[
+                        holistic.face_shape ? null : "Face shape",
+                        holistic.hair_type ? null : "Hair texture",
+                      ].filter((v): v is string => v !== null)}
+                      onOpenDetailed={() => setViewMode("detailed")}
+                    />
                     <DossierField
                       eyebrow="Core · 01"
                       title="Color Season"
@@ -498,6 +524,18 @@ export function StyleProfile() {
                         value={holistic.hair_type}
                         options={HOLISTIC_HAIR_TYPES as unknown as string[]}
                         onSelect={(v) => setHolistic((h) => ({ ...h, hair_type: v }))}
+                      />
+                    </DossierField>
+                    <DossierField
+                      eyebrow="Core · 04"
+                      title="Style Goals"
+                      caption={`What you want your wardrobe to do for you. Pick up to ${STYLE_GOAL_LIMIT} — they save as you tap.`}
+                    >
+                      <BeautyPillTray
+                        active={styleGoals}
+                        onToggle={toggleGoal}
+                        tags={STYLE_GOALS}
+                        limit={STYLE_GOAL_LIMIT}
                       />
                     </DossierField>
                   </motion.div>

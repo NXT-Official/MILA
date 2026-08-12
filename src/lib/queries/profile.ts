@@ -15,6 +15,7 @@ export type DashboardProfile = {
   beauty_preferences: Json | null;
   color_profile: Json | null;
   default_location: string | null;
+  style_goals: string[];
 };
 
 const EMPTY_PROFILE: DashboardProfile = {
@@ -28,6 +29,7 @@ const EMPTY_PROFILE: DashboardProfile = {
   beauty_preferences: null,
   color_profile: null,
   default_location: null,
+  style_goals: [],
 };
 
 function normalizeFirstWord(v: unknown): string | null {
@@ -47,6 +49,7 @@ function buildDashboardProfile(
     hair_type: string | null;
     beauty_preferences: Json | null;
     default_location: string | null;
+    style_goals: string[] | null;
   } | null,
 ): DashboardProfile {
   if (!data) return EMPTY_PROFILE;
@@ -75,6 +78,7 @@ function buildDashboardProfile(
     beauty_preferences: data.beauty_preferences ?? null,
     color_profile: data.color_profile ?? null,
     default_location: data.default_location ?? null,
+    style_goals: data.style_goals ?? [],
   };
 }
 
@@ -85,7 +89,7 @@ export function profileQueryOptions(userId: string | undefined) {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "body_type,color_season,skin_undertone,full_name,color_profile,face_shape,hair_type,beauty_preferences,default_location",
+          "body_type,color_season,skin_undertone,full_name,color_profile,face_shape,hair_type,beauty_preferences,default_location,style_goals",
         )
         .eq("id", userId as string)
         .maybeSingle();

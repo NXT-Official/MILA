@@ -9,7 +9,7 @@ import { withAiCredit } from "./credits.server";
 import {
   CLOTHING_CATEGORIES as CATEGORIES,
   CLOTHING_UNDERTONES as UNDERTONES,
-} from "@/constants/wardrobe";
+} from "@/constants/clothing";
 import {
   MAX_DETECTED_ITEMS,
   normalizeSourceUrl,

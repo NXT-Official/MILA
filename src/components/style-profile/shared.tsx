@@ -3,6 +3,38 @@ import { Check, CheckCircle2, Circle } from "lucide-react";
 import { AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { BEAUTY_PREFERENCE_TAGS, type MatrixOption } from "@/constants/style-profile";
 
+/**
+ * Soft nudge for dossier fields Mila can work without. Deliberately not an
+ * error: the look still composes, it just loses the hair and framing detail —
+ * so this says what gets worse, not that something is broken.
+ */
+export function MissingDetailsNudge({
+  missing,
+  onOpenDetailed,
+}: {
+  missing: string[];
+  onOpenDetailed: () => void;
+}) {
+  if (missing.length === 0) return null;
+  const names = missing.join(" and ");
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border-[0.5px] border-accent/40 bg-accent-soft/40 px-5 py-4">
+      <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">
+        <span className="font-medium text-foreground">{names}</span>{" "}
+        {missing.length > 1 ? "are" : "is"} still blank. Mila composes without{" "}
+        {missing.length > 1 ? "them" : "it"} — the hair and framing notes just stay generic.
+      </p>
+      <button
+        type="button"
+        onClick={onOpenDetailed}
+        className="atelier-focus-ring shrink-0 rounded-full border border-foreground/20 px-4 py-1.5 text-nano uppercase tracking-label-xwide text-foreground transition-colors hover:bg-foreground hover:text-background"
+      >
+        Fill {missing.length > 1 ? "them" : "it"} in
+      </button>
+    </div>
+  );
+}
+
 export function SyncBadge({ status }: { status: "idle" | "syncing" | "synced" | "error" }) {
   const label =
     status === "syncing"
@@ -229,25 +261,37 @@ export function DisruptiveToneCard({ name, height = 56 }: { name: string; height
 export function BeautyPillTray({
   active,
   onToggle,
+  tags = BEAUTY_PREFERENCE_TAGS,
+  limit,
 }: {
   active: string[];
   onToggle: (tag: string) => void;
+  /** Defaults to the beauty tags; style goals reuse the same tray. */
+  tags?: readonly string[];
+  /** Once reached, unselected pills go inert rather than failing at the DB. */
+  limit?: number;
 }) {
+  const full = limit != null && active.length >= limit;
   return (
     <div className="flex flex-wrap gap-2">
-      {BEAUTY_PREFERENCE_TAGS.map((tag) => {
+      {tags.map((tag) => {
         const isActive = active.includes(tag);
+        const locked = full && !isActive;
         return (
           <button
             key={tag}
             type="button"
             onClick={() => onToggle(tag)}
+            disabled={locked}
+            aria-pressed={isActive}
             className={[
               "inline-flex items-center gap-2 px-4 py-2.5 border rounded-full transition-all duration-200",
               "text-label uppercase tracking-label-wide",
               isActive
                 ? "bg-accent-soft border-accent text-ink"
-                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-accent/40",
+                : locked
+                  ? "bg-card border-border text-muted-foreground/40 cursor-not-allowed"
+                  : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-accent/40",
             ].join(" ")}
           >
             <span>{tag}</span>

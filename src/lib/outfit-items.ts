@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   CLOTHING_CATEGORIES as CATEGORIES,
   CLOTHING_UNDERTONES as UNDERTONES,
-} from "@/constants/wardrobe";
+} from "@/constants/clothing";
 
 export const ClothingAttributesSchema = z.object({
   name: z.string().max(100),
