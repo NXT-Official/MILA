@@ -131,11 +131,17 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     return withAiCredit(context.supabase, context.userId, async () => {
       const { data: profileRow } = await context.supabase
         .from("profiles")
-        .select("beauty_preferences")
+        .select("beauty_preferences,style_goals")
         .eq("id", context.userId)
         .maybeSingle();
 
       const beautyPreferences = normalizeBeautyPreferences(profileRow?.beauty_preferences);
+      // Read server-side rather than taken from the client: goals are the
+      // member's standing intent, not something a caller should be able to set
+      // per request. The vibe input stays the per-request override.
+      const styleGoals = (profileRow?.style_goals ?? []).filter(
+        (goal): goal is string => typeof goal === "string" && goal.trim().length > 0,
+      );
 
       let tempF = data.tempF;
       let tempC = data.tempC;
@@ -186,6 +192,7 @@ export const generateDailyLook = createServerFn({ method: "POST" })
           ? `- Hair type: ${hairTypeValue} (use this exact hair-type name in the hair rationale)`
           : null,
         `- Beauty preferences: ${beautyPrefsLine}`,
+        styleGoals.length > 0 ? `- Standing style goals: ${styleGoals.join("; ")}` : null,
       ]
         .filter(Boolean)
         .join("\n");
@@ -198,6 +205,13 @@ export const generateDailyLook = createServerFn({ method: "POST" })
             : faceShapeValue
               ? `- HAIR: prescribe a concrete silhouette that flatters a ${faceShapeValue} face shape; reference it by name in the rationale. Name the silhouette concretely and give one execution tip.`
               : `- HAIR: prescribe a concrete silhouette (parting, length, volume placement, finish) plus one execution tip.`;
+
+      // Trailing newline lives inside the string so an empty goals list leaves no
+      // blank line in the rule list.
+      const goalsRule =
+        styleGoals.length > 0
+          ? `- STYLE GOALS (standing intent, lowest precedence): the member is working toward — ${styleGoals.join("; ")}. Let these steer what the rules above leave open: how loud the look reads, how many pieces it needs, how versatile each piece is. They NEVER override the ${colorSeasonValue} palette, the climate rules, or the requested Occasion Vibe — where a goal conflicts with any of those, the goal loses. Apply them silently; do not name or quote a goal back to the member.\n`
+          : "";
 
       const systemPrompt = `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup — from first principles. NOT from any inventory.
 
@@ -225,7 +239,7 @@ RULES:
 - OUTFIT: write a vivid 'headline', a 2-4 sentence 'description' that names main garments (fabrics, colors, silhouettes harmonized with the ${colorSeasonValue} palette and flattering a ${data.bodyType} figure), and short 'styling_notes' (cuffs, tucking, layering tweaks).
 ${hairRule}
 - MAKEUP (PALETTE LOCKED TO 16-SEASON PROFILE): the 'palette' MUST anchor strictly inside the ${colorSeasonValue} season family and the palette sentence MUST contain the literal string "${colorSeasonValue}". Do NOT name any other season (no "Muted Summer" if the user is "${colorSeasonValue}", etc.). Do not borrow tones from the opposing axis. The 'details' must specify (1) base finish texture, (2) precise placement, and (3) finish/wear. Cross-reference beauty preferences (${beautyPrefsLine}) when choosing finish.
-- Be specific, shoppable, executable. Do NOT reference any owned wardrobe.
+${goalsRule}- Be specific, shoppable, executable. Do NOT reference any owned wardrobe.
 - Tone: read like a luxury fashion editorial — confident, precise, never generic.
 
 Always call the report_daily_look tool.`;
