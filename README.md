@@ -69,7 +69,7 @@ Status reflects what was confirmed by reading the code, not the product's ambiti
 | Area                                                  | Status           | Description                                                                                                                  |
 | ----------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Email/password + Google sign-in                       | Implemented      | Supabase Auth; see [Authentication](#authentication-and-authorization)                                                       |
-| Style profile / colour-season quiz                    | Implemented      | Body type, face shape, hair, beauty preferences, 16-season colour dossier (`/style-profile`)                                 |
+| Style profile / colour-season quiz                    | Implemented      | Body type, face shape, hair, beauty preferences, 16-season colour dossier (`/profile`)                                       |
 | Daily look generation                                 | Implemented      | Outfit + hair + makeup, weather- and vibe-aware, via `generate-outfit.functions.ts`                                          |
 | Outfit history                                        | Implemented      | Past generated looks, stored in `outfits` (`/history`)                                                                       |
 | Wardrobe/outfit photo analysis                        | Implemented      | `analyze-outfit.functions.ts`, plus per-garment detection in `outfit-items.functions.ts`                                     |
@@ -249,8 +249,8 @@ the source tree to read or edit directly.
 | `/palettes`                 | Complete profile           | Saved daily palette mixes                                                                 |
 | `/concierge`                | Complete profile           | Chat with Mila about an anchored look                                                     |
 | `/pricing`                  | Complete profile           | Membership plans and checkout                                                             |
-| `/style-profile`            | Complete profile           | Studio — the digital style dossier, photo try-on, and re-calibration                      |
-| `/profile/$userId`          | Authenticated              | Public member profile — **exempt** from the completion gate below                         |
+| `/profile`                  | Complete profile           | The digital style dossier — season hero, Style DNA, palette, goals, re-calibration        |
+| `/style-profile`            | Complete profile           | Studio — try makeup shades and seasonal colours on your own photo                         |
 | `/admin`                    | Admin role                 | Redirects to `/admin/dashboard`                                                           |
 | `/admin/dashboard`          | Admin role                 | Stats (members, credits, posts, support)                                                  |
 | `/admin/members`            | Admin role                 | Member list — grant/revoke roles, suspend, create/edit accounts                           |
@@ -264,8 +264,7 @@ the source tree to read or edit directly.
 **Member routes** share the pathless `_authenticated/_app` layout (navigation chrome). That layout
 enforces two things beyond the session check: staff are redirected to their own tree, and anyone
 whose style profile is incomplete is hard-redirected to `/onboarding/style-profile`. "Complete
-profile" in the table means both. `/profile/$userId` is deliberately exempt from the completion
-gate so a member arriving from a feed post can view a profile mid-onboarding.
+profile" in the table means both, and the gate now has no exemptions.
 
 **Staff routes** are **not** nested under `_authenticated`. `src/routes/admin/_authed.tsx` and
 `src/routes/moderator/_authed.tsx` are separate layout routes that run their own session check and
