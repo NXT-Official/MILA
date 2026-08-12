@@ -1,51 +1,32 @@
 import { expect, test } from "bun:test";
-import { buildOutfitCombos, luminance } from "./outfit-combos";
-import type { DetailedColorProfile } from "@/constants/style-profile";
+import { combosFor } from "./outfit-combos";
+import { NAMED_PALETTE } from "@/constants/style-profile";
 
-const s = (hex: string, name: string) => ({ hex, name });
+test("every season yields four three-colour combos drawn from its own palette", () => {
+  for (const season of ["Spring", "Summer", "Autumn", "Winter"] as const) {
+    const combos = combosFor(season);
+    expect(combos).toHaveLength(4);
 
-function profile(over: Partial<DetailedColorProfile> = {}): DetailedColorProfile {
-  return {
-    primarySwatches: [s("#111111", "Ink"), s("#f4efe6", "Ivory"), s("#e8e2d6", "Chalk")],
-    secondarySwatches: [s("#7a6a55", "Fawn")],
-    accentSwatches: [s("#9c2b2b", "Lacquer")],
-    contrastScale: "High Contrast",
-    ...over,
-  } as DetailedColorProfile;
-}
-
-test("luminance orders dark to light and survives junk hexes", () => {
-  expect(luminance("#000000")).toBeLessThan(luminance("#ffffff"));
-  expect(luminance("nonsense")).toBe(0.5);
+    const known = new Set(
+      [
+        ...NAMED_PALETTE[season].primary,
+        ...NAMED_PALETTE[season].accents,
+        ...NAMED_PALETTE[season].neutrals,
+      ].map((s) => s.name),
+    );
+    for (const c of combos) {
+      expect(c.hexes).toHaveLength(3);
+      expect(c.names).toHaveLength(3);
+      // Naming a colour the member cannot find in the bands above is the bug
+      // this guards against.
+      for (const name of c.names) expect(known.has(name)).toBe(true);
+    }
+  }
 });
 
-test("anchor combo spans the palette; tonal picks the closest neighbours", () => {
-  const [anchor, tonal, statement] = buildOutfitCombos(profile());
-
-  expect(anchor!.colors.map((c) => c.name)).toEqual(["Ink", "Ivory", "Lacquer"]);
-  // Chalk/Ivory are the tightest pair — Ink is nowhere near either.
-  expect(
-    tonal!.colors
-      .slice(0, 2)
-      .map((c) => c.name)
-      .sort(),
-  ).toEqual(["Chalk", "Ivory"]);
-  expect(statement!.colors[0]!.name).toBe("Lacquer");
-});
-
-test("contrast scale changes the anchor's advice, not its colors", () => {
-  const high = buildOutfitCombos(profile())[0]!;
-  const low = buildOutfitCombos(profile({ contrastScale: "Low Contrast" }))[0]!;
-
-  expect(high.colors).toEqual(low.colors);
-  expect(high.title).not.toBe(low.title);
-});
-
-test("a palette too thin to pair yields nothing rather than a fake look", () => {
-  expect(buildOutfitCombos(profile({ primarySwatches: [], secondarySwatches: [] }))).toEqual([]);
-});
-
-test("falls back to a secondary when the season has no accent swatches", () => {
-  const combos = buildOutfitCombos(profile({ accentSwatches: [] }));
-  expect(combos[2]!.colors[0]!.name).toBe("Fawn");
+test("hexes and names stay aligned", () => {
+  const [first] = combosFor("Summer");
+  const primary = NAMED_PALETTE.Summer.primary;
+  expect(first!.names[0]).toBe(primary[0]!.name);
+  expect(first!.hexes[0]).toBe(primary[0]!.hex);
 });
