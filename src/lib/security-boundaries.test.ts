@@ -4,44 +4,51 @@ import { WRONG_TREE_NOTICE } from "./staff-route";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("the /admin tree gates on an admin-only permission, /moderator on staff access", () => {
+test("each staff tree admits only its own role", () => {
   // canAccessStaffArea is admin.access, which moderators hold — using it to guard
-  // /admin would put a moderator back inside the admin tree.
+  // either tree would let the other role's staff walk in.
   const admin = source("../routes/admin/_authed.tsx");
   expect(admin).toContain('hasPermission(viewer.roles, "admin.dashboard.view")');
   expect(admin).not.toContain("viewer.canAccessStaffArea");
 
   const moderator = source("../routes/moderator/_authed.tsx");
-  expect(moderator).toContain("viewer.canAccessStaffArea");
+  expect(moderator).toContain("!viewer.isModerator");
+  expect(moderator).not.toContain("viewer.canAccessStaffArea");
 
-  // A lapsed session lands on the public home page. Neither tree may name
-  // /staff — a redirect there tells an unauthenticated prober it exists.
+  // A lapsed session lands on the public home page. Neither tree may name its
+  // own login — a redirect there tells an unauthenticated prober it exists.
   for (const tree of [admin, moderator]) {
     expect(tree).toContain('redirect({ to: "/", replace: true })');
-    expect(tree).not.toContain('"/staff"');
+    expect(tree).not.toContain("/login");
   }
 });
 
-test("no member-facing path ever redirects to the staff login", () => {
+test("no member-facing path ever redirects to a staff login", () => {
   // Staff credentials entered on the member form are refused, not forwarded:
   // forwarding would hand the staff entry point to whoever guessed them.
   for (const path of ["../hooks/use-login-redirect.ts", "../routes/auth/callback.tsx"]) {
-    expect(source(path)).not.toContain('to: "/staff"');
+    const member = source(path);
+    expect(member).not.toContain('to: "/admin/login"');
+    expect(member).not.toContain('to: "/moderator/login"');
   }
-  // The wording shown on the member form must not name the staff login either.
-  expect(WRONG_TREE_NOTICE.member).not.toContain("staff");
+  // The wording shown on the member form must not name a staff login either.
+  expect(WRONG_TREE_NOTICE.member).not.toContain("steward");
+  expect(WRONG_TREE_NOTICE.member).not.toContain("moderator");
 });
 
-test("each login form refuses a sign-in belonging to the other tree", () => {
+test("each login form accepts exactly one role and refuses the other two", () => {
   const hook = source("../hooks/use-login-redirect.ts");
-  // Both directions come off one flag, so neither form can quietly stop checking,
-  // and it is staff access — moderators belong on /staff too, not just admins.
-  expect(hook).toContain(
-    'tree === "staff" ? !viewer.canAccessStaffArea : viewer.canAccessStaffArea',
-  );
+  // Exact role, not permission: an admin holds every moderator permission, so
+  // a permission check on the moderator form would let stewards straight in.
+  expect(hook).toContain("admin: viewer.isAdmin");
+  expect(hook).toContain("moderator: viewer.isModerator");
+  expect(hook).toContain("member: !viewer.canAccessStaffArea");
   expect(hook).toContain("rejectWrongTreeLogin(queryClient, WRONG_TREE_NOTICE[tree])");
   expect(source("../routes/login.tsx")).toContain('useLoginRedirect("member")');
-  expect(source("../routes/staff.tsx")).toContain('useLoginRedirect("staff")');
+  // One form per tree, mounted at the tree's own entry point.
+  expect(source("../routes/admin/index.tsx")).toContain('tree="admin"');
+  expect(source("../routes/moderator/index.tsx")).toContain('tree="moderator"');
+  expect(source("../components/staff/staff-login-page.tsx")).toContain("useLoginRedirect(tree)");
   // OAuth returns bypass the login page entirely, so the callback checks too.
   expect(source("../routes/auth/callback.tsx")).toContain(
     "rejectWrongTreeLogin(context.queryClient, WRONG_TREE_NOTICE.member)",

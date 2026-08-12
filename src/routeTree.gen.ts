@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as StaffRouteImport } from './routes/staff'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -39,11 +38,6 @@ import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
 
-const StaffRoute = StaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -194,7 +188,6 @@ const AuthenticatedAppConciergeRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/staff': typeof StaffRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/admin': typeof AdminAuthedRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -223,7 +216,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/staff': typeof StaffRoute
   '/admin': typeof AdminIndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/moderator': typeof ModeratorIndexRoute
@@ -251,7 +243,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/staff': typeof StaffRoute
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/admin/_authed': typeof AdminAuthedRouteWithChildren
@@ -283,7 +274,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/staff'
     | '/onboarding'
     | '/admin'
     | '/auth/callback'
@@ -312,7 +302,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/staff'
     | '/admin'
     | '/auth/callback'
     | '/moderator'
@@ -339,7 +328,6 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
-    | '/staff'
     | '/_authenticated/_app'
     | '/_authenticated/onboarding'
     | '/admin/_authed'
@@ -371,7 +359,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
-  StaffRoute: typeof StaffRoute
   AdminAuthedRoute: typeof AdminAuthedRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   ModeratorAuthedRoute: typeof ModeratorAuthedRouteWithChildren
@@ -382,13 +369,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/staff': {
-      id: '/staff'
-      path: '/staff'
-      fullPath: '/staff'
-      preLoaderRoute: typeof StaffRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -682,7 +662,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
-  StaffRoute: StaffRoute,
   AdminAuthedRoute: AdminAuthedRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   ModeratorAuthedRoute: ModeratorAuthedRouteWithChildren,

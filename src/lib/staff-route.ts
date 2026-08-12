@@ -2,16 +2,20 @@ import { redirect } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { hasPermission, MODERATOR_HOME, type AppPermission } from "@/lib/authorization";
+import { hasPermission, type AppPermission } from "@/lib/authorization";
 import { loadAuthenticatedViewerState } from "@/lib/queries/auth";
+
+/** Every login form in the app; each accepts exactly one kind of viewer. */
+export type LoginTree = "member" | "admin" | "moderator";
 
 /** Keyed by the form the sign-in was attempted on, not by who attempted it. */
 export const WRONG_TREE_NOTICE = {
-  // Stays generic on the member form — naming the staff login leaks it to anyone
+  // Stays generic on the member form — naming a staff login leaks it to anyone
   // who tries staff credentials here.
   member: "We couldn't sign you in with those details.",
-  staff: "The staff login is for stewards and moderators only.",
-} as const;
+  admin: "This sign-in is for stewards only.",
+  moderator: "This sign-in is for moderators only.",
+} as const satisfies Record<LoginTree, string>;
 
 /**
  * Undoes a sign-in that landed on the wrong login form, cache and all. Bouncing
@@ -34,9 +38,8 @@ export async function requireStaffRoutePermission(
   if (!userId) return;
   const viewer = await loadAuthenticatedViewerState(queryClient, userId);
   if (!hasPermission(viewer.roles, permission)) {
-    throw redirect({
-      to: viewer.canAccessStaffArea ? MODERATOR_HOME : viewer.destination,
-      replace: true,
-    });
+    // destination already resolves to the viewer's own tree — sending a steward
+    // to MODERATOR_HOME here would bounce them off a door they can't open.
+    throw redirect({ to: viewer.destination, replace: true });
   }
 }

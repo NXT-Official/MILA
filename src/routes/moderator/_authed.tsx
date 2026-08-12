@@ -12,9 +12,10 @@ export const Route = createFileRoute("/moderator/_authed")({
     const userId = data.session?.user.id;
     if (!userId) throw redirect({ to: "/", replace: true });
     const viewer = await loadAuthenticatedViewerState(context.queryClient, userId);
-    // Open to both staff roles — admins hold moderation/support permissions too,
-    // so this tree owns the only copy of those screens.
-    if (!viewer.canAccessStaffArea) {
+    // Exact role, not permission: an admin holds every moderator permission, so
+    // a permission check would let stewards in. They have their own copies of
+    // these screens under /admin, so this costs them nothing.
+    if (!viewer.isModerator) {
       throw redirect({ to: viewer.destination, replace: true });
     }
   },

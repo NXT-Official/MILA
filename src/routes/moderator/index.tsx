@@ -1,8 +1,7 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { MODERATOR_HOME } from "@/lib/authorization";
+import { createFileRoute } from "@tanstack/react-router";
+import { StaffLoginPage } from "@/components/staff/staff-login-page";
 
+// /moderator is the moderator entry point — see /admin for the same shape.
 export const Route = createFileRoute("/moderator/")({
-  beforeLoad: () => {
-    throw redirect({ to: MODERATOR_HOME, replace: true });
-  },
+  component: () => <StaffLoginPage tree="moderator" />,
 });

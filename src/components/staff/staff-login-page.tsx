@@ -1,18 +1,27 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { useLoginRedirect } from "@/hooks/use-login-redirect";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoginForm } from "@/components/login/login-form";
 
-export const Route = createFileRoute("/staff")({
-  component: StaffLoginPage,
-});
+/** One form per staff tree — each accepts only its own role. */
+const COPY = {
+  admin: {
+    kicker: "Atelier Steward Suite",
+    title: "Steward Sign In",
+    description: "Stewards only. Moderators and members sign in elsewhere.",
+  },
+  moderator: {
+    kicker: "Atelier Moderation Desk",
+    title: "Moderator Sign In",
+    description: "Moderators only. Stewards and members sign in elsewhere.",
+  },
+} as const;
 
-function StaffLoginPage() {
-  // Admins land on /admin/dashboard, moderators on /moderator/moderation;
-  // a plain member is signed back out with an error.
-  useLoginRedirect("staff");
+export function StaffLoginPage({ tree }: { tree: "admin" | "moderator" }) {
+  // Rejects a sign-in that doesn't belong to this tree — see useLoginRedirect.
+  useLoginRedirect(tree);
+  const copy = COPY[tree];
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -23,15 +32,13 @@ function StaffLoginPage() {
           <img src="/favicon.svg" alt="" className="size-7" />
           MILA
         </div>
-        <p className="atelier-kicker mt-3">Atelier Staff Suite</p>
+        <p className="atelier-kicker mt-3">{copy.kicker}</p>
       </div>
 
       <Card className="w-full max-w-sm border-border/60 shadow-sm">
         <CardHeader className="space-y-1.5 pb-4">
-          <CardTitle className="font-serif text-xl">Staff Sign In</CardTitle>
-          <CardDescription className="text-xs">
-            Stewards and moderators only. Members sign in from the main site.
-          </CardDescription>
+          <CardTitle className="font-serif text-xl">{copy.title}</CardTitle>
+          <CardDescription className="text-xs">{copy.description}</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm

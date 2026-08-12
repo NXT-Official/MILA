@@ -1,7 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { StaffLoginPage } from "@/components/staff/staff-login-page";
 
+// /admin is the steward entry point: the sign-in form when signed out, and
+// useLoginRedirect forwards an already-signed-in steward to /admin/dashboard.
 export const Route = createFileRoute("/admin/")({
-  beforeLoad: () => {
-    throw redirect({ to: "/admin/dashboard", replace: true });
-  },
+  component: () => <StaffLoginPage tree="admin" />,
 });
