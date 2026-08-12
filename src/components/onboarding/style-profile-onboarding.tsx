@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,8 +22,10 @@ import { ErrorState } from "@/components/ui/error-state";
 import {
   getFirstIncompleteOnboardingStep,
   isOnboardingStepReachable,
+  ONBOARDING_STEP_IDS,
   type OnboardingStepId,
 } from "../../constants/steps";
+import { slide } from "@/lib/motion";
 import { OnboardingProgressBar } from "./progress-bar";
 import { WelcomeStep } from "./steps/welcome-step";
 import { ColorPathStep } from "./steps/color-path-step";
@@ -111,6 +114,16 @@ export function StyleProfileOnboarding({
     document.getElementById("onboarding-step-heading")?.focus();
   }, [step]);
 
+  // Slide forward when the step index grows, back when it shrinks. Read during
+  // render so the incoming step already knows which way it travelled.
+  const reduce = useReducedMotion() ?? false;
+  const stepIndex = step ? ONBOARDING_STEP_IDS.indexOf(step) : 0;
+  const prevStepIndexRef = useRef(stepIndex);
+  const direction = stepIndex < prevStepIndexRef.current ? -1 : 1;
+  useEffect(() => {
+    prevStepIndexRef.current = stepIndex;
+  }, [stepIndex]);
+
   if (!user || profileQuery.isLoading || !step) {
     return <LoadingState label="Loading your profile…" className="py-24" />;
   }
@@ -162,84 +175,98 @@ export function StyleProfileOnboarding({
 
   return (
     <div className="mx-auto max-w-2xl py-6 sm:py-10">
+      {/* Outside the slide: the step heading it owns is the focus target, and it
+          must stay mounted while the old step animates out. */}
       {step !== "welcome" ? <OnboardingProgressBar current={step} /> : null}
 
-      {step === "welcome" && <WelcomeStep onBegin={() => goTo("color-path")} />}
-
-      {step === "color-path" && (
-        <ColorPathStep
-          existingDossier={dossier}
-          onCandidateReady={(candidate, telemetry) => {
-            setPendingCandidate(candidate);
-            setPendingTelemetry(telemetry ?? null);
-            goTo("color-result");
-          }}
-          onContinueExisting={() => {
-            setPendingCandidate(null);
-            goTo("color-result");
-          }}
-        />
-      )}
-
-      {step === "color-result" && (
-        <ColorResultStep
-          candidate={pendingCandidate}
-          telemetry={pendingTelemetry}
-          existingDossier={dossier}
-          onBack={() => goTo("color-path")}
-          onReviewAnother={() => {
-            setPendingCandidate(null);
-            goTo("color-path");
-          }}
-          onConfirmed={() => {
-            setPendingCandidate(null);
-            goTo("body-type");
-          }}
-        />
-      )}
-
-      {selectStep && (
-        <SingleSelectStep
+      <AnimatePresence mode="wait" initial={false} custom={direction}>
+        <motion.div
           key={step}
-          fieldLabel={selectStep.fieldLabel}
-          value={profile?.[selectStep.field] ?? null}
-          options={selectStep.options}
-          guidance={selectStep.guidance}
-          requiredMessage={selectStep.requiredMessage}
-          onBack={() => goTo(selectStep.back)}
-          onSaved={() => goTo(selectStep.next)}
-          save={async (value) => {
-            await updateProfile.mutateAsync({ [selectStep.field]: value });
-          }}
-        />
-      )}
+          custom={direction}
+          variants={slide(reduce)}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          className="overflow-x-clip"
+        >
+          {step === "welcome" && <WelcomeStep onBegin={() => goTo("color-path")} />}
 
-      {step === "beauty-preferences" && (
-        <BeautyPreferencesStep
-          value={beautyPrefs}
-          onBack={() => goTo("hair-type")}
-          onSaved={() => goTo("location")}
-        />
-      )}
+          {step === "color-path" && (
+            <ColorPathStep
+              existingDossier={dossier}
+              onCandidateReady={(candidate, telemetry) => {
+                setPendingCandidate(candidate);
+                setPendingTelemetry(telemetry ?? null);
+                goTo("color-result");
+              }}
+              onContinueExisting={() => {
+                setPendingCandidate(null);
+                goTo("color-result");
+              }}
+            />
+          )}
 
-      {step === "location" && (
-        <LocationStep
-          value={profile?.default_location ?? null}
-          onBack={() => goTo("beauty-preferences")}
-          onSaved={() => goTo("review")}
-        />
-      )}
+          {step === "color-result" && (
+            <ColorResultStep
+              candidate={pendingCandidate}
+              telemetry={pendingTelemetry}
+              existingDossier={dossier}
+              onBack={() => goTo("color-path")}
+              onReviewAnother={() => {
+                setPendingCandidate(null);
+                goTo("color-path");
+              }}
+              onConfirmed={() => {
+                setPendingCandidate(null);
+                goTo("body-type");
+              }}
+            />
+          )}
 
-      {step === "review" && profile && (
-        <ReviewStep
-          profile={profile}
-          dossier={dossier}
-          onEdit={(s) => goTo(s)}
-          onComplete={handleComplete}
-          completing={completing}
-          completionError={completionError}
-        />
-      )}
+          {selectStep && (
+            <SingleSelectStep
+              key={step}
+              fieldLabel={selectStep.fieldLabel}
+              value={profile?.[selectStep.field] ?? null}
+              options={selectStep.options}
+              guidance={selectStep.guidance}
+              requiredMessage={selectStep.requiredMessage}
+              onBack={() => goTo(selectStep.back)}
+              onSaved={() => goTo(selectStep.next)}
+              save={async (value) => {
+                await updateProfile.mutateAsync({ [selectStep.field]: value });
+              }}
+            />
+          )}
+
+          {step === "beauty-preferences" && (
+            <BeautyPreferencesStep
+              value={beautyPrefs}
+              onBack={() => goTo("hair-type")}
+              onSaved={() => goTo("location")}
+            />
+          )}
+
+          {step === "location" && (
+            <LocationStep
+              value={profile?.default_location ?? null}
+              onBack={() => goTo("beauty-preferences")}
+              onSaved={() => goTo("review")}
+            />
+          )}
+
+          {step === "review" && profile && (
+            <ReviewStep
+              profile={profile}
+              dossier={dossier}
+              onEdit={(s) => goTo(s)}
+              onComplete={handleComplete}
+              completing={completing}
+              completionError={completionError}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
