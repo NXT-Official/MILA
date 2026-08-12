@@ -28,10 +28,12 @@ export function useLoginRedirect(tree: "member" | "staff") {
     // Only a sign-in performed *here* is rejected; someone passing through with
     // a live session keeps it and is just sent home.
     if (wrongForm && !arrivedSignedIn.current) {
-      const sendTo = tree === "staff" ? "/login" : "/staff";
-      void rejectWrongTreeLogin(queryClient, WRONG_TREE_NOTICE[tree]).then(() =>
-        navigate({ to: sendTo, replace: true }),
-      );
+      void rejectWrongTreeLogin(queryClient, WRONG_TREE_NOTICE[tree]).then(() => {
+        // The staff form may point a member at the member login, but never the
+        // reverse: sending staff credentials to /staff would advertise where the
+        // staff entry point lives to anyone who tries them here.
+        if (tree === "staff") navigate({ to: "/login", replace: true });
+      });
       return;
     }
     navigate({ to: viewer.destination });

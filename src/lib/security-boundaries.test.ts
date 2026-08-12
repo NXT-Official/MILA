@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { WRONG_TREE_NOTICE } from "./staff-route";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -13,11 +14,22 @@ test("the /admin tree gates on an admin-only permission, /moderator on staff acc
   const moderator = source("../routes/moderator/_authed.tsx");
   expect(moderator).toContain("viewer.canAccessStaffArea");
 
-  // Both trees sit outside /_authenticated, so a lapsed session lands on the
-  // staff login rather than the member one.
+  // A lapsed session lands on the public home page. Neither tree may name
+  // /staff — a redirect there tells an unauthenticated prober it exists.
   for (const tree of [admin, moderator]) {
-    expect(tree).toContain('redirect({ to: "/staff", replace: true })');
+    expect(tree).toContain('redirect({ to: "/", replace: true })');
+    expect(tree).not.toContain('"/staff"');
   }
+});
+
+test("no member-facing path ever redirects to the staff login", () => {
+  // Staff credentials entered on the member form are refused, not forwarded:
+  // forwarding would hand the staff entry point to whoever guessed them.
+  for (const path of ["../hooks/use-login-redirect.ts", "../routes/auth/callback.tsx"]) {
+    expect(source(path)).not.toContain('to: "/staff"');
+  }
+  // The wording shown on the member form must not name the staff login either.
+  expect(WRONG_TREE_NOTICE.member).not.toContain("staff");
 });
 
 test("each login form refuses a sign-in belonging to the other tree", () => {

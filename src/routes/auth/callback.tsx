@@ -23,10 +23,11 @@ export const Route = createFileRoute("/auth/callback")({
     }
     const viewer = await loadAuthenticatedViewerState(context.queryClient, data.session.user.id);
     // OAuth only exists on the member login, so any staff member arriving here
-    // signed in through the main site — undo it and send them to the staff form.
+    // signed in through the main site — undo it and drop them back on the member
+    // login. Pointing them at /staff would leak the staff entry point.
     if (viewer.canAccessStaffArea) {
       await rejectWrongTreeLogin(context.queryClient, WRONG_TREE_NOTICE.member);
-      throw redirect({ to: "/staff", replace: true });
+      throw redirect({ to: "/login", replace: true });
     }
     const destination = viewer.destination === "/dashboard" ? search.next : viewer.destination;
     throw redirect({ href: destination, replace: true });
@@ -50,7 +51,7 @@ function AuthCallback() {
     if (viewer.isLoading) return;
     if (viewer.canAccessStaffArea) {
       void rejectWrongTreeLogin(queryClient, WRONG_TREE_NOTICE.member).then(() =>
-        navigate({ to: "/staff", replace: true }),
+        navigate({ to: "/login", replace: true }),
       );
       return;
     }

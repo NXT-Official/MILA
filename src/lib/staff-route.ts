@@ -7,7 +7,9 @@ import { loadAuthenticatedViewerState } from "@/lib/queries/auth";
 
 /** Keyed by the form the sign-in was attempted on, not by who attempted it. */
 export const WRONG_TREE_NOTICE = {
-  member: "Stewards and moderators sign in through the staff login.",
+  // Stays generic on the member form — naming the staff login leaks it to anyone
+  // who tries staff credentials here.
+  member: "We couldn't sign you in with those details.",
   staff: "The staff login is for stewards and moderators only.",
 } as const;
 
