@@ -323,8 +323,7 @@ export function StudioMembershipDrawer({
                       </span>
                       {authUser && (
                         <Link
-                          to="/profile/$userId"
-                          params={{ userId: authUser.id }}
+                          to="/profile"
                           onClick={onClose}
                           className="rounded-full border border-porcelain/60 bg-background/60 px-2 py-1 text-ink flex items-center gap-1.5"
                         >
@@ -337,7 +336,7 @@ export function StudioMembershipDrawer({
                 </div>
                 {missing.length > 0 && (
                   <Link
-                    to="/style-profile"
+                    to="/profile"
                     onClick={onClose}
                     className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-50/60 px-3 py-2 text-nano uppercase tracking-label text-amber-800 transition-colors hover:bg-amber-50"
                   >
@@ -437,7 +436,7 @@ export function StudioMembershipDrawer({
 
               <div className="space-y-px rounded-xl overflow-hidden border border-porcelain/30">
                 <Link
-                  to="/style-profile"
+                  to="/profile"
                   onClick={onClose}
                   className="flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors border-b border-porcelain/30"
                 >

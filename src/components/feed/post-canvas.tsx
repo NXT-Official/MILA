@@ -19,13 +19,7 @@ export function PostCanvas({ post }: { post: FeedPost }) {
           <AvatarInitial name={author} className="size-9" />
           <div className="min-w-0">
             <span className="flex items-center gap-1">
-              <Link
-                to="/profile/$userId"
-                params={{ userId: post.user_id }}
-                className="font-serif text-sm text-ink truncate transition-colors hover:text-accent"
-              >
-                {author}
-              </Link>
+              <span className="font-serif text-sm text-ink truncate">{author}</span>
               {post.author_verified && <VerifiedBadge />}
             </span>
             <p className="text-nano uppercase tracking-label-xwide text-stone">

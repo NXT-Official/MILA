@@ -59,7 +59,7 @@ export function DossierCompletionBanner({ profile }: { profile: DashboardProfile
         </div>
 
         <Link
-          to="/style-profile"
+          to="/profile"
           className="atelier-focus-ring mt-3 inline-block text-xs uppercase tracking-label text-accent hover:underline"
         >
           Complete your dossier
