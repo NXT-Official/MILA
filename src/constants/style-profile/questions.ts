@@ -103,14 +103,12 @@ export const BEAUTY_PREFERENCE_TAGS = [
 export const STYLE_GOAL_LIMIT = 5;
 
 export const STYLE_GOALS = [
-  "Look more put together",
-  "Dress for a new role",
-  "Build a smaller wardrobe",
-  "Feel confident on camera",
-  "Stand out less",
-  "Stand out more",
-  "Shop with less regret",
-  "Dress for my actual life",
+  "Build a capsule wardrobe",
+  "Look more polished at work",
+  "Dress better for my body shape",
+  "Find my personal style",
+  "Make shopping easier",
+  "Look more put-together daily",
 ] as const;
 
 export const MANUAL_SEASON_GROUPS: {

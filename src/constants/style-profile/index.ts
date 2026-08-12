@@ -4,3 +4,4 @@ export * from "./palettes";
 export * from "./recommendations";
 export * from "./questions";
 export * from "./defaults";
+export * from "./dna";

@@ -31,13 +31,13 @@ import { Route as AdminAuthedMembersRouteImport } from './routes/admin/_authed/m
 import { Route as AdminAuthedDashboardRouteImport } from './routes/admin/_authed/dashboard'
 import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
+import { Route as AuthenticatedAppProfileRouteImport } from './routes/_authenticated/_app/profile'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
 import { Route as AuthenticatedAppPalettesRouteImport } from './routes/_authenticated/_app/palettes'
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
 import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
-import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_authenticated/_app/profile.$userId'
 
 const StaffRoute = StaffRouteImport.update({
   id: '/staff',
@@ -152,6 +152,11 @@ const AuthenticatedAppStyleProfileRoute =
     path: '/style-profile',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppProfileRoute = AuthenticatedAppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppPricingRoute = AuthenticatedAppPricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -185,12 +190,6 @@ const AuthenticatedAppConciergeRoute =
     path: '/concierge',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
-const AuthenticatedAppProfileUserIdRoute =
-  AuthenticatedAppProfileUserIdRouteImport.update({
-    id: '/profile/$userId',
-    path: '/profile/$userId',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -208,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof AuthenticatedAppHistoryRoute
   '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
+  '/profile': typeof AuthenticatedAppProfileRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/admin/dashboard': typeof AdminAuthedDashboardRoute
@@ -219,7 +219,6 @@ export interface FileRoutesByFullPath {
   '/moderator/moderation': typeof ModeratorAuthedModerationRoute
   '/moderator/support': typeof ModeratorAuthedSupportRoute
   '/onboarding/': typeof AuthenticatedOnboardingIndexRoute
-  '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -234,6 +233,7 @@ export interface FileRoutesByTo {
   '/history': typeof AuthenticatedAppHistoryRoute
   '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
+  '/profile': typeof AuthenticatedAppProfileRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/admin/dashboard': typeof AdminAuthedDashboardRoute
@@ -245,7 +245,6 @@ export interface FileRoutesByTo {
   '/moderator/moderation': typeof ModeratorAuthedModerationRoute
   '/moderator/support': typeof ModeratorAuthedSupportRoute
   '/onboarding': typeof AuthenticatedOnboardingIndexRoute
-  '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -266,6 +265,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/history': typeof AuthenticatedAppHistoryRoute
   '/_authenticated/_app/palettes': typeof AuthenticatedAppPalettesRoute
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
+  '/_authenticated/_app/profile': typeof AuthenticatedAppProfileRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/admin/_authed/dashboard': typeof AdminAuthedDashboardRoute
@@ -277,7 +277,6 @@ export interface FileRoutesById {
   '/moderator/_authed/moderation': typeof ModeratorAuthedModerationRoute
   '/moderator/_authed/support': typeof ModeratorAuthedSupportRoute
   '/_authenticated/onboarding/': typeof AuthenticatedOnboardingIndexRoute
-  '/_authenticated/_app/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -297,6 +296,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/palettes'
     | '/pricing'
+    | '/profile'
     | '/style-profile'
     | '/onboarding/style-profile'
     | '/admin/dashboard'
@@ -308,7 +308,6 @@ export interface FileRouteTypes {
     | '/moderator/moderation'
     | '/moderator/support'
     | '/onboarding/'
-    | '/profile/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -323,6 +322,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/palettes'
     | '/pricing'
+    | '/profile'
     | '/style-profile'
     | '/onboarding/style-profile'
     | '/admin/dashboard'
@@ -334,7 +334,6 @@ export interface FileRouteTypes {
     | '/moderator/moderation'
     | '/moderator/support'
     | '/onboarding'
-    | '/profile/$userId'
   id:
     | '__root__'
     | '/'
@@ -354,6 +353,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/history'
     | '/_authenticated/_app/palettes'
     | '/_authenticated/_app/pricing'
+    | '/_authenticated/_app/profile'
     | '/_authenticated/_app/style-profile'
     | '/_authenticated/onboarding/style-profile'
     | '/admin/_authed/dashboard'
@@ -365,7 +365,6 @@ export interface FileRouteTypes {
     | '/moderator/_authed/moderation'
     | '/moderator/_authed/support'
     | '/_authenticated/onboarding/'
-    | '/_authenticated/_app/profile/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -537,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppStyleProfileRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/profile': {
+      id: '/_authenticated/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedAppProfileRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/pricing': {
       id: '/_authenticated/_app/pricing'
       path: '/pricing'
@@ -579,13 +585,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppConciergeRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/_app/profile/$userId': {
-      id: '/_authenticated/_app/profile/$userId'
-      path: '/profile/$userId'
-      fullPath: '/profile/$userId'
-      preLoaderRoute: typeof AuthenticatedAppProfileUserIdRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
   }
 }
 
@@ -596,8 +595,8 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
   AuthenticatedAppPalettesRoute: typeof AuthenticatedAppPalettesRoute
   AuthenticatedAppPricingRoute: typeof AuthenticatedAppPricingRoute
+  AuthenticatedAppProfileRoute: typeof AuthenticatedAppProfileRoute
   AuthenticatedAppStyleProfileRoute: typeof AuthenticatedAppStyleProfileRoute
-  AuthenticatedAppProfileUserIdRoute: typeof AuthenticatedAppProfileUserIdRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
@@ -607,8 +606,8 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,
   AuthenticatedAppPalettesRoute: AuthenticatedAppPalettesRoute,
   AuthenticatedAppPricingRoute: AuthenticatedAppPricingRoute,
+  AuthenticatedAppProfileRoute: AuthenticatedAppProfileRoute,
   AuthenticatedAppStyleProfileRoute: AuthenticatedAppStyleProfileRoute,
-  AuthenticatedAppProfileUserIdRoute: AuthenticatedAppProfileUserIdRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =
