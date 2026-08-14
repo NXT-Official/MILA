@@ -2,8 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { getCurrentUserRoles } from "@/lib/admin.functions";
-import { hasPermission } from "@/lib/authorization";
 import { loadPostItems } from "@/lib/outfit-items.functions";
 import type { PostItem } from "@/lib/outfit-items";
 

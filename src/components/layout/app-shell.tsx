@@ -18,7 +18,6 @@ import { ConciergeContext, type ConciergeLook } from "@/hooks/use-concierge";
 import { analyzeOutfit } from "@/lib/analyze-outfit.functions";
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { profileQueryOptions } from "@/lib/queries/profile";
-import { useAuthenticatedViewerState } from "@/lib/queries/auth";
 import { queryKeys } from "@/constants/query-keys";
 import { errorMessage } from "@/lib/utils";
 
@@ -33,7 +32,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyze = useServerFn(analyzeOutfit);
   const queryClient = useQueryClient();
-  const viewer = useAuthenticatedViewerState(user?.id);
 
   const { data: profile } = useQuery({
     ...profileQueryOptions(user?.id),
@@ -135,11 +133,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DesktopNav
               path={path}
               userId={user?.id}
-              staff={
-                viewer.canAccessStaffArea
-                  ? { to: viewer.destination, label: viewer.isAdmin ? "Admin" : "Moderation" }
-                  : null
-              }
               onOpenLens={() => setIsLensOpen(true)}
               onOpenConcierge={() => openConcierge()}
             />

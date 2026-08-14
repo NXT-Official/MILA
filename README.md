@@ -27,7 +27,7 @@ No license file currently exists — see [Testing](#testing) and [License](#lice
 - [Data and State Management](#data-and-state-management)
 - [Database and Supabase](#database-and-supabase)
 - [Forms and Validation](#forms-and-validation)
-- [Admin System](#admin-system)
+- [Staff Suite](#staff-suite)
 - [Design System](#design-system)
 - [Icons](#icons)
 - [Environment Variables](#environment-variables)
@@ -76,11 +76,11 @@ Status reflects what was confirmed by reading the code, not the product's ambiti
 | Dupe hunter                                           | Implemented      | Photo → AI read → matched against a seeded affiliate `products`/`brands` catalog                                             |
 | Stylist chat                                          | Implemented      | `concierge-chat.functions.ts` — conversational styling chat with optional look/photo context                                 |
 | Community feed                                        | Implemented      | Members post outfit photos (`posts`); moderation-aware visibility                                                            |
-| Admin dashboard, member/moderation/support management | Implemented      | See [Admin System](#admin-system)                                                                                            |
+| Admin dashboard, member/moderation/support management | Implemented      | Separate codebase — see [Staff Suite](#staff-suite)                                                                          |
 | Credits / paywall                                     | Implemented      | Daily subscription allowances, purchased-credit balances, atomic consumption/refunds, and the out-of-credit upgrade flow     |
 | Subscriptions and credit packs                        | Implemented      | Paddle sandbox checkout, webhook synchronization, cancellation/resume, one-off credit packs, and idempotent credit grants    |
 | Ad rewards                                            | **Planned only** | `ad_events` table exists in the schema; no ad SDK or event-recording code was found in the application                       |
-| Moderator role                                        | Implemented      | Permission-based access to moderation and support, with admin-only member, role, plan, credit-pack, and dashboard operations |
+| Moderator role                                        | Implemented      | Lives in the staff suite; this app has no role awareness at all                                                              |
 | Password reset                                        | **Not found**    | No `resetPasswordForEmail` call or reset-password route exists                                                               |
 
 ## How the System Works
@@ -89,8 +89,7 @@ Status reflects what was confirmed by reading the code, not the product's ambiti
 flowchart TD
     A[Visitor opens Mila] --> B{Has a session?}
     B -- No --> C["/login — email+password or Google OAuth"]
-    B -- Yes, role = admin --> D2["Redirected to /admin"]
-    B -- Yes, role = user --> D["Redirected to /dashboard"]
+    B -- Yes --> D["Redirected to /dashboard"]
     C --> E[Supabase Auth issues a session]
     E --> D
     D --> F{Style profile complete?}
@@ -104,8 +103,8 @@ flowchart TD
 ```
 
 The landing page (`/`) itself checks for a session during route load and immediately redirects
-signed-in visitors to `/dashboard` (or `/admin` for admins, `/moderator/moderation` for
-moderators) — it is only ever seen by signed-out visitors in practice.
+signed-in visitors to `/dashboard` (or `/onboarding/style-profile` if their profile is
+incomplete) — it is only ever seen by signed-out visitors in practice.
 
 ## Architecture
 
@@ -143,7 +142,7 @@ actually guarded.
 ### Data layer
 
 TanStack Query owns server-state caching for anything read more than once (profile, feed,
-credits, all admin data) via `queryOptions()` factories in `src/lib/queries/`. Some
+credits, plans) via `queryOptions()` factories in `src/lib/queries/`. Some
 straightforward client-owned reads/writes (auth session, direct `profiles` queries) call the
 Supabase JS client directly; anything that needs the service-role key, calls the AI provider, or
 must be re-verified server-side goes through a `createServerFn` in `src/lib/*.functions.ts`.
@@ -198,8 +197,7 @@ you would configure directly.
 ├── public/                      Static assets (favicon, Google logo)
 ├── src/
 │   ├── components/
-│   │   ├── ui/                  Shared primitives: Button, Card, Input, Dialog, DataTable, ...
-│   │   ├── admin/                Admin shell, sidebar, header, tables, dialogs
+│   │   ├── ui/                  Shared primitives: Button, Card, Input, Dialog, ...
 │   │   ├── account/               Membership drawer
 │   │   ├── capture/               Camera / gallery capture flow
 │   │   ├── dashboard/             Daily look, climate widget, concierge, upgrade dialog
@@ -239,7 +237,6 @@ the source tree to read or edit directly.
 | `/`                         | Public                     | Landing/marketing page; signed-in visitors go to their role's home (`viewer.destination`) |
 | `/login`                    | Public                     | Email/password and Google OAuth sign-in and sign-up (tabbed)                              |
 | `/auth/callback`            | Public                     | OAuth session exchange, then redirects to `next` (defaults to `/dashboard`)               |
-| `/staff`                    | Public                     | Separate staff sign-in; the staff trees bounce here when signed out                       |
 | `/api/webhooks/paddle`      | Public, signature-verified | `POST` server handler for Paddle subscription events                                      |
 | `/onboarding`               | Authenticated              | Redirects to `/onboarding/style-profile`                                                  |
 | `/onboarding/style-profile` | Authenticated              | 9-step style profile flow; current step lives in `?step=` so it is resumable              |
@@ -251,32 +248,15 @@ the source tree to read or edit directly.
 | `/pricing`                  | Complete profile           | Membership plans and checkout                                                             |
 | `/profile`                  | Complete profile           | The digital style dossier — season hero, Style DNA, palette, goals, re-calibration        |
 | `/style-profile`            | Complete profile           | Studio — try makeup shades and seasonal colours on your own photo                         |
-| `/admin`                    | Admin role                 | Redirects to `/admin/dashboard`                                                           |
-| `/admin/dashboard`          | Admin role                 | Stats (members, credits, posts, support)                                                  |
-| `/admin/members`            | Admin role                 | Member list — grant/revoke roles, suspend, create/edit accounts                           |
-| `/admin/subscription-plans` | Admin role                 | Membership plan catalog                                                                   |
-| `/admin/moderation`         | Admin role                 | Hide/restore/delete feed posts                                                            |
-| `/admin/support`            | Admin role                 | Help-desk and feedback message triage                                                     |
-| `/moderator`                | Either staff role          | Redirects to `/moderator/moderation`                                                      |
-| `/moderator/moderation`     | Either staff role          | Hide/restore/delete feed posts                                                            |
-| `/moderator/support`        | Either staff role          | Help-desk and feedback message triage                                                     |
 
-**Member routes** share the pathless `_authenticated/_app` layout (navigation chrome). That layout
-enforces two things beyond the session check: staff are redirected to their own tree, and anyone
-whose style profile is incomplete is hard-redirected to `/onboarding/style-profile`. "Complete
-profile" in the table means both, and the gate now has no exemptions.
+Every route in this app is member-facing. `/admin/*` and `/moderator/*` are **404s** here — the
+staff suite is a separate codebase on a separate origin (see [Staff Suite](#staff-suite)), and
+this app deliberately contains no link, redirect, or hint pointing at it.
 
-**Staff routes** are **not** nested under `_authenticated`. `src/routes/admin/_authed.tsx` and
-`src/routes/moderator/_authed.tsx` are separate layout routes that run their own session check and
-redirect to `/staff` (not `/login`) when signed out. Both render the same `StaffShell` but gate
-differently: `/admin/*` requires `admin.dashboard.view` (admins only), `/moderator/*` requires
-`admin.access` (either staff role).
-
-Moderation and support are mounted in **both** trees so each role stays on its own URLs — an admin
-works at `/admin/moderation`, a moderator at `/moderator/moderation`. The route files are thin;
-both point at one shared page component (`src/components/staff/moderation-page.tsx`,
-`support-page.tsx`), so there is one implementation per screen. `staffBase(roles)` in
-`src/lib/authorization.ts` decides which tree's links the sidebar shows.
+**Member routes** share the pathless `_authenticated/_app` layout (navigation chrome). Beyond the
+session check, that layout hard-redirects anyone whose style profile is incomplete to
+`/onboarding/style-profile`. "Complete profile" in the table means exactly that, and the gate has
+no exemptions.
 
 ## Authentication and Authorization
 
@@ -307,19 +287,13 @@ is skipped during server-side rendering (`typeof window === "undefined"`), so th
 effectively client-only — a page could be server-rendered before the redirect fires, though a
 signed-out client cannot successfully call any protected server function regardless (see below).
 
-`src/routes/_authenticated/admin.tsx` and `src/routes/_authenticated/moderator.tsx` each guard
-their tree in `beforeLoad` via `loadAuthenticatedViewerState` — the first on
-`admin.dashboard.view`, the second on `canAccessStaffArea`. `StaffShell` repeats the check per
-path (`STAFF_ROUTE_PERMISSIONS`) and renders a "Restricted" screen as a fallback. Both layers are
-client-side; the server-side counterpart is the per-function role check below.
+`src/routes/_authenticated/_app.tsx` adds the profile-completeness gate on top of that session
+check. There is no role-based guard left in this app — authorization by role happens entirely in
+the staff suite.
 
 ### Server-side enforcement
 
-Every staff server function (`src/lib/admin.functions.ts`) independently calls `assertAdmin` or
-`assertPermission` before accessing privileged data — this re-check happens regardless of what
-the client UI shows, so an unauthorized user cannot read or mutate staff data even if the
-client-side route guard were bypassed. Every server function in the app (staff or not) runs
-behind the `requireSupabaseAuth` middleware
+Every server function in the app runs behind the `requireSupabaseAuth` middleware
 (`src/integrations/supabase/auth-middleware.ts`), which verifies the bearer JWT via
 `supabase.auth.getClaims()` and additionally re-checks `profiles.suspended` on every call —
 suspended accounts are rejected server-side even if a stale client session is still active.
@@ -327,9 +301,10 @@ suspended accounts are rejected server-side even if a stale client session is st
 ### Roles and suspension
 
 Roles live in `public.user_roles` (`app_role` enum: `admin`, `moderator`, `user`) and are
-assigned by the `handle_new_user()` database trigger (every new signup gets `user`
-automatically), with admin and moderator roles managed by an admin through `/admin/members`.
-Moderators receive only moderation and support permissions. Suspension (`profiles.suspended`)
+assigned by the `handle_new_user()` database trigger — every new signup gets `user`
+automatically. **This app never reads that table.** Staff roles are granted and revoked in the
+staff suite; nothing here branches on them, so a staff account signing in on this origin is
+treated as an ordinary member. Suspension (`profiles.suspended`)
 is service-role-only to write (enforced by column-level Postgres grants, not just RLS) and is
 checked both client-side (a full-screen "Membership Suspended" notice) and server-side (rejected
 by the auth middleware).
@@ -388,8 +363,8 @@ of truth for the schema below — generated TypeScript types are in
 | `brands` / `products`   | Seeded affiliate catalog matched against by the dupe hunter                                      |
 | `user_favorites`        | Saved products                                                                                   |
 | `posts`                 | Community feed posts, with `hidden`/`hidden_reason` moderation columns                           |
-| `user_roles`            | `app_role` role grants (`admin` / `moderator` / `user`)                                          |
-| `support_messages`      | Help-desk and feedback submissions (separate migration; admin-only reads)                        |
+| `user_roles`            | `app_role` role grants (`admin` / `moderator` / `user`); read only by `MILA_ADMIN`               |
+| `support_messages`      | Help-desk and feedback submissions — written here, triaged in `MILA_ADMIN`                       |
 
 Every table has Row Level Security enabled. Authorization inside policies is centralized in one
 `SECURITY DEFINER` SQL function, `has_role(_user_id, _role)`, rather than repeated per policy.
@@ -401,7 +376,7 @@ Postgres grants so a signed-in user cannot clear their own `suspended` flag even
 
 Storage has two buckets: `outfits` (public — AI providers fetch the image URL directly; privacy
 relies on an unguessable `userId/uuid` path) and `posts` (private — feed images are served via
-short-lived signed URLs generated server-side in `admin.functions.ts`/the feed query).
+short-lived signed URLs generated server-side in the feed query).
 
 ## Forms and Validation
 
@@ -414,42 +389,26 @@ submission-level failures. There is no shared `FormField`-wrapping-every-input c
 the whole app — some forms (e.g. `MemberFormDialog`) use a shared `FormField` component; others
 compose `Label` + `Input` directly.
 
-## Admin System
+## Staff Suite
 
-The staff suite is a full CRUD/moderation interface, not a placeholder. It spans two route
-trees — `/admin/*` for admins and `/moderator/*` for moderators — so neither role ever sees the
-other's URLs:
+The admin and moderator interface **is not in this repository**. It lives in a separate app at
+`../../MILA_ADMIN` (see its own README), deployed to its own origin on port `8081` in dev.
 
-- **Layout**: `StaffShell` (`src/components/staff/`) renders a fixed sidebar (`StaffSidebar`)
-  and a header (`StaffHeader`) with a mobile drawer toggle; both collapse into a slide-over
-  drawer below the `lg` breakpoint. The same shell serves both trees; the sidebar keeps only the
-  links under `staffBase(roles)` that the viewer's permissions allow, so an admin sees five
-  `/admin/*` links and a moderator sees two `/moderator/*` ones.
-- **Dashboard** (`/admin`): six stat cards (members, stewards, AI credits outstanding, posts,
-  hidden posts, open support messages) plus "Recent Members" and "Recent Activity" panels, all
-  from one `adminDashboardStats` server function.
-- **Members** (`/admin/members`): a `DataTable` (search, sort, pagination) over every Supabase
-  Auth user, joined with profile/role/credit data. Actions: grant/revoke admin (a `Switch`,
-  disabled for your own account when it's the only admin action that would lock you out), toggle
-  suspension, edit name/username, create a new member account directly (email + password, no
-  invite email).
-- **Moderation** (`/admin/moderation`, `/moderator/moderation`): a card grid of feed posts with
-  hide/restore and permanent-delete actions; hidden posts show a reason and a badge. One
-  component, `src/components/staff/moderation-page.tsx`, mounted by both route files.
-- **Support** (`/admin/support`, `/moderator/support`): tabbed `DataTable`s for help-desk vs.
-  feedback messages, with a resolved/unresolved toggle. Same arrangement — `support-page.tsx`.
+Both apps share one Supabase project. This app owns the schema — `supabase/migrations/` here is
+the single source of truth for tables, RLS policies and RPCs, including the staff-only ones
+(`user_roles`, `has_role`, `manage_user_role`, `set_user_suspended`, `staff_audit_log`). After
+any migration, regenerate `src/integrations/supabase/types.ts` in **both** repositories; the file
+is duplicated, not shared.
 
-`src/lib/authorization.ts` is the single permission map. `STAFF_ROUTE_PERMISSIONS` names the
-permission each staff path needs — the two copies of a shared screen carry the _same_
-permission, since the tree decides the URL, never the access. `MODERATOR_HOME` is the one place
-the moderator landing path is written, and `resolveAuthenticatedDestination` sends admins to
-`/admin` and moderators there instead.
+What that split means here:
 
-Permission checking happens at two layers, described in full in
-[Authentication and Authorization](#authentication-and-authorization): client-side (the layout
-`beforeLoad` guards plus a "Restricted" screen in `StaffShell`) and server-side (every staff
-server function independently calls `assertAdmin` or `assertPermission`, which is the layer that
-actually matters for security).
+- No role checks, no staff server functions, no `authorization.ts`. This app is member-only.
+- Members still file help/feedback through `submitSupportMessage`; staff read and resolve those
+  messages in the suite.
+- The feed still hides moderated posts (`posts.hidden`), but nothing here can set that flag.
+- The `/pricing` page reads the plan catalog; the catalog is edited in the suite.
+- Deliberately **no link or redirect** to the staff origin from anywhere in this app — a pointer
+  from a public page is exactly what the separate-origin split is protecting against.
 
 ## Design System
 
@@ -477,8 +436,7 @@ component.
 
 Shared React primitives live in `src/components/ui/`: `Button`, `IconButton`, `Card`, `Input`
 (with optional leading/trailing icon slots), `Dialog`, `Sheet`, `Select`, `Tabs`, `Accordion`,
-`DropdownMenu`, `Popover`, `Switch`, `Badge`, `DataTable`, `EmptyState`, `LoadingState`,
-`ErrorState`, `FormField`, and
+`Popover`, `Badge`, `EmptyState`, `LoadingState`, `ErrorState`, and
 `PasswordVisibilityButton`. Components with real variants use `class-variance-authority`; the
 `cn()` helper (`src/lib/utils.ts`, `clsx` + `tailwind-merge`) is the only class-merging utility
 in the codebase. Radix UI backs every primitive that needs real accessibility behavior (focus
@@ -515,9 +473,7 @@ Copy `.env.example` to `.env` and fill in real values — never commit `.env`.
 | `VITE_PADDLE_ENV`                        |                    No | Client                   | Paddle.js environment (`sandbox` or `production`)                                     |
 | `PADDLE_SANDBOX_API_KEY`                 |     Yes (for billing) | Server, **secret**       | Paddle sandbox subscription and transaction API key                                   |
 | `PADDLE_SANDBOX_WEBHOOK_SECRET`          |     Yes (for billing) | Server, **secret**       | Verifies Paddle webhook signatures                                                    |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`         |                    No | Local documentation only | Not read by application code — the credentials the schema migration seeds (see below) |
-| `USER_EMAIL` / `USER_PASSWORD`           |                    No | Local documentation only | Same as above; the plain member test account                                          |
-| `MODERATOR_EMAIL` / `MODERATOR_PASSWORD` |                    No | Local documentation only | Same as above; the moderator test account                                             |
+| `USER_EMAIL` / `USER_PASSWORD`           |                    No | Local documentation only | Not read by application code — the member test account the migration seeds (see below) |
 
 Any variable prefixed `VITE_` is compiled into the client bundle and is visible to anyone using
 the app — never put a secret behind a `VITE_` name. `SUPABASE_SERVICE_ROLE_KEY` and `AI_API_KEY`
@@ -528,14 +484,15 @@ needed, add it there too.
 
 ### Bootstrapping accounts
 
-New signups get the `user` role automatically. The schema migration also seeds three staff/test
-accounts, so a fresh `npx supabase db reset --linked` comes up ready to sign in:
+New signups get the `user` role automatically. The schema migration also seeds three test
+accounts, so a fresh `npx supabase db reset --linked` comes up ready to sign in. Only the last
+one signs in here; the first two are for the staff suite:
 
-| Account                   | Roles               |
-| ------------------------- | ------------------- |
-| `milaadmin@gmail.com`     | `admin`, `user`     |
-| `milamoderator@gmail.com` | `moderator`, `user` |
-| `milauser@gmail.com`      | `user`              |
+| Account                   | Roles               | Signs in at    |
+| ------------------------- | ------------------- | -------------- |
+| `milaadmin@gmail.com`     | `admin`, `user`     | `MILA_ADMIN`   |
+| `milamoderator@gmail.com` | `moderator`, `user` | `MILA_ADMIN`   |
+| `milauser@gmail.com`      | `user`              | this app       |
 
 The migration contains fixed local seed credentials; the matching `.env` values are documentation
 for local sign-in and are not read by SQL. Accounts that already exist are left untouched — the
@@ -656,8 +613,7 @@ never use production credentials or network services. Run `bun run test:coverage
 If a test strategy is added later, reasonable starting points given the codebase would be:
 
 - Component tests for the shared `src/components/ui/` primitives
-- Route tests for the `_authenticated`, `_authenticated/admin`, and `_authenticated/moderator` guard logic
-- Server-function tests for `admin.functions.ts`'s `assertAdmin` enforcement
+- Route tests for the `_authenticated` and `_authenticated/_app` guard logic
 - Form-validation tests for the Zod schemas shared between client and server
 - End-to-end tests for the sign-up → style-profile → daily-look flow
 
@@ -668,8 +624,8 @@ Confirmed in the codebase:
 - Row Level Security is enabled on every table, with a centralized `has_role()` authorization
   function and explicit `TO authenticated` / `WITH CHECK` clauses throughout the migrations.
 - Every server function re-verifies the caller's JWT and suspension status
-  (`requireSupabaseAuth`); admin server functions additionally re-verify the `admin` role
-  independent of any client-side check.
+  (`requireSupabaseAuth`). Privileged operations do not exist in this app at all — they live in
+  the staff suite, behind its own `assertAdmin` / `assertPermission` checks.
 - Sensitive columns (`profiles.suspended`, `user_roles`, `user_entitlements`) are not writable
   by the `authenticated` Postgres role at all — only the service-role client can change them.
 - The service-role key is imported lazily inside server functions and is never referenced from
@@ -679,8 +635,8 @@ Confirmed in the codebase:
 General practices to follow when extending this project:
 
 - Never commit `.env`; never put a secret value behind a `VITE_`-prefixed name.
-- Keep new admin/privileged server functions behind the same `assertAdmin` pattern rather than
-  trusting a client-side role check.
+- Privileged/staff server functions belong in `MILA_ADMIN`, not here — adding one back to this
+  app puts an admin-capable endpoint on the public origin.
 - Review Supabase Auth's CAPTCHA/Attack Protection settings directly in the Supabase dashboard —
   this repository only renders the hCaptcha widget and forwards the token; it does not verify it.
 - Review Row Level Security policies in `supabase/migrations/` before adding a new table, and
@@ -747,10 +703,10 @@ No branch-naming or commit-message convention is documented elsewhere in the rep
 
 **Implemented and stable**: authentication (email/password + Google OAuth), the style-profile
 quiz and colour-season engine, daily look generation, outfit history, wardrobe/outfit analysis,
-dupe hunter, stylist chat, the community feed with moderation, and the full admin suite
-(dashboard, members, moderation, support).
+dupe hunter, stylist chat, and the community feed with moderation (the moderation tools
+themselves live in `MILA_ADMIN`).
 
-**Implemented**: moderator permissions and route guards, atomic AI-credit accounting, Paddle
+**Implemented**: atomic AI-credit accounting, Paddle
 sandbox subscriptions, credit-pack checkout, webhook synchronization, cancellation, and resume.
 
 **Planned / not production-ready**: ad-reward tracking has database tables but no application

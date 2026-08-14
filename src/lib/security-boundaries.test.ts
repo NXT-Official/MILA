@@ -1,87 +1,26 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { WRONG_TREE_NOTICE } from "./staff-route";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("each staff tree admits only its own role", () => {
-  // canAccessStaffArea is admin.access, which moderators hold — using it to guard
-  // either tree would let the other role's staff walk in.
-  const admin = source("../routes/admin/_authed.tsx");
-  expect(admin).toContain('hasPermission(viewer.roles, "admin.dashboard.view")');
-  expect(admin).not.toContain("viewer.canAccessStaffArea");
-
-  const moderator = source("../routes/moderator/_authed.tsx");
-  expect(moderator).toContain("!viewer.isModerator");
-  expect(moderator).not.toContain("viewer.canAccessStaffArea");
-
-  // A lapsed session lands on the public home page. Neither tree may name its
-  // own login — a redirect there tells an unauthenticated prober it exists.
-  for (const tree of [admin, moderator]) {
-    expect(tree).toContain('redirect({ to: "/", replace: true })');
-    expect(tree).not.toContain("/login");
-  }
-});
-
-test("no member-facing path ever redirects to a staff login", () => {
-  // Staff credentials entered on the member form are refused, not forwarded:
-  // forwarding would hand the staff entry point to whoever guessed them.
-  for (const path of ["../hooks/use-login-redirect.ts", "../routes/auth/callback.tsx"]) {
-    const member = source(path);
-    expect(member).not.toContain('to: "/admin/login"');
-    expect(member).not.toContain('to: "/moderator/login"');
-  }
-  // The wording shown on the member form must not name a staff login either.
-  expect(WRONG_TREE_NOTICE.member).not.toContain("steward");
-  expect(WRONG_TREE_NOTICE.member).not.toContain("moderator");
-});
-
-test("each login form accepts exactly one role and refuses the other two", () => {
-  const hook = source("../hooks/use-login-redirect.ts");
-  // Exact role, not permission: an admin holds every moderator permission, so
-  // a permission check on the moderator form would let stewards straight in.
-  expect(hook).toContain("admin: viewer.isAdmin");
-  expect(hook).toContain("moderator: viewer.isModerator");
-  expect(hook).toContain("member: !viewer.canAccessStaffArea");
-  expect(hook).toContain("rejectWrongTreeLogin(queryClient, WRONG_TREE_NOTICE[tree])");
-  expect(source("../routes/login.tsx")).toContain('useLoginRedirect("member")');
-  // One form per tree, mounted at the tree's own entry point.
-  expect(source("../routes/admin/index.tsx")).toContain('tree="admin"');
-  expect(source("../routes/moderator/index.tsx")).toContain('tree="moderator"');
-  expect(source("../components/staff/staff-login-page.tsx")).toContain("useLoginRedirect(tree)");
-  // OAuth returns bypass the login page entirely, so the callback checks too.
-  expect(source("../routes/auth/callback.tsx")).toContain(
-    "rejectWrongTreeLogin(context.queryClient, WRONG_TREE_NOTICE.member)",
-  );
-  // The rejection has to drop the session, not just redirect, or the form stays
-  // a working entry point into the tree it just refused.
-  expect(source("./staff-route.ts")).toContain("await supabase.auth.signOut()");
-});
-
-test("a suspended account is blocked in the member tree and both staff trees", () => {
+test("no route in the member app points at the staff suite", () => {
+  // The staff suite lives in its own codebase on its own origin. A link or
+  // redirect from here would hand its entry point to anyone who found this app.
   for (const path of [
-    "../routes/_authenticated.tsx",
-    "../routes/admin/_authed.tsx",
-    "../routes/moderator/_authed.tsx",
+    "../routes/login.tsx",
+    "../routes/auth/callback.tsx",
+    "../routes/index.tsx",
+    "../components/landing/site-header.tsx",
+    "../components/layout/app-shell.tsx",
   ]) {
-    expect(source(path)).toContain("<SuspendedGate>");
+    const file = source(path);
+    expect(file).not.toContain("/admin");
+    expect(file).not.toContain("/moderator");
   }
 });
 
-test("moderation and support are mounted twice but implemented once", () => {
-  for (const [screen, component] of [
-    ["moderation", "ModerationPage"],
-    ["support", "SupportPage"],
-  ]) {
-    for (const dir of ["admin/_authed", "moderator/_authed"]) {
-      const routeId = `/${dir}`;
-      const route = source(`../routes/${dir}/${screen}.tsx`);
-      // Each route file must delegate; a copy-pasted page body would drift.
-      expect(route).toContain(`import { ${component} } from "@/components/staff/${screen}-page"`);
-      expect(route).toContain(`component: ${component}`);
-      expect(route).toContain(`createFileRoute("${routeId}/${screen}")`);
-    }
-  }
+test("a suspended account is blocked from the authenticated tree", () => {
+  expect(source("../routes/_authenticated.tsx")).toContain("<SuspendedGate>");
 });
 
 test("browser Supabase client never imports or reads the service-role credential", () => {

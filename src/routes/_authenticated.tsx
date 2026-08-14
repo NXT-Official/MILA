@@ -6,7 +6,9 @@ import { AtelierSplash } from "@/components/layout/atelier-splash";
 import { SuspendedGate } from "@/components/layout/suspended-gate";
 
 export const Route = createFileRoute("/_authenticated")({
-  // Client-only guard — see /admin/_authed for why.
+  // Session lives in localStorage, so the guard can only run on the client.
+  // Without this the server SSRs the match as "success" and beforeLoad never
+  // re-runs on hydration — the tree renders signed out.
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();

@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import type { AuthenticatedDestination } from "@/lib/queries/auth";
 import { cn } from "@/lib/utils";
 
 const topNavItems: { to: string; label: string }[] = [
@@ -14,13 +13,11 @@ const itemClass = (active: boolean) =>
 export function DesktopNav({
   path,
   userId,
-  staff,
   onOpenLens,
   onOpenConcierge,
 }: {
   path: string;
   userId: string | undefined;
-  staff: { to: AuthenticatedDestination; label: string } | null;
   onOpenLens: () => void;
   onOpenConcierge: () => void;
 }) {
@@ -48,11 +45,6 @@ export function DesktopNav({
       >
         Concierge
       </button>
-      {staff && (
-        <Link to={staff.to} className={itemClass(false)}>
-          {staff.label}
-        </Link>
-      )}
     </nav>
   );
 }

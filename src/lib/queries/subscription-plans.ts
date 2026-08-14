@@ -1,20 +1,13 @@
 import { queryOptions } from "@tanstack/react-query";
 import { queryKeys } from "@/constants/query-keys";
 import { supabase } from "@/integrations/supabase/client";
-import { adminListSubscriptionPlans } from "@/lib/subscription-plans.functions";
 import {
   normalizePlanFeatures,
   PUBLIC_PLAN_COLUMNS,
   type PublicSubscriptionPlan,
 } from "@/lib/subscription-plans";
 
-export function adminSubscriptionPlansQueryOptions() {
-  return queryOptions({
-    queryKey: queryKeys.adminSubscriptionPlans,
-    queryFn: () => adminListSubscriptionPlans(),
-  });
-}
-
+/** The catalog itself is edited in the staff suite (MILA_ADMIN); this reads it. */
 export function publicSubscriptionPlansQueryOptions() {
   return queryOptions({
     queryKey: queryKeys.subscriptionPlans,

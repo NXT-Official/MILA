@@ -1,5 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useLoginRedirect } from "@/hooks/use-login-redirect";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useAuthenticatedViewerState } from "@/lib/queries/auth";
 import { AuthCard } from "@/components/login/auth-card";
 import { SupportDialog } from "@/components/login/support-dialog";
 
@@ -8,7 +10,14 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  useLoginRedirect("member");
+  const { session, loading } = useAuth();
+  const viewer = useAuthenticatedViewerState(session?.user.id);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading || !session || viewer.isLoading) return;
+    navigate({ to: viewer.destination });
+  }, [loading, session, viewer.isLoading, viewer.destination, navigate]);
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
