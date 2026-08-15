@@ -43,6 +43,7 @@ import {
   PillRow,
   BeautyPillTray,
 } from "@/components/style-profile/shared";
+import { AttributeDiagram } from "@/components/style-profile/diagrams";
 import { normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
 import { combosFor } from "@/lib/style-profile/outfit-combos";
 
@@ -248,6 +249,9 @@ export function StyleProfile() {
     hasRealDossier || form.color_season
       ? (SEASON_ONE_LINER[family] ?? "Every look below is composed against this palette.")
       : "Set your season and Mila builds your palette from it.";
+  // The colour cards fall back to the Summer palette when nothing is set, so
+  // they must not claim a season the member never chose.
+  const seasonRationale = hasRealDossier || form.color_season ? heroSeasonName : null;
 
   return (
     <div className="min-h-screen bg-background text-muted-foreground">
@@ -300,16 +304,19 @@ export function StyleProfile() {
                   label="Silhouette"
                   value={form.body_type || null}
                   onAdd={() => setViewMode("detailed")}
+                  diagram={<AttributeDiagram kind="silhouette" value={form.body_type} />}
                 />
                 <DetailChip
                   label="Face Shape"
                   value={holistic.face_shape}
                   onAdd={() => setViewMode("detailed")}
+                  diagram={<AttributeDiagram kind="face" value={holistic.face_shape} />}
                 />
                 <DetailChip
                   label="Hair Texture"
                   value={holistic.hair_type}
                   onAdd={() => setViewMode("detailed")}
+                  diagram={<AttributeDiagram kind="hair" value={holistic.hair_type} />}
                 />
                 <DetailChip
                   label="Beauty"
@@ -390,10 +397,9 @@ export function StyleProfile() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <DNACard
                   title="Silhouette Strategy"
-                  body={
-                    SILHOUETTE_STRATEGY[form.body_type] ??
-                    "Add your silhouette below and this becomes specific."
-                  }
+                  directive={SILHOUETTE_STRATEGY[form.body_type]}
+                  rationale={{ label: "silhouette", value: form.body_type }}
+                  fallback="Add your silhouette below and this becomes specific."
                   action={
                     form.body_type
                       ? undefined
@@ -402,18 +408,25 @@ export function StyleProfile() {
                 />
                 <DNACard
                   title="Hair Direction"
-                  body={
-                    HAIR_DIRECTION[holistic.hair_type ?? ""] ??
-                    "Add your hair texture below to unlock this."
-                  }
+                  directive={HAIR_DIRECTION[holistic.hair_type ?? ""]}
+                  rationale={{ label: "hair texture", value: holistic.hair_type }}
+                  fallback="Add your hair texture below to unlock this."
                   action={
                     holistic.hair_type
                       ? undefined
                       : { label: "Add hair texture", onClick: () => setViewMode("detailed") }
                   }
                 />
-                <DNACard title="Makeup Harmony" body={MAKEUP_HARMONY[family]} />
-                <DNACard title="Textile Direction" body={TEXTILE_DIRECTION[family]} />
+                <DNACard
+                  title="Makeup Harmony"
+                  directive={MAKEUP_HARMONY[family]}
+                  rationale={{ label: "season", value: seasonRationale }}
+                />
+                <DNACard
+                  title="Textile Direction"
+                  directive={TEXTILE_DIRECTION[family]}
+                  rationale={{ label: "season", value: seasonRationale }}
+                />
               </div>
             </section>
 

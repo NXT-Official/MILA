@@ -205,41 +205,371 @@ export const MAKEUP_LOOKS: Record<Season, MakeupLook[]> = {
   ],
 };
 
+/**
+ * One named thing a directive tells you to reach for. The term used to be buried
+ * in a prose sentence, which meant a member who didn't already know what a
+ * "peplum" was got a conclusion and no way to act on it.
+ *
+ * ponytail: the definition sits on the item rather than in a shared glossary
+ * keyed by term. A handful of terms repeat across seasons, which is cheaper than
+ * a lookup layer that can silently miss a key. Split it out if a term ever needs
+ * to be edited in one place.
+ */
+export type DirectiveItem = {
+  term: string;
+  /** Plain-language, no jargon — this is the payload for a member who is lost. */
+  definition: string;
+  /** Colours and metals only. Renders as an inline swatch instead of bare text. */
+  hex?: string;
+};
+
+/** A styling directive: the named things to reach for, plus the caveat. */
+export type Directive = {
+  items: DirectiveItem[];
+  /** The part that isn't a named item — the warning or the reasoning. */
+  note: string;
+};
+
 /** Keyed by the body-type values in BODY_OPTIONS. */
-export const SILHOUETTE_STRATEGY: Record<string, string> = {
-  Hourglass:
-    "Follow your natural waist. Wrap dresses, belted knits, and clean vertical lines celebrate proportion without over-styling.",
-  Rectangle:
-    "Create dimension with layered volumes — peplum, pleats, and a defined waist read more feminine than fitted head-to-toe.",
-  Pear: "Balance shoulders with softer lower-body volume. Statement necklines and structured tops lift the eye up.",
-  "Inverted Triangle":
-    "Soften shoulders with fluid drapes and V-necks; add hip volume through A-lines, wide-leg denim, and pleated skirts.",
-  Apple:
-    "Draw the eye up with open necklines and empire waists. Straight or slim trousers keep the leg-line long and clean.",
+export const SILHOUETTE_STRATEGY: Record<string, Directive> = {
+  Hourglass: {
+    items: [
+      {
+        term: "Wrap dresses",
+        definition:
+          "A dress that crosses over at the front and ties at the side, marking the waist.",
+      },
+      {
+        term: "Belted knits",
+        definition: "A soft jumper or cardigan pulled in with a belt instead of worn loose.",
+      },
+      {
+        term: "Vertical lines",
+        definition: "Seams, plackets or stripes that run top to bottom and lengthen the body.",
+      },
+    ],
+    note: "Follow your natural waist — these celebrate proportion without over-styling.",
+  },
+  Rectangle: {
+    items: [
+      {
+        term: "Peplum",
+        definition: "A short flared ruffle at the waist of a top or jacket that creates a curve.",
+      },
+      {
+        term: "Pleats",
+        definition: "Folds pressed into fabric that add movement and volume where you want it.",
+      },
+      {
+        term: "A defined waist",
+        definition: "Any belt, seam or tie that marks the narrowest point of your torso.",
+      },
+    ],
+    note: "Layered volume reads softer than fitted head-to-toe.",
+  },
+  Pear: {
+    items: [
+      {
+        term: "Statement necklines",
+        definition: "A boat neck, square neck or wide collar that draws the eye up to the face.",
+      },
+      {
+        term: "Structured tops",
+        definition:
+          "Tops holding their own shape — a firm shoulder, a crisp shirt, a light jacket.",
+      },
+      {
+        term: "Soft lower volume",
+        definition: "Skirts and trousers that skim rather than cling through the hip and thigh.",
+      },
+    ],
+    note: "Balance the shoulder line and the eye travels upward.",
+  },
+  "Inverted Triangle": {
+    items: [
+      {
+        term: "V-necks",
+        definition: "A neckline cut to a point, which narrows a broad shoulder line.",
+      },
+      {
+        term: "A-line skirts",
+        definition:
+          "A skirt narrow at the waist that widens steadily to the hem, like the letter A.",
+      },
+      {
+        term: "Wide-leg denim",
+        definition: "Jeans cut straight and loose from hip to ankle, adding weight low down.",
+      },
+    ],
+    note: "Fluid drape softens the shoulder; volume at the hip balances it.",
+  },
+  Apple: {
+    items: [
+      {
+        term: "Open necklines",
+        definition: "A scoop or V that leaves the collarbone visible and lifts the eye.",
+      },
+      {
+        term: "Empire waists",
+        definition: "A seam sitting just under the bust, with the fabric falling loose below it.",
+      },
+      {
+        term: "Straight trousers",
+        definition: "A clean, unbroken leg line from hip to hem — no taper, no flare.",
+      },
+    ],
+    note: "Keep the leg-line long and clean and the whole shape reads taller.",
+  },
 };
 
 /** Keyed by the hair-type values in HAIR_TYPE_OPTIONS. */
-export const HAIR_DIRECTION: Record<string, string> = {
-  "Straight/Fine":
-    "Precision cuts, blunt ends, and glossy finishes. Avoid heavy layering — it thins the shape.",
-  Wavy: "Mid-length shapes with soft internal layers. Sea-salt texture, never a stiff curl.",
-  Curly: "Curl-defined styling with weight left in. Trim shape, don't thin — density is the look.",
-  "Coily/Textured":
-    "Sculpted volume, protective silhouettes, and finishes that catch light without frizz.",
+export const HAIR_DIRECTION: Record<string, Directive> = {
+  "Straight/Fine": {
+    items: [
+      {
+        term: "Precision cuts",
+        definition: "A sharp, exactly-measured shape — the cut itself does the work, not styling.",
+      },
+      {
+        term: "Blunt ends",
+        definition: "Ends cut straight across rather than tapered, so the hair looks denser.",
+      },
+      {
+        term: "Glossy finishes",
+        definition:
+          "A smooth, light-reflecting surface — serum or a gloss treatment, not hairspray.",
+      },
+    ],
+    note: "Avoid heavy layering — it thins the shape.",
+  },
+  Wavy: {
+    items: [
+      {
+        term: "Mid-length shapes",
+        definition: "Length that lands between the collarbone and just past the shoulder.",
+      },
+      {
+        term: "Soft internal layers",
+        definition: "Layers cut inside the hair, invisible from outside, that release the wave.",
+      },
+      {
+        term: "Sea-salt texture",
+        definition: "The loose, undone finish of hair dried after a swim — matte, not crisp.",
+      },
+    ],
+    note: "Never a stiff curl — the wave should still move.",
+  },
+  Curly: {
+    items: [
+      {
+        term: "Curl-defined styling",
+        definition: "Product applied to wet hair so each curl dries as one clean spiral.",
+      },
+      {
+        term: "Weight left in",
+        definition: "Keeping length and bulk so curls stretch downward instead of pyramiding.",
+      },
+      {
+        term: "Shape trims",
+        definition: "Cutting the outline only, rather than thinning bulk out from underneath.",
+      },
+    ],
+    note: "Trim shape, don't thin — density is the look.",
+  },
+  "Coily/Textured": {
+    items: [
+      {
+        term: "Sculpted volume",
+        definition: "Height and shape built deliberately, treating the hair as a silhouette.",
+      },
+      {
+        term: "Protective silhouettes",
+        definition: "Braids, twists or buns that tuck the ends away and spare them daily wear.",
+      },
+      {
+        term: "Light-catching finishes",
+        definition: "An oil or butter that leaves a soft sheen without swelling the cuticle.",
+      },
+    ],
+    note: "Finishes should catch light without frizz.",
+  },
 };
 
-export const MAKEUP_HARMONY: Record<Season, string> = {
-  Spring: "Clear peach, warm coral, luminous ivory base. Skip anything ashy or grey-toned.",
-  Summer: "Dusty rose, cool mauve, and a soft matte or satin base. Ashy tones flatter you.",
-  Autumn: "Terracotta, burnt sienna, warm bronze. Reach for gold, never silver.",
-  Winter: "Deep berry, true red, cool nude. Contrast is your signal — don't mute it.",
+/** Hexes are the palette's own — a colour app should never name a colour in plain text. */
+export const MAKEUP_HARMONY: Record<Season, Directive> = {
+  Spring: {
+    items: [
+      {
+        term: "Clear peach",
+        hex: "#F5B39A",
+        definition: "A soft warm pink-orange, closer to fruit than to brown.",
+      },
+      {
+        term: "Warm coral",
+        hex: "#FF7F50",
+        definition: "A vivid orange-pink — your palette's natural lip.",
+      },
+      {
+        term: "Luminous ivory base",
+        hex: "#FDF6E3",
+        definition: "A warm off-white foundation with a lit finish, never flat or chalky.",
+      },
+    ],
+    note: "Skip anything ashy or grey-toned.",
+  },
+  Summer: {
+    items: [
+      {
+        term: "Dusty rose",
+        hex: "#D19DAA",
+        definition: "A muted cool pink with the brightness taken out of it.",
+      },
+      {
+        term: "Cool mauve",
+        hex: "#C08497",
+        definition: "A greyed purple-pink that adds depth without adding warmth.",
+      },
+      {
+        term: "Soft matte base",
+        hex: "#EEE6EA",
+        definition: "A foundation with no shine — light sits evenly rather than reflecting.",
+      },
+    ],
+    note: "Ashy tones flatter you.",
+  },
+  Autumn: {
+    items: [
+      {
+        term: "Terracotta",
+        hex: "#B8651A",
+        definition: "The warm red-brown of clay pots — grounded, never bright.",
+      },
+      {
+        term: "Burnt sienna",
+        hex: "#D2691E",
+        definition: "A deeper rust-orange with brown underneath it.",
+      },
+      {
+        term: "Warm bronze",
+        hex: "#A0662A",
+        definition: "A metallic brown-gold, best on the eye.",
+      },
+    ],
+    note: "Reach for gold, never silver.",
+  },
+  Winter: {
+    items: [
+      {
+        term: "Deep berry",
+        hex: "#7A1F3D",
+        definition: "A dark cool red with blue underneath — blackcurrant, not brick.",
+      },
+      {
+        term: "True red",
+        hex: "#B22222",
+        definition: "Pure red that leans neither orange nor purple.",
+      },
+      {
+        term: "Cool nude",
+        hex: "#E8ECF1",
+        definition: "A neutral that stays on the grey-pink side, never beige or golden.",
+      },
+    ],
+    note: "Contrast is your signal — don't mute it.",
+  },
 };
 
-export const TEXTILE_DIRECTION: Record<Season, string> = {
-  Spring: "Fine cottons, chiffon, polished 14k yellow gold, seed pearls.",
-  Summer: "Silk crepe, brushed wool, matte satin, softly-brushed silver.",
-  Autumn: "Suede, tweed, brushed leather, aged brass and antique gold.",
-  Winter: "Structured wool, mirror-finish silk, high-shine platinum and jet.",
+export const TEXTILE_DIRECTION: Record<Season, Directive> = {
+  Spring: {
+    items: [
+      {
+        term: "Fine cottons",
+        definition: "Lightweight, tightly woven cotton — crisp to the touch, holds a clean edge.",
+      },
+      {
+        term: "Chiffon",
+        definition: "A sheer, weightless fabric that floats and gathers rather than holding shape.",
+      },
+      {
+        term: "Polished 14k gold",
+        hex: "#D4AF37",
+        definition: "Warm yellow gold with a mirror finish — bright rather than antiqued.",
+      },
+      {
+        term: "Seed pearls",
+        hex: "#F0EAD6",
+        definition: "Very small round pearls, usually clustered, with a soft warm lustre.",
+      },
+    ],
+    note: "Light-handed textures that stay crisp, never heavy.",
+  },
+  Summer: {
+    items: [
+      {
+        term: "Silk crepe",
+        definition: "Silk with a faint grainy surface that hangs in a soft, fluid drape.",
+      },
+      {
+        term: "Brushed wool",
+        definition: "Wool raised into a light fuzz on the surface, softening the colour.",
+      },
+      {
+        term: "Matte satin",
+        definition: "Satin's drape with the shine dialled down to a low sheen.",
+      },
+      {
+        term: "Brushed silver",
+        hex: "#C0C5CE",
+        definition: "Cool silver with a fine-grain finish that scatters light instead of flashing.",
+      },
+    ],
+    note: "Soft-focus surfaces suit your lower contrast.",
+  },
+  Autumn: {
+    items: [
+      {
+        term: "Suede",
+        definition: "Leather buffed on the underside to a velvety nap that reads matte and warm.",
+      },
+      {
+        term: "Tweed",
+        definition: "A thick wool woven from flecks of several colours at once.",
+      },
+      {
+        term: "Brushed leather",
+        definition: "Leather with the shine worked off, leaving a dry, tactile surface.",
+      },
+      {
+        term: "Antique gold",
+        hex: "#DAA520",
+        definition: "Gold darkened at the edges so it reads aged rather than new.",
+      },
+    ],
+    note: "Texture carries your palette further than shine does.",
+  },
+  Winter: {
+    items: [
+      {
+        term: "Structured wool",
+        definition: "Firm wool with enough body to hold a shoulder or a sharp lapel.",
+      },
+      {
+        term: "Mirror-finish silk",
+        definition: "High-shine silk — satin or charmeuse — that reflects light cleanly.",
+      },
+      {
+        term: "Platinum",
+        hex: "#E5E4E2",
+        definition: "A bright, cool white metal that stays silver-toned and doesn't yellow.",
+      },
+      {
+        term: "Jet",
+        hex: "#050505",
+        definition: "A dense, glassy black stone cut for depth rather than sparkle.",
+      },
+    ],
+    note: "Clean, hard surfaces match your natural contrast.",
+  },
 };
 
 export const NAMED_PALETTE: Record<

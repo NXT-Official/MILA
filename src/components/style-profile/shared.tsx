@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import {
   BEAUTY_PREFERENCE_TAGS,
+  type Directive,
   type MatrixOption,
   type NamedSwatch,
 } from "@/constants/style-profile";
@@ -64,36 +65,42 @@ export function DetailChip({
   label,
   value,
   onAdd,
+  diagram,
 }: {
   label: string;
   value?: string | null;
   onAdd?: () => void;
+  /** Shape-based values (silhouette, face, hair) show the shape, not just its name. */
+  diagram?: React.ReactNode;
 }) {
   const empty = !value;
   return (
     <div
       className={cn(
-        "rounded-control px-3 py-2.5",
+        "flex items-center justify-between gap-2 rounded-control px-3 py-2.5",
         empty ? "border border-dashed border-border" : "border-[0.5px] border-border bg-card",
       )}
     >
-      <p className="text-nano uppercase tracking-label-xwide text-muted-foreground">{label}</p>
-      {value ? (
-        <p className="mt-0.5 truncate text-sm text-foreground" title={value}>
-          {value}
-        </p>
-      ) : onAdd ? (
-        <button
-          type="button"
-          onClick={onAdd}
-          className="atelier-focus-ring mt-0.5 inline-flex items-center gap-1 rounded-control text-sm text-accent transition-colors hover:text-foreground"
-        >
-          <Plus className="size-3.5" strokeWidth={2} aria-hidden="true" />
-          Add
-        </button>
-      ) : (
-        <p className="mt-0.5 text-sm text-muted-foreground/60">—</p>
-      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-nano uppercase tracking-label-xwide text-muted-foreground">{label}</p>
+        {value ? (
+          <p className="mt-0.5 truncate text-sm text-foreground" title={value}>
+            {value}
+          </p>
+        ) : onAdd ? (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="atelier-focus-ring mt-0.5 inline-flex items-center gap-1 rounded-control text-sm text-accent transition-colors hover:text-foreground"
+          >
+            <Plus className="size-3.5" strokeWidth={2} aria-hidden="true" />
+            Add
+          </button>
+        ) : (
+          <p className="mt-0.5 text-sm text-muted-foreground/60">—</p>
+        )}
+      </div>
+      {value ? diagram : null}
     </div>
   );
 }
@@ -131,20 +138,95 @@ export function MissingDetailsNudge({
   );
 }
 
-/** One styling directive: what to do about silhouette, hair, makeup or textile. */
+/**
+ * One styling directive: what to do about silhouette, hair, makeup or textile.
+ *
+ * Every named term is a tap target carrying its own definition, and colour terms
+ * carry their swatch — a member who doesn't know what a peplum is, or what
+ * "clear peach" looks like, can find out without leaving the card.
+ */
 export function DNACard({
   title,
-  body,
+  directive,
+  rationale,
+  fallback,
   action,
 }: {
   title: string;
-  body: string;
+  directive?: Directive;
+  /** The dossier input this was derived from — stated so the advice connects. */
+  rationale?: { label: string; value?: string | null };
+  /** Shown instead of the directive when the input it needs is missing. */
+  fallback?: string;
   action?: { label: string; onClick: () => void };
 }) {
   return (
     <div className="rounded-card border-[0.5px] border-border bg-card p-4 shadow-paper">
       <h3 className="font-serif text-base text-foreground">{title}</h3>
-      <p className="mt-3 text-sm leading-relaxed text-foreground/85">{body}</p>
+
+      {directive && rationale?.value ? (
+        <p className="mt-2 text-nano uppercase tracking-label-wide text-muted-foreground">
+          Because your {rationale.label} is <span className="text-accent">{rationale.value}</span> →
+        </p>
+      ) : null}
+
+      {directive ? (
+        <>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {directive.items.map((item) => (
+              <Popover key={item.term}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`${item.term} — what this means`}
+                    className={cn(
+                      "atelier-focus-ring inline-flex items-center gap-1.5 rounded-full border-[0.5px] border-border bg-background/60 py-1 pr-2.5 text-xs text-foreground/85 transition-colors hover:border-accent/50 hover:text-foreground",
+                      item.hex ? "pl-1.5" : "pl-2.5",
+                    )}
+                  >
+                    {item.hex ? (
+                      <span
+                        aria-hidden="true"
+                        className="size-3.5 shrink-0 rounded-full border-[0.5px] border-border"
+                        style={{ backgroundColor: item.hex }}
+                      />
+                    ) : null}
+                    {item.term}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-64 rounded-card p-4">
+                  <div className="flex items-center gap-3">
+                    {item.hex ? (
+                      <div
+                        aria-hidden="true"
+                        className="size-10 shrink-0 rounded-lg border-[0.5px] border-border"
+                        style={{ backgroundColor: item.hex }}
+                      />
+                    ) : null}
+                    <div className="min-w-0">
+                      <p className="font-serif text-base leading-tight text-foreground">
+                        {item.term}
+                      </p>
+                      {item.hex ? (
+                        <p className="text-nano uppercase tracking-label-wide text-muted-foreground">
+                          {item.hex}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-foreground/85">
+                    {item.definition}
+                  </p>
+                </PopoverContent>
+              </Popover>
+            ))}
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-foreground/85">{directive.note}</p>
+        </>
+      ) : (
+        <p className="mt-3 text-sm leading-relaxed text-foreground/85">{fallback}</p>
+      )}
+
       {action ? (
         <button
           type="button"
