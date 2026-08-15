@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, RotateCcw, X, Check } from "lucide-react";
+import { Camera, Loader2, SwitchCamera, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, errorMessage } from "@/lib/utils";
-import { captureVideoFrame } from "@/lib/capture-frame";
+import { captureVideoFrame, openCamera } from "@/lib/capture-frame";
 
 type Step = "back" | "front" | "review";
 
@@ -38,6 +38,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [facing, setFacing] = useState<"environment" | "user">("environment");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -49,22 +50,21 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
 
   useEffect(() => stopStream, []);
 
-  async function startCamera(facing: "environment" | "user") {
+  async function startCamera(next: "environment" | "user") {
     setError(null);
     setStarting(true);
-    stopStream();
+    stopStream(); // release the current lens first — iOS won't hand over the other one otherwise
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facing }, width: { ideal: 1440 }, height: { ideal: 1920 } },
-        audio: false,
-      });
+      const stream = await openCamera(next, { width: { ideal: 1440 }, height: { ideal: 1920 } });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
       }
+      setFacing(next);
       setActive(true);
     } catch (e) {
+      setActive(false); // drop back to the idle card — it's the only view that shows the error
       setError(errorMessage(e, "Camera unavailable. Allow camera access."));
     } finally {
       setStarting(false);
@@ -226,7 +226,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
             muted
             className={cn(
               "absolute inset-0 w-full h-full object-cover",
-              copy.facing === "user" && "scale-x-[-1]",
+              facing === "user" && "scale-x-[-1]",
             )}
           />
           <button
@@ -243,11 +243,12 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-6 p-6 bg-linear-to-t from-black/70 to-transparent">
             <button
               type="button"
-              onClick={() => startCamera(copy.facing)}
-              className="size-10 rounded-full bg-black/40 backdrop-blur text-white flex items-center justify-center hover:bg-black/60"
-              aria-label="Restart camera"
+              onClick={() => startCamera(facing === "user" ? "environment" : "user")}
+              disabled={starting}
+              className="size-10 rounded-full bg-black/40 backdrop-blur text-white flex items-center justify-center hover:bg-black/60 disabled:opacity-50"
+              aria-label={facing === "user" ? "Switch to rear camera" : "Switch to front camera"}
             >
-              <RotateCcw className="size-4" />
+              <SwitchCamera className="size-4" />
             </button>
             <button
               type="button"

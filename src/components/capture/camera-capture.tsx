@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, RotateCcw, X, ImageIcon } from "lucide-react";
+import { Camera, Loader2, SwitchCamera, X, ImageIcon } from "lucide-react";
 import { errorMessage } from "@/lib/utils";
-import { captureVideoFrame } from "@/lib/capture-frame";
+import { captureVideoFrame, openCamera } from "@/lib/capture-frame";
 
 interface Props {
   onCapture: (file: File) => void;
@@ -28,34 +28,32 @@ export function CameraCapture({
   const [active, setActive] = useState(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [facing, setFacing] = useState(facingMode);
 
   useEffect(() => () => stopStream(), []);
 
   function stopStream() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
   }
 
-  async function start() {
+  async function start(next: "user" | "environment" = facing) {
     if (disabled) return;
     setError(null);
     setStarting(true);
+    stopStream(); // release the current lens first — iOS won't hand over the other one otherwise
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 1280 },
-        },
-        audio: false,
-      });
+      const stream = await openCamera(next, { width: { ideal: 1280 }, height: { ideal: 1280 } });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
       }
+      setFacing(next);
       setActive(true);
     } catch (e) {
+      setActive(false); // drop back to the idle card — it's the only view that shows the error
       setError(errorMessage(e, "Camera unavailable. Allow camera permissions or use gallery."));
     } finally {
       setStarting(false);
@@ -98,7 +96,7 @@ export function CameraCapture({
       <div className="space-y-3">
         <button
           type="button"
-          onClick={start}
+          onClick={() => start()}
           disabled={disabled || starting}
           className={`group relative w-full aspect-4/3 rounded-2xl overflow-hidden border border-dashed border-white/25 bg-linear-to-br from-foreground/4 via-accent/5 to-foreground/2 backdrop-blur-xl transition-colors ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-foreground/60 cursor-pointer"}`}
         >
@@ -145,7 +143,7 @@ export function CameraCapture({
         ref={videoRef}
         playsInline
         muted
-        className="absolute inset-0 w-full h-full object-cover"
+        className={`absolute inset-0 w-full h-full object-cover ${facing === "user" ? "scale-x-[-1]" : ""}`}
       />
 
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -171,11 +169,12 @@ export function CameraCapture({
         <div className="grid grid-cols-[1fr_auto_1fr] items-center pb-10">
           <button
             type="button"
-            onClick={start}
-            className="justify-self-end mr-5 h-11 w-11 rounded-full bg-black/45 backdrop-blur text-white flex items-center justify-center hover:bg-black/65 transition-colors"
-            aria-label="Restart camera"
+            onClick={() => start(facing === "user" ? "environment" : "user")}
+            disabled={starting}
+            className="justify-self-end mr-5 h-11 w-11 rounded-full bg-black/45 backdrop-blur text-white flex items-center justify-center hover:bg-black/65 transition-colors disabled:opacity-50"
+            aria-label={facing === "user" ? "Switch to rear camera" : "Switch to front camera"}
           >
-            <RotateCcw className="size-4" />
+            <SwitchCamera className="size-4" />
           </button>
 
           <button

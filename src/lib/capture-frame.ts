@@ -1,3 +1,28 @@
+/**
+ * Open a specific lens. `facingMode: { ideal }` is only a hint — browsers happily
+ * return the default camera instead, so ask for `exact` first.
+ */
+export async function openCamera(
+  facing: "user" | "environment",
+  size: MediaTrackConstraints,
+): Promise<MediaStream> {
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: { ...size, facingMode: { exact: facing } },
+      audio: false,
+    });
+  } catch (e) {
+    // ponytail: exact throws on single-camera devices (most laptops). Retry loose so
+    // they still get their one camera; swap to enumerateDevices if a device needs
+    // picking between multiple rear lenses.
+    if (e instanceof Error && e.name !== "OverconstrainedError") throw e;
+    return navigator.mediaDevices.getUserMedia({
+      video: { ...size, facingMode: facing },
+      audio: false,
+    });
+  }
+}
+
 export function captureVideoFrame(
   video: HTMLVideoElement | null,
   filename: string,

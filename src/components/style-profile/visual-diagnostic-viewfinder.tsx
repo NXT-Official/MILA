@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/constants/query-keys";
+import { openCamera } from "@/lib/capture-frame";
 import { Button } from "@/components/ui/button";
 import {
   Camera,
@@ -127,10 +128,7 @@ export function VisualDiagnosticViewfinder({
     }
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        });
+        const stream = await openCamera("user", { width: { ideal: 1280 }, height: { ideal: 720 } });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
