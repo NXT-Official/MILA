@@ -3,6 +3,12 @@ import type { Season } from "./types";
 /** A palette swatch that carries its own guidance, not just a hex. */
 export type NamedSwatch = { hex: string; name: string; tip: string; use: string };
 
+/**
+ * Where a hand-picked palette came from. The dossier states the season once, in
+ * the hero — everything downstream credits the source instead of renaming it.
+ */
+export const ATELIER_PROVENANCE = "Hand-selected from the atelier library.";
+
 export const SEASON_ONE_LINER: Record<Season, string> = {
   Spring: "A warm, clear palette that suits sun-lifted, luminous colour.",
   Summer: "A cool, soft palette that suits muted, elegant, low-contrast colour.",

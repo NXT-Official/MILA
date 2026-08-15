@@ -116,7 +116,9 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
         {swatches.map((s, i) => (
           <div
             key={s.label}
-            className="flex flex-col items-center justify-center rounded-xl border border-border/40 p-3 text-center backdrop-blur-md transition-all hover:shadow-md"
+            // justify-start, not center: the cells stretch to the tallest colour
+            // name, and centring pushed each circle to a different height.
+            className="flex flex-col items-center justify-start rounded-xl border border-border/40 p-3 text-center backdrop-blur-md transition-all hover:shadow-md"
             style={{ backgroundColor: hexToRgba(s.hex, 0.08) }}
           >
             <motion.div

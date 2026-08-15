@@ -131,35 +131,19 @@ export function MissingDetailsNudge({
   );
 }
 
-/** One Style DNA fact: title, optional swatch bar, body, optional gold action. */
+/** One styling directive: what to do about silhouette, hair, makeup or textile. */
 export function DNACard({
   title,
   body,
-  swatches,
-  tone,
   action,
 }: {
   title: string;
   body: string;
-  swatches?: string[];
-  tone?: "muted";
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div
-      className={cn(
-        "rounded-card border-[0.5px] p-4",
-        tone === "muted" ? "border-border/60 bg-surface/40" : "border-border bg-card shadow-paper",
-      )}
-    >
+    <div className="rounded-card border-[0.5px] border-border bg-card p-4 shadow-paper">
       <h3 className="font-serif text-base text-foreground">{title}</h3>
-      {swatches && swatches.length > 0 ? (
-        <div className="mt-3 flex overflow-hidden rounded-md" aria-hidden="true">
-          {swatches.map((hex, i) => (
-            <div key={`${hex}-${i}`} className="h-6 flex-1" style={{ backgroundColor: hex }} />
-          ))}
-        </div>
-      ) : null}
       <p className="mt-3 text-sm leading-relaxed text-foreground/85">{body}</p>
       {action ? (
         <button
@@ -179,20 +163,13 @@ export function DNACard({
  * guidance — why this colour, where to wear it — is the point; a grid of
  * unlabelled squares is decoration.
  */
-export function PaletteBand({
-  label,
-  swatches,
-  muted = false,
-}: {
-  label: string;
-  swatches: NamedSwatch[];
-  muted?: boolean;
-}) {
+export function PaletteBand({ label, swatches }: { label: string; swatches: NamedSwatch[] }) {
   if (swatches.length === 0) return null;
   return (
     <div>
       <p className="mb-2 text-nano uppercase tracking-label-max text-muted-foreground">{label}</p>
-      <div className={cn("grid grid-cols-4 gap-2 sm:grid-cols-6", muted && "opacity-80")}>
+      {/* No opacity on the grid: a swatch that renders at 80% is the wrong colour. */}
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
         {swatches.map((s) => (
           <Popover key={s.hex + s.name}>
             <PopoverTrigger asChild>

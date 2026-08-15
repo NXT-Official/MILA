@@ -13,7 +13,11 @@ import { profileQueryOptions } from "@/lib/queries/profile";
 import { queryKeys } from "@/constants/query-keys";
 import { cn } from "@/lib/utils";
 
+// The open conversation lives in the URL, so a refresh (or a shared link, or
+// the back button) reopens the same chat instead of an empty one.
 export const Route = createFileRoute("/_authenticated/_app/concierge")({
+  validateSearch: (search: Record<string, unknown>): { c?: string } =>
+    typeof search.c === "string" ? { c: search.c } : {},
   component: ConciergePage,
 });
 
@@ -21,13 +25,18 @@ function ConciergePage() {
   const { user } = useAuth();
   const { look, clearLook, openConcierge } = useConcierge();
   const queryClient = useQueryClient();
+  const navigate = Route.useNavigate();
+  const { c: activeId } = Route.useSearch();
   const { data: profile } = useQuery({
     ...profileQueryOptions(user?.id),
     enabled: !!user?.id,
   });
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [chatKey, setChatKey] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  function setActiveId(id: string | undefined) {
+    void navigate({ search: { c: id }, replace: true });
+  }
 
   const { data: recents } = useQuery({
     queryKey: queryKeys.conciergeConversations(user?.id),
@@ -47,7 +56,7 @@ function ConciergePage() {
 
   function newChat() {
     clearLook();
-    setActiveId(null);
+    setActiveId(undefined);
     setChatKey((k) => k + 1);
     setSidebarOpen(false);
   }
@@ -184,10 +193,12 @@ function ConciergePage() {
         </header>
 
         <ConciergeChat
+          // chatKey only — activeId also changes when the first message creates
+          // the conversation, and remounting there would wipe the live thread.
           key={chatKey}
           look={look}
           onSelectLook={(l) => openConcierge(l)}
-          initialConversationId={activeId}
+          initialConversationId={activeId ?? null}
           onConversationCreated={(id) => {
             setActiveId(id);
             queryClient.invalidateQueries({

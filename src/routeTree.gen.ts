@@ -26,6 +26,7 @@ import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
+import { Route as AuthenticatedAppCalibrateRouteImport } from './routes/_authenticated/_app/calibrate'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -116,12 +117,19 @@ const AuthenticatedAppConciergeRoute =
     path: '/concierge',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppCalibrateRoute =
+  AuthenticatedAppCalibrateRouteImport.update({
+    id: '/calibrate',
+    path: '/calibrate',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/calibrate': typeof AuthenticatedAppCalibrateRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
@@ -138,6 +146,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/calibrate': typeof AuthenticatedAppCalibrateRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
@@ -158,6 +167,7 @@ export interface FileRoutesById {
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/_authenticated/_app/calibrate': typeof AuthenticatedAppCalibrateRoute
   '/_authenticated/_app/concierge': typeof AuthenticatedAppConciergeRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/feed': typeof AuthenticatedAppFeedRoute
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/auth/callback'
+    | '/calibrate'
     | '/concierge'
     | '/dashboard'
     | '/feed'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/auth/callback'
+    | '/calibrate'
     | '/concierge'
     | '/dashboard'
     | '/feed'
@@ -212,6 +224,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app'
     | '/_authenticated/onboarding'
     | '/auth/callback'
+    | '/_authenticated/_app/calibrate'
     | '/_authenticated/_app/concierge'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/feed'
@@ -354,10 +367,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppConciergeRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/calibrate': {
+      id: '/_authenticated/_app/calibrate'
+      path: '/calibrate'
+      fullPath: '/calibrate'
+      preLoaderRoute: typeof AuthenticatedAppCalibrateRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppCalibrateRoute: typeof AuthenticatedAppCalibrateRoute
   AuthenticatedAppConciergeRoute: typeof AuthenticatedAppConciergeRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppFeedRoute: typeof AuthenticatedAppFeedRoute
@@ -369,6 +390,7 @@ interface AuthenticatedAppRouteChildren {
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppCalibrateRoute: AuthenticatedAppCalibrateRoute,
   AuthenticatedAppConciergeRoute: AuthenticatedAppConciergeRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppFeedRoute: AuthenticatedAppFeedRoute,

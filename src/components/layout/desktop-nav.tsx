@@ -1,18 +1,21 @@
 import { Link } from "@tanstack/react-router";
+import { Camera, LayoutGrid, Palette, Images, MessageCircle, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const topNavItems: { to: string; label: string }[] = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/feed", label: "Feed" },
+const topNavItems: { to: string; label: string; icon: typeof LayoutGrid }[] = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
+  { to: "/feed", label: "Feed", icon: Images },
 ];
 
-const navItem = "text-xs uppercase tracking-label transition-colors";
+// Icons only, same set and order as the mobile bar. The name is the
+// aria-label and the native tooltip, so nothing is lost to a hover-less device.
+const navItem = "atelier-focus-ring rounded-control p-1.5 transition-colors";
 const itemClass = (active: boolean) =>
   cn(navItem, active ? "text-accent" : "text-muted hover:text-ink");
+const icon = "size-5";
 
 export function DesktopNav({
   path,
-  userId,
   onOpenLens,
   onOpenConcierge,
 }: {
@@ -22,28 +25,54 @@ export function DesktopNav({
   onOpenConcierge: () => void;
 }) {
   return (
-    <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-10">
-      {topNavItems.map((it) => (
-        <Link key={it.to} to={it.to} className={itemClass(path === it.to)}>
-          {it.label}
-        </Link>
-      ))}
-      <button type="button" onClick={onOpenLens} className={itemClass(false)}>
-        Lens
+    <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
+      {topNavItems.map((it) => {
+        const Icon = it.icon;
+        return (
+          <Link
+            key={it.to}
+            to={it.to}
+            aria-label={it.label}
+            title={it.label}
+            className={itemClass(path === it.to)}
+          >
+            <Icon className={icon} strokeWidth={1.75} aria-hidden="true" />
+          </Link>
+        );
+      })}
+      <button
+        type="button"
+        onClick={onOpenLens}
+        aria-label="Lens"
+        title="Lens"
+        className={itemClass(false)}
+      >
+        <Camera className={icon} strokeWidth={1.75} aria-hidden="true" />
       </button>
-      <Link to="/style-profile" className={itemClass(path === "/style-profile")}>
-        Studio
+      <Link
+        to="/style-profile"
+        aria-label="Studio"
+        title="Studio"
+        className={itemClass(path === "/style-profile")}
+      >
+        <Palette className={icon} strokeWidth={1.75} aria-hidden="true" />
       </Link>
-      <Link to="/profile" className={itemClass(path === "/profile")}>
-        Profile
+      <Link
+        to="/profile"
+        aria-label="Profile"
+        title="Profile"
+        className={itemClass(path === "/profile")}
+      >
+        <UserRound className={icon} strokeWidth={1.75} aria-hidden="true" />
       </Link>
       <button
         type="button"
         onClick={onOpenConcierge}
-        aria-label="Open Mila's Concierge"
+        aria-label="Concierge"
+        title="Concierge"
         className={itemClass(false)}
       >
-        Concierge
+        <MessageCircle className={icon} strokeWidth={1.75} aria-hidden="true" />
       </button>
     </nav>
   );

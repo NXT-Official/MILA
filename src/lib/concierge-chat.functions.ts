@@ -34,7 +34,7 @@ const tool = {
         reply: {
           type: "string",
           description:
-            "The complete conversational answer: specific, practical, warm, and grounded in the client's profile. Usually 2-6 sentences; short lists are fine when they help.",
+            "The answer, specific and grounded in the client's profile. Lead with the recommendation. Usually 2-4 sentences; a short list instead of prose when listing pieces.",
         },
       },
       required: ["reply"],
@@ -185,7 +185,8 @@ RULES:
 - Recommendations are options, never rules; no rigid or shaming language, no medical or diagnostic claims.
 - Consider weather or location only when it is given above or by the client.
 - Do not claim any action was taken outside this chat, and make no purchasing or subscription claims.
-- Keep replies focused: usually 2-6 sentences.
+- Lead with the answer. Usually 2-4 sentences — no preamble, no restating the question, no closing offer to help further. Name the pieces as a short list rather than describing them in prose.
+- Write like a person talking, not like a brochure: plain words, no stacked adjectives, no "elevate", "effortless", "curated", "perfect for".
 - Always call the report_concierge_reply tool.`;
 
       const history = boundHistory(data.history);
