@@ -249,9 +249,6 @@ export function StyleProfile() {
     hasRealDossier || form.color_season
       ? (SEASON_ONE_LINER[family] ?? "Every look below is composed against this palette.")
       : "Set your season and Mila builds your palette from it.";
-  // The colour cards fall back to the Summer palette when nothing is set, so
-  // they must not claim a season the member never chose.
-  const seasonRationale = hasRealDossier || form.color_season ? heroSeasonName : null;
 
   return (
     <div className="min-h-screen bg-background text-muted-foreground">
@@ -417,15 +414,17 @@ export function StyleProfile() {
                       : { label: "Add hair texture", onClick: () => setViewMode("detailed") }
                   }
                 />
+                {/* No season name here — the hero states it, and this section
+                    owns actions only. */}
                 <DNACard
                   title="Makeup Harmony"
                   directive={MAKEUP_HARMONY[family]}
-                  rationale={{ label: "season", value: seasonRationale }}
+                  rationale={{ label: "palette" }}
                 />
                 <DNACard
                   title="Textile Direction"
                   directive={TEXTILE_DIRECTION[family]}
-                  rationale={{ label: "season", value: seasonRationale }}
+                  rationale={{ label: "palette" }}
                 />
               </div>
             </section>

@@ -345,7 +345,9 @@ export function PhotoTryOn({ dossier }: { dossier: StudioDossier }) {
                 <p className="mb-2 text-nano uppercase tracking-label-max text-muted-foreground">
                   Colours to avoid
                 </p>
-                <div className="flex flex-wrap gap-2 opacity-80">
+                {/* No opacity: a swatch dimmed to 80% is simply the wrong colour,
+                    and "avoid" is carried by the heading, not by fading it. */}
+                <div className="flex flex-wrap gap-2">
                   {palette.avoid.map((sw) => (
                     <span
                       key={sw.hex + sw.name}

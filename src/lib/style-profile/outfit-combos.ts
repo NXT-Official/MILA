@@ -11,8 +11,8 @@ export type OutfitCombo = {
 /**
  * Four wearable trios drawn from the season's own named palette. Built from
  * NAMED_PALETTE rather than the dossier swatches so these names match the ones
- * the palette bands and Style DNA cards show — a combo referencing a colour the
- * member cannot find above is worse than no combo.
+ * the palette bands show — a combo referencing a colour the member cannot find
+ * above is worse than no combo.
  *
  * ponytail: fixed recipes, not a solver. If stylists ever want per-sub-season
  * combos, this is the seam.

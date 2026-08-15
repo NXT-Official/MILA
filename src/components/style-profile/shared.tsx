@@ -154,7 +154,11 @@ export function DNACard({
 }: {
   title: string;
   directive?: Directive;
-  /** The dossier input this was derived from — stated so the advice connects. */
+  /**
+   * The dossier input this was derived from — stated so the advice connects.
+   * Omit `value` when the input is one the hero already names (the season): the
+   * link still gets drawn, without restating a fact that lives further up.
+   */
   rationale?: { label: string; value?: string | null };
   /** Shown instead of the directive when the input it needs is missing. */
   fallback?: string;
@@ -164,9 +168,16 @@ export function DNACard({
     <div className="rounded-card border-[0.5px] border-border bg-card p-4 shadow-paper">
       <h3 className="font-serif text-base text-foreground">{title}</h3>
 
-      {directive && rationale?.value ? (
+      {directive && rationale ? (
         <p className="mt-2 text-nano uppercase tracking-label-wide text-muted-foreground">
-          Because your {rationale.label} is <span className="text-accent">{rationale.value}</span> →
+          {rationale.value ? (
+            <>
+              Because your {rationale.label} is{" "}
+              <span className="text-accent">{rationale.value}</span> →
+            </>
+          ) : (
+            <>Because of your {rationale.label} →</>
+          )}
         </p>
       ) : null}
 

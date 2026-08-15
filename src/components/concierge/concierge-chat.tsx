@@ -205,7 +205,10 @@ export function ConciergeChat({
         conversationIdRef.current = convId;
         onConversationCreated?.(convId);
       }
-      await supabase.from("concierge_messages").insert([
+      // The conversation row is what the sidebar lists; these rows are what
+      // reopening it actually shows. If this insert fails quietly the chat looks
+      // saved until the next refresh, then comes back empty — so it gets said.
+      const { error: msgErr } = await supabase.from("concierge_messages").insert([
         {
           conversation_id: convId,
           user_id: user.id,
@@ -215,12 +218,16 @@ export function ConciergeChat({
         },
         { conversation_id: convId, user_id: user.id, role: "assistant", content: reply },
       ]);
+      if (msgErr) {
+        console.warn("[concierge] couldn't save messages:", msgErr.message);
+        toast.error("This reply couldn't be saved to your history.");
+      }
       await supabase
         .from("concierge_conversations")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", convId);
-    } catch {
-      // best-effort
+    } catch (e) {
+      console.warn("[concierge] couldn't save exchange:", errorMessage(e, "unknown error"));
     }
   }
 
