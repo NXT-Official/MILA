@@ -36,6 +36,10 @@ import { Route as ApiV1LookGenerateRouteImport } from './routes/api/v1/look/gene
 import { Route as ApiV1ItemsAnalyzeRouteImport } from './routes/api/v1/items/analyze'
 import { Route as ApiV1DupesSimilarRouteImport } from './routes/api/v1/dupes/similar'
 import { Route as ApiV1ConciergeChatRouteImport } from './routes/api/v1/concierge/chat'
+import { Route as ApiV1BillingSyncRouteImport } from './routes/api/v1/billing/sync'
+import { Route as ApiV1BillingResumeRouteImport } from './routes/api/v1/billing/resume'
+import { Route as ApiV1BillingCheckoutUrlRouteImport } from './routes/api/v1/billing/checkout-url'
+import { Route as ApiV1BillingCancelRouteImport } from './routes/api/v1/billing/cancel'
 import { Route as ApiV1AnalysisOutfitRouteImport } from './routes/api/v1/analysis/outfit'
 import { Route as ApiV1AccountDeleteRouteImport } from './routes/api/v1/account/delete'
 
@@ -179,6 +183,26 @@ const ApiV1ConciergeChatRoute = ApiV1ConciergeChatRouteImport.update({
   path: '/api/v1/concierge/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1BillingSyncRoute = ApiV1BillingSyncRouteImport.update({
+  id: '/api/v1/billing/sync',
+  path: '/api/v1/billing/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingResumeRoute = ApiV1BillingResumeRouteImport.update({
+  id: '/api/v1/billing/resume',
+  path: '/api/v1/billing/resume',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingCheckoutUrlRoute = ApiV1BillingCheckoutUrlRouteImport.update({
+  id: '/api/v1/billing/checkout-url',
+  path: '/api/v1/billing/checkout-url',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingCancelRoute = ApiV1BillingCancelRouteImport.update({
+  id: '/api/v1/billing/cancel',
+  path: '/api/v1/billing/cancel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1AnalysisOutfitRoute = ApiV1AnalysisOutfitRouteImport.update({
   id: '/api/v1/analysis/outfit',
   path: '/api/v1/analysis/outfit',
@@ -209,6 +233,10 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof AuthenticatedOnboardingIndexRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
+  '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
+  '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
+  '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
@@ -237,6 +265,10 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingIndexRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
+  '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
+  '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
+  '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
@@ -269,6 +301,10 @@ export interface FileRoutesById {
   '/_authenticated/onboarding/': typeof AuthenticatedOnboardingIndexRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
+  '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
+  '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
+  '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
@@ -300,6 +336,10 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
+    | '/api/v1/billing/cancel'
+    | '/api/v1/billing/checkout-url'
+    | '/api/v1/billing/resume'
+    | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
@@ -328,6 +368,10 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
+    | '/api/v1/billing/cancel'
+    | '/api/v1/billing/checkout-url'
+    | '/api/v1/billing/resume'
+    | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
@@ -359,6 +403,10 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding/'
     | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
+    | '/api/v1/billing/cancel'
+    | '/api/v1/billing/checkout-url'
+    | '/api/v1/billing/resume'
+    | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
@@ -378,6 +426,10 @@ export interface RootRouteChildren {
   ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
   ApiV1AccountDeleteRoute: typeof ApiV1AccountDeleteRoute
   ApiV1AnalysisOutfitRoute: typeof ApiV1AnalysisOutfitRoute
+  ApiV1BillingCancelRoute: typeof ApiV1BillingCancelRoute
+  ApiV1BillingCheckoutUrlRoute: typeof ApiV1BillingCheckoutUrlRoute
+  ApiV1BillingResumeRoute: typeof ApiV1BillingResumeRoute
+  ApiV1BillingSyncRoute: typeof ApiV1BillingSyncRoute
   ApiV1ConciergeChatRoute: typeof ApiV1ConciergeChatRoute
   ApiV1DupesSimilarRoute: typeof ApiV1DupesSimilarRoute
   ApiV1ItemsAnalyzeRoute: typeof ApiV1ItemsAnalyzeRoute
@@ -580,6 +632,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1ConciergeChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/billing/sync': {
+      id: '/api/v1/billing/sync'
+      path: '/api/v1/billing/sync'
+      fullPath: '/api/v1/billing/sync'
+      preLoaderRoute: typeof ApiV1BillingSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/resume': {
+      id: '/api/v1/billing/resume'
+      path: '/api/v1/billing/resume'
+      fullPath: '/api/v1/billing/resume'
+      preLoaderRoute: typeof ApiV1BillingResumeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/checkout-url': {
+      id: '/api/v1/billing/checkout-url'
+      path: '/api/v1/billing/checkout-url'
+      fullPath: '/api/v1/billing/checkout-url'
+      preLoaderRoute: typeof ApiV1BillingCheckoutUrlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/cancel': {
+      id: '/api/v1/billing/cancel'
+      path: '/api/v1/billing/cancel'
+      fullPath: '/api/v1/billing/cancel'
+      preLoaderRoute: typeof ApiV1BillingCancelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/analysis/outfit': {
       id: '/api/v1/analysis/outfit'
       path: '/api/v1/analysis/outfit'
@@ -663,6 +743,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
   ApiV1AccountDeleteRoute: ApiV1AccountDeleteRoute,
   ApiV1AnalysisOutfitRoute: ApiV1AnalysisOutfitRoute,
+  ApiV1BillingCancelRoute: ApiV1BillingCancelRoute,
+  ApiV1BillingCheckoutUrlRoute: ApiV1BillingCheckoutUrlRoute,
+  ApiV1BillingResumeRoute: ApiV1BillingResumeRoute,
+  ApiV1BillingSyncRoute: ApiV1BillingSyncRoute,
   ApiV1ConciergeChatRoute: ApiV1ConciergeChatRoute,
   ApiV1DupesSimilarRoute: ApiV1DupesSimilarRoute,
   ApiV1ItemsAnalyzeRoute: ApiV1ItemsAnalyzeRoute,

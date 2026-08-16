@@ -10,12 +10,22 @@ type MilaSupabaseClient = SupabaseClient<Database>;
 export type CancelSubscriptionResult = { success: true; endsAt: string } | { error: string };
 export type ResumeSubscriptionResult = { success: true; renewsAt: string } | { error: string };
 
+/**
+ * The two failures that mean "there is nothing here to act on" rather than
+ * "Paddle refused". Exported so `/api/v1/billing/*` can answer them as a 400
+ * while a Paddle outage answers 503 — the phone shows the first inline and
+ * offers a retry on the second.
+ */
+export const NO_SUBSCRIPTION_TO_CANCEL = "No active membership to cancel";
+export const NO_SUBSCRIPTION_TO_RESUME = "No membership to renew";
+
 export type MarkCancelAtPeriodEndStore = (
   paddleSubscriptionId: string,
   cancelAtPeriodEnd: boolean,
 ) => Promise<void>;
 
-const markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = async (
+/** Shared with `/api/v1/billing/cancel` and `/resume`. */
+export const markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = async (
   paddleSubscriptionId,
   cancelAtPeriodEnd,
 ) => {
@@ -53,7 +63,7 @@ export async function cancelSubscriptionForUser(
 ): Promise<CancelSubscriptionResult> {
   const subscriptionId = await findInForceSubscriptionId(db, userId);
   if (!subscriptionId) {
-    return { error: "No active membership to cancel" };
+    return { error: NO_SUBSCRIPTION_TO_CANCEL };
   }
 
   const result = await cancelViaPaddle(subscriptionId);
@@ -74,7 +84,7 @@ export async function resumeSubscriptionForUser(
 ): Promise<ResumeSubscriptionResult> {
   const subscriptionId = await findInForceSubscriptionId(db, userId);
   if (!subscriptionId) {
-    return { error: "No membership to renew" };
+    return { error: NO_SUBSCRIPTION_TO_RESUME };
   }
 
   const result = await resumeViaPaddle(subscriptionId);
@@ -121,7 +131,7 @@ export async function cancelViaPaddleApi(
   return { endsAt };
 }
 
-async function resumeViaPaddleApi(
+export async function resumeViaPaddleApi(
   paddleSubscriptionId: string,
 ): Promise<{ renewsAt: string } | { error: unknown }> {
   const { PADDLE_SANDBOX_API_KEY } = requireEnv({
