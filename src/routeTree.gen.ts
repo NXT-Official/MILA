@@ -27,6 +27,7 @@ import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
 import { Route as AuthenticatedAppCalibrateRouteImport } from './routes/_authenticated/_app/calibrate'
+import { Route as ApiV1SupportMessageRouteImport } from './routes/api/v1/support/message'
 import { Route as ApiV1ProfileMemberRouteImport } from './routes/api/v1/profile/member'
 import { Route as ApiV1PostsFeedRouteImport } from './routes/api/v1/posts/feed'
 import { Route as ApiV1PostsCreateRouteImport } from './routes/api/v1/posts/create'
@@ -36,6 +37,7 @@ import { Route as ApiV1ItemsAnalyzeRouteImport } from './routes/api/v1/items/ana
 import { Route as ApiV1DupesSimilarRouteImport } from './routes/api/v1/dupes/similar'
 import { Route as ApiV1ConciergeChatRouteImport } from './routes/api/v1/concierge/chat'
 import { Route as ApiV1AnalysisOutfitRouteImport } from './routes/api/v1/analysis/outfit'
+import { Route as ApiV1AccountDeleteRouteImport } from './routes/api/v1/account/delete'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -132,6 +134,11 @@ const AuthenticatedAppCalibrateRoute =
     path: '/calibrate',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const ApiV1SupportMessageRoute = ApiV1SupportMessageRouteImport.update({
+  id: '/api/v1/support/message',
+  path: '/api/v1/support/message',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1ProfileMemberRoute = ApiV1ProfileMemberRouteImport.update({
   id: '/api/v1/profile/member',
   path: '/api/v1/profile/member',
@@ -177,6 +184,11 @@ const ApiV1AnalysisOutfitRoute = ApiV1AnalysisOutfitRouteImport.update({
   path: '/api/v1/analysis/outfit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1AccountDeleteRoute = ApiV1AccountDeleteRouteImport.update({
+  id: '/api/v1/account/delete',
+  path: '/api/v1/account/delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -195,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/onboarding/': typeof AuthenticatedOnboardingIndexRoute
+  '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
@@ -204,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
+  '/api/v1/support/message': typeof ApiV1SupportMessageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -221,6 +235,7 @@ export interface FileRoutesByTo {
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/onboarding': typeof AuthenticatedOnboardingIndexRoute
+  '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
@@ -230,6 +245,7 @@ export interface FileRoutesByTo {
   '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
+  '/api/v1/support/message': typeof ApiV1SupportMessageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -251,6 +267,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/_authenticated/onboarding/': typeof AuthenticatedOnboardingIndexRoute
+  '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
@@ -260,6 +277,7 @@ export interface FileRoutesById {
   '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
+  '/api/v1/support/message': typeof ApiV1SupportMessageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -280,6 +298,7 @@ export interface FileRouteTypes {
     | '/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/onboarding/'
+    | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
     | '/api/v1/concierge/chat'
     | '/api/v1/dupes/similar'
@@ -289,6 +308,7 @@ export interface FileRouteTypes {
     | '/api/v1/posts/create'
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
+    | '/api/v1/support/message'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -306,6 +326,7 @@ export interface FileRouteTypes {
     | '/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/onboarding'
+    | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
     | '/api/v1/concierge/chat'
     | '/api/v1/dupes/similar'
@@ -315,6 +336,7 @@ export interface FileRouteTypes {
     | '/api/v1/posts/create'
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
+    | '/api/v1/support/message'
   id:
     | '__root__'
     | '/'
@@ -335,6 +357,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/_authenticated/onboarding/'
+    | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
     | '/api/v1/concierge/chat'
     | '/api/v1/dupes/similar'
@@ -344,6 +367,7 @@ export interface FileRouteTypes {
     | '/api/v1/posts/create'
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
+    | '/api/v1/support/message'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -352,6 +376,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
+  ApiV1AccountDeleteRoute: typeof ApiV1AccountDeleteRoute
   ApiV1AnalysisOutfitRoute: typeof ApiV1AnalysisOutfitRoute
   ApiV1ConciergeChatRoute: typeof ApiV1ConciergeChatRoute
   ApiV1DupesSimilarRoute: typeof ApiV1DupesSimilarRoute
@@ -361,6 +386,7 @@ export interface RootRouteChildren {
   ApiV1PostsCreateRoute: typeof ApiV1PostsCreateRoute
   ApiV1PostsFeedRoute: typeof ApiV1PostsFeedRoute
   ApiV1ProfileMemberRoute: typeof ApiV1ProfileMemberRoute
+  ApiV1SupportMessageRoute: typeof ApiV1SupportMessageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -491,6 +517,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCalibrateRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/api/v1/support/message': {
+      id: '/api/v1/support/message'
+      path: '/api/v1/support/message'
+      fullPath: '/api/v1/support/message'
+      preLoaderRoute: typeof ApiV1SupportMessageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/profile/member': {
       id: '/api/v1/profile/member'
       path: '/api/v1/profile/member'
@@ -552,6 +585,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/analysis/outfit'
       fullPath: '/api/v1/analysis/outfit'
       preLoaderRoute: typeof ApiV1AnalysisOutfitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/account/delete': {
+      id: '/api/v1/account/delete'
+      path: '/api/v1/account/delete'
+      fullPath: '/api/v1/account/delete'
+      preLoaderRoute: typeof ApiV1AccountDeleteRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -621,6 +661,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
+  ApiV1AccountDeleteRoute: ApiV1AccountDeleteRoute,
   ApiV1AnalysisOutfitRoute: ApiV1AnalysisOutfitRoute,
   ApiV1ConciergeChatRoute: ApiV1ConciergeChatRoute,
   ApiV1DupesSimilarRoute: ApiV1DupesSimilarRoute,
@@ -630,6 +671,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1PostsCreateRoute: ApiV1PostsCreateRoute,
   ApiV1PostsFeedRoute: ApiV1PostsFeedRoute,
   ApiV1ProfileMemberRoute: ApiV1ProfileMemberRoute,
+  ApiV1SupportMessageRoute: ApiV1SupportMessageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

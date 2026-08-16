@@ -8,6 +8,16 @@ import { cancelViaPaddleApi } from "./subscriptions.functions";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
+export const DeleteAccountInput = z.object({ email: z.string().min(1).max(320) });
+
+/**
+ * The one failure here that is the member's to fix. Exported so
+ * `/api/v1/account/delete` can answer it as `VALIDATION_FAILED` — the phone
+ * shows that inline under the field, where the other two failures (billing,
+ * auth) belong in a retry state instead.
+ */
+export const EMAIL_MISMATCH = "That email doesn't match the account you're signed in to.";
+
 export type DeleteAccountResult = { success: true } | { error: string };
 
 export type DeleteAccountDeps = {
@@ -25,7 +35,7 @@ export async function deleteAccountForUser(
 ): Promise<DeleteAccountResult> {
   const email = await deps.getEmail(userId);
   if (!email || typedEmail.trim().toLowerCase() !== email.trim().toLowerCase()) {
-    return { error: "That email doesn't match the account you're signed in to." };
+    return { error: EMAIL_MISMATCH };
   }
 
   const { data: subscription } = await db
@@ -59,7 +69,8 @@ async function admin() {
   return supabaseAdmin;
 }
 
-const supabaseDeleteAccountDeps: DeleteAccountDeps = {
+/** Shared with `/api/v1/account/delete`, so both clients delete an account the same way. */
+export const supabaseDeleteAccountDeps: DeleteAccountDeps = {
   getEmail: async (userId) => {
     const { data, error } = await (await admin()).auth.admin.getUserById(userId);
     if (error) throw error;
@@ -101,7 +112,7 @@ const supabaseDeleteAccountDeps: DeleteAccountDeps = {
 
 export const deleteMyAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => z.object({ email: z.string().min(1).max(320) }).parse(input))
+  .validator((input: unknown) => DeleteAccountInput.parse(input))
   .handler(async ({ data, context }): Promise<DeleteAccountResult> => {
     return deleteAccountForUser(
       context.supabase,

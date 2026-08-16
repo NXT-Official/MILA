@@ -1,28 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestIP } from "@tanstack/react-start/server";
-import { z } from "zod";
-import { verifyHcaptcha } from "./hcaptcha.server";
-import { consumeRateLimit } from "./rate-limit.server";
+import { SubmitSupportMessageInput, submitSupportMessageService } from "@/server/services/support";
 
-const SubmitSupportMessageInput = z.object({
-  kind: z.enum(["help", "feedback"]),
-  message: z.string().trim().min(1).max(2000),
-  captchaToken: z.string().min(1).max(4000),
-});
-
+/**
+ * The website's entry point into help and feedback. Thin by design — the IP
+ * limit, the captcha check, and the privileged insert live in
+ * `@/server/services/support`, which `POST /api/v1/support/message` calls too.
+ *
+ * The service has to sit there rather than here: this file is imported by the
+ * login screen's support dialog, and a top-level `.server` import in a
+ * client-reachable module is refused by the bundler's import protection.
+ */
 export const submitSupportMessage = createServerFn({ method: "POST" })
   .validator((input: unknown) => SubmitSupportMessageInput.parse(input))
-  .handler(async ({ data }) => {
-    const ip = getRequestIP();
-
-    await consumeRateLimit(`support-message:${ip ?? "unknown"}`, { limit: 3, windowSeconds: 900 });
-
-    await verifyHcaptcha(data.captchaToken, ip);
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("support_messages")
-      .insert({ kind: data.kind, message: data.message });
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
+  .handler(({ data }) => submitSupportMessageService(data));
