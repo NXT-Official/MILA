@@ -46,8 +46,10 @@ test("the shared captcha hook clears expired/error tokens and resets after attem
 
 test("publishing a post refuses image paths outside the poster's own storage folder", () => {
   // Storage RLS only constrains uploads, so the insert has to re-check ownership
-  // or a member could claim someone else's photo as their OOTD.
-  expect(source("./posts.functions.ts")).toContain("path.startsWith(`${userId}/`)");
+  // or a member could claim someone else's photo as their OOTD. The check lives
+  // in the shared service, so it holds for the website and for /api/v1 alike —
+  // which is also why this assertion follows it there rather than relaxing.
+  expect(source("../server/services/posts.ts")).toContain("path.startsWith(`${userId}/`)");
   // ...and the uploader must keep writing paths that satisfy that prefix.
   expect(source("./publish-ootd.ts")).toContain("`${userId}/back-");
   expect(source("./publish-ootd.ts")).toContain("`${userId}/front-");
@@ -71,8 +73,8 @@ test("every hCaptcha form goes through that hook rather than mounting its own wi
 test("the feed withholds other members' posts until the viewer has posted today", () => {
   // A client-side blur would still ship every signed image URL to a lurker, so
   // the early return has to sit above the rows query, not in the component.
-  const feed = source("./posts.functions.ts");
-  const handler = feed.slice(feed.indexOf("export const getFeed"));
+  const feed = source("../server/services/posts.ts");
+  const handler = feed.slice(feed.indexOf("export async function loadFeed"));
   const gate = handler.indexOf("if (!todayCount) return { has_posted_today: false, posts: [] };");
   expect(gate).toBeGreaterThan(-1);
   expect(gate).toBeLessThan(handler.indexOf("createSignedUrls"));

@@ -27,6 +27,15 @@ import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
 import { Route as AuthenticatedAppCalibrateRouteImport } from './routes/_authenticated/_app/calibrate'
+import { Route as ApiV1ProfileMemberRouteImport } from './routes/api/v1/profile/member'
+import { Route as ApiV1PostsFeedRouteImport } from './routes/api/v1/posts/feed'
+import { Route as ApiV1PostsCreateRouteImport } from './routes/api/v1/posts/create'
+import { Route as ApiV1LookImageRouteImport } from './routes/api/v1/look/image'
+import { Route as ApiV1LookGenerateRouteImport } from './routes/api/v1/look/generate'
+import { Route as ApiV1ItemsAnalyzeRouteImport } from './routes/api/v1/items/analyze'
+import { Route as ApiV1DupesSimilarRouteImport } from './routes/api/v1/dupes/similar'
+import { Route as ApiV1ConciergeChatRouteImport } from './routes/api/v1/concierge/chat'
+import { Route as ApiV1AnalysisOutfitRouteImport } from './routes/api/v1/analysis/outfit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -123,6 +132,51 @@ const AuthenticatedAppCalibrateRoute =
     path: '/calibrate',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const ApiV1ProfileMemberRoute = ApiV1ProfileMemberRouteImport.update({
+  id: '/api/v1/profile/member',
+  path: '/api/v1/profile/member',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PostsFeedRoute = ApiV1PostsFeedRouteImport.update({
+  id: '/api/v1/posts/feed',
+  path: '/api/v1/posts/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PostsCreateRoute = ApiV1PostsCreateRouteImport.update({
+  id: '/api/v1/posts/create',
+  path: '/api/v1/posts/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1LookImageRoute = ApiV1LookImageRouteImport.update({
+  id: '/api/v1/look/image',
+  path: '/api/v1/look/image',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1LookGenerateRoute = ApiV1LookGenerateRouteImport.update({
+  id: '/api/v1/look/generate',
+  path: '/api/v1/look/generate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ItemsAnalyzeRoute = ApiV1ItemsAnalyzeRouteImport.update({
+  id: '/api/v1/items/analyze',
+  path: '/api/v1/items/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1DupesSimilarRoute = ApiV1DupesSimilarRouteImport.update({
+  id: '/api/v1/dupes/similar',
+  path: '/api/v1/dupes/similar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ConciergeChatRoute = ApiV1ConciergeChatRouteImport.update({
+  id: '/api/v1/concierge/chat',
+  path: '/api/v1/concierge/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1AnalysisOutfitRoute = ApiV1AnalysisOutfitRouteImport.update({
+  id: '/api/v1/analysis/outfit',
+  path: '/api/v1/analysis/outfit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -141,6 +195,15 @@ export interface FileRoutesByFullPath {
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/onboarding/': typeof AuthenticatedOnboardingIndexRoute
+  '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
+  '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
+  '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
+  '/api/v1/look/image': typeof ApiV1LookImageRoute
+  '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
+  '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
+  '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -158,6 +221,15 @@ export interface FileRoutesByTo {
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/onboarding': typeof AuthenticatedOnboardingIndexRoute
+  '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
+  '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
+  '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
+  '/api/v1/look/image': typeof ApiV1LookImageRoute
+  '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
+  '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
+  '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -179,6 +251,15 @@ export interface FileRoutesById {
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/_authenticated/onboarding/': typeof AuthenticatedOnboardingIndexRoute
+  '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
+  '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
+  '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
+  '/api/v1/look/image': typeof ApiV1LookImageRoute
+  '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
+  '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
+  '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -199,6 +280,15 @@ export interface FileRouteTypes {
     | '/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/onboarding/'
+    | '/api/v1/analysis/outfit'
+    | '/api/v1/concierge/chat'
+    | '/api/v1/dupes/similar'
+    | '/api/v1/items/analyze'
+    | '/api/v1/look/generate'
+    | '/api/v1/look/image'
+    | '/api/v1/posts/create'
+    | '/api/v1/posts/feed'
+    | '/api/v1/profile/member'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -216,6 +306,15 @@ export interface FileRouteTypes {
     | '/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/onboarding'
+    | '/api/v1/analysis/outfit'
+    | '/api/v1/concierge/chat'
+    | '/api/v1/dupes/similar'
+    | '/api/v1/items/analyze'
+    | '/api/v1/look/generate'
+    | '/api/v1/look/image'
+    | '/api/v1/posts/create'
+    | '/api/v1/posts/feed'
+    | '/api/v1/profile/member'
   id:
     | '__root__'
     | '/'
@@ -236,6 +335,15 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/_authenticated/onboarding/'
+    | '/api/v1/analysis/outfit'
+    | '/api/v1/concierge/chat'
+    | '/api/v1/dupes/similar'
+    | '/api/v1/items/analyze'
+    | '/api/v1/look/generate'
+    | '/api/v1/look/image'
+    | '/api/v1/posts/create'
+    | '/api/v1/posts/feed'
+    | '/api/v1/profile/member'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,6 +352,15 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
+  ApiV1AnalysisOutfitRoute: typeof ApiV1AnalysisOutfitRoute
+  ApiV1ConciergeChatRoute: typeof ApiV1ConciergeChatRoute
+  ApiV1DupesSimilarRoute: typeof ApiV1DupesSimilarRoute
+  ApiV1ItemsAnalyzeRoute: typeof ApiV1ItemsAnalyzeRoute
+  ApiV1LookGenerateRoute: typeof ApiV1LookGenerateRoute
+  ApiV1LookImageRoute: typeof ApiV1LookImageRoute
+  ApiV1PostsCreateRoute: typeof ApiV1PostsCreateRoute
+  ApiV1PostsFeedRoute: typeof ApiV1PostsFeedRoute
+  ApiV1ProfileMemberRoute: typeof ApiV1ProfileMemberRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -374,6 +491,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCalibrateRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/api/v1/profile/member': {
+      id: '/api/v1/profile/member'
+      path: '/api/v1/profile/member'
+      fullPath: '/api/v1/profile/member'
+      preLoaderRoute: typeof ApiV1ProfileMemberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/posts/feed': {
+      id: '/api/v1/posts/feed'
+      path: '/api/v1/posts/feed'
+      fullPath: '/api/v1/posts/feed'
+      preLoaderRoute: typeof ApiV1PostsFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/posts/create': {
+      id: '/api/v1/posts/create'
+      path: '/api/v1/posts/create'
+      fullPath: '/api/v1/posts/create'
+      preLoaderRoute: typeof ApiV1PostsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/look/image': {
+      id: '/api/v1/look/image'
+      path: '/api/v1/look/image'
+      fullPath: '/api/v1/look/image'
+      preLoaderRoute: typeof ApiV1LookImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/look/generate': {
+      id: '/api/v1/look/generate'
+      path: '/api/v1/look/generate'
+      fullPath: '/api/v1/look/generate'
+      preLoaderRoute: typeof ApiV1LookGenerateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/items/analyze': {
+      id: '/api/v1/items/analyze'
+      path: '/api/v1/items/analyze'
+      fullPath: '/api/v1/items/analyze'
+      preLoaderRoute: typeof ApiV1ItemsAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/dupes/similar': {
+      id: '/api/v1/dupes/similar'
+      path: '/api/v1/dupes/similar'
+      fullPath: '/api/v1/dupes/similar'
+      preLoaderRoute: typeof ApiV1DupesSimilarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/concierge/chat': {
+      id: '/api/v1/concierge/chat'
+      path: '/api/v1/concierge/chat'
+      fullPath: '/api/v1/concierge/chat'
+      preLoaderRoute: typeof ApiV1ConciergeChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/analysis/outfit': {
+      id: '/api/v1/analysis/outfit'
+      path: '/api/v1/analysis/outfit'
+      fullPath: '/api/v1/analysis/outfit'
+      preLoaderRoute: typeof ApiV1AnalysisOutfitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -441,6 +621,15 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
+  ApiV1AnalysisOutfitRoute: ApiV1AnalysisOutfitRoute,
+  ApiV1ConciergeChatRoute: ApiV1ConciergeChatRoute,
+  ApiV1DupesSimilarRoute: ApiV1DupesSimilarRoute,
+  ApiV1ItemsAnalyzeRoute: ApiV1ItemsAnalyzeRoute,
+  ApiV1LookGenerateRoute: ApiV1LookGenerateRoute,
+  ApiV1LookImageRoute: ApiV1LookImageRoute,
+  ApiV1PostsCreateRoute: ApiV1PostsCreateRoute,
+  ApiV1PostsFeedRoute: ApiV1PostsFeedRoute,
+  ApiV1ProfileMemberRoute: ApiV1ProfileMemberRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
