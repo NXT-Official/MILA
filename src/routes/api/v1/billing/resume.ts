@@ -3,10 +3,10 @@ import { requireActiveMember } from "@/server/api/auth";
 import { ApiError, handler, ok } from "@/server/api/respond";
 import {
   NO_SUBSCRIPTION_TO_RESUME,
-  markCancelAtPeriodEnd,
   resumeSubscriptionForUser,
   resumeViaPaddleApi,
 } from "@/lib/subscriptions.functions";
+import { markCancelAtPeriodEnd } from "@/lib/subscriptions.server";
 
 /**
  * `POST /api/v1/billing/resume` — clears a scheduled cancellation, so the

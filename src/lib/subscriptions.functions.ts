@@ -4,6 +4,9 @@ import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { requireEnv } from "@/lib/env";
+// Server-only, and only ever referenced inside a `.handler()` below — the Start
+// compiler strips those bodies (and this import) from the client bundle.
+import { markCancelAtPeriodEnd } from "./subscriptions.server";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
@@ -23,19 +26,6 @@ export type MarkCancelAtPeriodEndStore = (
   paddleSubscriptionId: string,
   cancelAtPeriodEnd: boolean,
 ) => Promise<void>;
-
-/** Shared with `/api/v1/billing/cancel` and `/resume`. */
-export const markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = async (
-  paddleSubscriptionId,
-  cancelAtPeriodEnd,
-) => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error } = await supabaseAdmin
-    .from("subscriptions")
-    .update({ cancel_at_period_end: cancelAtPeriodEnd })
-    .eq("paddle_subscription_id", paddleSubscriptionId);
-  if (error) console.error("[subscriptions] failed to mirror cancel_at_period_end", error);
-};
 
 async function findInForceSubscriptionId(
   db: MilaSupabaseClient,

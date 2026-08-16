@@ -5,8 +5,8 @@ import {
   DeleteAccountInput,
   EMAIL_MISMATCH,
   deleteAccountForUser,
-  supabaseDeleteAccountDeps,
 } from "@/lib/account.functions";
+import { supabaseDeleteAccountDeps } from "@/lib/account.server";
 
 /**
  * `POST /api/v1/account/delete` — irreversible, and the one route with no undo.

@@ -5,8 +5,8 @@ import {
   NO_SUBSCRIPTION_TO_CANCEL,
   cancelSubscriptionForUser,
   cancelViaPaddleApi,
-  markCancelAtPeriodEnd,
 } from "@/lib/subscriptions.functions";
+import { markCancelAtPeriodEnd } from "@/lib/subscriptions.server";
 
 /**
  * `POST /api/v1/billing/cancel` — cancels at the end of the paid period, never
