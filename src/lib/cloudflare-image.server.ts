@@ -15,7 +15,12 @@ function buildOutfitImagePrompt(outfit: DailyLook): string {
     .filter(Boolean)
     .join(" ");
 
-  return `Create a realistic full-body luxury fashion editorial photograph.
+  // ponytail: constraints lead the prompt — flux has no negative-prompt field, and
+  // trailing rules get cut by the MAX_PROMPT_LENGTH slice when the outfit runs long.
+  // Phrased positively; "no collage" reads as "collage" to a diffusion model.
+  return `A single solo adult fashion model, exactly one person, alone in the frame, centered, photographed head to toe in one continuous full-body shot. One seamless photograph, one single frame edge to edge.
+
+Realistic luxury fashion editorial photography. Elegant neutral studio background, soft professional editorial lighting, natural realistic proportions, accurate fabric textures and garment colors, complete outfit and shoes visible.
 
 Outfit:
 ${outfitLine}
@@ -24,17 +29,7 @@ Hair:
 ${outfit.hair.style}
 
 Makeup:
-${outfit.makeup.palette}
-
-Presentation:
-Show one adult fashion model from head to toe.
-The complete outfit and shoes must be visible.
-Natural realistic proportions.
-Accurate fabric textures and garment colors.
-Elegant neutral studio background.
-Soft professional editorial lighting.
-Single subject, centered composition.
-No collage, no text, no captions, no logos, no watermark.`.slice(0, MAX_PROMPT_LENGTH);
+${outfit.makeup.palette}`.slice(0, MAX_PROMPT_LENGTH);
 }
 
 export async function generateOutfitImage(outfit: DailyLook): Promise<string> {
