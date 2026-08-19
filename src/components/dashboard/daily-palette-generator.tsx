@@ -105,14 +105,16 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
   return (
     <div className="bg-card rounded-card shadow-paper border border-border p-5 space-y-5">
       <div className="flex items-center justify-between">
-        <span className="atelier-kicker">{today}</span>
-        <span className="inline-flex items-center rounded-pill bg-accent-soft px-2.5 py-0.5 text-micro uppercase tracking-label text-ink">
-          {look.styleVibe}
-        </span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <span className="atelier-kicker">{today}</span>
+          <span className="inline-flex items-center rounded-pill bg-accent-soft px-2.5 py-0.5 text-micro uppercase tracking-label text-ink">
+            {look.styleVibe}
+          </span>
+        </div>
         <span className="atelier-kicker">Mix {String(mixCount).padStart(2, "0")}</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {swatches.map((s, i) => (
           <div
             key={s.label}

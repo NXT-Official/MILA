@@ -41,7 +41,7 @@ function PricingPage() {
           description="Please check back soon."
         />
       ) : (
-        <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+        <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:gap-8">
           {data.map((plan) => (
             <PricingCard
               key={plan.id}
