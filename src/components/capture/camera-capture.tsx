@@ -98,20 +98,18 @@ export function CameraCapture({
           type="button"
           onClick={() => start()}
           disabled={disabled || starting}
-          className={`group relative w-full aspect-4/3 rounded-2xl overflow-hidden border border-dashed border-white/25 bg-linear-to-br from-foreground/4 via-accent/5 to-foreground/2 backdrop-blur-xl transition-colors ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-foreground/60 cursor-pointer"}`}
+          className={`group relative w-full aspect-video sm:aspect-4/3 rounded-2xl overflow-hidden border border-border bg-canvas transition-colors ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-foreground/40 cursor-pointer"}`}
         >
-          <div className="pointer-events-none absolute -top-24 -right-16 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-foreground/10 blur-3xl" />
-          <div className="relative h-full w-full flex flex-col items-center justify-center text-center px-8">
-            <div className="size-16 rounded-full border border-white/25 bg-background/40 backdrop-blur flex items-center justify-center mb-5 group-hover:scale-105 transition-transform">
+          <div className="relative h-full w-full flex flex-col items-center justify-center text-center px-6 sm:px-8">
+            <div className="size-14 sm:size-16 rounded-full border border-border bg-background/60 flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-105 transition-transform">
               {starting ? (
                 <Loader2 className="size-6 animate-spin" />
               ) : (
                 <Camera className="size-6" strokeWidth={1.25} />
               )}
             </div>
-            <p className="font-serif text-2xl md:text-3xl mb-2">
-              {disabled ? "Complete your profile first" : (copy?.idle ?? "Open Camera & Scan")}
+            <p className="font-serif text-xl sm:text-2xl md:text-3xl mb-1.5 sm:mb-2">
+              {disabled ? "Complete your profile first" : (copy?.idle ?? "Open camera & scan")}
             </p>
             <p className="text-sm text-muted-foreground max-w-sm">
               {disabled

@@ -181,14 +181,14 @@ export function StudioCameraDrawer({
           </>
         ) : (
           <>
-            <SheetHeader className="text-center space-y-3 mb-6">
-              <p className="text-micro uppercase tracking-label-max text-muted-foreground">
+            <SheetHeader className="text-left sm:text-center space-y-2 sm:space-y-3 mb-5 sm:mb-6">
+              <p className="hidden sm:block text-micro uppercase tracking-label-max text-muted-foreground">
                 The Studio Lens
               </p>
-              <SheetTitle className="font-serif text-3xl md:text-4xl leading-tight">
+              <SheetTitle className="font-serif text-2xl sm:text-3xl md:text-4xl leading-tight">
                 {copy.title}
               </SheetTitle>
-              <SheetDescription className="max-w-md mx-auto text-sm leading-relaxed">
+              <SheetDescription className="max-w-md sm:mx-auto text-sm leading-relaxed">
                 {copy.description}
               </SheetDescription>
             </SheetHeader>
@@ -196,21 +196,22 @@ export function StudioCameraDrawer({
             <button
               type="button"
               onClick={() => setPostingOpen(true)}
-              className="atelier-focus-ring group mx-auto mb-6 flex max-w-md w-full items-center justify-between gap-4 rounded-control border border-border bg-linear-to-r from-canvas via-background to-canvas/70 px-5 py-4 text-left shadow-paper hover:shadow-raised transition-shadow"
+              className="atelier-focus-ring group mx-auto mb-5 sm:mb-6 flex max-w-md w-full items-center justify-between gap-3 rounded-control border border-border bg-linear-to-r from-canvas via-background to-canvas/70 px-4 py-3.5 sm:px-5 sm:py-4 text-left shadow-paper hover:shadow-raised transition-shadow"
             >
-              <span className="flex items-center gap-3">
-                <span className="size-10 rounded-full border border-border bg-background flex items-center justify-center">
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="size-10 shrink-0 rounded-full border border-border bg-background flex items-center justify-center">
                   <Camera className="size-4 text-ink" strokeWidth={1.75} />
                 </span>
-                <span className="flex flex-col">
+                <span className="flex min-w-0 flex-col">
                   <span className="text-nano uppercase tracking-label-xwide text-muted-foreground">
                     Daily Drop
                   </span>
-                  <span className="font-serif text-base text-ink">Post Today's OOTD</span>
+                  <span className="font-serif text-base text-ink truncate">Post today's OOTD</span>
                 </span>
               </span>
-              <span className="text-micro uppercase tracking-label-xwide text-muted-foreground group-hover:text-ink flex items-center gap-1">
-                Dual capture <ArrowRight className="size-3.5" strokeWidth={1.75} />
+              <span className="shrink-0 text-micro uppercase tracking-label-xwide text-muted-foreground group-hover:text-ink flex items-center gap-1">
+                <span className="hidden sm:inline">Dual capture</span>
+                <ArrowRight className="size-3.5" strokeWidth={1.75} />
               </span>
             </button>
           </>
@@ -220,7 +221,7 @@ export function StudioCameraDrawer({
           <div
             role="tablist"
             aria-label="Lens mode"
-            className="mx-auto mb-6 relative grid grid-cols-2 max-w-md rounded-full border border-border bg-canvas p-1 shadow-paper"
+            className="mx-auto mb-5 sm:mb-6 relative grid grid-cols-2 max-w-md rounded-full border border-border bg-canvas p-1 shadow-paper"
           >
             <span
               aria-hidden
@@ -242,7 +243,7 @@ export function StudioCameraDrawer({
                     if (m.id !== "dupe-hunter") resetDupeState();
                   }}
                   className={cn(
-                    "relative z-10 min-h-11 px-2 text-xs uppercase tracking-label-xwide rounded-full transition-colors duration-300",
+                    "relative z-10 min-h-11 px-2 text-[0.6875rem] sm:text-xs uppercase tracking-label sm:tracking-label-xwide whitespace-nowrap rounded-full transition-colors duration-300",
                     active
                       ? "text-ink font-semibold"
                       : "text-muted-foreground hover:text-foreground",
