@@ -12,12 +12,14 @@ export function ThemeToggle() {
 
   return (
     <IconButton
-      variant="outline"
+      variant="glass"
       size="sm"
       onClick={() => setTheme(NEXT[theme])}
       label={`Theme: ${theme}. Switch to ${NEXT[theme]}`}
       title={`Theme: ${theme}`}
-      className="rounded-pill border-line/60 bg-canvas/60 backdrop-blur hover:border-line"
+      // The same glass the credits and Lens chips wear, so the header is one
+      // border treatment rather than three.
+      className="rounded-pill"
     >
       <Icon className="size-4" strokeWidth={1.75} aria-hidden="true" />
     </IconButton>

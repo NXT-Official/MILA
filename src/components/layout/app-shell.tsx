@@ -154,12 +154,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 type="button"
                 variant="glass"
                 size="chip"
-                className="md:hidden"
+                className="md:hidden w-9 px-0"
                 onClick={() => setIsLensOpen(true)}
                 aria-label="Open the Studio Lens"
               >
-                <Camera className="size-3.5" strokeWidth={1.75} />
-                Lens
+                <Camera className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
               </Button>
               <button
                 onClick={() => setIsMembershipOpen(true)}

@@ -10,6 +10,7 @@ const iconButtonVariants = cva(
         primary: "bg-ink text-surface hover:bg-ink/90",
         ghost: "bg-transparent text-ink hover:bg-accent-soft/50",
         outline: "border border-line bg-canvas text-ink hover:bg-accent-soft/40",
+        glass: "atelier-glass text-ink hover:border-border",
       },
       size: {
         sm: "size-9 [&_svg]:size-4",
