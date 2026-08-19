@@ -392,14 +392,20 @@ export function ConciergeChat({
         className="border-t border-foreground/5 dark:border-white/10 px-4 sm:px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-background/60 backdrop-blur-xl"
       >
         <div className="mx-auto w-full max-w-3xl space-y-2.5">
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick styling prompts">
+          {/* One scrolling line on phones, wrapping once there is room — a
+              three-line chip block would eat the thread on a small screen. */}
+          <div
+            className="flex gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
+            role="group"
+            aria-label="Quick styling prompts"
+          >
             {quickPrompts.map((p) => (
               <button
                 key={p}
                 type="button"
                 disabled={sending}
                 onClick={() => send(p)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-foreground/15 bg-background/70 px-3 py-1.5 text-label text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
+                className="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-full border border-foreground/15 bg-background/70 px-3 py-1.5 text-label text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
               >
                 <Wand2 className="size-3 text-accent" strokeWidth={1.75} aria-hidden="true" />
                 {p}

@@ -176,11 +176,13 @@ function ConciergePage() {
                 </h1>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* One line that scrolls, never a wrap: a long sub-season pushes the
+                header down onto the thread otherwise. Matches the mobile app. */}
+            <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:gap-3 sm:overflow-visible sm:pb-0">
               {seasonBadges.map((b) => (
                 <Badge
                   key={b}
-                  className="rounded-full px-3 py-0.5 text-micro font-normal uppercase tracking-label-wide border-foreground/15 bg-background/40"
+                  className="shrink-0 whitespace-nowrap rounded-full px-3 py-0.5 text-micro font-normal uppercase tracking-label-wide border-foreground/15 bg-background/40"
                 >
                   {b}
                 </Badge>
