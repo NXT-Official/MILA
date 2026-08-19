@@ -11,7 +11,8 @@ const mobileTabItems: { to: string; label: string; icon: typeof LayoutGrid }[] =
 
 // Icons only — six labels never fit ~50px each on a 360px screen. The name
 // lives in aria-label/title instead of being truncated to nonsense.
-const tab = "relative flex-1 min-w-0 flex items-center justify-center py-2.5 transition-colors";
+const tab =
+  "relative flex-1 min-w-0 flex items-center justify-center py-2.5 transition-colors hover:text-ink";
 
 export function MobileTabBar({
   path,
@@ -24,7 +25,7 @@ export function MobileTabBar({
 }) {
   return (
     <nav
-      className="border border-white/10 bg-ink/90 text-surface shadow-nav backdrop-blur-xl md:hidden fixed left-3 right-3 z-50 flex items-center justify-around rounded-pill px-2.5 py-2.5"
+      className="border border-border bg-background/95 text-ink shadow-nav backdrop-blur-xl md:hidden fixed left-3 right-3 z-50 flex items-center justify-around rounded-pill px-2.5 py-2.5"
       style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
       {mobileTabItems.map((it) => {
@@ -37,7 +38,7 @@ export function MobileTabBar({
             to={it.to}
             aria-label={it.label}
             title={it.label}
-            className={cn(tab, active ? "text-accent" : "text-surface/50")}
+            className={cn(tab, active ? "text-accent" : "text-muted-foreground")}
           >
             <Icon className="size-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
           </Link>
@@ -48,7 +49,7 @@ export function MobileTabBar({
         onClick={onOpenLens}
         aria-label="Lens"
         title="Lens"
-        className={cn(tab, "text-surface/50")}
+        className={cn(tab, "text-muted-foreground")}
       >
         <Camera className="size-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
       </button>
@@ -56,7 +57,7 @@ export function MobileTabBar({
         to="/style-profile"
         aria-label="Studio"
         title="Studio"
-        className={cn(tab, path === "/style-profile" ? "text-accent" : "text-surface/50")}
+        className={cn(tab, path === "/style-profile" ? "text-accent" : "text-muted-foreground")}
       >
         <Palette className="size-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
       </Link>
@@ -64,7 +65,7 @@ export function MobileTabBar({
         to="/profile"
         aria-label="Profile"
         title="Profile"
-        className={cn(tab, path === "/profile" ? "text-accent" : "text-surface/50")}
+        className={cn(tab, path === "/profile" ? "text-accent" : "text-muted-foreground")}
       >
         <UserRound className="size-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
       </Link>
@@ -73,7 +74,7 @@ export function MobileTabBar({
         onClick={onOpenConcierge}
         aria-label="Concierge"
         title="Concierge"
-        className={cn(tab, "text-surface/50")}
+        className={cn(tab, "text-muted-foreground")}
       >
         <MessageCircle className="size-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
       </button>
