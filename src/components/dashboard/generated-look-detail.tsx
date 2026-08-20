@@ -18,7 +18,9 @@ export function GeneratedLookDetail({
 }) {
   return (
     <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[42fr_58fr] md:gap-8">
-      <div>{media}</div>
+      {/* The look is the anchor: it stays put while the notes scroll past it.
+          Offset clears the 4rem sticky app header. */}
+      <div className="self-start md:sticky md:top-20">{media}</div>
       <div className="space-y-6">
         {/* The outfit line is the one editorial moment; hair and makeup are
             supporting copy and stay in the body face. */}

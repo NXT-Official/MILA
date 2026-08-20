@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
+import { cn } from "@/lib/utils";
 import { dossierCompletion } from "@/lib/style-profile/completion";
 import type { DashboardProfile } from "@/lib/queries/profile";
 
@@ -12,7 +13,13 @@ const DISMISSED_KEY = "mila.dossier-banner-dismissed";
  * never blocks — one dismissal and it stays gone, so a member who has decided
  * against beauty preferences is not asked twice.
  */
-export function DossierCompletionBanner({ profile }: { profile: DashboardProfile | undefined }) {
+export function DossierCompletionBanner({
+  profile,
+  className,
+}: {
+  profile: DashboardProfile | undefined;
+  className?: string;
+}) {
   const [dismissed, setDismissed] = useState(true);
 
   // Read on the client only; the server has no localStorage and would hydrate wrong.
@@ -31,7 +38,7 @@ export function DossierCompletionBanner({ profile }: { profile: DashboardProfile
   return (
     <section
       aria-labelledby="dossier-completion-heading"
-      className="atelier-card flex items-start gap-4 p-5 shadow-none sm:p-6"
+      className={cn("atelier-card flex items-start gap-4 p-5 shadow-none sm:p-6", className)}
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -50,7 +57,7 @@ export function DossierCompletionBanner({ profile }: { profile: DashboardProfile
           aria-valuemin={0}
           aria-valuemax={100}
           aria-labelledby="dossier-completion-heading"
-          className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-accent/15"
+          className="mt-3 h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-accent/15"
         >
           <div
             className="h-full rounded-full bg-accent transition-[width] duration-500"

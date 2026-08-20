@@ -229,9 +229,7 @@ function Dashboard() {
       : null;
 
   return (
-    <div className="atelier-page max-w-5xl space-y-8 sm:space-y-12">
-      <DossierCompletionBanner profile={profile} />
-
+    <div className="atelier-page max-w-5xl">
       <section>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
@@ -287,138 +285,148 @@ function Dashboard() {
               </>
             )}
           </Button>
-          {blockedReason && (
-            <span id="generate-blocked" className="text-sm text-muted-foreground text-pretty">
-              {blockedReason}
-            </span>
-          )}
         </div>
+        {blockedReason && (
+          <p id="generate-blocked" className="mt-3 text-sm text-muted-foreground text-pretty">
+            {blockedReason}
+          </p>
+        )}
       </section>
 
-      {generating ? (
-        <OutfitResultSkeleton />
-      ) : look ? (
-        <section aria-labelledby="todays-look" className="space-y-6">
-          <p role="status" aria-live="polite" className="sr-only">
-            Your look is ready: {look.outfit.headline}
-          </p>
+      <div className="mt-8 sm:mt-10">
+        {generating ? (
+          <OutfitResultSkeleton />
+        ) : look ? (
+          <section aria-labelledby="todays-look" className="space-y-6">
+            <p role="status" aria-live="polite" className="sr-only">
+              Your look is ready: {look.outfit.headline}
+            </p>
 
-          <div className="space-y-1.5">
-            <h2 id="todays-look" className="atelier-headline">
-              Today’s look
-            </h2>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-              <span>{vibe}</span>
-              {climate && (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <span className="inline-flex items-center gap-1.5 tabular-nums">
-                    <ClimateGlyph icon={climate.icon} className="size-3.5" />
-                    {climate.label}
-                  </span>
-                </>
-              )}
+            <div className="space-y-1.5">
+              <h2 id="todays-look" className="atelier-headline">
+                Today’s look
+              </h2>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                <span>{vibe}</span>
+                {climate && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="inline-flex items-center gap-1.5 tabular-nums">
+                      <ClimateGlyph icon={climate.icon} className="size-3.5" />
+                      {climate.label}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
 
-          <GeneratedLookDetail
-            outfit={look.outfit}
-            hair={look.hair}
-            makeup={look.makeup}
-            media={
-              <OutfitVisual
-                imageDataUri={look.imageDataUri}
-                imageGenerationError={look.imageGenerationError}
-                loading={imageLoading}
-                headline={look.outfit.headline}
-                onRetry={retryImage}
-                retryDisabled={imageLoading || generating}
-              />
-            }
-          />
+            <GeneratedLookDetail
+              outfit={look.outfit}
+              hair={look.hair}
+              makeup={look.makeup}
+              media={
+                <OutfitVisual
+                  imageDataUri={look.imageDataUri}
+                  imageGenerationError={look.imageGenerationError}
+                  loading={imageLoading}
+                  headline={look.outfit.headline}
+                  onRetry={retryImage}
+                  retryDisabled={imageLoading || generating}
+                />
+              }
+            />
 
-          <div className="border-t border-border pt-6">
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={saveLookToHistory}
-                disabled={savingLook || lookSaved || !look.imageDataUri}
-                aria-describedby={saveBlockedReason ? "save-blocked" : undefined}
-                size="pill"
-              >
-                {lookSaved ? (
-                  <>
-                    <CheckCircle2 aria-hidden="true" /> Saved
-                  </>
-                ) : savingLook ? (
-                  <>
-                    <Loader2 className="animate-spin" aria-hidden="true" /> Saving…
-                  </>
-                ) : (
-                  <>
-                    <Bookmark aria-hidden="true" /> Save to history
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={retryImage}
-                disabled={imageLoading || generating}
-                size="pill"
-              >
-                {imageLoading ? (
-                  <>
-                    <Loader2 className="animate-spin" aria-hidden="true" /> Drawing…
-                  </>
-                ) : (
-                  <>
-                    <RotateCcw aria-hidden="true" /> New visual
-                  </>
-                )}
-              </Button>
-              <Button variant="ghost" onClick={generateLook} disabled={imageLoading} size="pill">
-                <Sparkles aria-hidden="true" /> Try another look
-              </Button>
-              {savedLook && (
+            <div className="border-t border-border pt-6">
+              <div className="flex flex-wrap items-center gap-3">
                 <Button
-                  variant="ghost"
-                  onClick={() =>
-                    openConcierge({
-                      lookId: savedLook.id,
-                      imageUrl: savedLook.imageUrl,
-                      title: look.outfit.headline,
-                      source: "Today’s look",
-                    })
-                  }
+                  variant="outline"
+                  onClick={saveLookToHistory}
+                  disabled={savingLook || lookSaved || !look.imageDataUri}
+                  aria-describedby={saveBlockedReason ? "save-blocked" : undefined}
                   size="pill"
                 >
-                  <Sparkles aria-hidden="true" /> Ask Mila about this look
+                  {lookSaved ? (
+                    <>
+                      <CheckCircle2 aria-hidden="true" /> Saved
+                    </>
+                  ) : savingLook ? (
+                    <>
+                      <Loader2 className="animate-spin" aria-hidden="true" /> Saving…
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark aria-hidden="true" /> Save to history
+                    </>
+                  )}
                 </Button>
+                <Button
+                  variant="ghost"
+                  onClick={retryImage}
+                  disabled={imageLoading || generating}
+                  size="pill"
+                >
+                  {imageLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" aria-hidden="true" /> Drawing…
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw aria-hidden="true" /> New visual
+                    </>
+                  )}
+                </Button>
+                <Button variant="ghost" onClick={generateLook} disabled={imageLoading} size="pill">
+                  <Sparkles aria-hidden="true" /> Try another look
+                </Button>
+                {savedLook && (
+                  <Button
+                    variant="ghost"
+                    onClick={() =>
+                      openConcierge({
+                        lookId: savedLook.id,
+                        imageUrl: savedLook.imageUrl,
+                        title: look.outfit.headline,
+                        source: "Today’s look",
+                      })
+                    }
+                    size="pill"
+                  >
+                    <Sparkles aria-hidden="true" /> Ask Mila about this look
+                  </Button>
+                )}
+              </div>
+              {saveBlockedReason && (
+                <p id="save-blocked" className="mt-3 text-sm text-muted-foreground">
+                  {saveBlockedReason}
+                </p>
               )}
-            </div>
-            {saveBlockedReason && (
-              <p id="save-blocked" className="mt-3 text-sm text-muted-foreground">
-                {saveBlockedReason}
+              <p className="mt-3 text-xs text-muted-foreground">
+                Each new look or visual uses one credit.
               </p>
-            )}
-            <p className="mt-3 text-xs text-muted-foreground">
-              Each new look or visual uses one credit.
+            </div>
+          </section>
+        ) : (
+          <section className="rounded-card border border-border bg-card px-6 py-12 text-center">
+            <h2 className="font-serif text-2xl font-semibold tracking-tight leading-snug text-balance">
+              Set the mood. Mila will compose the rest.
+            </h2>
+            <p className="text-base text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
+              Each look is composed from first principles — tuned to your palette, body
+              architecture, and the weather outside.
             </p>
-          </div>
-        </section>
-      ) : (
-        <section className="rounded-card border border-border bg-card px-6 py-12 text-center">
-          <h2 className="font-serif text-2xl font-semibold tracking-tight leading-snug text-balance">
-            Set the mood. Mila will compose the rest.
-          </h2>
-          <p className="text-base text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
-            Each look is composed from first principles — tuned to your palette, body architecture,
-            and the weather outside.
-          </p>
-        </section>
-      )}
+          </section>
+        )}
+      </div>
 
-      {profile?.color_season && <DailyPaletteGenerator userColorSeason={profile.color_season} />}
+      {/* The nudge comes after the dashboard has proved itself, not before. */}
+      <DossierCompletionBanner profile={profile} className="mt-10 sm:mt-12" />
+
+      {/* A different daily artifact: a rule and a wider gap make the break. */}
+      {profile?.color_season && (
+        <div className="mt-14 border-t border-border/70 pt-10 sm:mt-16 sm:pt-12">
+          <DailyPaletteGenerator userColorSeason={profile.color_season} />
+        </div>
+      )}
 
       <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
     </div>

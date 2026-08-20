@@ -88,7 +88,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
   );
 
   return (
-    <Card asChild className="space-y-6 p-5 shadow-none">
+    <Card asChild className="space-y-5 p-5 shadow-none sm:p-6">
       <section aria-labelledby="daily-palette-heading">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <h2 id="daily-palette-heading" className="atelier-headline">
@@ -99,66 +99,75 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {swatches.map((s, i) => (
-            // The swatch is the only saturated thing here: no tinted cell, no
-            // border competing with the colour it is supposed to show.
-            <div key={s.label} className="flex flex-col items-center text-center">
-              <motion.div
-                key={`${look.baseHex}-${look.statementHex}-${look.accentHex}-${i}`}
-                initial={{ scale: reduce ? 1 : 0.96, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{
-                  duration: reduce ? 0.2 : 0.3,
-                  ease: [0.22, 1, 0.36, 1],
-                  delay: reduce ? 0 : i * 0.04,
-                }}
-                className="size-12 rounded-full border border-border/60"
-                style={{ backgroundColor: s.hex }}
-              />
-              <div className="mt-3 space-y-0.5">
-                <p className="text-xs text-muted-foreground">{s.label}</p>
-                <p className="text-sm font-medium leading-tight text-foreground">{s.name}</p>
+        {/* Colour on one side, words on the other: the card fills the page
+            width instead of stretching three swatches across all of it. */}
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:gap-10">
+          <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+            {swatches.map((s, i) => (
+              // The swatch is the only saturated thing here: no tinted cell, no
+              // border competing with the colour it is supposed to show.
+              <div
+                key={s.label}
+                className="flex items-center gap-3 sm:flex-col sm:gap-0 sm:text-center"
+              >
+                <motion.div
+                  key={`${look.baseHex}-${look.statementHex}-${look.accentHex}-${i}`}
+                  initial={{ scale: reduce ? 1 : 0.96, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{
+                    duration: reduce ? 0.2 : 0.3,
+                    ease: [0.22, 1, 0.36, 1],
+                    delay: reduce ? 0 : i * 0.04,
+                  }}
+                  className="size-10 shrink-0 rounded-full border border-border/60 sm:size-12"
+                  style={{ backgroundColor: s.hex }}
+                />
+                <div className="min-w-0 space-y-0.5 sm:mt-3">
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                  <p className="text-sm font-medium leading-tight text-foreground">{s.name}</p>
+                </div>
               </div>
+            ))}
+          </div>
+
+          <div className="space-y-4">
+            <p className="border-t border-border/70 pt-4 text-sm leading-relaxed text-muted-foreground lg:border-t-0 lg:pt-0">
+              <span className="font-medium text-ink">Mila’s take —</span>{" "}
+              {look.isSisterSeasonIncluded
+                ? "I borrowed the accent from your Sister Season for a little range without leaving your palette."
+                : look.insight}
+            </p>
+
+            <div className="flex max-w-sm gap-2">
+              <IconButton
+                onClick={toggleSaved}
+                disabled={pending || !user}
+                variant={saved ? "primary" : "outline"}
+                label={saved ? "Unsave palette" : "Save palette"}
+              >
+                <Bookmark
+                  className="size-4"
+                  fill={saved ? "currentColor" : "none"}
+                  aria-hidden="true"
+                />
+              </IconButton>
+
+              <Button onClick={handleShuffle} variant="outline" className="flex-1">
+                <RefreshCw aria-hidden="true" />
+                <span>New mix</span>
+              </Button>
             </div>
-          ))}
+
+            <Link
+              to="/palettes"
+              className="atelier-focus-ring block max-w-sm rounded-control text-center text-sm text-muted-foreground transition-colors hover:text-ink"
+            >
+              {savedCount > 0
+                ? `View ${savedCount} saved palette${savedCount === 1 ? "" : "s"}`
+                : "View saved palettes"}
+            </Link>
+          </div>
         </div>
-
-        <p className="border-t border-border/70 pt-4 text-sm leading-relaxed text-muted-foreground">
-          <span className="font-medium text-ink">Mila’s take —</span>{" "}
-          {look.isSisterSeasonIncluded
-            ? "I borrowed the accent from your Sister Season for a little range without leaving your palette."
-            : look.insight}
-        </p>
-
-        <div className="flex gap-2">
-          <IconButton
-            onClick={toggleSaved}
-            disabled={pending || !user}
-            variant={saved ? "primary" : "outline"}
-            label={saved ? "Unsave palette" : "Save palette"}
-          >
-            <Bookmark
-              className="size-4"
-              fill={saved ? "currentColor" : "none"}
-              aria-hidden="true"
-            />
-          </IconButton>
-
-          <Button onClick={handleShuffle} variant="outline" className="flex-1">
-            <RefreshCw aria-hidden="true" />
-            <span>New mix</span>
-          </Button>
-        </div>
-
-        <Link
-          to="/palettes"
-          className="atelier-focus-ring block rounded-control text-center text-sm text-muted-foreground transition-colors hover:text-ink"
-        >
-          {savedCount > 0
-            ? `View ${savedCount} saved palette${savedCount === 1 ? "" : "s"}`
-            : "View saved palettes"}
-        </Link>
       </section>
     </Card>
   );
