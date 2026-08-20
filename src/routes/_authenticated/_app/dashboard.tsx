@@ -231,226 +231,207 @@ function Dashboard() {
       : null;
 
   return (
-    <Stagger className="atelier-page max-w-5xl" stagger={0.08}>
-      <StaggerItem offset={12} duration={0.35}>
-        <DossierCompletionBanner profile={profile} />
-      </StaggerItem>
+    <div className="atelier-page max-w-5xl space-y-8 sm:space-y-12">
+      <DossierCompletionBanner profile={profile} />
 
-      <Card asChild className="relative mb-10 sm:mb-14 overflow-hidden atelier-hero-card">
-        <StaggerItem as="section" offset={12} duration={0.35}>
-          <div className="pointer-events-none absolute -top-32 -right-20 h-80 w-80 rounded-full bg-accent/25 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-rose/15 blur-3xl" />
-
-          <div className="relative p-6 sm:p-8 md:p-10">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div>
-                <h1
-                  suppressHydrationWarning
-                  className="atelier-title text-4xl leading-none md:text-5xl text-balance wrap-break-word"
-                >
-                  {getGreeting()}
-                  {greetingSuffix(profile?.full_name)}.
-                </h1>
-                <p className="text-base text-muted-foreground mt-2 max-w-md text-pretty">
-                  Let Mila compose an ideal OOTD for today's weather, your palette, and your
-                  silhouette.
-                </p>
-              </div>
-              <ClimateWidget value={climate} onChange={setClimate} />
-            </div>
-
-            <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
-              <div className="w-full sm:max-w-xs">
-                <span
-                  id="vibe-label"
-                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
-                >
-                  Today's Mood
-                </span>
-                <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
-                  <SelectTrigger
-                    aria-labelledby="vibe-label"
-                    className="h-11 rounded-full border-border bg-card text-sm"
-                  >
-                    <SelectValue placeholder="Select an occasion" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VIBES.map((v) => (
-                      <SelectItem key={v} value={v} className="text-sm">
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                onClick={generateLook}
-                disabled={generating || !profileComplete || !climate || imageLoading}
-                aria-describedby={blockedReason ? "generate-blocked" : undefined}
-                size="pill"
-                className="w-full sm:w-auto whitespace-normal text-center leading-snug"
+      <Card asChild className="atelier-hero-card">
+        <section className="p-6 sm:p-8 md:p-10">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <h1
+                suppressHydrationWarning
+                className="atelier-title text-4xl leading-none md:text-5xl text-balance wrap-break-word"
               >
-                {generating ? (
-                  <>
-                    <Loader2 className="animate-spin" aria-hidden="true" /> Composing…
-                  </>
-                ) : climate ? (
-                  <>
-                    <Wand2 className="text-accent" aria-hidden="true" /> Create my look —{" "}
-                    {climate.tempC}°C {climate.condition}
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="text-accent" aria-hidden="true" /> Create my look
-                  </>
-                )}
-              </Button>
-              {blockedReason && (
-                <span id="generate-blocked" className="text-sm text-muted-foreground text-pretty">
-                  {blockedReason}
-                </span>
-              )}
+                {getGreeting()}
+                {greetingSuffix(profile?.full_name)}.
+              </h1>
+              <p className="text-base text-muted-foreground mt-2 max-w-md text-pretty">
+                Let Mila compose an ideal OOTD for today’s weather, your palette, and your
+                silhouette.
+              </p>
             </div>
-
-            <div className="mt-8">
-              {generating ? (
-                <OutfitResultSkeleton />
-              ) : look ? (
-                <Stagger className="space-y-6" stagger={0.1}>
-                  <p role="status" aria-live="polite" className="sr-only">
-                    Your look is ready: {look.outfit.headline}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label text-muted-foreground">
-                      {vibe}
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium uppercase tracking-label tabular-nums">
-                      Vibe fit {look.vibe_alignment_score}/10
-                    </span>
-                    {climate && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label tabular-nums text-muted-foreground">
-                        <ClimateGlyph icon={climate.icon} className="size-3" />
-                        {climate.label}
-                      </span>
-                    )}
-                  </div>
-
-                  <StaggerItem offset={16} duration={0.4}>
-                    <GeneratedLookDetail
-                      outfit={look.outfit}
-                      hair={look.hair}
-                      makeup={look.makeup}
-                      media={
-                        <OutfitVisual
-                          imageDataUri={look.imageDataUri}
-                          imageGenerationError={look.imageGenerationError}
-                          loading={imageLoading}
-                          headline={look.outfit.headline}
-                          onRetry={retryImage}
-                          retryDisabled={imageLoading || generating}
-                        />
-                      }
-                    />
-                  </StaggerItem>
-
-                  <StaggerItem offset={16} duration={0.4} className="border-t border-border pt-6">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={saveLookToHistory}
-                        disabled={savingLook || lookSaved || !look.imageDataUri}
-                        aria-describedby={saveBlockedReason ? "save-blocked" : undefined}
-                        size="pill"
-                      >
-                        {lookSaved ? (
-                          <>
-                            <CheckCircle2 aria-hidden="true" /> Saved
-                          </>
-                        ) : savingLook ? (
-                          <>
-                            <Loader2 className="animate-spin" aria-hidden="true" /> Saving…
-                          </>
-                        ) : (
-                          <>
-                            <Bookmark aria-hidden="true" /> Save to history
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={retryImage}
-                        disabled={imageLoading || generating}
-                        size="pill"
-                      >
-                        {imageLoading ? (
-                          <>
-                            <Loader2 className="animate-spin" aria-hidden="true" /> Drawing…
-                          </>
-                        ) : (
-                          <>
-                            <RotateCcw aria-hidden="true" /> New visual
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={generateLook}
-                        disabled={imageLoading}
-                        size="pill"
-                      >
-                        <Sparkles aria-hidden="true" /> Try another look
-                      </Button>
-                      {savedLook && (
-                        <Button
-                          variant="outline"
-                          onClick={() =>
-                            openConcierge({
-                              lookId: savedLook.id,
-                              imageUrl: savedLook.imageUrl,
-                              title: look.outfit.headline,
-                              source: "Today's look",
-                            })
-                          }
-                          size="pill"
-                        >
-                          <Sparkles aria-hidden="true" /> Ask Mila about this look
-                        </Button>
-                      )}
-                    </div>
-                    {saveBlockedReason && (
-                      <p id="save-blocked" className="sr-only">
-                        {saveBlockedReason}
-                      </p>
-                    )}
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Each new look or visual uses one credit.
-                    </p>
-                  </StaggerItem>
-                </Stagger>
-              ) : (
-                <div className="py-10 text-center">
-                  <h2 className="font-serif text-2xl md:text-3xl font-semibold tracking-tight leading-snug text-balance">
-                    Set the mood. Mila will compose the rest.
-                  </h2>
-                  <p className="text-base text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
-                    Each look is composed from first principles - tuned to your palette, body
-                    architecture, and the weather outside.
-                  </p>
-                </div>
-              )}
-            </div>
+            <ClimateWidget value={climate} onChange={setClimate} />
           </div>
-        </StaggerItem>
+
+          <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
+            <div className="w-full sm:max-w-xs">
+              <span id="vibe-label" className="atelier-section-label mb-2 block">
+                Today’s mood
+              </span>
+              <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
+                <SelectTrigger
+                  aria-labelledby="vibe-label"
+                  className="rounded-full border-border bg-card"
+                >
+                  <SelectValue placeholder="Select an occasion" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VIBES.map((v) => (
+                    <SelectItem key={v} value={v} className="text-sm">
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={generateLook}
+              disabled={generating || !profileComplete || !climate || imageLoading}
+              aria-describedby={blockedReason ? "generate-blocked" : undefined}
+              size="pill"
+              className="w-full sm:w-auto"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="animate-spin" aria-hidden="true" /> Composing…
+                </>
+              ) : (
+                <>
+                  <Wand2 className="text-accent" aria-hidden="true" /> Create my look
+                </>
+              )}
+            </Button>
+            {blockedReason && (
+              <span id="generate-blocked" className="text-sm text-muted-foreground text-pretty">
+                {blockedReason}
+              </span>
+            )}
+          </div>
+        </section>
       </Card>
 
-      {profile?.color_season && (
-        <StaggerItem as="section" offset={12} duration={0.35}>
-          <DailyPaletteGenerator userColorSeason={profile.color_season} />
-        </StaggerItem>
+      {generating ? (
+        <OutfitResultSkeleton />
+      ) : look ? (
+        <section aria-labelledby="todays-look">
+          <Stagger className="space-y-6" stagger={0.1}>
+            <p role="status" aria-live="polite" className="sr-only">
+              Your look is ready: {look.outfit.headline}
+            </p>
+
+            <StaggerItem offset={12} duration={0.35} className="space-y-3">
+              <h2 id="todays-look" className="atelier-headline">
+                Today’s look
+              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label text-muted-foreground">
+                  {vibe}
+                </span>
+                <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium uppercase tracking-label tabular-nums">
+                  Vibe fit {look.vibe_alignment_score}/10
+                </span>
+                {climate && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label tabular-nums text-muted-foreground">
+                    <ClimateGlyph icon={climate.icon} className="size-3" />
+                    {climate.label}
+                  </span>
+                )}
+              </div>
+            </StaggerItem>
+
+            <StaggerItem offset={16} duration={0.4}>
+              <GeneratedLookDetail
+                outfit={look.outfit}
+                hair={look.hair}
+                makeup={look.makeup}
+                media={
+                  <OutfitVisual
+                    imageDataUri={look.imageDataUri}
+                    imageGenerationError={look.imageGenerationError}
+                    loading={imageLoading}
+                    headline={look.outfit.headline}
+                    onRetry={retryImage}
+                    retryDisabled={imageLoading || generating}
+                  />
+                }
+              />
+            </StaggerItem>
+
+            <StaggerItem offset={16} duration={0.4} className="border-t border-border pt-6">
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={saveLookToHistory}
+                  disabled={savingLook || lookSaved || !look.imageDataUri}
+                  aria-describedby={saveBlockedReason ? "save-blocked" : undefined}
+                  size="pill"
+                >
+                  {lookSaved ? (
+                    <>
+                      <CheckCircle2 aria-hidden="true" /> Saved
+                    </>
+                  ) : savingLook ? (
+                    <>
+                      <Loader2 className="animate-spin" aria-hidden="true" /> Saving…
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark aria-hidden="true" /> Save to history
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={retryImage}
+                  disabled={imageLoading || generating}
+                  size="pill"
+                >
+                  {imageLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" aria-hidden="true" /> Drawing…
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw aria-hidden="true" /> New visual
+                    </>
+                  )}
+                </Button>
+                <Button variant="ghost" onClick={generateLook} disabled={imageLoading} size="pill">
+                  <Sparkles aria-hidden="true" /> Try another look
+                </Button>
+                {savedLook && (
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      openConcierge({
+                        lookId: savedLook.id,
+                        imageUrl: savedLook.imageUrl,
+                        title: look.outfit.headline,
+                        source: "Today’s look",
+                      })
+                    }
+                    size="pill"
+                  >
+                    <Sparkles aria-hidden="true" /> Ask Mila about this look
+                  </Button>
+                )}
+              </div>
+              {saveBlockedReason && (
+                <p id="save-blocked" className="mt-3 text-sm text-muted-foreground">
+                  {saveBlockedReason}
+                </p>
+              )}
+              <p className="mt-3 text-xs text-muted-foreground">
+                Each new look or visual uses one credit.
+              </p>
+            </StaggerItem>
+          </Stagger>
+        </section>
+      ) : (
+        <section className="rounded-card border border-border bg-card px-6 py-12 text-center">
+          <h2 className="font-serif text-2xl md:text-3xl font-semibold tracking-tight leading-snug text-balance">
+            Set the mood. Mila will compose the rest.
+          </h2>
+          <p className="text-base text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
+            Each look is composed from first principles — tuned to your palette, body architecture,
+            and the weather outside.
+          </p>
+        </section>
       )}
 
+      {profile?.color_season && <DailyPaletteGenerator userColorSeason={profile.color_season} />}
+
       <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
-    </Stagger>
+    </div>
   );
 }

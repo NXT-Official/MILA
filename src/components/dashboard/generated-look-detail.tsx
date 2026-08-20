@@ -18,14 +18,14 @@ export function GeneratedLookDetail({
     <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[42fr_58fr] md:gap-8">
       <div>{media}</div>
       <div className="space-y-4">
-        <LookSection kicker="Outfit" title={outfit.headline}>
+        <LookSection label="Outfit" title={outfit.headline}>
           <ExpandableText
             text={outfit.description}
             clampClassName="line-clamp-6"
             className="font-serif text-lg leading-relaxed text-foreground/90"
           />
           <div className="mt-3 border-t border-border/70 pt-3">
-            <p className="mb-1 text-xs uppercase tracking-label text-ink">Styling notes</p>
+            <p className="atelier-section-label mb-1">Styling notes</p>
             <ExpandableText
               text={outfit.styling_notes}
               clampClassName="line-clamp-3"
@@ -33,14 +33,14 @@ export function GeneratedLookDetail({
             />
           </div>
         </LookSection>
-        <LookSection kicker="Hair">
+        <LookSection label="Hair">
           <ExpandableText
             text={hair.style}
             clampClassName="line-clamp-4"
             className="font-serif text-base leading-relaxed text-foreground/90"
           />
           <div className="mt-3 border-t border-border/70 pt-3">
-            <p className="mb-1 text-xs uppercase tracking-label text-ink">How to</p>
+            <p className="atelier-section-label mb-1">How to</p>
             <ExpandableText
               text={hair.execution_tip}
               clampClassName="line-clamp-2"
@@ -48,14 +48,14 @@ export function GeneratedLookDetail({
             />
           </div>
         </LookSection>
-        <LookSection kicker="Makeup">
+        <LookSection label="Makeup">
           <ExpandableText
             text={makeup.palette}
             clampClassName="line-clamp-4"
             className="font-serif text-base leading-relaxed text-foreground/90"
           />
           <div className="mt-3 border-t border-border/70 pt-3">
-            <p className="mb-1 text-xs uppercase tracking-label text-ink">How to</p>
+            <p className="atelier-section-label mb-1">How to</p>
             <ExpandableText
               text={makeup.details}
               clampClassName="line-clamp-2"

@@ -2,6 +2,20 @@ import { ImageOff, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/** Fills an `atelier-media-frame` while the visual is being drawn. */
+export function OutfitVisualPending() {
+  return (
+    <>
+      <Skeleton className="absolute inset-0 bg-accent-soft/50" />
+      <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+        <Loader2 className="size-5 animate-spin text-ink" aria-hidden="true" />
+        <p className="font-serif text-lg text-foreground">Visualizing your look…</p>
+        <p className="text-xs text-muted-foreground">Creating your personalized outfit visual.</p>
+      </div>
+    </>
+  );
+}
+
 export function OutfitVisual({
   imageDataUri,
   imageGenerationError,
@@ -20,12 +34,7 @@ export function OutfitVisual({
   if (loading) {
     return (
       <div className="atelier-media-frame max-w-lg" role="status">
-        <Skeleton className="absolute inset-0 bg-accent-soft/50" />
-        <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-          <Loader2 className="size-5 animate-spin text-ink" aria-hidden="true" />
-          <p className="font-serif text-lg text-foreground">Visualizing your look…</p>
-          <p className="text-xs text-muted-foreground">Creating your personalized outfit visual.</p>
-        </div>
+        <OutfitVisualPending />
       </div>
     );
   }

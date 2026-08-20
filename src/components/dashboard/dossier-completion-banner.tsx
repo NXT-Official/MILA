@@ -31,7 +31,7 @@ export function DossierCompletionBanner({ profile }: { profile: DashboardProfile
   return (
     <section
       aria-labelledby="dossier-completion-heading"
-      className="atelier-card mb-6 flex items-start gap-4 p-5 sm:p-6"
+      className="atelier-card flex items-start gap-4 p-5 sm:p-6"
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -60,7 +60,7 @@ export function DossierCompletionBanner({ profile }: { profile: DashboardProfile
 
         <Link
           to="/profile"
-          className="atelier-focus-ring mt-3 inline-block text-xs uppercase tracking-label text-accent hover:underline"
+          className="atelier-focus-ring atelier-section-label mt-3 inline-block rounded-control py-1 underline decoration-1 underline-offset-4 hover:decoration-2"
         >
           Complete your dossier
         </Link>
