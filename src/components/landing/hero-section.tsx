@@ -18,12 +18,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
   const { preview } = content;
 
   return (
-    <Reveal id="top" className="relative isolate pb-20 pt-16 sm:pb-28 sm:pt-24">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 -top-48 -z-10 mx-auto h-[26rem] max-w-2xl rounded-full bg-accent/15 blur-[130px]"
-      />
-
+    <Reveal id="top" className="pb-20 pt-16 sm:pb-28 sm:pt-24">
       <div className="atelier-container">
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-pill border border-border bg-surface px-3.5 py-1.5 text-label font-semibold uppercase tracking-label text-ink">
@@ -31,7 +26,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
             {content.kicker}
           </span>
 
-          <h1 className="mt-8 text-[clamp(3rem,8vw,5rem)] leading-[0.95]">
+          <h1 className="mt-8 text-[clamp(2.5rem,6vw,3.5rem)] leading-[1]">
             {content.headlineLine1}
             <br />
             <span className="text-muted-foreground">{content.headlineLine2}</span>
@@ -49,7 +44,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
 
         {/* The artifact: one composed look, laid out as the product panel itself. */}
         <div className="mx-auto mt-20 max-w-5xl sm:mt-24">
-          <div className="overflow-hidden rounded-card border border-border bg-surface shadow-raised">
+          <div className="overflow-hidden rounded-card border border-border bg-surface shadow-paper">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 sm:px-8">
               <SeasonTag season={preview.season} />
               <span className="text-micro uppercase tracking-label-wide text-muted-foreground">

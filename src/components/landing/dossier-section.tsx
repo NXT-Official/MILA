@@ -9,7 +9,7 @@ export function DossierSection({ content }: { content: DossierContent }) {
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
         <SectionHeading heading={content.heading} body={content.body} />
 
-        <div className="overflow-hidden rounded-card border border-border bg-surface transition-shadow duration-200 ease-editorial hover:shadow-paper">
+        <div className="overflow-hidden rounded-card border border-border bg-surface">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-7 py-6">
             <span className="flex items-center gap-3.5">
               <IconTile icon={FileText} className="size-10" />

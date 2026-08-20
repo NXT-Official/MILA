@@ -35,7 +35,7 @@ export function DupeHunterSection({ content }: { content: DupeHunterContent }) {
   return (
     <Section id="dupe-hunter">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
-        <div className="order-last divide-y divide-border overflow-hidden rounded-card border border-border bg-surface transition-shadow duration-200 ease-editorial hover:shadow-paper lg:order-first">
+        <div className="order-last divide-y divide-border overflow-hidden rounded-card border border-border bg-surface lg:order-first">
           <DupeRow card={content.inspiration} />
           <DupeRow card={content.milaMatch} isMatch />
         </div>
