@@ -13,7 +13,7 @@ export function ThemeToggle() {
   return (
     <IconButton
       variant="glass"
-      size="sm"
+      size="md"
       onClick={() => setTheme(NEXT[theme])}
       label={`Theme: ${theme}. Switch to ${NEXT[theme]}`}
       title={`Theme: ${theme}`}

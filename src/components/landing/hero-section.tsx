@@ -27,7 +27,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
       <div className="atelier-container">
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-pill border border-border bg-surface px-3.5 py-1.5 text-label font-semibold uppercase tracking-label text-ink">
-            <Sparkles className="size-3.5 text-accent" aria-hidden="true" />
+            <Sparkles className="size-3.5 text-ink" aria-hidden="true" />
             {content.kicker}
           </span>
 

@@ -2,24 +2,38 @@ import type { LucideIcon } from "lucide-react";
 import { Reveal } from "@/components/landing/reveal";
 import { cn } from "@/lib/utils";
 
+// Section rhythm is deliberate, not uniform: the quick sequences breathe less
+// than the two artifact sections, and the emotional close breathes most.
+const SPACING = {
+  tight: "py-16 sm:py-20",
+  default: "py-20 sm:py-24",
+  generous: "py-24 sm:py-32 lg:py-36",
+} as const;
+
 export function Section({
   id,
   className,
   children,
+  spacing = "default",
   "aria-label": ariaLabel,
 }: {
   id?: string;
   className?: string;
   children: React.ReactNode;
+  spacing?: keyof typeof SPACING;
   "aria-label"?: string;
 }) {
   return (
     <Reveal id={id} aria-label={ariaLabel} className="scroll-mt-16 border-t border-border">
-      <div className={cn("atelier-container py-20 sm:py-24", className)}>{children}</div>
+      <div className={cn("atelier-container", SPACING[spacing], className)}>{children}</div>
     </Reveal>
   );
 }
 
+/**
+ * A label *inside* an artifact — a dossier row, a hero facet, a price tag.
+ * Never a section eyebrow: see DESIGN.md, `.atelier-kicker` is deprecated.
+ */
 export function Eyebrow({
   children,
   icon: Icon,
@@ -56,13 +70,11 @@ export function IconTile({ icon: Icon, className }: { icon: LucideIcon; classNam
 }
 
 export function SectionHeading({
-  kicker,
   heading,
   body,
   align = "left",
   className,
 }: {
-  kicker?: string;
   heading: string;
   body?: string;
   align?: "left" | "center";
@@ -71,10 +83,7 @@ export function SectionHeading({
   const centered = align === "center";
   return (
     <div className={cn("max-w-xl", centered && "mx-auto text-center", className)}>
-      {kicker ? (
-        <Eyebrow className={centered ? "justify-center" : undefined}>{kicker}</Eyebrow>
-      ) : null}
-      <h2 className="mt-4 text-[clamp(2rem,4vw,3rem)] leading-[1.05]">{heading}</h2>
+      <h2 className="text-[clamp(2rem,4vw,3rem)] leading-[1.05]">{heading}</h2>
       {body ? (
         <p className="mt-6 text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
           {body}

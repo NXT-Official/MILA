@@ -15,7 +15,7 @@ export function SiteHeader({ sections = [] }: { sections?: NavSection[] }) {
       <div className="atelier-container flex h-16 items-center justify-between gap-6 sm:h-16">
         <a
           href="#top"
-          className="flex items-center gap-2.5 rounded-control font-serif text-xl font-bold tracking-label-xwide text-foreground"
+          className="flex h-11 items-center gap-2.5 rounded-control font-serif text-xl font-bold tracking-label-xwide text-foreground"
         >
           <img src="/favicon.svg" alt="" className="size-6" />
           MILA
@@ -43,8 +43,8 @@ export function SiteHeader({ sections = [] }: { sections?: NavSection[] }) {
           <Button
             asChild
             variant="outline"
-            size="sm"
-            className="rounded-full px-4 text-label uppercase tracking-label sm:h-11 sm:px-5"
+            size="md"
+            className="rounded-full px-5 text-label uppercase tracking-label"
           >
             <Link to={destination}>{label}</Link>
           </Button>

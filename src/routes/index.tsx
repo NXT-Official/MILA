@@ -43,6 +43,8 @@ function LandingPage() {
     return <AtelierSplash />;
   }
 
+  // `kicker` is the section's nav label now — it is deliberately not rendered
+  // above the heading. See DESIGN.md: `.atelier-kicker` is deprecated.
   const sections = [
     { id: "how-it-works", label: content.howItWorks.kicker },
     { id: "dossier", label: content.dossier.kicker },

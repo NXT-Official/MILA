@@ -5,9 +5,9 @@ import type { DossierContent } from "@/lib/landing-content";
 
 export function DossierSection({ content }: { content: DossierContent }) {
   return (
-    <Section id="dossier">
+    <Section id="dossier" spacing="generous">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
-        <SectionHeading kicker={content.kicker} heading={content.heading} body={content.body} />
+        <SectionHeading heading={content.heading} body={content.body} />
 
         <div className="overflow-hidden rounded-card border border-border bg-surface transition-shadow duration-200 ease-editorial hover:shadow-paper">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-7 py-6">
@@ -38,7 +38,7 @@ export function DossierSection({ content }: { content: DossierContent }) {
               </span>
             </div>
             {/* ponytail: decorative bar — the percentage above already carries the value. */}
-            <div className="mt-3 h-1 overflow-hidden rounded-full bg-border" aria-hidden="true">
+            <div className="mt-3 h-1 overflow-hidden rounded-full bg-ink/10" aria-hidden="true">
               {/* Inline width — Tailwind cannot generate a class from a runtime value. */}
               <div
                 className="h-full rounded-full bg-accent"
