@@ -6,11 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function OutfitVisualPending() {
   return (
     <>
-      <Skeleton className="absolute inset-0 bg-accent-soft/50" />
+      <Skeleton className="absolute inset-0 bg-foreground/4" />
       <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-        <Loader2 className="size-5 animate-spin text-ink" aria-hidden="true" />
-        <p className="font-serif text-lg text-foreground">Visualizing your look…</p>
-        <p className="text-xs text-muted-foreground">Creating your personalized outfit visual.</p>
+        <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
+        <p className="text-sm text-muted-foreground">Drawing your look…</p>
       </div>
     </>
   );

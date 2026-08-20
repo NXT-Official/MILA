@@ -1,22 +1,22 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { OutfitVisualPending } from "@/components/dashboard/outfit-visual";
 
-function SkeletonCard({ compact }: { compact?: boolean }) {
+function SkeletonSection({ compact }: { compact?: boolean }) {
   return (
-    <div className="rounded-card border border-border bg-card p-5 md:p-6">
-      <Skeleton className="rounded-full bg-foreground/8 h-2.5 w-16" />
+    <div className="border-t border-border/70 pt-6 first:border-t-0 first:pt-0">
+      <Skeleton className="h-2.5 w-16 rounded-full bg-foreground/6" />
       {compact ? (
         <div className="mt-4 space-y-2">
-          <Skeleton className="h-3 rounded-full bg-foreground/8 w-full" />
-          <Skeleton className="h-3 rounded-full bg-foreground/8 w-4/5" />
+          <Skeleton className="h-3 w-full rounded-full bg-foreground/6" />
+          <Skeleton className="h-3 w-4/5 rounded-full bg-foreground/6" />
         </div>
       ) : (
         <>
-          <Skeleton className="rounded-full bg-foreground/8 mt-3 h-5 w-2/3" />
+          <Skeleton className="mt-3 h-5 w-2/3 rounded-full bg-foreground/6" />
           <div className="mt-4 space-y-2">
-            <Skeleton className="h-3 rounded-full bg-foreground/8 w-full" />
-            <Skeleton className="h-3 rounded-full bg-foreground/8 w-full" />
-            <Skeleton className="h-3 rounded-full bg-foreground/8 w-3/4" />
+            <Skeleton className="h-3 w-full rounded-full bg-foreground/6" />
+            <Skeleton className="h-3 w-full rounded-full bg-foreground/6" />
+            <Skeleton className="h-3 w-3/4 rounded-full bg-foreground/6" />
           </div>
         </>
       )}
@@ -32,19 +32,19 @@ export function OutfitResultSkeleton() {
         <div className="atelier-media-frame max-w-lg" aria-hidden="true">
           <OutfitVisualPending />
         </div>
-        <div className="space-y-4" aria-hidden="true">
-          <SkeletonCard />
-          <SkeletonCard compact />
-          <SkeletonCard compact />
+        <div className="space-y-6" aria-hidden="true">
+          <SkeletonSection />
+          <SkeletonSection compact />
+          <SkeletonSection compact />
         </div>
       </div>
       <div
         className="flex flex-wrap items-center gap-3 border-t border-border pt-5"
         aria-hidden="true"
       >
-        <Skeleton className="h-10 w-36 rounded-full bg-foreground/8" />
-        <Skeleton className="h-10 w-32 rounded-full bg-foreground/8" />
-        <Skeleton className="h-10 w-32 rounded-full bg-foreground/8" />
+        <Skeleton className="h-10 w-36 rounded-full bg-foreground/6" />
+        <Skeleton className="h-10 w-32 rounded-full bg-foreground/6" />
+        <Skeleton className="h-10 w-32 rounded-full bg-foreground/6" />
       </div>
     </div>
   );

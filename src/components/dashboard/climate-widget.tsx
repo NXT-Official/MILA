@@ -132,9 +132,7 @@ export function ClimateWidget({
         </span>
         <div className="leading-tight">
           <p className="text-xs font-medium">{statusLabel}</p>
-          <p className="text-xs uppercase tracking-label-wide text-muted-foreground">
-            {value?.location ?? "—"}
-          </p>
+          <p className="text-xs text-muted-foreground">{value?.location ?? "—"}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">

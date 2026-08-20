@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { RefreshCw, Sparkles, Bookmark } from "lucide-react";
+import { RefreshCw, Bookmark } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { generateDailyPalette } from "@/lib/color-analysis/paletteGenerator";
 import { migrateLegacySeason } from "@/lib/color-analysis/schemaMigration";
@@ -19,16 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 
-function hexToRgba(hex: string, alpha: number): string {
-  const clean = hex.replace("#", "");
-  const r = parseInt(clean.slice(0, 2), 16);
-  const g = parseInt(clean.slice(2, 4), 16);
-  const b = parseInt(clean.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: string | null }) {
-  const [mixCount, setMixCount] = useState(1);
   const reduce = useReducedMotion() ?? false;
 
   const normalizedSeason = userColorSeason
@@ -61,7 +52,6 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
   });
 
   const handleShuffle = useCallback(() => {
-    setMixCount((c) => c + 1);
     setLook(generateDailyPalette(normalizedSeason));
   }, [normalizedSeason]);
 
@@ -98,65 +88,48 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
   );
 
   return (
-    <Card asChild className="p-5 space-y-5">
+    <Card asChild className="space-y-6 p-5 shadow-none">
       <section aria-labelledby="daily-palette-heading">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <h2 id="daily-palette-heading" className="atelier-headline">
-              Today’s palette
-            </h2>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">{today}</span>
-              <span className="inline-flex items-center rounded-pill bg-accent-soft px-2.5 py-0.5 text-micro uppercase tracking-label text-ink">
-                {look.styleVibe}
-              </span>
-            </div>
-          </div>
-          <span className="text-xs uppercase tracking-label tabular-nums text-muted-foreground">
-            Mix {String(mixCount).padStart(2, "0")}
-          </span>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <h2 id="daily-palette-heading" className="atelier-headline">
+            Today’s palette
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {look.styleVibe} · {today}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {swatches.map((s, i) => (
-            <div
-              key={s.label}
-              // justify-start, not center: the cells stretch to the tallest colour
-              // name, and centring pushed each circle to a different height.
-              className="flex flex-col items-center justify-start rounded-panel border border-border/60 p-3 text-center"
-              style={{ backgroundColor: hexToRgba(s.hex, 0.08) }}
-            >
+            // The swatch is the only saturated thing here: no tinted cell, no
+            // border competing with the colour it is supposed to show.
+            <div key={s.label} className="flex flex-col items-center text-center">
               <motion.div
                 key={`${look.baseHex}-${look.statementHex}-${look.accentHex}-${i}`}
-                initial={{ scale: reduce ? 1 : 0.85, opacity: 0 }}
+                initial={{ scale: reduce ? 1 : 0.96, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{
-                  duration: reduce ? 0.2 : 0.35,
+                  duration: reduce ? 0.2 : 0.3,
                   ease: [0.22, 1, 0.36, 1],
-                  delay: reduce ? 0 : i * 0.06,
+                  delay: reduce ? 0 : i * 0.04,
                 }}
-                className="size-10 rounded-full border border-card"
+                className="size-12 rounded-full border border-border/60"
                 style={{ backgroundColor: s.hex }}
               />
-              <div className="mt-2.5 space-y-0.5">
-                <p className="atelier-label">{s.label}</p>
+              <div className="mt-3 space-y-0.5">
+                <p className="text-xs text-muted-foreground">{s.label}</p>
                 <p className="text-sm font-medium leading-tight text-foreground">{s.name}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="rounded-panel border border-border bg-accent-soft p-3">
-          <div className="flex items-start gap-2">
-            <Sparkles className="size-4 text-ink mt-0.5 shrink-0" aria-hidden="true" />
-            <p className="text-sm text-muted-foreground leading-snug">
-              <strong className="text-ink">Mila’s take —</strong>{" "}
-              {look.isSisterSeasonIncluded
-                ? "I borrowed the accent from your Sister Season for a little range without leaving your palette."
-                : look.insight}
-            </p>
-          </div>
-        </div>
+        <p className="border-t border-border/70 pt-4 text-sm leading-relaxed text-muted-foreground">
+          <span className="font-medium text-ink">Mila’s take —</span>{" "}
+          {look.isSisterSeasonIncluded
+            ? "I borrowed the accent from your Sister Season for a little range without leaving your palette."
+            : look.insight}
+        </p>
 
         <div className="flex gap-2">
           <IconButton
@@ -172,7 +145,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
             />
           </IconButton>
 
-          <Button onClick={handleShuffle} className="flex-1">
+          <Button onClick={handleShuffle} variant="outline" className="flex-1">
             <RefreshCw aria-hidden="true" />
             <span>New mix</span>
           </Button>
@@ -180,9 +153,8 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
 
         <Link
           to="/palettes"
-          className="atelier-focus-ring flex items-center justify-center gap-1.5 rounded-control text-micro uppercase tracking-label-wide text-muted-foreground transition-colors hover:text-ink"
+          className="atelier-focus-ring block rounded-control text-center text-sm text-muted-foreground transition-colors hover:text-ink"
         >
-          <Bookmark className="size-3" strokeWidth={1.75} aria-hidden="true" />
           {savedCount > 0
             ? `View ${savedCount} saved palette${savedCount === 1 ? "" : "s"}`
             : "View saved palettes"}
