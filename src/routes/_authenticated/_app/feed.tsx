@@ -67,9 +67,9 @@ function FeedPage() {
 
   return (
     <>
-      <section className="atelier-page max-w-2xl">
+      <section className="atelier-page max-w-xl">
         <PageHeader
-          className="mb-6 sm:mb-8"
+          className="mb-4 sm:mb-5"
           size="compact"
           kicker="Community"
           title="Today’s looks."
@@ -81,9 +81,9 @@ function FeedPage() {
           Post today’s OOTD
         </Button>
 
-        <div className="mt-8 sm:mt-10">
+        <div className="mt-10 sm:mt-12">
           {isLoading && (
-            <div className="space-y-6" role="status" aria-label="Loading today’s looks">
+            <div className="space-y-8" role="status" aria-label="Loading today’s looks">
               {[0, 1].map((i) => (
                 <div key={i} className="atelier-card overflow-hidden shadow-none">
                   <div className="flex items-center gap-3 px-5 py-4">
@@ -104,7 +104,6 @@ function FeedPage() {
           {!isLoading && !isError && locked && (
             <EmptyState
               role="status"
-              className="mx-auto max-w-xl"
               icon={<Lock className="size-8" strokeWidth={1.25} />}
               title="Post today’s look to open the feed."
               description="The Atelier trades in kind — everyone here has shown their mirror today. Yours unlocks theirs."
@@ -114,7 +113,6 @@ function FeedPage() {
           {!isLoading && !isError && !locked && posts.length === 0 && (
             <EmptyState
               role="status"
-              className="mx-auto max-w-xl"
               icon={<Images className="size-8" strokeWidth={1.25} />}
               title="You’re first to the mirror today."
               description="As your circle posts, their looks will land here."
@@ -122,7 +120,7 @@ function FeedPage() {
           )}
 
           {!isLoading && !locked && posts.length > 0 && (
-            <Stagger className="space-y-6" stagger={0.06}>
+            <Stagger className="space-y-8" stagger={0.06}>
               {posts.map((p) => (
                 <StaggerItem key={p.id} offset={10} duration={0.35}>
                   <PostCanvas post={p} />
