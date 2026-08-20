@@ -6,7 +6,7 @@ import type { DossierContent } from "@/lib/landing-content";
 export function DossierSection({ content }: { content: DossierContent }) {
   return (
     <Section id="dossier" spacing="generous">
-      <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
+      <div className="grid items-start gap-14 lg:grid-cols-[5fr_6fr] lg:gap-20">
         <SectionHeading heading={content.heading} body={content.body} />
 
         <div className="overflow-hidden rounded-card border border-border bg-surface">

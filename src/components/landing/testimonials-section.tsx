@@ -5,7 +5,7 @@ export function TestimonialsSection({ testimonials }: { testimonials: Testimonia
   return (
     // Multi-column flow rather than a grid: quotes are uneven lengths and the
     // count is CMS-driven, so a grid always leaves an orphan row. Columns don't.
-    <ul className="mt-14 gap-5 sm:mt-16 sm:columns-2 lg:columns-3">
+    <ul className="mt-20 gap-5 sm:mt-24 sm:columns-2 lg:columns-3">
       {testimonials.map((t) => (
         <li key={t._key} className="mb-5 break-inside-avoid">
           <figure className="rounded-card border border-border bg-surface p-8">

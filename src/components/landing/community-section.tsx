@@ -13,7 +13,7 @@ export function CommunitySection({
     <Section id="community" spacing="generous">
       <SectionHeading align="center" heading={content.heading} body={content.body} />
 
-      <ul className="mt-10 flex flex-wrap justify-center gap-2.5">
+      <ul className="mt-8 flex flex-wrap justify-center gap-2.5">
         {content.seasonChips.map((season) => (
           <li key={season}>
             <SeasonTag season={season} />

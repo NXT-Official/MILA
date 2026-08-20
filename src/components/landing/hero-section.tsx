@@ -43,7 +43,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
         </div>
 
         {/* The artifact: one composed look, laid out as the product panel itself. */}
-        <div className="mx-auto mt-20 max-w-5xl sm:mt-24">
+        <div className="mt-20 sm:mt-24">
           <div className="overflow-hidden rounded-card border border-border bg-surface shadow-paper">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 sm:px-8">
               <SeasonTag season={preview.season} />
