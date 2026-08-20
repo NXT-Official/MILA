@@ -44,7 +44,7 @@ export function SiteHeader({ sections = [] }: { sections?: NavSection[] }) {
             asChild
             variant="outline"
             size="md"
-            className="rounded-full px-5 text-label uppercase tracking-label"
+            className="rounded-full px-5 text-xs uppercase tracking-label"
           >
             <Link to={destination}>{label}</Link>
           </Button>

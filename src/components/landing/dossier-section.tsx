@@ -1,9 +1,12 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { FileText } from "lucide-react";
 import { Section, SectionHeading, Eyebrow, IconTile } from "@/components/landing/section";
 import { SeasonTag } from "@/components/landing/season-tag";
 import type { DossierContent } from "@/lib/landing-content";
 
 export function DossierSection({ content }: { content: DossierContent }) {
+  const reduce = useReducedMotion() ?? false;
+
   return (
     <Section id="dossier" spacing="generous">
       <div className="grid items-start gap-14 lg:grid-cols-[5fr_6fr] lg:gap-20">
@@ -37,12 +40,16 @@ export function DossierSection({ content }: { content: DossierContent }) {
                 {content.completionPercent}%
               </span>
             </div>
-            {/* ponytail: decorative bar — the percentage above already carries the value. */}
+            {/* ponytail: decorative bar — the percentage above already carries the value.
+                The one place on the page where motion IS the meaning: a dossier that
+                fills. scaleX, not width, so nothing lays out mid-animation. */}
             <div className="mt-3 h-1 overflow-hidden rounded-full bg-ink/10" aria-hidden="true">
-              {/* Inline width — Tailwind cannot generate a class from a runtime value. */}
-              <div
-                className="h-full rounded-full bg-accent"
-                style={{ width: `${content.completionPercent}%` }}
+              <motion.div
+                className="h-full w-full origin-left rounded-full bg-accent"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: content.completionPercent / 100 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: reduce ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] }}
               />
             </div>
           </div>

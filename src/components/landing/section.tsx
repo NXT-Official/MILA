@@ -1,5 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-import { Reveal } from "@/components/landing/reveal";
 import { cn } from "@/lib/utils";
 
 // Section rhythm is deliberate, not uniform: the quick sequences breathe less
@@ -24,9 +23,9 @@ export function Section({
   "aria-label"?: string;
 }) {
   return (
-    <Reveal id={id} aria-label={ariaLabel} className="scroll-mt-16 border-t border-border">
+    <section id={id} aria-label={ariaLabel} className="scroll-mt-16 border-t border-border">
       <div className={cn("atelier-container", SPACING[spacing], className)}>{children}</div>
-    </Reveal>
+    </section>
   );
 }
 

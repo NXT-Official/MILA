@@ -1,11 +1,10 @@
 import { Lock } from "lucide-react";
-import { Reveal } from "@/components/landing/reveal";
 import { CtaButton } from "@/components/landing/cta-button";
 import type { FinalCtaContent } from "@/lib/landing-content";
 
 export function FinalCtaSection({ content }: { content: FinalCtaContent }) {
   return (
-    <Reveal id="start" className="scroll-mt-16 border-t border-border">
+    <section id="start" className="scroll-mt-16 border-t border-border">
       <div className="atelier-container py-28 text-center sm:py-36 lg:py-44">
         <h2 className="mx-auto max-w-2xl text-[clamp(2.25rem,6vw,3rem)] leading-[1.05]">
           {content.heading}
@@ -20,6 +19,6 @@ export function FinalCtaSection({ content }: { content: FinalCtaContent }) {
           <Lock className="size-3" aria-hidden="true" /> {content.privacyNote}
         </p>
       </div>
-    </Reveal>
+    </section>
   );
 }

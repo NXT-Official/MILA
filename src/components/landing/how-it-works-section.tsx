@@ -6,8 +6,10 @@ export function HowItWorksSection({ content }: { content: HowItWorksContent }) {
   const reduce = useReducedMotion() ?? false;
 
   // Only `y` moves — the steps are legible before the reveal ever fires.
+  // `hidden` never branches on `reduce`: SSR has no matchMedia, so a branched
+  // initial state desyncs hydration and can strand the element mid-transform.
   const stepVariants: Variants = {
-    hidden: { y: reduce ? 0 : 12 },
+    hidden: { y: 12 },
     visible: { y: 0, transition: { duration: reduce ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] } },
   };
 

@@ -8,11 +8,15 @@ export function CtaButton({ className }: { className?: string }) {
     <Button
       asChild
       size="lg"
-      className={cn("rounded-full px-8 text-xs uppercase tracking-label", className)}
+      className={cn("group rounded-full px-8 text-xs uppercase tracking-label", className)}
     >
       <Link to="/login">
         Get your first look
-        <ArrowRight className="ml-2 size-4 text-accent" aria-hidden="true" />
+        {/* The arrow answers the press before the route does. */}
+        <ArrowRight
+          className="ml-2 size-4 text-accent transition-transform duration-200 ease-editorial group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+          aria-hidden="true"
+        />
       </Link>
     </Button>
   );
