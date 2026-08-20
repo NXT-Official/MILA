@@ -44,6 +44,10 @@
   --color-drench: var(--drench);
   --color-drench-foreground: var(--drench-foreground);
   --color-atelier-ivory: var(--canvas);
+  /* Overlays sitting on member photography. A photo does not flip with the
+     theme, so its scrim must not either: these two never change. */
+  --color-photo-edge: #f5f0e8;
+  --color-photo-scrim: oklch(0.264 0.013 41.6);
   --color-atelier-porcelain: var(--card);
   --color-atelier-ink: var(--ink);
   --color-atelier-champagne: var(--accent);

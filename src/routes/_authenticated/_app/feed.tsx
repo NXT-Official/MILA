@@ -70,12 +70,13 @@ function FeedPage() {
       <section className="atelier-page max-w-2xl">
         <PageHeader
           className="mb-6 sm:mb-8"
+          size="compact"
           kicker="Community"
           title="Today’s looks."
           description="One outfit, one mirror, one mood — your community’s daily blueprints."
         />
 
-        <Button size="lg" className="w-full sm:w-auto" onClick={() => setIsPostOpen(true)}>
+        <Button size="pill" className="w-full sm:w-auto" onClick={() => setIsPostOpen(true)}>
           <Camera strokeWidth={1.75} aria-hidden="true" />
           Post today’s OOTD
         </Button>
@@ -84,7 +85,7 @@ function FeedPage() {
           {isLoading && (
             <div className="space-y-6" role="status" aria-label="Loading today’s looks">
               {[0, 1].map((i) => (
-                <div key={i} className="atelier-card overflow-hidden">
+                <div key={i} className="atelier-card overflow-hidden shadow-none">
                   <div className="flex items-center gap-3 px-5 py-4">
                     <Skeleton className="size-9 rounded-full" />
                     <div className="space-y-1.5">
@@ -121,9 +122,9 @@ function FeedPage() {
           )}
 
           {!isLoading && !locked && posts.length > 0 && (
-            <Stagger className="space-y-6">
+            <Stagger className="space-y-6" stagger={0.06}>
               {posts.map((p) => (
-                <StaggerItem key={p.id}>
+                <StaggerItem key={p.id} offset={10} duration={0.35}>
                   <PostCanvas post={p} />
                 </StaggerItem>
               ))}

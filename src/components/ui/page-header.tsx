@@ -6,19 +6,31 @@ export function PageHeader({
   title,
   description,
   align = "left",
+  size = "default",
   className,
 }: {
   kicker?: React.ReactNode;
   title: React.ReactNode;
   description?: React.ReactNode;
   align?: "left" | "center";
+  /** `compact` keeps the display face but steps the masthead back, for pages
+   *  whose content — photography, a feed — should out-weigh the page title. */
+  size?: "default" | "compact";
   className?: string;
 }) {
   const centered = align === "center";
   return (
     <header className={cn("mb-10 sm:mb-14", centered && "text-center", className)}>
       {kicker ? <p className="atelier-kicker mb-3">{kicker}</p> : null}
-      <h1 className="atelier-title">{title}</h1>
+      <h1
+        className={cn(
+          size === "compact"
+            ? "font-display text-3xl font-bold leading-none tracking-tight md:text-4xl"
+            : "atelier-title",
+        )}
+      >
+        {title}
+      </h1>
       {description ? (
         <p className={cn("mt-4 max-w-xl text-muted", centered && "mx-auto")}>{description}</p>
       ) : null}

@@ -4,7 +4,6 @@ import { Sparkles } from "lucide-react";
 import type { FeedPost } from "@/lib/posts.functions";
 import type { PostItem } from "@/lib/outfit-items";
 import { PostItemDrawer } from "@/components/feed/post-item-drawer";
-import { Badge } from "@/components/ui/badge";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { relativeTime } from "@/lib/utils";
@@ -14,8 +13,8 @@ export function PostCanvas({ post }: { post: FeedPost }) {
   const [openItem, setOpenItem] = useState<PostItem | null>(null);
 
   return (
-    <article className="atelier-card overflow-hidden">
-      <header className="flex items-center justify-between px-5 py-4">
+    <article className="atelier-card overflow-hidden shadow-none">
+      <header className="flex items-center px-5 py-4">
         <div className="flex min-w-0 items-center gap-3">
           <AvatarInitial name={author} className="size-9 shrink-0" />
           <div className="min-w-0">
@@ -26,10 +25,9 @@ export function PostCanvas({ post }: { post: FeedPost }) {
             <p className="text-xs text-muted-foreground">{relativeTime(post.created_at)}</p>
           </div>
         </div>
-        {post.is_self && <Badge className="shrink-0">Today’s OOTD</Badge>}
       </header>
 
-      <div className="relative w-full aspect-3/4 bg-atelier-ivory/60 overflow-hidden">
+      <div className="relative aspect-3/4 w-full overflow-hidden bg-canvas">
         {post.image_url_back ? (
           <img
             src={post.image_url_back}
@@ -44,7 +42,7 @@ export function PostCanvas({ post }: { post: FeedPost }) {
         )}
 
         {post.image_url_front && (
-          <div className="absolute top-4 left-4 size-20 md:h-24 md:w-24 rounded-full overflow-hidden border-2 border-atelier-ivory shadow-atelier-float ring-1 ring-ink/10">
+          <div className="absolute top-4 left-4 size-20 overflow-hidden rounded-full border-2 border-photo-edge shadow-paper md:h-24 md:w-24">
             <img
               src={post.image_url_front}
               alt={`${author}’s portrait`}
@@ -67,8 +65,8 @@ export function PostCanvas({ post }: { post: FeedPost }) {
               className="atelier-focus-ring group absolute grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full"
               aria-label={`Find pieces similar to ${item.label}`}
             >
-              <span className="grid size-6 place-items-center rounded-full border-2 border-atelier-ivory bg-ink/40 shadow-atelier-float backdrop-blur-sm transition-transform duration-200 ease-editorial group-hover:scale-110">
-                <span className="size-4 rounded-full bg-atelier-ivory/90" />
+              <span className="grid size-6 place-items-center rounded-full border-2 border-photo-edge bg-photo-scrim/40 backdrop-blur-sm transition-transform duration-200 ease-editorial group-hover:scale-105">
+                <span className="size-4 rounded-full bg-photo-edge/90" />
               </span>
             </button>
           ))}
