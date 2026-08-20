@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Images, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Sheet,
   SheetContent,
@@ -52,12 +54,12 @@ function FeedPage() {
     setSubmitting(true);
     try {
       const { postId, items } = await publishOotd({ userId: user.id, back, front, caption });
-      toast.success("Today's OOTD posted.");
+      toast.success("Today’s OOTD posted.");
       setIsPostOpen(false);
       await queryClient.invalidateQueries({ queryKey: queryKeys.feed(user.id) });
       if (items.length) setTagging({ postId, items });
     } catch (e) {
-      toast.error(errorMessage(e, "Couldn't post today's OOTD."));
+      toast.error(errorMessage(e, "Couldn’t post today’s OOTD."));
     } finally {
       setSubmitting(false);
     }
@@ -65,83 +67,77 @@ function FeedPage() {
 
   return (
     <>
-      <section className="max-w-2xl mx-auto px-4 md:px-6 py-10 md:py-14 space-y-8 relative">
-        <header className="text-center space-y-3">
-          <p className="text-micro uppercase tracking-label-max text-muted-foreground">
-            The Atelier Feed
-          </p>
-          <h1 className="font-serif text-4xl md:text-5xl text-ink leading-tight">
-            Today's looks, in real time
-          </h1>
-          <p className="text-sm text-stone max-w-md mx-auto">
-            One outfit, one mirror, one mood — your community's daily blueprints.
-          </p>
-          <button
-            type="button"
-            onClick={() => setIsPostOpen(true)}
-            className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-ink text-atelier-ivory text-micro uppercase tracking-label-xwide hover:bg-ink/90 transition-colors shadow-atelier-soft"
-          >
-            <Camera className="size-4" strokeWidth={1.75} />
-            Post Today's OOTD
-          </button>
-        </header>
+      <section className="atelier-page max-w-2xl">
+        <PageHeader
+          className="mb-6 sm:mb-8"
+          kicker="Community"
+          title="Today’s looks."
+          description="One outfit, one mirror, one mood — your community’s daily blueprints."
+        />
 
-        {isLoading && (
-          <div className="space-y-6">
-            {[0, 1].map((i) => (
-              <div key={i} className="rounded-3xl atelier-glass overflow-hidden">
-                <div className="h-16 bg-porcelain/30" />
-                <Skeleton className="aspect-3/4 bg-porcelain/20" />
-              </div>
-            ))}
-          </div>
-        )}
+        <Button size="lg" className="w-full sm:w-auto" onClick={() => setIsPostOpen(true)}>
+          <Camera strokeWidth={1.75} aria-hidden="true" />
+          Post today’s OOTD
+        </Button>
 
-        {isError && <LoadErrorPanel title="Feed couldn't load." onRetry={() => refetch()} />}
+        <div className="mt-8 sm:mt-10">
+          {isLoading && (
+            <div className="space-y-6" role="status" aria-label="Loading today’s looks">
+              {[0, 1].map((i) => (
+                <div key={i} className="atelier-card overflow-hidden">
+                  <div className="flex items-center gap-3 px-5 py-4">
+                    <Skeleton className="size-9 rounded-full" />
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-3 w-24 rounded-full" />
+                      <Skeleton className="h-2.5 w-16 rounded-full" />
+                    </div>
+                  </div>
+                  <Skeleton className="aspect-3/4" />
+                </div>
+              ))}
+            </div>
+          )}
 
-        {!isLoading && !isError && locked && (
-          <EmptyState
-            role="status"
-            className="mx-auto max-w-xl"
-            icon={<Lock className="size-8" strokeWidth={1.25} />}
-            title="Post today's look to open the feed."
-            description="The Atelier trades in kind — everyone here has shown their mirror today. Yours unlocks theirs."
-          />
-        )}
+          {isError && <LoadErrorPanel title="Feed couldn’t load." onRetry={() => refetch()} />}
 
-        {!isLoading && !isError && !locked && posts.length === 0 && (
-          <EmptyState
-            role="status"
-            className="mx-auto max-w-xl"
-            icon={<Images className="size-8" strokeWidth={1.25} />}
-            title="You're first to the mirror today."
-            description="As your circle posts, their looks will land here."
-          />
-        )}
+          {!isLoading && !isError && locked && (
+            <EmptyState
+              role="status"
+              className="mx-auto max-w-xl"
+              icon={<Lock className="size-8" strokeWidth={1.25} />}
+              title="Post today’s look to open the feed."
+              description="The Atelier trades in kind — everyone here has shown their mirror today. Yours unlocks theirs."
+            />
+          )}
 
-        {!isLoading && !locked && posts.length > 0 && (
-          <Stagger className="space-y-6">
-            {posts.map((p) => (
-              <StaggerItem key={p.id}>
-                <PostCanvas post={p} />
-              </StaggerItem>
-            ))}
-          </Stagger>
-        )}
+          {!isLoading && !isError && !locked && posts.length === 0 && (
+            <EmptyState
+              role="status"
+              className="mx-auto max-w-xl"
+              icon={<Images className="size-8" strokeWidth={1.25} />}
+              title="You’re first to the mirror today."
+              description="As your circle posts, their looks will land here."
+            />
+          )}
+
+          {!isLoading && !locked && posts.length > 0 && (
+            <Stagger className="space-y-6">
+              {posts.map((p) => (
+                <StaggerItem key={p.id}>
+                  <PostCanvas post={p} />
+                </StaggerItem>
+              ))}
+            </Stagger>
+          )}
+        </div>
       </section>
 
       <Sheet open={isPostOpen} onOpenChange={(o) => !submitting && setIsPostOpen(o)}>
-        <SheetContent
-          side="bottom"
-          className="rounded-t-3xl border-t border-porcelain/60 px-6 pt-8 pb-10 max-h-[95vh] overflow-y-auto"
-        >
-          <SheetHeader className="text-center space-y-2 mb-6">
-            <p className="text-micro uppercase tracking-label-max text-muted-foreground">
-              Daily Drop
-            </p>
-            <SheetTitle className="font-serif text-3xl leading-tight">Post Today's OOTD</SheetTitle>
-            <SheetDescription className="max-w-md mx-auto text-sm">
-              Two captures, head to toe — your fit, then your face & hair.
+        <SheetContent side="bottom" className="max-h-[95vh] overflow-y-auto pt-8 pb-10">
+          <SheetHeader className="mb-6 space-y-2 text-center">
+            <SheetTitle className="font-serif text-2xl leading-snug">Post today’s OOTD</SheetTitle>
+            <SheetDescription className="mx-auto max-w-md text-sm">
+              Two captures, head to toe — your fit, then your face and hair.
             </SheetDescription>
           </SheetHeader>
           <div className="max-w-md mx-auto">

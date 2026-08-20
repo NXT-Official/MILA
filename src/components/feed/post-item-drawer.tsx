@@ -29,17 +29,12 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
 
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side="bottom"
-        className="rounded-t-3xl border-t border-porcelain/60 px-6 pt-8 pb-10 max-h-[85vh] overflow-y-auto"
-      >
+      <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto pt-8 pb-10">
         {item && (
           <div className="max-w-md mx-auto space-y-6">
             <SheetHeader className="text-center space-y-2">
-              <p className="text-micro uppercase tracking-label-max text-muted-foreground">
-                {item.category}
-              </p>
-              <SheetTitle className="font-serif text-3xl leading-tight">{item.label}</SheetTitle>
+              <p className="text-xs text-muted-foreground">{item.category}</p>
+              <SheetTitle className="font-serif text-2xl leading-snug">{item.label}</SheetTitle>
               <SheetDescription className="text-sm">
                 {item.attributes.primary_color} · {item.attributes.silhouette_tags.join(" · ")}
               </SheetDescription>
@@ -50,11 +45,12 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                 href={item.source_url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="atelier-focus-ring flex items-center justify-between gap-3 rounded-2xl atelier-glass px-5 py-4"
+                className="atelier-focus-ring flex items-center justify-between gap-3 rounded-panel border border-line bg-canvas px-5 py-4 transition-colors hover:bg-accent-soft/40"
               >
                 <span className="min-w-0">
-                  <span className="block text-nano uppercase tracking-label-xwide text-stone">
-                    Poster's link
+                  <span className="block text-xs text-muted-foreground">
+                    Poster’s link
+                    <span className="sr-only"> (opens in a new tab)</span>
                   </span>
                   <span className="block font-serif text-base text-ink truncate">
                     {sourceUrlHost(item.source_url)}
@@ -65,22 +61,20 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
             )}
 
             <div className="space-y-3">
-              <p className="text-micro uppercase tracking-label-xwide text-muted-foreground">
-                Similar pieces
-              </p>
+              <p className="atelier-section-label">Similar pieces</p>
 
               {isLoading && (
                 <div className="grid grid-cols-2 gap-3">
-                  <Skeleton className="aspect-3/4 rounded-2xl bg-porcelain/20" />
-                  <Skeleton className="aspect-3/4 rounded-2xl bg-porcelain/20" />
+                  <Skeleton className="aspect-3/4 rounded-card" />
+                  <Skeleton className="aspect-3/4 rounded-card" />
                 </div>
               )}
 
               {!isLoading && !similar?.length && (
-                <div className="rounded-2xl border border-dashed border-porcelain/60 p-6 text-center">
+                <div className="rounded-panel border border-dashed border-line p-6 text-center">
                   <p className="font-serif text-base text-ink">Nothing close in the catalog yet.</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Mila's shelf grows every week — check back on this piece.
+                    Mila’s shelf grows every week — check back on this piece.
                   </p>
                 </div>
               )}
@@ -92,7 +86,7 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                     href={match.affiliate_link}
                     target="_blank"
                     rel="noopener noreferrer sponsored"
-                    className="atelier-focus-ring rounded-2xl atelier-glass overflow-hidden flex flex-col shadow-atelier-soft"
+                    className="atelier-focus-ring flex flex-col overflow-hidden rounded-card border border-line bg-surface transition-colors hover:border-accent"
                   >
                     <div className="aspect-3/4 bg-atelier-ivory/60 overflow-hidden">
                       <ImageWithFallback
@@ -108,10 +102,8 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                       />
                     </div>
                     <div className="p-3">
-                      <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
-                        {match.title}
-                      </p>
-                      <p className="mt-1 atelier-label">
+                      <p className="line-clamp-2 text-sm leading-snug text-ink">{match.title}</p>
+                      <p className="mt-1 text-sm font-medium text-ink tabular-nums">
                         {formatPrice(match.price, match.currency)}
                       </p>
                     </div>

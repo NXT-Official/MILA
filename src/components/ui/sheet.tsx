@@ -75,7 +75,8 @@ const SheetContent = React.forwardRef<
           className="absolute left-1/2 top-2 -translate-x-1/2 h-1 w-10 rounded-full bg-foreground/10"
         />
       )}
-      <SheetPrimitive.Close className="atelier-focus-ring absolute right-4 top-4 rounded-control opacity-70 cursor-pointer transition-opacity hover:opacity-100 disabled:pointer-events-none data-[state=open]:bg-accent-soft">
+      {/* The 16px glyph stays put; the pseudo-element carries the 44px target. */}
+      <SheetPrimitive.Close className="atelier-focus-ring absolute right-4 top-4 rounded-control opacity-70 cursor-pointer transition-opacity after:absolute after:-inset-3.5 after:content-[''] hover:opacity-100 disabled:pointer-events-none data-[state=open]:bg-accent-soft">
         <X className="size-4" />
         <span className="sr-only">Close</span>
       </SheetPrimitive.Close>

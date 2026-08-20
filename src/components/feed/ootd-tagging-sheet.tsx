@@ -11,6 +11,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { queryKeys } from "@/constants/query-keys";
 import { updatePostItems } from "@/lib/outfit-items.functions";
@@ -76,55 +77,50 @@ export function OotdTaggingSheet({
 
   return (
     <Sheet open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
-      <SheetContent
-        side="bottom"
-        className="rounded-t-3xl border-t border-porcelain/60 px-6 pt-8 pb-10 max-h-[92vh] overflow-y-auto"
-      >
-        <SheetHeader className="text-center space-y-2 mb-6">
-          <p className="text-micro uppercase tracking-label-max text-muted-foreground">
-            Tag Your Pieces
-          </p>
-          <SheetTitle className="font-serif text-3xl leading-tight">
+      <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto pt-8 pb-10">
+        <SheetHeader className="mb-6 space-y-2 text-center">
+          <SheetTitle className="font-serif text-2xl leading-snug">
             Mila spotted {drafts.length} {drafts.length === 1 ? "piece" : "pieces"}
           </SheetTitle>
           <SheetDescription className="max-w-md mx-auto text-sm">
-            Fix a name, drop the link where it's from, or skip entirely — your look is already
+            Fix a name, drop the link where it’s from, or skip entirely — your look is already
             posted.
           </SheetDescription>
         </SheetHeader>
 
         <div className="max-w-md mx-auto space-y-4">
           {drafts.map((draft) => (
-            <div key={draft.id} className="rounded-2xl atelier-glass p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="text-nano uppercase tracking-label-xwide text-stone px-2 py-0.5 rounded-full border border-porcelain/60 shrink-0">
-                  {draft.category}
-                </span>
-                <Input
-                  value={draft.label}
-                  onChange={(e) => edit(draft.id, { label: e.target.value })}
-                  maxLength={100}
-                  aria-label="Piece name"
-                  className="h-9 flex-1"
-                />
+            <div
+              key={draft.id}
+              className="space-y-3 rounded-panel border border-line bg-canvas p-4"
+            >
+              {/* Category and remove share the top row so the name gets full width;
+                  on a phone the three-up row truncated every piece name. */}
+              <div className="flex items-center justify-between gap-3">
+                <Badge className="shrink-0">{draft.category}</Badge>
                 <button
                   type="button"
                   onClick={() => setDrafts((c) => c.filter((d) => d.id !== draft.id))}
-                  className="atelier-focus-ring shrink-0 size-9 rounded-full border border-porcelain/60 text-stone hover:text-ink flex items-center justify-center"
+                  className="atelier-focus-ring -my-1 flex size-11 shrink-0 items-center justify-center rounded-full border border-line text-muted-foreground transition-colors hover:bg-accent-soft/40 hover:text-ink"
                   aria-label={`Remove ${draft.label || "this piece"}`}
                 >
-                  <Trash2 className="size-4" strokeWidth={1.75} />
+                  <Trash2 className="size-4" strokeWidth={1.75} aria-hidden="true" />
                 </button>
               </div>
+              <Input
+                value={draft.label}
+                onChange={(e) => edit(draft.id, { label: e.target.value })}
+                maxLength={100}
+                aria-label="Piece name"
+              />
               <Input
                 value={draft.sourceUrl}
                 onChange={(e) => edit(draft.id, { sourceUrl: e.target.value })}
                 type="url"
                 inputMode="url"
                 leadingIcon={Link2}
-                placeholder="https://where-it's-from.com"
+                placeholder="https://example.com/the-piece"
                 aria-label="Where this piece is from"
-                className="h-9"
               />
             </div>
           ))}
@@ -135,8 +131,14 @@ export function OotdTaggingSheet({
             </p>
           )}
 
+          {emptyLabel && (
+            <p className="text-center text-xs text-destructive">
+              Every piece needs a name before you can save.
+            </p>
+          )}
+
           {invalidLink && (
-            <p className="text-xs text-destructive text-center">
+            <p className="text-center text-xs text-destructive">
               Links must start with https:// — check “{invalidLink.label}”.
             </p>
           )}
@@ -147,7 +149,6 @@ export function OotdTaggingSheet({
               variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={saving}
-              className="atelier-label"
             >
               Skip
             </Button>
@@ -156,7 +157,8 @@ export function OotdTaggingSheet({
               onClick={handleSave}
               loading={saving}
               disabled={!!invalidLink || emptyLabel}
-              className="flex-1 h-12 rounded-full text-micro uppercase tracking-label-xwide"
+              size="lg"
+              className="flex-1"
             >
               {saving ? "Saving…" : "Save tags"}
             </Button>
