@@ -82,7 +82,7 @@ export function SectionHeading({
   const centered = align === "center";
   return (
     <div className={cn("max-w-xl", centered && "mx-auto text-center", className)}>
-      <h2 className="text-[clamp(2rem,4vw,3rem)] leading-[1.05]">{heading}</h2>
+      <h2 className="text-[clamp(1.75rem,3vw,2.25rem)] leading-[1.1]">{heading}</h2>
       {body ? (
         <p className="mt-6 text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
           {body}
