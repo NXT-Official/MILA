@@ -7,9 +7,7 @@ import {
   Shirt,
   RotateCcw,
   X,
-  Wand2,
   ChevronDown,
-  ChevronUp,
   Mic,
   ImagePlus,
 } from "lucide-react";
@@ -34,6 +32,9 @@ type Msg = {
   ts: number;
   failed?: boolean;
   imageUrl?: string;
+  // Only live-sent/received messages animate in — history restored from a
+  // reopened conversation shouldn't replay a page-load-style entrance.
+  entering?: boolean;
 };
 
 const GENERAL_PROMPTS = [
@@ -128,6 +129,11 @@ export function ConciergeChat({
   );
 
   const [listening, setListening] = useState(false);
+  // SpeechRecognitionCtor is only known once we're actually in the browser;
+  // gating the mic button on it directly would render differently on the
+  // server than on the client's first paint and trigger a hydration mismatch.
+  const [dictationSupported, setDictationSupported] = useState(false);
+  useEffect(() => setDictationSupported(!!SpeechRecognitionCtor), []);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const dictationBaseRef = useRef("");
   const [attachment, setAttachment] = useState<{ file: File; preview: string } | null>(null);
@@ -294,6 +300,7 @@ export function ConciergeChat({
         content: trimmed,
         ts: Date.now(),
         imageUrl: attached?.preview,
+        entering: true,
       };
       priorMessages = messages;
       setMessages((prev) => [...prev, userMsg]);
@@ -327,7 +334,7 @@ export function ConciergeChat({
       });
       setMessages((prev) => [
         ...prev,
-        { id: nextMsgId++, role: "assistant", content: res.reply, ts: Date.now() },
+        { id: nextMsgId++, role: "assistant", content: res.reply, ts: Date.now(), entering: true },
       ]);
       void persistExchange(trimmed, uploadedUrl, res.reply);
     } catch (e) {
@@ -345,9 +352,14 @@ export function ConciergeChat({
       <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 sm:px-7 py-6">
-        <div className="mx-auto w-full max-w-3xl space-y-6">
+        <div
+          className={cn(
+            "mx-auto w-full max-w-3xl",
+            messages.length === 0 ? "flex min-h-full flex-col justify-center" : "space-y-6",
+          )}
+        >
           {messages.length === 0 && (
-            <div className="pt-8 text-center px-4">
+            <div className="text-center px-4">
               <Sparkles className="size-6 mx-auto text-accent mb-4" strokeWidth={1.5} />
               <p className="font-serif text-xl leading-snug">
                 {look ? `We're studying “${look.title}.”` : "How can I help you style today?"}
@@ -369,14 +381,14 @@ export function ConciergeChat({
           ))}
           {sending && (
             <div
-              className="flex gap-3 items-start"
+              className="flex gap-3 items-start animate-in fade-in slide-in-from-bottom-1 duration-200 ease-editorial"
               role="status"
               aria-label="Mila is composing a reply"
             >
               <div className="shrink-0 size-8 rounded-full bg-foreground text-background flex items-center justify-center">
-                <Sparkles className="size-4 text-accent" strokeWidth={1.75} aria-hidden="true" />
+                <Sparkles className="size-4" strokeWidth={1.75} aria-hidden="true" />
               </div>
-              <div className="rounded-2xl bg-secondary/70 text-muted-foreground px-4 py-2.5 text-sm flex items-center gap-2 shadow-sm">
+              <div className="rounded-control bg-secondary/70 text-muted-foreground px-4 py-2.5 text-sm flex items-center gap-2">
                 <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> Mila is composing…
               </div>
             </div>
@@ -405,9 +417,8 @@ export function ConciergeChat({
                 type="button"
                 disabled={sending}
                 onClick={() => send(p)}
-                className="inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-full border border-foreground/15 bg-background/70 px-3 py-1.5 text-label text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
+                className="inline-flex shrink-0 whitespace-nowrap items-center rounded-full border border-foreground/15 bg-background/70 px-3 py-1.5 text-label text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors disabled:opacity-50"
               >
-                <Wand2 className="size-3 text-accent" strokeWidth={1.75} aria-hidden="true" />
                 {p}
               </button>
             ))}
@@ -419,17 +430,19 @@ export function ConciergeChat({
                 type="button"
                 onClick={toggleArchive}
                 aria-expanded={archiveOpen}
-                className="flex w-full items-center justify-between text-micro uppercase tracking-label-xwide text-muted-foreground hover:text-foreground transition-colors py-1"
+                className="flex w-full items-center justify-between text-micro font-semibold uppercase tracking-label-xwide text-muted-foreground hover:text-foreground transition-colors py-1"
               >
                 Ask about a look from your archive
-                {archiveOpen ? (
-                  <ChevronDown className="size-3.5" aria-hidden="true" />
-                ) : (
-                  <ChevronUp className="size-3.5" aria-hidden="true" />
-                )}
+                <ChevronDown
+                  className={cn(
+                    "size-3.5 transition-transform duration-200 ease-editorial",
+                    archiveOpen && "rotate-180",
+                  )}
+                  aria-hidden="true"
+                />
               </button>
               {archiveOpen && (
-                <div className="mt-2 flex gap-2.5 overflow-x-auto pb-1">
+                <div className="mt-2 flex gap-2.5 overflow-x-auto pb-1 animate-in fade-in slide-in-from-top-1 duration-200 ease-editorial">
                   {archive.map((o) => (
                     <button
                       key={o.id}
@@ -444,7 +457,7 @@ export function ConciergeChat({
                       }
                       className="group w-16 shrink-0 text-left"
                     >
-                      <div className="size-16 overflow-hidden rounded-xl bg-muted ring-1 ring-foreground/10 transition group-hover:ring-foreground/30">
+                      <div className="size-16 overflow-hidden rounded-xl bg-secondary ring-1 ring-foreground/10 transition group-hover:ring-foreground/30">
                         <LookThumbnail imageUrl={o.image_url} title={o.title} />
                       </div>
                       <p className="mt-1 text-micro leading-tight text-muted-foreground line-clamp-1">
@@ -458,7 +471,7 @@ export function ConciergeChat({
           )}
 
           {attachment && (
-            <div className="flex w-fit items-center gap-2.5 rounded-xl border border-foreground/10 bg-background/50 p-2">
+            <div className="flex w-fit items-center gap-2.5 rounded-xl border border-foreground/10 bg-background/50 p-2 animate-in fade-in zoom-in-95 duration-200 ease-editorial">
               <img
                 src={attachment.preview}
                 alt="Attached image preview"
@@ -471,7 +484,7 @@ export function ConciergeChat({
                 type="button"
                 onClick={() => setAttachment(null)}
                 aria-label="Remove attached image"
-                className="rounded-full p-1 text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+                className="rounded-full p-2.5 text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
               >
                 <X className="size-3.5" aria-hidden="true" />
               </button>
@@ -481,7 +494,7 @@ export function ConciergeChat({
           {listening && (
             <p
               role="status"
-              className="flex items-center gap-2 px-1 text-micro uppercase tracking-label-xwide text-accent"
+              className="flex items-center gap-2 px-1 text-micro font-semibold uppercase tracking-label-xwide text-accent-ink"
             >
               <span className="relative flex size-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
@@ -529,11 +542,11 @@ export function ConciergeChat({
               onClick={() => attachRef.current?.click()}
               disabled={sending}
               aria-label="Attach an image"
-              className="rounded-full size-10 shrink-0 shadow-sm"
+              className="rounded-full size-10 shrink-0"
             >
               <ImagePlus className="size-4" aria-hidden="true" />
             </Button>
-            {SpeechRecognitionCtor && (
+            {dictationSupported && (
               <Button
                 type="button"
                 size="icon"
@@ -542,10 +555,7 @@ export function ConciergeChat({
                 disabled={sending}
                 aria-pressed={listening}
                 aria-label={listening ? "Stop dictation" : "Dictate your message"}
-                className={cn(
-                  "rounded-full size-10 shrink-0 shadow-sm",
-                  listening && "animate-pulse",
-                )}
+                className={cn("rounded-full size-10 shrink-0", listening && "animate-pulse")}
               >
                 <Mic className="size-4" aria-hidden="true" />
               </Button>
@@ -582,16 +592,16 @@ export function AnchoredLookCard({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-xl border border-foreground/10 bg-background/50 p-2.5 shadow-sm",
+        "flex items-center gap-3 rounded-xl border border-foreground/10 bg-background/50 p-2.5",
         className,
       )}
     >
-      <div className="size-14 rounded-lg bg-muted overflow-hidden shrink-0 ring-1 ring-foreground/5">
+      <div className="size-14 rounded-lg bg-secondary overflow-hidden shrink-0 ring-1 ring-foreground/5">
         <LookThumbnail imageUrl={look.imageUrl} title={look.title} />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium leading-tight truncate">{look.title}</p>
-        <p className="text-micro uppercase tracking-label-wide text-muted-foreground mt-0.5 truncate">
+        <p className="text-micro font-semibold uppercase tracking-label-wide text-muted-foreground mt-0.5 truncate">
           {look.source}
         </p>
       </div>
@@ -599,7 +609,7 @@ export function AnchoredLookCard({
         type="button"
         onClick={onClear}
         aria-label="Remove this look from the conversation"
-        className="shrink-0 p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+        className="shrink-0 p-3.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
       >
         <X className="size-4" strokeWidth={1.75} aria-hidden="true" />
       </button>
@@ -633,10 +643,16 @@ function MessageBubble({
 }) {
   const isUser = msg.role === "user";
   return (
-    <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
+    <div
+      className={cn(
+        "flex gap-3",
+        msg.entering && "animate-in fade-in slide-in-from-bottom-1 duration-200 ease-editorial",
+        isUser ? "justify-end" : "justify-start",
+      )}
+    >
       {!isUser && (
         <div className="shrink-0 size-8 rounded-full bg-foreground text-background flex items-center justify-center">
-          <Sparkles className="size-4 text-accent" strokeWidth={1.75} aria-hidden="true" />
+          <Sparkles className="size-4" strokeWidth={1.75} aria-hidden="true" />
         </div>
       )}
       <div className={cn("max-w-[80%] flex flex-col gap-1", isUser && "items-end")}>
@@ -645,7 +661,7 @@ function MessageBubble({
         </p>
         <div
           className={cn(
-            "px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap wrap-break-words rounded-2xl shadow-sm",
+            "px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap wrap-break-words rounded-control",
             isUser
               ? "bg-foreground text-background rounded-br-sm"
               : "bg-secondary/70 backdrop-blur-sm text-foreground border border-foreground/10 rounded-bl-sm",

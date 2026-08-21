@@ -87,17 +87,17 @@ function ConciergePage() {
 
   const sidebarContent = (
     <>
-      <div className="p-4">
+      <div className="px-3 pt-4 pb-2">
         <button
           type="button"
           onClick={newChat}
-          className="flex w-full items-center gap-2.5 rounded-xl border border-foreground/10 bg-background/60 px-4 py-3 text-sm text-foreground hover:border-foreground/25 transition-colors mt-8 sm:mt-0"
+          className="flex w-full items-center gap-2.5 rounded-control border border-foreground/10 bg-background/60 px-3 py-3 text-sm text-foreground hover:border-foreground/25 transition-colors mt-8 sm:mt-0"
         >
           <SquarePen className="size-4 text-accent" strokeWidth={1.75} aria-hidden="true" />
           New chat
         </button>
       </div>
-      <p className="px-6 pt-2 text-micro uppercase tracking-label-xwide text-muted-foreground">
+      <p className="px-6 pt-2 text-micro font-semibold uppercase tracking-label-xwide text-muted-foreground">
         Recents
       </p>
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
@@ -112,7 +112,7 @@ function ConciergePage() {
             <button
               type="button"
               onClick={() => openConversation(c.id)}
-              className="min-w-0 flex-1 px-3 py-2 text-left text-[13px] leading-snug text-foreground truncate"
+              className="min-w-0 flex-1 px-3 py-2 text-left text-sm leading-snug text-foreground truncate"
             >
               {c.title}
             </button>
@@ -120,7 +120,7 @@ function ConciergePage() {
               type="button"
               onClick={() => deleteConversation(c.id)}
               aria-label={`Delete conversation “${c.title}”`}
-              className="shrink-0 p-2 mr-1 rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
+              className="shrink-0 p-4 mr-1 rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
             >
               <Trash2 className="size-3.5" aria-hidden="true" />
             </button>
@@ -168,7 +168,7 @@ function ConciergePage() {
                 <PanelLeft className="size-5" strokeWidth={1.75} aria-hidden="true" />
               </button>
               <div className="min-w-0">
-                <p className="text-micro uppercase tracking-label-max text-muted-foreground/80 font-medium">
+                <p className="text-micro font-semibold uppercase tracking-label-max text-muted-foreground/80">
                   Mila's Insights
                 </p>
                 <h1 className="font-serif text-2xl leading-tight tracking-[-0.01em] truncate">
@@ -190,7 +190,13 @@ function ConciergePage() {
             </div>
           </div>
           <div className="max-w-3xl mx-auto">
-            {look && <AnchoredLookCard look={look} onClear={clearLook} className="mt-3 w-full" />}
+            {look && (
+              <AnchoredLookCard
+                look={look}
+                onClear={clearLook}
+                className="mt-3 w-full animate-in fade-in slide-in-from-top-1 duration-200 ease-editorial"
+              />
+            )}
           </div>
         </header>
 
