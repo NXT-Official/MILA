@@ -261,17 +261,19 @@ export function StyleProfile() {
       <div className="mx-auto max-w-2xl px-4 pt-6 pb-24">
         <DossierTopBar counterpart="studio" />
         <div className="mt-4 mb-6 flex items-center justify-between gap-4">
-          <p className="atelier-kicker">Digital Style Dossier</p>
+          <p className="text-label uppercase tracking-label text-muted-foreground">
+            Digital Style Dossier
+          </p>
           <SyncBadge status={syncStatus} />
         </div>
         {loading ? (
           // Skeleton in the shape of what is coming, so the page does not
           // reflow when it arrives.
           <div className="space-y-10" aria-busy="true" aria-label="Loading your dossier">
-            <div className="rounded-card border-[0.5px] border-border bg-card p-6 shadow-paper">
-              <div className="flex flex-col items-center gap-4">
-                <div className="size-28 animate-pulse rounded-full bg-muted" />
-                <div className="h-8 w-48 animate-pulse rounded-control bg-muted" />
+            <div className="rounded-card border-[0.5px] border-border atelier-hero-card p-6 shadow-paper">
+              <div className="flex flex-col items-center gap-5">
+                <div className="size-32 animate-pulse rounded-full bg-muted" />
+                <div className="h-12 w-56 animate-pulse rounded-control bg-muted" />
                 <div className="h-4 w-64 animate-pulse rounded-control bg-muted" />
               </div>
               <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
@@ -295,23 +297,23 @@ export function StyleProfile() {
         ) : (
           <div className="space-y-10">
             {/* HERO — PERSONAL SEASON */}
-            <section className="rounded-card border-[0.5px] border-border bg-card p-6 shadow-paper">
+            <section className="rounded-card border-[0.5px] border-border atelier-hero-card p-6 shadow-paper">
               <p className="text-center text-label uppercase tracking-label text-muted-foreground">
                 Your Personal Season
               </p>
 
-              <div className="mt-5 flex flex-col items-center gap-4">
+              <div className="mt-5 flex flex-col items-center gap-5">
                 <span
                   aria-hidden="true"
-                  className="flex size-28 items-center justify-center rounded-full bg-ink font-serif text-4xl text-surface ring-1 ring-accent/50 ring-offset-4 ring-offset-card"
+                  className="flex size-32 items-center justify-center rounded-full bg-ink font-serif text-4xl text-surface ring-2 ring-accent ring-offset-4 ring-offset-card"
                 >
                   {(form.full_name || user?.email || "M")[0]?.toUpperCase()}
                 </span>
                 <div className="text-center">
-                  <h1 className="font-serif text-3xl leading-tight tracking-tight text-foreground">
+                  <h1 className="font-serif text-4xl sm:text-[3.25rem] leading-none tracking-tight text-foreground">
                     {heroSeasonName}
                   </h1>
-                  <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
                     {heroSeasonLine}
                   </p>
                 </div>

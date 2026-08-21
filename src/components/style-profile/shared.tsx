@@ -439,7 +439,7 @@ export function DossierField({
         {eyebrow && (
           <p className="text-label uppercase tracking-label text-muted-foreground">{eyebrow}</p>
         )}
-        <h3 className="font-serif text-2xl tracking-tight text-foreground">{title}</h3>
+        <h3 className="font-serif text-xl tracking-tight text-foreground">{title}</h3>
         {caption && (
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">{caption}</p>
         )}
@@ -475,9 +475,7 @@ export function DossierAccordion({
       <AccordionTrigger className="py-6 hover:no-underline">
         <div className="flex items-center justify-between w-full gap-3">
           <div className="flex flex-col items-start text-left gap-1">
-            <h2 className="font-serif text-xl sm:text-2xl tracking-tight text-foreground">
-              {title}
-            </h2>
+            <h2 className="font-serif text-xl tracking-tight text-foreground">{title}</h2>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-md">{caption}</p>
           </div>
           {/* Both progress states carry a word or a count, so "done" is never
