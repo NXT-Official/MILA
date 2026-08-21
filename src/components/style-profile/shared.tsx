@@ -85,7 +85,7 @@ export function DetailChip({
       </p>
       <div className="flex min-w-0 items-center justify-between gap-2">
         {value ? (
-          <p className="truncate text-sm text-foreground" title={value}>
+          <p className="line-clamp-2 text-sm text-foreground" title={value}>
             {value}
           </p>
         ) : onAdd ? (
