@@ -287,7 +287,7 @@ export function PaletteBand({
               <button
                 type="button"
                 aria-label={`${avoid ? "Avoid" : "Wear"} ${s.name} — ${s.tip}`}
-                className="atelier-focus-ring relative size-19 rounded-control border-[0.5px] border-border transition-transform hover:scale-105 sm:size-20"
+                className="atelier-focus-ring relative size-19 rounded-control border-[0.5px] border-border transition-colors hover:border-ink/50 sm:size-20"
                 style={{ backgroundColor: s.hex }}
               >
                 {avoid ? (
@@ -407,9 +407,7 @@ export function PerspectiveSwitcher({
               <motion.span
                 layoutId="perspective-pill"
                 className="absolute inset-0 rounded-pill bg-foreground"
-                transition={
-                  reduce ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 32 }
-                }
+                transition={reduce ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               />
             )}
             <span className={`relative ${active ? "text-background" : "text-muted-foreground"}`}>
