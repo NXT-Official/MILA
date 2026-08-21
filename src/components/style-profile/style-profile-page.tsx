@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,7 +11,7 @@ import {
   FACE_SHAPES as HOLISTIC_FACE_SHAPES,
   HAIR_TYPES as HOLISTIC_HAIR_TYPES,
 } from "@/constants/style-profile";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Accordion } from "@/components/ui/accordion";
 import {
   type Season,
@@ -54,6 +54,8 @@ function readString(value: Json | undefined): string | null {
 export function StyleProfile() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const reduce = useReducedMotion();
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     full_name: "",
@@ -211,6 +213,10 @@ export function StyleProfile() {
     queryClient,
   ]);
 
+  function goToCalibrate() {
+    void navigate({ to: "/calibrate" });
+  }
+
   function toggleGoal(goal: string) {
     setStyleGoals((prev) =>
       prev.includes(goal)
@@ -259,14 +265,38 @@ export function StyleProfile() {
           <SyncBadge status={syncStatus} />
         </div>
         {loading ? (
-          <div className="text-xs tracking-widest text-muted-foreground animate-pulse">
-            Loading your profile…
+          // Skeleton in the shape of what is coming, so the page does not
+          // reflow when it arrives.
+          <div className="space-y-10" aria-busy="true" aria-label="Loading your dossier">
+            <div className="rounded-card border-[0.5px] border-border bg-card p-6 shadow-paper">
+              <div className="flex flex-col items-center gap-4">
+                <div className="size-28 animate-pulse rounded-full bg-muted" />
+                <div className="h-8 w-48 animate-pulse rounded-control bg-muted" />
+                <div className="h-4 w-64 animate-pulse rounded-control bg-muted" />
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                {Array.from({ length: 8 }, (_, i) => (
+                  <div key={i} className="h-[4.5rem] animate-pulse rounded-control bg-muted" />
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="h-7 w-40 animate-pulse rounded-control bg-muted" />
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <div
+                    key={i}
+                    className="size-19 animate-pulse rounded-control bg-muted sm:size-20"
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-10">
             {/* HERO — PERSONAL SEASON */}
             <section className="rounded-card border-[0.5px] border-border bg-card p-6 shadow-paper">
-              <p className="text-center text-nano uppercase tracking-label-xwide text-muted-foreground">
+              <p className="text-center text-label uppercase tracking-label text-muted-foreground">
                 Your Personal Season
               </p>
 
@@ -287,15 +317,23 @@ export function StyleProfile() {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                <DetailChip label="Undertone" value={form.skin_undertone || null} />
+              <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                {/* These three are read off the calibration, so an unset one
+                    points at /calibrate rather than dead-ending. */}
+                <DetailChip
+                  label="Undertone"
+                  value={form.skin_undertone || null}
+                  onAdd={goToCalibrate}
+                />
                 <DetailChip
                   label="Skin Lightness"
                   value={hasRealDossier ? dossier.brightness : null}
+                  onAdd={goToCalibrate}
                 />
                 <DetailChip
                   label="Contrast"
                   value={hasRealDossier ? dossier.contrastScale : null}
+                  onAdd={goToCalibrate}
                 />
                 <DetailChip
                   label="Silhouette"
@@ -332,7 +370,7 @@ export function StyleProfile() {
               <div className="mt-6 flex justify-center">
                 <Link
                   to="/calibrate"
-                  className="atelier-focus-ring rounded-control text-micro uppercase tracking-label-max text-accent underline-offset-[6px] transition-colors hover:text-foreground hover:underline"
+                  className="atelier-focus-ring inline-flex min-h-11 items-center rounded-control text-label uppercase tracking-label text-accent-ink underline-offset-[6px] transition-colors hover:text-foreground hover:underline"
                 >
                   {hasRealDossier || form.color_season ? "Change my season" : "Set my season"} →
                 </Link>
@@ -342,7 +380,6 @@ export function StyleProfile() {
             {/* COLOUR — the only place colour is named. */}
             <section className="space-y-4">
               <SectionHeader
-                eyebrow="Explore"
                 title="Your Palette"
                 subtitle="Tap any swatch for its name and where to wear it."
               />
@@ -350,13 +387,13 @@ export function StyleProfile() {
                 <PaletteBand label="Primary tones" swatches={namedPalette.primary} />
                 <PaletteBand label="Accents" swatches={namedPalette.accents} />
                 <PaletteBand label="Neutrals" swatches={namedPalette.neutrals} />
-                <PaletteBand label="Colours to avoid" swatches={namedPalette.avoid} />
+                <PaletteBand label="Colours to avoid" swatches={namedPalette.avoid} tone="avoid" />
               </div>
             </section>
 
             {combos.length > 0 && (
               <section className="space-y-4">
-                <SectionHeader eyebrow="Wear it" title="Color Combinations to Try" />
+                <SectionHeader title="Colour Combinations to Try" />
                 <div className="grid gap-3 sm:grid-cols-2">
                   {combos.map((c) => (
                     <div
@@ -372,7 +409,7 @@ export function StyleProfile() {
                           />
                         ))}
                       </div>
-                      <p className="mt-3 text-nano uppercase tracking-label-wide text-muted-foreground">
+                      <p className="mt-3 text-label uppercase tracking-label text-muted-foreground">
                         {c.names.join(" · ")}
                       </p>
                       <p className="mt-1 text-sm leading-relaxed text-foreground/85">
@@ -387,7 +424,6 @@ export function StyleProfile() {
             {/* ACTIONS — what to do about it. No colour names, no season name. */}
             <section className="space-y-4">
               <SectionHeader
-                eyebrow="Personal brief"
                 title="Mila&rsquo;s Styling Notes"
                 subtitle={hasRealDossier ? ATELIER_PROVENANCE : undefined}
               />
@@ -441,7 +477,7 @@ export function StyleProfile() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.35 }}
+                    transition={{ duration: reduce ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
                     className="space-y-10"
                   >
                     <MissingDetailsNudge
@@ -452,7 +488,6 @@ export function StyleProfile() {
                       onOpenDetailed={() => setViewMode("detailed")}
                     />
                     <DossierField
-                      eyebrow="Core · 01"
                       title="Body Silhouette"
                       caption="Sets the cuts, drape and proportions Mila suggests."
                     >
@@ -463,7 +498,6 @@ export function StyleProfile() {
                       />
                     </DossierField>
                     <DossierField
-                      eyebrow="Core · 02"
                       title="Hair Texture"
                       caption="Shapes the hair notes in every look."
                     >
@@ -475,7 +509,6 @@ export function StyleProfile() {
                     </DossierField>
                     <DossierField
                       id="style-goal-section"
-                      eyebrow="Direction"
                       title="What are you working toward?"
                       caption={`Pick up to ${STYLE_GOAL_LIMIT}. They save as you tap.`}
                     >
@@ -493,14 +526,14 @@ export function StyleProfile() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.35 }}
+                    transition={{ duration: reduce ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
                   >
                     {/* Season and undertone are not here: they are set on
                         /calibrate and read back in the hero. */}
                     <Accordion type="multiple" defaultValue={["01"]} className="space-y-4">
                       <DossierAccordion
                         value="01"
-                        eyebrow="01 / Frame"
+                        title="Frame"
                         caption="Silhouette and face shape — the structure behind every cut."
                         filled={[form.body_type, holistic.face_shape].filter(Boolean).length}
                         total={2}
@@ -522,7 +555,7 @@ export function StyleProfile() {
                       </DossierAccordion>
                       <DossierAccordion
                         value="02"
-                        eyebrow="02 / Beauty & Texture"
+                        title="Beauty & Texture"
                         caption="Hair texture and the finishes you gravitate toward."
                         filled={(holistic.hair_type ? 1 : 0) + (beautyPrefs.length > 0 ? 1 : 0)}
                         total={2}
@@ -554,10 +587,10 @@ export function StyleProfile() {
                 className="atelier-focus-ring flex w-full items-center justify-between rounded-card border-[0.5px] border-border bg-surface/40 px-5 py-4 text-left"
               >
                 <div>
-                  <p className="text-nano uppercase tracking-label-max text-muted-foreground">
-                    Reference archive
+                  <p className="font-serif text-lg text-foreground">Full colour matrix</p>
+                  <p className="text-sm text-muted-foreground">
+                    Every hex in your palette, for shopping and mood boards.
                   </p>
-                  <p className="font-serif text-lg text-foreground">Detailed Dossier</p>
                 </div>
                 <ChevronDown
                   className={cn(
@@ -573,7 +606,7 @@ export function StyleProfile() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    transition={{ duration: reduce ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
                     className="overflow-hidden"
                   >
                     {masterPalette.length > 0 && (

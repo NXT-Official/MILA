@@ -204,7 +204,6 @@ export function CalibratePage() {
 
         <div className="mt-6 space-y-8">
           <SectionHeader
-            eyebrow="Calibrate"
             title="Set your season"
             subtitle={
               hasRealDossier

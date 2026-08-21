@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { Check, CheckCircle2, Circle, Plus, ArrowLeft } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Check, CheckCircle2, Circle, Plus, ArrowLeft, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,17 +18,18 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
  */
 export function DossierTopBar({ counterpart }: { counterpart: "studio" | "profile" }) {
   return (
-    <div className="flex items-center justify-between gap-4">
+    // -my-2.5 keeps the 44px touch height off the visual rhythm of the page.
+    <div className="-my-2.5 flex items-center justify-between gap-4">
       <Link
         to="/dashboard"
-        className="atelier-focus-ring inline-flex items-center gap-1.5 rounded-control text-micro uppercase tracking-label-wide text-muted-foreground transition-colors hover:text-foreground"
+        className="atelier-focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-control text-label uppercase tracking-label text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" aria-hidden="true" />
         Back
       </Link>
       <Link
         to={counterpart === "studio" ? "/style-profile" : "/profile"}
-        className="atelier-focus-ring rounded-control text-micro uppercase tracking-label-wide text-accent transition-colors hover:text-foreground"
+        className="atelier-focus-ring inline-flex min-h-11 items-center rounded-control text-label uppercase tracking-label text-accent-ink transition-colors hover:text-foreground"
       >
         {counterpart === "studio" ? "Open Studio" : "View Profile"} →
       </Link>
@@ -36,22 +37,17 @@ export function DossierTopBar({ counterpart }: { counterpart: "studio" | "profil
   );
 }
 
-/** Eyebrow + title + optional subtitle. One header shape for every section. */
-export function SectionHeader({
-  eyebrow,
-  title,
-  subtitle,
-}: {
-  eyebrow: string;
-  title: string;
-  subtitle?: string;
-}) {
+/**
+ * Title + optional subtitle, over a hairline. One header shape for every
+ * section — the rule does the separating that a kicker above every heading
+ * used to do.
+ */
+export function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="space-y-1.5">
-      <p className="text-nano uppercase tracking-label-max text-muted-foreground">{eyebrow}</p>
+    <div className="space-y-1.5 border-t border-border pt-5">
       <h2 className="font-serif text-2xl leading-tight tracking-tight text-foreground">{title}</h2>
       {subtitle ? (
-        <p className="max-w-xl text-xs leading-relaxed text-muted-foreground">{subtitle}</p>
+        <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
       ) : null}
     </div>
   );
@@ -77,30 +73,36 @@ export function DetailChip({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-2 rounded-control px-3 py-2.5",
+        "flex flex-col justify-between rounded-control px-3 py-2.5",
         empty ? "border border-dashed border-border" : "border-[0.5px] border-border bg-card",
       )}
     >
-      <div className="min-w-0 flex-1">
-        <p className="text-nano uppercase tracking-label-xwide text-muted-foreground">{label}</p>
+      {/* Two label lines are reserved whether or not this label needs them, so
+          every value in a row sits on the same baseline. "Skin Lightness" wraps
+          and "Contrast" does not; the grid should not show that. */}
+      <p className="min-h-8 text-label uppercase leading-[1.4] tracking-label-tight text-muted-foreground">
+        {label}
+      </p>
+      <div className="flex min-w-0 items-center justify-between gap-2">
         {value ? (
-          <p className="mt-0.5 truncate text-sm text-foreground" title={value}>
+          <p className="truncate text-sm text-foreground" title={value}>
             {value}
           </p>
         ) : onAdd ? (
           <button
             type="button"
             onClick={onAdd}
-            className="atelier-focus-ring mt-0.5 inline-flex items-center gap-1 rounded-control text-sm text-accent transition-colors hover:text-foreground"
+            aria-label={`Add your ${label.toLowerCase()}`}
+            className="atelier-focus-ring inline-flex items-center gap-1 rounded-control text-sm text-accent-ink transition-colors hover:text-foreground"
           >
             <Plus className="size-3.5" strokeWidth={2} aria-hidden="true" />
             Add
           </button>
         ) : (
-          <p className="mt-0.5 text-sm text-muted-foreground/60">—</p>
+          <p className="text-sm text-muted-foreground">Not set</p>
         )}
+        {value ? diagram : null}
       </div>
-      {value ? diagram : null}
     </div>
   );
 }
@@ -121,7 +123,7 @@ export function MissingDetailsNudge({
   const names = missing.join(" and ").toLowerCase();
   return (
     <div className="rounded-card border-[0.5px] border-border bg-accent-soft/60 p-6">
-      <p className="text-nano uppercase tracking-label-max text-muted-foreground">
+      <p className="text-label uppercase tracking-label text-muted-foreground">
         Complete your profile
       </p>
       <p className="mt-3 font-serif text-xl leading-snug text-foreground">
@@ -169,14 +171,14 @@ export function DNACard({
       <h3 className="font-serif text-base text-foreground">{title}</h3>
 
       {directive && rationale ? (
-        <p className="mt-2 text-nano uppercase tracking-label-wide text-muted-foreground">
+        <p className="mt-2 text-label uppercase tracking-label text-muted-foreground">
           {rationale.value ? (
             <>
               Because your {rationale.label} is{" "}
-              <span className="text-accent">{rationale.value}</span> →
+              <span className="font-semibold text-accent-ink">{rationale.value}</span>
             </>
           ) : (
-            <>Because of your {rationale.label} →</>
+            <>Because of your {rationale.label}</>
           )}
         </p>
       ) : null}
@@ -191,8 +193,8 @@ export function DNACard({
                     type="button"
                     aria-label={`${item.term} — what this means`}
                     className={cn(
-                      "atelier-focus-ring inline-flex items-center gap-1.5 rounded-full border-[0.5px] border-border bg-background/60 py-1 pr-2.5 text-xs text-foreground/85 transition-colors hover:border-accent/50 hover:text-foreground",
-                      item.hex ? "pl-1.5" : "pl-2.5",
+                      "atelier-focus-ring inline-flex min-h-9 items-center gap-1.5 rounded-full border-[0.5px] border-border bg-background/60 py-1 pr-3 text-xs text-foreground/85 transition-colors hover:border-accent hover:text-foreground",
+                      item.hex ? "pl-2" : "pl-3",
                     )}
                   >
                     {item.hex ? (
@@ -219,7 +221,7 @@ export function DNACard({
                         {item.term}
                       </p>
                       {item.hex ? (
-                        <p className="text-nano uppercase tracking-label-wide text-muted-foreground">
+                        <p className="text-label uppercase tracking-label text-muted-foreground">
                           {item.hex}
                         </p>
                       ) : null}
@@ -242,7 +244,7 @@ export function DNACard({
         <button
           type="button"
           onClick={action.onClick}
-          className="atelier-focus-ring mt-3 inline-flex items-center gap-1 rounded-control text-xs font-medium text-accent hover:underline"
+          className="atelier-focus-ring mt-3 inline-flex min-h-9 items-center gap-1 rounded-control text-xs font-medium text-accent-ink hover:underline"
         >
           {action.label} →
         </button>
@@ -256,22 +258,47 @@ export function DNACard({
  * guidance — why this colour, where to wear it — is the point; a grid of
  * unlabelled squares is decoration.
  */
-export function PaletteBand({ label, swatches }: { label: string; swatches: NamedSwatch[] }) {
+export function PaletteBand({
+  label,
+  swatches,
+  /**
+   * The avoid band carries the opposite instruction from every band above it,
+   * and the swatches are the true colours either way — so the difference cannot
+   * be left to hue. Each one gets a marker and the word.
+   */
+  tone = "wear",
+}: {
+  label: string;
+  swatches: NamedSwatch[];
+  tone?: "wear" | "avoid";
+}) {
   if (swatches.length === 0) return null;
+  const avoid = tone === "avoid";
   return (
     <div>
-      <p className="mb-2 text-nano uppercase tracking-label-max text-muted-foreground">{label}</p>
-      {/* No opacity on the grid: a swatch that renders at 80% is the wrong colour. */}
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+      <p className="mb-2 text-label uppercase tracking-label text-muted-foreground">{label}</p>
+      {/* Fixed swatch size rather than a fractional grid: bands hold between two
+          and four colours, and a 2-of-6 grid row reads as a mistake.
+          No opacity — a swatch that renders at 80% is the wrong colour. */}
+      <div className="flex flex-wrap gap-2">
         {swatches.map((s) => (
           <Popover key={s.hex + s.name}>
             <PopoverTrigger asChild>
               <button
                 type="button"
-                aria-label={`${s.name} — ${s.tip}`}
-                className="atelier-focus-ring aspect-square rounded-control border-[0.5px] border-border transition-transform hover:scale-105"
+                aria-label={`${avoid ? "Avoid" : "Wear"} ${s.name} — ${s.tip}`}
+                className="atelier-focus-ring relative size-19 rounded-control border-[0.5px] border-border transition-transform hover:scale-105 sm:size-20"
                 style={{ backgroundColor: s.hex }}
-              />
+              >
+                {avoid ? (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full border-[0.5px] border-border bg-card text-destructive"
+                  >
+                    <X className="size-3" strokeWidth={3} />
+                  </span>
+                ) : null}
+              </button>
             </PopoverTrigger>
             <PopoverContent side="top" align="center" className="w-64 rounded-card p-4">
               <div className="flex items-center gap-3">
@@ -282,11 +309,17 @@ export function PaletteBand({ label, swatches }: { label: string; swatches: Name
                 />
                 <div className="min-w-0">
                   <p className="font-serif text-base leading-tight text-foreground">{s.name}</p>
-                  <p className="text-nano uppercase tracking-label-wide text-muted-foreground">
+                  <p className="text-label uppercase tracking-label text-muted-foreground">
                     {s.hex}
                   </p>
                 </div>
               </div>
+              {avoid ? (
+                <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1 text-label font-semibold uppercase tracking-label text-destructive">
+                  <X className="size-3" strokeWidth={3} aria-hidden="true" />
+                  Avoid
+                </p>
+              ) : null}
               <p className="mt-3 text-sm leading-relaxed text-foreground/85">{s.tip}</p>
               {s.use ? (
                 <p className="mt-2 text-xs text-muted-foreground">
@@ -301,27 +334,42 @@ export function PaletteBand({ label, swatches }: { label: string; swatches: Name
   );
 }
 
+/**
+ * The page saves on a timer with no submit button, so this badge is the only
+ * confirmation an edit landed. It stays visible on phones — the device it is
+ * most often edited on — rather than hiding below `sm:`.
+ */
 export function SyncBadge({ status }: { status: "idle" | "syncing" | "synced" | "error" }) {
   const label =
     status === "syncing"
-      ? "Syncing…"
+      ? "Saving…"
       : status === "error"
-        ? "Sync Paused"
+        ? "Not saved"
         : status === "synced"
-          ? "Dossier Synced"
-          : "Awaiting Edits";
+          ? "Saved"
+          : "No changes";
   const dot =
     status === "syncing"
-      ? "bg-amber-500 animate-pulse"
+      ? "bg-warning animate-pulse"
       : status === "error"
-        ? "bg-red-500"
+        ? "bg-destructive"
         : status === "synced"
-          ? "bg-emerald-600"
-          : "bg-foreground/30";
+          ? "bg-success"
+          : "bg-muted-foreground";
   return (
-    <div className="hidden sm:flex items-center gap-2 px-3 py-2 backdrop-blur-xl bg-white/40 dark:bg-white/5 border border-foreground/10 rounded-full shrink-0">
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-      <span className="text-nano uppercase tracking-label-xwide text-foreground/75">{label}</span>
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex shrink-0 items-center gap-2 rounded-pill border-[0.5px] border-border bg-card px-3 py-1.5"
+    >
+      {/* Shape backs up the colour: the error state is the only one that is not
+          a plain dot, so the status never rests on hue alone. */}
+      {status === "error" ? (
+        <X className="size-3 text-destructive" strokeWidth={3} aria-hidden="true" />
+      ) : (
+        <span className={`size-1.5 rounded-full ${dot}`} aria-hidden="true" />
+      )}
+      <span className="text-label uppercase tracking-label text-muted-foreground">{label}</span>
     </div>
   );
 }
@@ -333,29 +381,38 @@ export function PerspectiveSwitcher({
   value: "streamlined" | "detailed";
   onChange: (v: "streamlined" | "detailed") => void;
 }) {
+  const reduce = useReducedMotion();
   const opts: Array<{ id: "streamlined" | "detailed"; label: string }> = [
-    { id: "streamlined", label: "Streamlined" },
-    { id: "detailed", label: "Detailed Dossier" },
+    { id: "streamlined", label: "Essentials" },
+    { id: "detailed", label: "Every field" },
   ];
   return (
-    <div className="inline-flex relative p-1 rounded-full backdrop-blur-xl bg-white/45 dark:bg-white/5 border border-foreground/10 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset] dark:shadow-none">
+    <div
+      role="tablist"
+      aria-label="How much of the dossier to show"
+      className="relative inline-flex rounded-pill border-[0.5px] border-border bg-card p-1"
+    >
       {opts.map((o) => {
         const active = value === o.id;
         return (
           <button
             key={o.id}
             type="button"
+            role="tab"
+            aria-selected={active}
             onClick={() => onChange(o.id)}
-            className="relative px-5 sm:px-7 py-2.5 text-micro uppercase tracking-label-xwide z-10"
+            className="atelier-focus-ring relative z-10 min-h-11 rounded-pill px-5 text-label uppercase tracking-label sm:px-7"
           >
             {active && (
               <motion.span
                 layoutId="perspective-pill"
-                className="absolute inset-0 rounded-full bg-foreground"
-                transition={{ type: "spring", stiffness: 320, damping: 32 }}
+                className="absolute inset-0 rounded-pill bg-foreground"
+                transition={
+                  reduce ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 32 }
+                }
               />
             )}
-            <span className={`relative ${active ? "text-background" : "text-foreground/55"}`}>
+            <span className={`relative ${active ? "text-background" : "text-muted-foreground"}`}>
               {o.label}
             </span>
           </button>
@@ -381,10 +438,12 @@ export function DossierField({
   return (
     <section id={id} className="space-y-4">
       <div className="space-y-1.5">
-        {eyebrow && <p className="text-nano uppercase tracking-label-max text-accent">{eyebrow}</p>}
+        {eyebrow && (
+          <p className="text-label uppercase tracking-label text-muted-foreground">{eyebrow}</p>
+        )}
         <h3 className="font-serif text-2xl tracking-tight text-foreground">{title}</h3>
         {caption && (
-          <p className="text-xs text-muted-foreground leading-relaxed max-w-xl">{caption}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">{caption}</p>
         )}
       </div>
       {children}
@@ -394,14 +453,14 @@ export function DossierField({
 
 export function DossierAccordion({
   value,
-  eyebrow,
+  title,
   caption,
   children,
   filled,
   total,
 }: {
   value: string;
-  eyebrow: string;
+  title: string;
   caption: string;
   children: React.ReactNode;
   filled?: number;
@@ -413,31 +472,28 @@ export function DossierAccordion({
   return (
     <AccordionItem
       value={value}
-      className="border-[0.5px] border-border bg-white/40 dark:bg-white/5 backdrop-blur-xl rounded-card px-5 sm:px-8"
+      className="rounded-card border-[0.5px] border-border bg-card px-5 sm:px-8"
     >
       <AccordionTrigger className="py-6 hover:no-underline">
         <div className="flex items-center justify-between w-full gap-3">
           <div className="flex flex-col items-start text-left gap-1">
-            <p className="text-micro uppercase tracking-label-max text-accent">
-              {eyebrow.split(" / ")[0]}
-            </p>
             <h2 className="font-serif text-xl sm:text-2xl tracking-tight text-foreground">
-              {eyebrow.split(" / ")[1] ?? eyebrow}
+              {title}
             </h2>
-            <p className="text-label text-muted-foreground leading-relaxed max-w-md mt-1">
-              {caption}
-            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-md">{caption}</p>
           </div>
+          {/* Both progress states carry a word or a count, so "done" is never
+              read off the green alone. */}
           {complete && (
-            <CheckCircle2
-              className="size-5 text-emerald-600 shrink-0"
-              aria-label="Section complete"
-            />
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-success">
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+              <span className="text-label uppercase tracking-label">Complete</span>
+            </span>
           )}
           {partial && (
             <span className="inline-flex items-center gap-1.5 text-muted-foreground shrink-0">
-              <Circle className="size-4" />
-              <span className="text-micro uppercase tracking-label-wide">
+              <Circle className="size-4" aria-hidden="true" />
+              <span className="text-label uppercase tracking-label">
                 {filled}/{total}
               </span>
             </span>
@@ -468,7 +524,7 @@ export function PillRow({
             type="button"
             onClick={() => onSelect(o)}
             className={[
-              "group inline-flex items-center gap-2 px-4 py-2.5 border transition-all duration-200",
+              "group inline-flex min-h-11 items-center gap-2 px-4 py-2.5 border transition-all duration-200",
               "text-label uppercase tracking-label-wide rounded-full",
               active
                 ? "bg-accent-soft border-accent text-ink"
@@ -553,7 +609,7 @@ export function BeautyPillTray({
             disabled={locked}
             aria-pressed={isActive}
             className={[
-              "inline-flex items-center gap-2 px-4 py-2.5 border rounded-full transition-all duration-200",
+              "inline-flex min-h-11 items-center gap-2 px-4 py-2.5 border rounded-full transition-all duration-200",
               "text-label uppercase tracking-label-wide",
               isActive
                 ? "bg-accent-soft border-accent text-ink"
@@ -585,7 +641,7 @@ export function CardMatrix({
     <section className="space-y-5">
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
-        <p className="text-micro uppercase tracking-label-max text-accent whitespace-nowrap">
+        <p className="text-label uppercase tracking-label text-accent-ink whitespace-nowrap">
           {label}
         </p>
         <span className="h-px flex-1 bg-border" />

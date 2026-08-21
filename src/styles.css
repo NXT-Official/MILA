@@ -28,6 +28,7 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
@@ -96,6 +97,10 @@
   --muted-foreground: oklch(0.502 0.018 67.4);
   --accent: oklch(0.75 0.085 82.1);
   --accent-foreground: var(--ink);
+  /* Champagne is a material — it is a border, a ring, a fill. As text on paper
+     it measures 2.1:1. This is the same gold taken down to ink weight: 4.9:1 on
+     the canvas, 4.7:1 inside an accent-soft pill. Use it wherever gold is text. */
+  --accent-ink: oklch(0.52 0.075 72);
   --accent-soft: oklch(0.945 0.027 85.7);
   --destructive: oklch(0.55 0.2 27);
   --destructive-foreground: oklch(0.98 0.005 75);
@@ -139,6 +144,9 @@
   --muted-foreground: oklch(0.7 0.015 65);
   --accent: oklch(0.76 0.055 75);
   --accent-foreground: oklch(0.16 0.012 55);
+  /* On the dark ground the champagne already clears AA as text, so ink and
+     material are the same colour here. */
+  --accent-ink: var(--accent);
   --accent-soft: oklch(0.32 0.03 80);
   --destructive: oklch(0.62 0.19 27);
   --destructive-foreground: oklch(0.98 0.005 75);
