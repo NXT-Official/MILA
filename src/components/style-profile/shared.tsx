@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Check, CheckCircle2, Circle, Plus, ArrowLeft, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -69,12 +70,29 @@ export function DetailChip({
   /** Shape-based values (silhouette, face, hair) show the shape, not just its name. */
   diagram?: React.ReactNode;
 }) {
+  const reduce = useReducedMotion();
   const empty = !value;
+  // A field that just went from empty to set gets a brief accent flash that
+  // settles back to the resting border — the only confirmation, next to the
+  // sync badge, that an edit actually landed in the dossier.
+  const [justFilled, setJustFilled] = useState(false);
+  const wasEmptyRef = useRef(empty);
+  useEffect(() => {
+    if (wasEmptyRef.current && !empty && !reduce) {
+      setJustFilled(true);
+      const t = window.setTimeout(() => setJustFilled(false), 150);
+      wasEmptyRef.current = empty;
+      return () => window.clearTimeout(t);
+    }
+    wasEmptyRef.current = empty;
+  }, [empty, reduce]);
+
   return (
     <div
       className={cn(
-        "flex flex-col justify-between rounded-control px-3 py-2.5",
+        "flex flex-col justify-between rounded-control px-3 py-2.5 transition-shadow duration-500",
         empty ? "border border-dashed border-border" : "border-[0.5px] border-border bg-card",
+        justFilled && "ring-2 ring-accent",
       )}
     >
       {/* Two label lines are reserved whether or not this label needs them, so
@@ -85,9 +103,15 @@ export function DetailChip({
       </p>
       <div className="flex min-w-0 items-center justify-between gap-2">
         {value ? (
-          <p className="line-clamp-2 text-sm text-foreground" title={value}>
+          <motion.p
+            initial={reduce ? false : { opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduce ? 0 : 0.22, ease: [0.25, 1, 0.5, 1] }}
+            className="line-clamp-2 text-sm text-foreground"
+            title={value}
+          >
             {value}
-          </p>
+          </motion.p>
         ) : onAdd ? (
           <button
             type="button"
@@ -119,24 +143,37 @@ export function MissingDetailsNudge({
   missing: string[];
   onOpenDetailed: () => void;
 }) {
-  if (missing.length === 0) return null;
+  const reduce = useReducedMotion();
   const names = missing.join(" and ").toLowerCase();
   return (
-    <div className="rounded-card border-[0.5px] border-border bg-accent-soft/60 p-6">
-      <p className="text-label uppercase tracking-label text-muted-foreground">
-        Complete your profile
-      </p>
-      <p className="mt-3 font-serif text-xl leading-snug text-foreground">
-        Add your {names}
-        <span className="text-muted-foreground">
-          {" "}
-          · Mila&rsquo;s recommendations get more specific.
-        </span>
-      </p>
-      <Button size="pill" className="mt-5" onClick={onOpenDetailed}>
-        Complete details
-      </Button>
-    </div>
+    <AnimatePresence initial={false}>
+      {missing.length > 0 && (
+        <motion.div
+          key="missing-details-nudge"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: reduce ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }}
+          style={{ overflow: "hidden" }}
+        >
+          <div className="rounded-card border-[0.5px] border-border bg-accent-soft/60 p-6">
+            <p className="text-label uppercase tracking-label text-muted-foreground">
+              Complete your profile
+            </p>
+            <p className="mt-3 font-serif text-xl leading-snug text-foreground">
+              Add your {names}
+              <span className="text-muted-foreground">
+                {" "}
+                · Mila&rsquo;s recommendations get more specific.
+              </span>
+            </p>
+            <Button size="pill" className="mt-5" onClick={onOpenDetailed}>
+              Complete details
+            </Button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -340,6 +377,7 @@ export function PaletteBand({
  * most often edited on — rather than hiding below `sm:`.
  */
 export function SyncBadge({ status }: { status: "idle" | "syncing" | "synced" | "error" }) {
+  const reduce = useReducedMotion();
   const label =
     status === "syncing"
       ? "Saving…"
@@ -362,14 +400,25 @@ export function SyncBadge({ status }: { status: "idle" | "syncing" | "synced" | 
       aria-live="polite"
       className="flex shrink-0 items-center gap-2 rounded-pill border-[0.5px] border-border bg-card px-3 py-1.5"
     >
-      {/* Shape backs up the colour: the error state is the only one that is not
-          a plain dot, so the status never rests on hue alone. */}
-      {status === "error" ? (
-        <X className="size-3 text-destructive" strokeWidth={3} aria-hidden="true" />
-      ) : (
-        <span className={`size-1.5 rounded-full ${dot}`} aria-hidden="true" />
-      )}
-      <span className="text-label uppercase tracking-label text-muted-foreground">{label}</span>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.div
+          key={status}
+          initial={{ opacity: 0, scale: reduce ? 1 : 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: reduce ? 1 : 0.85 }}
+          transition={{ duration: reduce ? 0 : 0.18, ease: [0.25, 1, 0.5, 1] }}
+          className="flex items-center gap-2"
+        >
+          {/* Shape backs up the colour: the error state is the only one that is
+              not a plain dot, so the status never rests on hue alone. */}
+          {status === "error" ? (
+            <X className="size-3 text-destructive" strokeWidth={3} aria-hidden="true" />
+          ) : (
+            <span className={`size-1.5 rounded-full ${dot}`} aria-hidden="true" />
+          )}
+          <span className="text-label uppercase tracking-label text-muted-foreground">{label}</span>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
@@ -510,15 +559,18 @@ export function PillRow({
   options: string[];
   onSelect: (v: string) => void;
 }) {
+  const reduce = useReducedMotion();
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((o) => {
         const active = value === o;
         return (
-          <button
+          <motion.button
             key={o}
             type="button"
             onClick={() => onSelect(o)}
+            whileTap={reduce ? undefined : { scale: 0.96 }}
+            transition={{ duration: 0.1, ease: [0.25, 1, 0.5, 1] }}
             className={[
               "group inline-flex min-h-11 items-center gap-2 px-4 py-2.5 border transition-all duration-200",
               "text-label uppercase tracking-label-wide rounded-full",
@@ -528,7 +580,7 @@ export function PillRow({
             ].join(" ")}
           >
             <span>{o}</span>
-          </button>
+          </motion.button>
         );
       })}
     </div>
@@ -591,6 +643,7 @@ export function BeautyPillTray({
   /** Once reached, unselected pills go inert rather than failing at the DB. */
   limit?: number;
 }) {
+  const reduce = useReducedMotion();
   const full = limit != null && active.length >= limit;
   return (
     <div className="flex flex-wrap gap-2">
@@ -598,12 +651,14 @@ export function BeautyPillTray({
         const isActive = active.includes(tag);
         const locked = full && !isActive;
         return (
-          <button
+          <motion.button
             key={tag}
             type="button"
             onClick={() => onToggle(tag)}
             disabled={locked}
             aria-pressed={isActive}
+            whileTap={reduce || locked ? undefined : { scale: 0.96 }}
+            transition={{ duration: 0.1, ease: [0.25, 1, 0.5, 1] }}
             className={[
               "inline-flex min-h-11 items-center gap-2 px-4 py-2.5 border rounded-full transition-all duration-200",
               "text-label uppercase tracking-label-wide",
@@ -614,9 +669,18 @@ export function BeautyPillTray({
                   : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-accent/40",
             ].join(" ")}
           >
-            {isActive ? <Check className="size-3.5" aria-hidden="true" /> : null}
+            {isActive ? (
+              <motion.span
+                initial={reduce ? false : { scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: reduce ? 0 : 0.18, ease: [0.25, 1, 0.5, 1] }}
+                className="flex"
+              >
+                <Check className="size-3.5" aria-hidden="true" />
+              </motion.span>
+            ) : null}
             <span>{tag}</span>
-          </button>
+          </motion.button>
         );
       })}
     </div>
