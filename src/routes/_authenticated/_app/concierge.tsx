@@ -142,7 +142,7 @@ function ConciergePage() {
 
   return (
     <div className="flex h-[calc(100dvh-9.5rem)] md:h-[calc(100dvh-4rem)]">
-      <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-foreground/5 dark:border-white/10 bg-card/40">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-foreground/5 dark:border-foreground/10 bg-card/40">
         {sidebarContent}
       </aside>
 
@@ -156,7 +156,7 @@ function ConciergePage() {
       </Sheet>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-foreground/5 dark:border-white/10 px-5 sm:px-8 py-4">
+        <header className="border-b border-foreground/5 dark:border-foreground/10 px-5 sm:px-8 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
