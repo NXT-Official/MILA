@@ -19,13 +19,15 @@ export function OnboardingProgressBar({ current }: { current: OnboardingStepId }
           <span className="text-muted normal-case tracking-normal"> · Optional</span>
         ) : null}
       </p>
-      <h2
+      {/* The step title is the page title on every step but Welcome, which
+          carries its own h1 in the same focus slot. */}
+      <h1
         id="onboarding-step-heading"
         tabIndex={-1}
-        className="mt-1 font-display text-2xl font-semibold text-ink outline-none"
+        className="mt-1 font-display text-2xl font-semibold leading-tight text-ink outline-none"
       >
         {step.title}
-      </h2>
+      </h1>
       {step.description ? (
         <p className="mt-1 text-sm text-muted max-w-reading">{step.description}</p>
       ) : null}

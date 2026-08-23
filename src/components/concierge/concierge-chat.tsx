@@ -401,7 +401,7 @@ export function ConciergeChat({
           e.preventDefault();
           send(input);
         }}
-        className="border-t border-foreground/5 dark:border-white/10 px-4 sm:px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-background/60 backdrop-blur-xl"
+        className="border-t border-foreground/5 dark:border-foreground/10 px-4 sm:px-5 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-background/60 backdrop-blur-xl"
       >
         <div className="mx-auto w-full max-w-3xl space-y-2.5">
           {/* One scrolling line on phones, wrapping once there is room — a

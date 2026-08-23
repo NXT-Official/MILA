@@ -147,7 +147,7 @@ export function StudioCameraDrawer({
     >
       <SheetContent
         side="bottom"
-        className="rounded-t-panel border-t border-foreground/5 dark:border-white/10 px-6 pt-8 pb-[max(2.5rem,calc(1rem+env(safe-area-inset-bottom)))] max-h-[92dvh] overflow-y-auto overscroll-contain"
+        className="rounded-t-panel border-t border-foreground/5 dark:border-foreground/10 px-6 pt-8 pb-[max(2.5rem,calc(1rem+env(safe-area-inset-bottom)))] max-h-[92dvh] overflow-y-auto overscroll-contain"
       >
         {postingOpen ? (
           <>

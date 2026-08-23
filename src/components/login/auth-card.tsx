@@ -29,7 +29,10 @@ export function AuthCard() {
   return (
     <Card className="w-full max-w-sm border-border/60 shadow-sm">
       <CardHeader className="space-y-1.5 pb-4">
-        <CardTitle className="font-serif text-xl">Get Started</CardTitle>
+        <CardTitle asChild className="font-serif text-xl">
+          {/* The card is the whole of /login, so its title is the page's h1. */}
+          <h1>Get Started</h1>
+        </CardTitle>
         <CardDescription className="text-xs">
           Log in or sign up below to unlock your studio color dossier.
         </CardDescription>

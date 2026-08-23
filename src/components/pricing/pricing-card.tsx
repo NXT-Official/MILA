@@ -33,7 +33,10 @@ export function PricingCard({
     >
       <li aria-label={plan.is_featured ? `${plan.title} — recommended plan` : plan.title}>
         {plan.is_featured && (
-          <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 gap-1.5 border border-accent/50 bg-accent-soft text-ink shadow-paper">
+          <Badge
+            variant="accent"
+            className="absolute -top-3 left-1/2 -translate-x-1/2 gap-1.5 shadow-paper"
+          >
             <Sparkles aria-hidden="true" className="size-3" strokeWidth={1.75} />
             Recommended
           </Badge>
