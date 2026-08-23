@@ -10,6 +10,12 @@ function buildCsp(supabaseUrl: string | undefined): string {
   // Dev-only allowance so impeccable live mode can load. Guarded by NODE_ENV.
   const live = process.env.NODE_ENV === "development" ? ["http://localhost:8400"] : [];
 
+  // ponytail: dev-only hole for the placeholder hero reel hotlinked from the
+  // design comp. Deliberately absent in prod — ship the cut from /public and
+  // this whole entry goes away with it.
+  const heroReel =
+    process.env.NODE_ENV === "development" ? ["https://pollen-batch-41236914.figma.site"] : [];
+
   let supabaseOrigin = "";
   try {
     supabaseOrigin = supabaseUrl ? new URL(supabaseUrl).origin : "";
@@ -30,6 +36,7 @@ function buildCsp(supabaseUrl: string | undefined): string {
     "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
     "img-src": ["'self'", "data:", "blob:", "https:"],
+    "media-src": ["'self'", "blob:", ...heroReel],
     "connect-src": [
       "'self'",
       ...live,
