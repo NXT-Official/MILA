@@ -47,6 +47,7 @@ export function StudioPage() {
             // Without a calibrated season there is no palette to try on, and the
             // demo dossier would be someone else's colouring.
             <EmptyState
+              as="h1"
               title="Your palette isn't set yet"
               description="Run the colour diagnostic in your dossier first — Studio previews the season it produces."
               action={

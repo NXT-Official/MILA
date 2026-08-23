@@ -310,7 +310,7 @@ export function StyleProfile() {
                   {(form.full_name || user?.email || "M")[0]?.toUpperCase()}
                 </span>
                 <div className="text-center">
-                  <h1 className="font-serif text-4xl sm:text-[3.25rem] leading-none tracking-tight text-foreground">
+                  <h1 className="font-serif text-4xl sm:text-[3.25rem] tracking-tight text-foreground">
                     {heroSeasonName}
                   </h1>
                   <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">

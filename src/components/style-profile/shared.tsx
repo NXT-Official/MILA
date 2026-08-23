@@ -43,10 +43,21 @@ export function DossierTopBar({ counterpart }: { counterpart: "studio" | "profil
  * section — the rule does the separating that a kicker above every heading
  * used to do.
  */
-export function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+export function SectionHeader({
+  title,
+  subtitle,
+  as: Heading = "h2",
+}: {
+  title: string;
+  subtitle?: string;
+  /** `h1` where the section header doubles as the page title. */
+  as?: "h1" | "h2" | "h3";
+}) {
   return (
     <div className="space-y-1.5 border-t border-border pt-5">
-      <h2 className="font-serif text-2xl leading-tight tracking-tight text-foreground">{title}</h2>
+      <Heading className="font-serif text-2xl leading-tight tracking-tight text-foreground">
+        {title}
+      </Heading>
       {subtitle ? (
         <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
       ) : null}
@@ -614,7 +625,7 @@ export function DisruptiveToneCard({ name, height = 56 }: { name: string; height
   const hex = hexForTone(name);
   return (
     <div
-      className="w-full rounded-xl overflow-hidden flex items-stretch border border-destructive/20 bg-[#FFF0F0] dark:bg-destructive/10"
+      className="w-full rounded-xl overflow-hidden flex items-stretch border border-destructive/20 bg-destructive/10"
       style={{ minHeight: height }}
     >
       <div className="w-1/4 shrink-0" style={{ backgroundColor: hex }} />

@@ -120,9 +120,10 @@ export function PhotoTryOn({ dossier }: { dossier: StudioDossier }) {
     <section className="space-y-6">
       <div>
         <p className="text-nano uppercase tracking-label-max text-muted-foreground">Try it on</p>
-        <h2 className="mt-1.5 font-serif text-3xl leading-tight tracking-tight text-foreground">
+        {/* PhotoTryOn *is* the Studio page — this is its h1, not a subsection. */}
+        <h1 className="mt-1.5 font-serif text-3xl leading-tight tracking-tight text-foreground">
           Try looks on yourself
-        </h2>
+        </h1>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
           Upload a clear photo or take a selfie to preview makeup and seasonal colours on your own
           features.
