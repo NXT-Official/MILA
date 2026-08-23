@@ -120,7 +120,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       value={{ openConcierge, look: conciergeLook, clearLook: () => setConciergeLook(null) }}
     >
       <div className="min-h-screen flex flex-col w-full">
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-porcelain/30">
+        <header className="sticky top-0 z-40 border-b border-line bg-canvas/80 backdrop-blur-xl">
           <div className="max-w-7xl mx-auto h-16 px-5 md:px-8 flex items-center justify-between gap-6 relative">
             <Link
               to="/dashboard"

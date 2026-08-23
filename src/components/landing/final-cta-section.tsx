@@ -4,25 +4,20 @@ import type { FinalCtaContent } from "@/lib/landing-content";
 
 export function FinalCtaSection({ content }: { content: FinalCtaContent }) {
   return (
-    // The page's only tonal break. Five cream bands then the ground drops out
-    // from under the closing statement — the brand's own Ink, no new hue.
-    <section
-      id="start"
-      className="scroll-mt-16 border-t border-border bg-drench text-drench-foreground"
-    >
+    // Same wash as every section above it — the close is a scale change, not a
+    // tonal one. The drenched Ink ground it used to wear cut the reel dead.
+    <section id="start" className="atelier-ground scroll-mt-24">
       <div className="atelier-container py-28 text-center sm:py-36 lg:py-44">
-        {/* Explicit colour: the base layer pins h1-h3 to --color-foreground,
-            which would otherwise win over the inherited ground. */}
-        <h2 className="mx-auto max-w-2xl text-[clamp(2.25rem,6vw,3rem)] leading-[1.05] text-drench-foreground">
+        <h2 className="mx-auto max-w-2xl text-[clamp(2.25rem,6vw,3rem)] leading-[1.05]">
           {content.heading}
         </h2>
-        <p className="mx-auto mt-7 max-w-md text-lg leading-relaxed text-pretty text-drench-foreground/75">
+        <p className="mx-auto mt-7 max-w-md text-lg leading-relaxed text-pretty text-muted-foreground">
           {content.body}
         </p>
         <div className="mt-10 flex justify-center">
-          <CtaButton inverted className="w-full sm:w-auto" />
+          <CtaButton className="w-full sm:w-auto" />
         </div>
-        <p className="mt-6 inline-flex items-center gap-1.5 text-xs text-drench-foreground/60">
+        <p className="mt-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <Lock className="size-3" aria-hidden="true" /> {content.privacyNote}
         </p>
       </div>

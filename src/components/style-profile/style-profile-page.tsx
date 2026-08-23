@@ -270,7 +270,7 @@ export function StyleProfile() {
           // Skeleton in the shape of what is coming, so the page does not
           // reflow when it arrives.
           <div className="space-y-10" aria-busy="true" aria-label="Loading your dossier">
-            <div className="rounded-card border-[0.5px] border-border atelier-hero-card p-6 shadow-paper">
+            <div className="rounded-card border border-line bg-surface p-6 shadow-paper">
               <div className="flex flex-col items-center gap-5">
                 <div className="size-32 animate-pulse rounded-full bg-muted" />
                 <div className="h-12 w-56 animate-pulse rounded-control bg-muted" />
@@ -297,7 +297,7 @@ export function StyleProfile() {
         ) : (
           <div className="space-y-10">
             {/* HERO — PERSONAL SEASON */}
-            <section className="rounded-card border-[0.5px] border-border atelier-hero-card p-6 shadow-paper">
+            <section className="rounded-card border border-line bg-surface p-6 shadow-paper">
               <p className="text-center text-label uppercase tracking-label text-muted-foreground">
                 Your Personal Season
               </p>

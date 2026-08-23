@@ -218,7 +218,9 @@ export function CalibratePage() {
           ) : (
             <>
               <section className="rounded-card border-[0.5px] border-border bg-card p-6 shadow-paper sm:p-8">
-                <p className="atelier-kicker">Path 01 · You know your season</p>
+                <p className="text-label font-semibold uppercase tracking-label text-muted-foreground">
+                  Path 01 · You know your season
+                </p>
                 <div className="mt-6 space-y-7">
                   {KNOWN_SEASON_GROUPS.map((group) => (
                     <div key={group.season}>
@@ -299,7 +301,9 @@ export function CalibratePage() {
                 <AccordionItem value="camera" className="border-b-0">
                   <AccordionTrigger className="px-6 py-5 hover:no-underline sm:px-8">
                     <div className="flex flex-col items-start text-left">
-                      <p className="atelier-kicker">Path 02 · Not sure yet</p>
+                      <p className="text-label font-semibold uppercase tracking-label text-muted-foreground">
+                        Path 02 · Not sure yet
+                      </p>
                       <p className="mt-1 font-serif text-lg tracking-tight sm:text-xl">
                         Let&rsquo;s find your season together.
                       </p>

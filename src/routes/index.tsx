@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAuthenticatedViewerState, loadAuthenticatedViewerState } from "@/lib/queries/auth";
 import { getLandingContent } from "@/lib/landing-content.functions";
 import { SiteHeader } from "@/components/landing/site-header";
+import { HeroReel } from "@/components/landing/hero-reel";
 import { HeroSection } from "@/components/landing/hero-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { HowItWorksSection } from "@/components/landing/how-it-works-section";
@@ -43,29 +44,40 @@ function LandingPage() {
     return <AtelierSplash />;
   }
 
-  // `kicker` is the section's nav label now — it is deliberately not rendered
-  // above the heading. See DESIGN.md: `.atelier-kicker` is deprecated.
+  /* ponytail: fixed nav labels, not the Sanity `kicker`. A kicker is written to
+     sit above a heading ("The Style Dossier"); a nav item is a destination and
+     wants one plain word. Add a `navLabel` to the landing schema when marketing
+     needs to edit these without a deploy. */
   const sections = [
-    { id: "how-it-works", label: content.howItWorks.kicker },
-    { id: "dossier", label: content.dossier.kicker },
-    { id: "dupe-hunter", label: content.dupeHunter.kicker },
-    { id: "community", label: content.community.kicker },
+    { id: "how-it-works", label: "How it works" },
+    { id: "dossier", label: "Dossier" },
+    { id: "dupe-hunter", label: "Dupes" },
+    { id: "community", label: "Feed" },
   ];
 
   return (
-    <div className="min-h-screen">
-      <SiteHeader sections={sections} />
-      <main className="overflow-x-clip">
-        <HeroSection content={content.hero} />
-        <HowItWorksSection content={content.howItWorks} />
-        <DossierSection content={content.dossier} />
-        <DupeHunterSection content={content.dupeHunter} />
-        <CommunitySection content={content.community}>
-          <TestimonialsSection testimonials={content.testimonials} />
-        </CommunitySection>
-        <FinalCtaSection content={content.finalCta} />
-      </main>
-      <SiteFooter content={content.footer} />
+    <div className="relative min-h-screen">
+      {/* Fixed behind everything; the solid sections below scroll over it. */}
+      <HeroReel />
+
+      <div className="relative z-10">
+        <SiteHeader sections={sections} />
+        <main className="overflow-x-clip">
+          {/* The reel is the ground for the whole page: sharp under the hero,
+              then washed and blurred from the hero's fade all the way down. */}
+          <HeroSection content={content.hero} />
+
+          <HowItWorksSection content={content.howItWorks} />
+          <DossierSection content={content.dossier} />
+          <DupeHunterSection content={content.dupeHunter} />
+          <CommunitySection content={content.community}>
+            <TestimonialsSection testimonials={content.testimonials} />
+          </CommunitySection>
+
+          <FinalCtaSection content={content.finalCta} />
+        </main>
+        <SiteFooter content={content.footer} sections={sections} />
+      </div>
     </div>
   );
 }

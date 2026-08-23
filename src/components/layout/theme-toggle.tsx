@@ -6,14 +6,16 @@ const NEXT: Record<Theme, Theme> = { light: "dark", dark: "system", system: "lig
 
 const ICONS: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: SunMoon };
 
-export function ThemeToggle() {
+// `size` only so the landing header's slim pill can shrink it; the app shell
+// keeps the default 44px target.
+export function ThemeToggle({ size = "md" }: { size?: "sm" | "md" }) {
   const { theme, setTheme } = useTheme();
   const Icon = ICONS[theme];
 
   return (
     <IconButton
       variant="glass"
-      size="md"
+      size={size}
       onClick={() => setTheme(NEXT[theme])}
       label={`Theme: ${theme}. Switch to ${NEXT[theme]}`}
       title={`Theme: ${theme}`}

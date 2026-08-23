@@ -21,7 +21,13 @@ export function PageHeader({
   const centered = align === "center";
   return (
     <header className={cn("mb-10 sm:mb-14", centered && "text-center", className)}>
-      {kicker ? <p className="atelier-kicker mb-3">{kicker}</p> : null}
+      {/* Not `.atelier-kicker` — DESIGN.md retired it. Same label treatment the
+          rest of the system uses, spelled in tokens. */}
+      {kicker ? (
+        <p className="mb-3 text-label font-semibold uppercase tracking-label text-muted-foreground">
+          {kicker}
+        </p>
+      ) : null}
       <h1
         className={cn(
           size === "compact"
@@ -32,7 +38,14 @@ export function PageHeader({
         {title}
       </h1>
       {description ? (
-        <p className={cn("mt-4 max-w-xl text-muted", centered && "mx-auto")}>{description}</p>
+        <p
+          className={cn(
+            "mt-4 max-w-reading text-base leading-relaxed text-pretty text-muted-foreground",
+            centered && "mx-auto",
+          )}
+        >
+          {description}
+        </p>
       ) : null}
     </header>
   );

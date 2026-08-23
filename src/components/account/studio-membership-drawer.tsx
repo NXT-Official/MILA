@@ -312,12 +312,12 @@ export function StudioMembershipDrawer({
                         Season · {user.season ?? "Unset"}
                       </span>
                       <span
-                        className={`rounded-full border px-2 py-1 ${user.faceShape ? "border-porcelain/60 bg-background/60 text-ink" : "border-amber-400/40 bg-amber-50/60 text-amber-700"}`}
+                        className={`rounded-full border px-2 py-1 ${user.faceShape ? "border-porcelain/60 bg-background/60 text-ink" : "border-warning/40 bg-warning/10 text-warning-ink"}`}
                       >
                         Face · {user.faceShape ?? "—"}
                       </span>
                       <span
-                        className={`rounded-full border px-2 py-1 ${user.hairType ? "border-porcelain/60 bg-background/60 text-ink" : "border-amber-400/40 bg-amber-50/60 text-amber-700"}`}
+                        className={`rounded-full border px-2 py-1 ${user.hairType ? "border-porcelain/60 bg-background/60 text-ink" : "border-warning/40 bg-warning/10 text-warning-ink"}`}
                       >
                         Hair · {user.hairType ?? "—"}
                       </span>
@@ -338,7 +338,7 @@ export function StudioMembershipDrawer({
                   <Link
                     to="/profile"
                     onClick={onClose}
-                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-50/60 px-3 py-2 text-nano uppercase tracking-label text-amber-800 transition-colors hover:bg-amber-50"
+                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-warning/40 bg-warning/10 px-3 py-2 text-nano uppercase tracking-label text-warning-ink transition-colors hover:bg-warning/20"
                   >
                     <AlertCircle className="size-3" strokeWidth={1.6} />
                     Complete {missing.join(", ")} in the Studio
@@ -606,7 +606,7 @@ export function StudioMembershipDrawer({
                         <li
                           key={c.label}
                           className={`flex items-center gap-1.5 text-label ${
-                            ok ? "text-emerald-600" : "text-stone"
+                            ok ? "text-success" : "text-stone"
                           }`}
                         >
                           {ok ? <Check className="size-3" /> : <X className="size-3" />}

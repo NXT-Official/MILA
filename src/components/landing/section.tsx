@@ -23,7 +23,11 @@ export function Section({
   "aria-label"?: string;
 }) {
   return (
-    <section id={id} aria-label={ariaLabel} className="scroll-mt-16 border-t border-border">
+    // A flat wash, not a solid ground — the reel still reads through it. Flat
+    // and not a gradient: a graded scrim drops its last line onto raw video on
+    // tall phone layouts. `--page-wash` is shared with the hero's bottom fade,
+    // so the two meet on the same value instead of on a seam.
+    <section id={id} aria-label={ariaLabel} className="atelier-ground scroll-mt-24">
       <div className={cn("atelier-container", SPACING[spacing], className)}>{children}</div>
     </section>
   );

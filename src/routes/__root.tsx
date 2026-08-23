@@ -69,6 +69,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      // ponytail: warms DNS/TLS for the hero reel's host before React mounts.
+      // Delete along with the hotlink once the cut is served from /public.
+      { rel: "preconnect", href: "https://pollen-batch-41236914.figma.site" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {

@@ -74,26 +74,26 @@ export function ColorDossierSection({ colorSeason }: { colorSeason: string }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-success mb-2">
             Power Colors
           </h4>
           <ul className="space-y-1 text-sm">
             {seasonData.bestColorsDescription.map((color, index) => (
               <li key={index} className="flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-success" />
                 <span>{color}</span>
               </li>
             ))}
           </ul>
         </div>
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-rose-600 mb-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-destructive mb-2">
             Muted / Avoid
           </h4>
           <ul className="space-y-1 text-sm">
             {seasonData.avoidColorsDescription.map((color, index) => (
               <li key={index} className="flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-rose-400" />
+                <span className="w-2 h-2 rounded-full bg-destructive" />
                 <span>{color}</span>
               </li>
             ))}

@@ -60,8 +60,8 @@ export function SignupForm({
     passedChecks <= 2
       ? { label: "Weak", bar: "bg-destructive", text: "text-destructive" }
       : passedChecks < passwordChecks.length
-        ? { label: "Medium", bar: "bg-amber-500", text: "text-amber-600" }
-        : { label: "Strong", bar: "bg-emerald-500", text: "text-emerald-600" };
+        ? { label: "Medium", bar: "bg-warning", text: "text-warning-ink" }
+        : { label: "Strong", bar: "bg-success", text: "text-success" };
 
   const onSubmit = async (data: SignupFormValues) => {
     if (!captcha.token) {
@@ -162,7 +162,7 @@ export function SignupForm({
                 <li
                   key={c.label}
                   className={`flex items-center gap-1.5 text-label ${
-                    ok ? "text-emerald-600" : "text-muted-foreground"
+                    ok ? "text-success" : "text-muted-foreground"
                   }`}
                 >
                   {ok ? <Check className="size-3" /> : <X className="size-3" />}

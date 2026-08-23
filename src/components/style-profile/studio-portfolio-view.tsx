@@ -266,34 +266,17 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
             </div>
             <div className="space-y-4">
               {[
-                {
-                  name: "Muted Mauve",
-                  type: "Cream Blush",
-                  swatch: "oklch(0.65 0.10 350)",
-                  fade: "from-white/40",
-                },
-                {
-                  name: "Warm Terracotta",
-                  type: "Powder Sweep",
-                  swatch: "oklch(0.65 0.12 40)",
-                  fade: "from-white/60",
-                },
-                {
-                  name: "Soft Apricot",
-                  type: "Liquid Tint",
-                  swatch: "oklch(0.80 0.08 55)",
-                  fade: "from-white/30",
-                },
+                { name: "Muted Mauve", type: "Cream Blush", swatch: "oklch(0.65 0.10 350)" },
+                { name: "Warm Terracotta", type: "Powder Sweep", swatch: "oklch(0.65 0.12 40)" },
+                { name: "Soft Apricot", type: "Liquid Tint", swatch: "oklch(0.80 0.08 55)" },
               ].map((cheek, i) => (
                 <div key={i} className="flex items-center gap-4 group">
+                  {/* Flat swatch: a white gloss overlay lightened the very colour
+                      the swatch exists to report. */}
                   <div
-                    className="size-10 rounded-full shadow-inner border border-stone/10 shrink-0 relative overflow-hidden transition-transform group-hover:scale-110"
+                    className="size-10 rounded-full border border-line shrink-0 transition-transform group-hover:scale-110"
                     style={{ backgroundColor: cheek.swatch }}
-                  >
-                    <div
-                      className={`absolute inset-0 bg-linear-to-tr ${cheek.fade} to-transparent opacity-80`}
-                    />
-                  </div>
+                  />
                   <div>
                     <h5 className="font-serif text-sm text-ink">{cheek.name}</h5>
                     <span className="text-nano uppercase tracking-widest text-stone">
@@ -395,7 +378,6 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
               key={idx}
               className={`relative p-5 rounded-2xl border ${fabric.border} ${fabric.color} shadow-atelier-soft h-32 flex flex-col justify-end group transition-all duration-300 hover:shadow-md`}
             >
-              <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent rounded-2xl pointer-events-none" />
               <div className="relative z-10">
                 <h4 className="font-serif text-lg leading-tight text-ink">{fabric.material}</h4>
                 <span className="text-nano uppercase tracking-label-tight block mt-1 text-stone">
@@ -625,17 +607,17 @@ function PaletteCard({
   }
   const [main, ...rest] = title.split(/\s+/);
   return (
-    <div className="rounded-2xl bg-atelier-porcelain dark:bg-neutral-200 px-6 pt-7 pb-10 sm:px-10 sm:pt-10 sm:pb-14 shadow-sm">
+    <div className="rounded-2xl bg-photo-edge px-6 pt-7 pb-10 sm:px-10 sm:pt-10 sm:pb-14 shadow-sm">
       <div className="text-center">
-        <h5 className="font-serif italic tracking-tight text-2xl sm:text-3xl text-neutral-900">
+        <h5 className="font-serif italic tracking-tight text-2xl sm:text-3xl text-photo-scrim">
           {main?.toUpperCase()}
           {rest.length > 0 && (
-            <span className="ml-2 not-italic font-light text-neutral-700">
+            <span className="ml-2 not-italic font-light text-photo-scrim/75">
               {rest.join(" ").toUpperCase()}
             </span>
           )}
         </h5>
-        <p className="mt-1 text-label tracking-label-max text-neutral-700 uppercase">
+        <p className="mt-1 text-label tracking-label-max text-photo-scrim/75 uppercase">
           P a l e t t e
         </p>
       </div>
@@ -643,13 +625,13 @@ function PaletteCard({
         {dots.map((s, i) => (
           <div
             key={i}
-            className="aspect-square rounded-full ring-1 ring-black/5 shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
+            className="aspect-square rounded-full ring-1 ring-photo-scrim/10 shadow-sm"
             style={{ backgroundColor: s.hex }}
             title={`${s.name} ${s.hex}`}
           />
         ))}
       </div>
-      <p className="mt-7 text-center font-serif italic text-base text-neutral-700/80 tracking-wide leading-relaxed">
+      <p className="mt-7 text-center font-serif italic text-base text-photo-scrim/70 tracking-wide leading-relaxed">
         Atelier Collection
       </p>
     </div>

@@ -36,9 +36,11 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-ink: var(--warning-ink);
   --color-border: var(--border);
   --color-line: var(--border);
   --color-canvas: var(--canvas);
+  --color-page-wash: var(--page-wash);
   --color-surface: var(--card);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -79,7 +81,13 @@
   --tracking-label-max: 0.42em;
 }
 
-:root {
+/* `.atelier-on-reel` re-declares this same block on a subtree, so anything
+   sitting directly on the hero reel keeps the light palette in both themes.
+   Same rule as `--color-photo-scrim` above: the footage doesn't flip with the
+   theme, so the type over it can't either — cream ink on cream video is what
+   made the dark-mode hero disappear. Two selectors, no duplicated values. */
+:root,
+.atelier-on-reel {
   color-scheme: light;
   --radius: 0.25rem;
   --canvas: #f5f0e8;
@@ -108,6 +116,10 @@
   --success-foreground: oklch(0.98 0.005 75);
   --warning: oklch(0.62 0.14 55);
   --warning-foreground: oklch(0.2 0.02 55);
+  /* Same story as `--accent-ink`: the fill measures 3.4:1 on the canvas, which
+     fails as text. This is that amber taken down to ink weight — 5.6:1. Use it
+     wherever a warning is type rather than a surface. */
+  --warning-ink: oklch(0.48 0.13 50);
   --border: #e8d5b0;
   --input: oklch(0.879 0.053 84);
   --ring: oklch(0.75 0.085 82.1);
@@ -157,6 +169,8 @@
   --success-foreground: oklch(0.16 0.02 55);
   --warning: oklch(0.72 0.13 60);
   --warning-foreground: oklch(0.16 0.02 55);
+  /* On the dark ground the amber already clears AA as text. */
+  --warning-ink: var(--warning);
   --border: oklch(0.95 0.01 70 / 12%);
   --input: oklch(0.95 0.01 70 / 16%);
   --ring: oklch(0.75 0.085 82.1);
@@ -170,9 +184,28 @@
   --drench-foreground: oklch(0.93 0.008 75);
 }
 
+/* The one ground the page wears over the reel. Sections paint it flat and the
+   hero's bottom fade ends on exactly this value — that shared endpoint is what
+   makes the two read as one surface instead of meeting on a seam.
+   Declared outside the `:root, .atelier-on-reel` block deliberately: that
+   block's light override would break the match under the sections in dark mode.
+   Dark covers harder because the reel is light footage in both themes, so pale
+   type needs more of the ground than dark type does. */
+:root {
+  --page-wash: color-mix(in oklab, var(--canvas) 70%, transparent);
+}
+
+.dark {
+  --page-wash: color-mix(in oklab, var(--canvas) 88%, transparent);
+}
+
 @layer base {
+  /* Raw tokens, never the `@theme` `--color-*` aliases: those are declared on
+     `:root`, so their `var()` resolves against the root palette and an element
+     that re-declares the palette on itself — `.atelier-on-reel` — would be
+     ignored. `--border`/`--foreground` are re-declared there, so they follow. */
   * {
-    border-color: var(--color-border);
+    border-color: var(--border);
   }
 
   ::selection {
@@ -218,7 +251,7 @@
   h4,
   h5,
   h6 {
-    color: var(--color-foreground);
+    color: var(--foreground);
   }
   h1,
   h2,
@@ -247,12 +280,10 @@
     outline-offset: 2px;
   }
 
-  /* Light type on a dark ground reads lighter and tighter than it measures.
-     Compensate on leading and tracking; every heading and label overrides these. */
-  .dark body {
-    line-height: 1.7;
-    letter-spacing: 0.01em;
-  }
+  /* No theme-conditional type metrics. Leading and tracking are layout: changing
+     them under `.dark` reflowed every paragraph, so blocks changed height and
+     line breaks moved when the toggle flipped. Optical compensation for light
+     type on a dark ground goes on colour and weight, never on metrics. */
 
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -281,24 +312,36 @@
     @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-14;
   }
 
-  .atelier-card {
-    @apply rounded-card border border-line bg-surface shadow-paper;
+  /* The ground everything below the hero stands on: a wash, and nothing else.
+     It used to carry `backdrop-blur-md` too, which put a focus change at the
+     exact line where the wash began — sharp reel above it, soft reel below —
+     and that step was most of what read as a hard band. Any gap that skips this
+     class (a bare spacer, a transparent footer) reads as a cut. */
+  .atelier-ground {
+    @apply bg-page-wash;
   }
 
-  .atelier-hero-card {
-    background: linear-gradient(145deg, #f0e6d3 0%, #faf8f5 60%, #f5f0e8 100%);
-  }
-  .dark .atelier-hero-card {
-    background: linear-gradient(
-      145deg,
-      oklch(0.24 0.02 70) 0%,
-      oklch(0.205 0.012 60) 60%,
-      oklch(0.225 0.016 65) 100%
+  /* The hero's hand-off to that ground. Eased stops rather than a straight
+     two-stop ramp: a linear fade betrays both of its ends, faintly at the top
+     and plainly in the last quarter, which is exactly where the dark band was
+     forming. It starts at zero and finishes on `--page-wash` itself — the same
+     value the section below paints — so neither end has an edge to see, and the
+     reel stays partly visible the whole way down. */
+  .atelier-ground-fade {
+    background-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      color-mix(in oklab, var(--page-wash) 4%, transparent) 22%,
+      color-mix(in oklab, var(--page-wash) 16%, transparent) 42%,
+      color-mix(in oklab, var(--page-wash) 40%, transparent) 62%,
+      color-mix(in oklab, var(--page-wash) 68%, transparent) 78%,
+      color-mix(in oklab, var(--page-wash) 89%, transparent) 91%,
+      var(--page-wash) 100%
     );
   }
 
-  .atelier-kicker {
-    @apply text-xs font-semibold uppercase tracking-label-tight text-muted-foreground;
+  .atelier-card {
+    @apply rounded-card border border-line bg-surface shadow-paper;
   }
 
   .atelier-title {

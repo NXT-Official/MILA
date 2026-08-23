@@ -20,13 +20,10 @@ function LoginPage() {
   }, [loading, session, viewer.isLoading, viewer.destination, navigate]);
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 -left-24 h-105 w-105 rounded-full bg-atelier-champagne/25 blur-3xl" />
-        <div className="absolute -bottom-32 -right-24 h-105 w-105 rounded-full bg-atelier-rose/20 blur-3xl" />
-      </div>
-
-      <div className="relative atelier-page flex flex-col items-center justify-center min-h-screen gap-6 py-10">
+    // Plain canvas. The two blurred champagne/rose blobs that used to sit here
+    // were the only thing on the page competing with the card.
+    <div className="min-h-screen bg-canvas">
+      <div className="atelier-page flex min-h-screen flex-col items-center justify-center gap-6 py-10">
         <div className="text-center max-w-md">
           <Link
             to="/login"
@@ -35,7 +32,9 @@ function LoginPage() {
             <img src="/favicon.svg" alt="" className="size-7" />
             MILA
           </Link>
-          <p className="atelier-kicker mt-3">Personal AI Fashion Stylist</p>
+          <p className="mt-3 text-label font-semibold uppercase tracking-label text-muted-foreground">
+            Personal AI Fashion Stylist
+          </p>
         </div>
 
         <AuthCard />
