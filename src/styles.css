@@ -111,8 +111,11 @@
   --border: #e8d5b0;
   --input: oklch(0.879 0.053 84);
   --ring: oklch(0.75 0.085 82.1);
-  --font-display-family: "Playfair Display", Georgia, "Times New Roman", serif;
-  --font-sans-family: "Inter", Helvetica, Arial, sans-serif;
+  /* One family, two roles. `--font-display` is still the heading face — it now
+     resolves to the same Poppins as body copy, and carries the weight and
+     tracking treatment rather than a different family. */
+  --font-display-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-display-family);
   --rose: oklch(0.76 0.055 25);
   --atelier-panel: oklch(1 0.003 80 / 78%);
@@ -187,7 +190,6 @@
     font-weight: 400;
     line-height: 1.625;
     letter-spacing: 0;
-    font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -204,7 +206,8 @@
   h3,
   .font-serif {
     font-family: var(--font-display);
-    /* Playfair is loaded from 500 up; an inherited 400 renders as 500 either way. */
+    /* Poppins is geometric and reads heavier than the serif it replaced, so the
+       shared display weight stays at Medium; h1/h2 step up below. */
     font-weight: 500;
     letter-spacing: -0.01em;
   }
@@ -227,7 +230,9 @@
     font-size: 3.25rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-    line-height: 1;
+    /* Poppins has long descenders; a 1.0 line box clips the g/y/p of a wrapped
+       display line. 1.05 is the smallest leading that clears them. */
+    line-height: 1.05;
   }
 
   h2 {
@@ -299,9 +304,10 @@
   .atelier-title {
     font-family: var(--font-display);
     font-size: clamp(2.25rem, 6vw, 3rem);
-    font-weight: 800;
+    /* 700 is the heaviest Poppins weight loaded; the old 800 would synthesise. */
+    font-weight: 700;
     letter-spacing: -0.02em;
-    line-height: 1;
+    line-height: 1.05;
   }
 
   .atelier-focus-ring {
