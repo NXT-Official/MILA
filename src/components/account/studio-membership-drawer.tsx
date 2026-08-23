@@ -45,10 +45,10 @@ const drawerActionVariants = cva(
     variants: {
       tone: {
         neutral:
-          "border border-stone/20 bg-background/60 text-ink hover:bg-accent-soft dark:hover:bg-white/10",
+          "border border-stone/20 bg-background/60 text-ink hover:bg-accent-soft dark:hover:bg-foreground/10",
         danger:
           "border border-destructive/30 text-destructive hover:bg-destructive/5 disabled:cursor-not-allowed",
-        primary: "bg-ink font-semibold text-white hover:bg-ink/90",
+        primary: "bg-ink font-semibold text-surface hover:bg-ink/90",
       },
     },
     defaultVariants: { tone: "neutral" },
@@ -410,7 +410,7 @@ export function StudioMembershipDrawer({
                         <Link
                           to="/pricing"
                           onClick={onClose}
-                          className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                          className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-foreground/10 transition-colors flex items-center justify-center gap-2"
                         >
                           View Membership Plans
                           <span aria-hidden="true">→</span>

@@ -1,11 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { requireActiveMember } from "@/server/api/auth";
 import { ApiError, handler, jsonBody, ok } from "@/server/api/respond";
-import {
-  DeleteAccountInput,
-  EMAIL_MISMATCH,
-  deleteAccountForUser,
-} from "@/lib/account.functions";
+import { DeleteAccountInput, EMAIL_MISMATCH, deleteAccountForUser } from "@/lib/account.functions";
 import { supabaseDeleteAccountDeps } from "@/lib/account.server";
 
 /**
