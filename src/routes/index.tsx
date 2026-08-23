@@ -10,7 +10,6 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { DossierSection } from "@/components/landing/dossier-section";
-import { DupeHunterSection } from "@/components/landing/dupe-hunter-section";
 import { CommunitySection } from "@/components/landing/community-section";
 import { FinalCtaSection } from "@/components/landing/final-cta-section";
 import { SiteFooter } from "@/components/landing/site-footer";
@@ -68,8 +67,7 @@ function LandingPage() {
           <HeroSection content={content.hero} />
 
           <HowItWorksSection content={content.howItWorks} />
-          <DossierSection content={content.dossier} />
-          <DupeHunterSection content={content.dupeHunter} />
+          <DossierSection content={content.dossier} dupeContent={content.dupeHunter} />
           <CommunitySection content={content.community}>
             <TestimonialsSection testimonials={content.testimonials} />
           </CommunitySection>

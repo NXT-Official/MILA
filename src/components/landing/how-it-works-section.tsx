@@ -117,10 +117,13 @@ function StepRow({
     <motion.li
       ref={ref}
       variants={variants}
-      // Height in `vh`, not padding: each step gets close to a screen of its
-      // own, so the rail has room to travel between markers and the active band
-      // only ever holds one of them. Padding is the floor for long copy.
-      className="relative grid min-h-[36vh] grid-cols-[auto_1fr] items-center gap-x-4 py-12 sm:gap-x-6 sm:py-16 lg:min-h-[58vh] lg:grid-cols-[1fr_3rem_1fr] lg:gap-x-8 lg:py-20"
+      // The middle row keeps enough runway for the scroll story. The endpoints
+      // only need half a rail, so shorter rows remove the dead space before and
+      // after the sequence without crowding any content.
+      className={cn(
+        "relative grid grid-cols-[auto_1fr] items-center gap-x-4 py-12 sm:gap-x-6 sm:py-16 lg:grid-cols-[1fr_3rem_1fr] lg:gap-x-8 lg:py-20",
+        isFirst || isLast ? "min-h-[24vh] lg:min-h-[30vh]" : "min-h-[36vh] lg:min-h-[58vh]",
+      )}
     >
       {/* Narrow, the rail runs behind the markers — a dot column would cost 24px
           of measure on a 390px screen to say what the tile already sits on. It
