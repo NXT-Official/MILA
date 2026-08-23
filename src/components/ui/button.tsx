@@ -18,13 +18,17 @@ const buttonVariants = cva(
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         glass: "atelier-glass text-ink hover:border-border",
       },
+      // shadcn's own scale. Every size keeps the base `text-sm font-medium` —
+      // no per-size type sizes, no uppercase, no letterspacing. Label case and
+      // tracking belong to the app's *labels* (`text-label uppercase
+      // tracking-label`), which is a different thing from a button.
       size: {
-        sm: "h-9 px-3.5 text-xs",
-        md: "h-11 px-5",
-        lg: "h-12 px-7 text-base",
-        icon: "size-11 p-0",
-        pill: "h-11 rounded-full px-5",
-        chip: "h-9 gap-1.5 rounded-full px-3 text-micro uppercase tracking-label-wide",
+        sm: "h-8 gap-1.5 px-3",
+        md: "h-9 px-4 py-2",
+        lg: "h-10 px-6",
+        icon: "size-9 p-0",
+        pill: "h-9 rounded-full px-4",
+        chip: "h-8 gap-1.5 rounded-full px-3",
       },
     },
     defaultVariants: {

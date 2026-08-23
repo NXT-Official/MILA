@@ -15,8 +15,6 @@ import {
 
 type Mode = "makeup" | "colours";
 
-/** Reference buttons are uppercase and letterspaced, not sentence-case body text. */
-const CTA = "w-full text-micro uppercase tracking-label-wide";
 type Verdict = "Ideal" | "Harmonizing" | "Accent";
 
 const VERDICT_CAPTION: Record<Verdict, string> = {
@@ -215,7 +213,7 @@ export function PhotoTryOn({ dossier }: { dossier: StudioDossier }) {
                 <Button
                   variant="outline"
                   size="pill"
-                  className={CTA}
+                  className="w-full"
                   onClick={() => fileRef.current?.click()}
                 >
                   <ImageIcon aria-hidden="true" /> Choose another photo
@@ -223,7 +221,7 @@ export function PhotoTryOn({ dossier }: { dossier: StudioDossier }) {
                 <Button
                   variant="ghost"
                   size="pill"
-                  className={CTA}
+                  className="w-full"
                   onClick={() => {
                     setPhotoUrl(null);
                     setLook(null);
@@ -235,13 +233,13 @@ export function PhotoTryOn({ dossier }: { dossier: StudioDossier }) {
               </>
             ) : (
               <>
-                <Button size="pill" className={CTA} onClick={() => setCameraOpen(true)}>
+                <Button size="pill" className="w-full" onClick={() => setCameraOpen(true)}>
                   <Camera aria-hidden="true" /> Take a selfie
                 </Button>
                 <Button
                   variant="outline"
                   size="pill"
-                  className={CTA}
+                  className="w-full"
                   onClick={() => fileRef.current?.click()}
                 >
                   <ImageIcon aria-hidden="true" /> Upload a photo

@@ -75,8 +75,7 @@ export function SiteHeader({ sections = [] }: { sections?: NavSection[] }) {
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle size="sm" />
 
-            {/* `chip` is the small uppercase pill the app already uses — no new size. */}
-            <Button asChild size="chip" className="px-4">
+            <Button asChild size="pill">
               <Link to={destination}>{label}</Link>
             </Button>
 
