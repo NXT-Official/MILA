@@ -39,10 +39,14 @@ export function HeroSection({ content }: { content: HeroContent }) {
     // if a dark cut lands here, drop the class and add a flat `bg-canvas/60`
     // (never a gradient — the copy column outgrows any fixed-height fade).
     <section id="top" className="atelier-on-reel relative flex min-h-svh flex-col justify-center">
-      <div className="atelier-container flex flex-col items-center pb-24 pt-32 text-center">
+      <div className="atelier-container flex flex-col items-center pb-20 pt-28 text-center sm:pb-24 sm:pt-32">
         <motion.h1
           {...rise(0)}
-          className="max-w-[46rem] text-[clamp(2.5rem,6vw,4.25rem)] leading-[1.05] tracking-[-0.03em]"
+          // The floor is what a 375px screen actually gets — 7vw is only 26px
+          // there, so the clamp sits on its minimum for the whole phone range.
+          // At 2.75rem "Every morning." measured wider than the column and broke;
+          // 2.25rem is the largest size that holds it on one line at 375px.
+          className="max-w-[52rem] text-[clamp(2.25rem,7vw,5.25rem)] leading-[1.02] tracking-[-0.035em]"
         >
           {content.headlineLine1}
           <br />
@@ -51,7 +55,9 @@ export function HeroSection({ content }: { content: HeroContent }) {
 
         <motion.p
           {...rise(1)}
-          className="mt-6 max-w-[32rem] text-lg leading-relaxed text-pretty text-muted-foreground sm:text-xl"
+          // Small against the headline on purpose: the size gap is what makes
+          // the h1 read as large, more than the h1's own measurement does.
+          className="mt-5 max-w-[46ch] text-base leading-[1.6] text-pretty text-muted-foreground sm:text-lg"
         >
           {content.subhead}
         </motion.p>
@@ -101,7 +107,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
           into the last few hundred pixels and stacked it into a dark band. */}
       <div
         aria-hidden="true"
-        className="atelier-ground-fade pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[22rem]"
+        className="atelier-ground-fade pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-56 sm:h-[22rem]"
       />
     </section>
   );

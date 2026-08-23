@@ -2,11 +2,13 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Section rhythm is deliberate, not uniform: the quick sequences breathe less
-// than the two artifact sections, and the emotional close breathes most.
+// than the two artifact sections, and the emotional close breathes most. All
+// three sit higher than before — with the boxes gone, space is the only thing
+// separating one section from the next, so it has to do that work.
 const SPACING = {
-  tight: "py-16 sm:py-20",
-  default: "py-20 sm:py-24",
-  generous: "py-24 sm:py-32 lg:py-36",
+  tight: "py-20 sm:py-28",
+  default: "py-24 sm:py-32",
+  generous: "py-28 sm:py-40",
 } as const;
 
 export function Section({
@@ -59,19 +61,6 @@ export function Eyebrow({
   );
 }
 
-export function IconTile({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex size-11 shrink-0 items-center justify-center rounded-panel border border-border bg-accent-soft/50 text-ink",
-        className,
-      )}
-    >
-      <Icon className="size-5" strokeWidth={1.75} aria-hidden="true" />
-    </span>
-  );
-}
-
 export function SectionHeading({
   heading,
   body,
@@ -85,10 +74,18 @@ export function SectionHeading({
 }) {
   const centered = align === "center";
   return (
-    <div className={cn("max-w-xl", centered && "mx-auto text-center", className)}>
-      <h2 className="text-[clamp(1.75rem,3vw,2.25rem)] leading-[1.1]">{heading}</h2>
+    // The measure is set in `ch`, not `rem`: it caps the line at a character
+    // count whatever the clamp resolves the type size to, which is what actually
+    // governs whether a paragraph is comfortable to read. It's measured at the
+    // wrapper's font size, so the h2 — ~2.5x that — gets far fewer characters
+    // per line than the number suggests; the centred cap has to leave the
+    // heading room for two lines, not four.
+    <div className={cn(centered ? "mx-auto max-w-[80ch] text-center" : "max-w-[46ch]", className)}>
+      <h2 className="text-[clamp(1.875rem,3.2vw,2.5rem)] leading-[1.08] tracking-[-0.02em] text-balance">
+        {heading}
+      </h2>
       {body ? (
-        <p className="mt-6 text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
+        <p className="mt-6 text-base leading-[1.75] text-pretty text-muted-foreground sm:text-lg">
           {body}
         </p>
       ) : null}

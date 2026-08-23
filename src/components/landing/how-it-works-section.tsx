@@ -18,9 +18,10 @@ export function HowItWorksSection({ content }: { content: HowItWorksContent }) {
       <SectionHeading align="center" heading={content.heading} />
 
       {/* A real ordered sequence, so it reads as one — not three identical cards.
-          The 1px Rule divides the steps; no box, no icon tile. */}
+          Rules between the steps and nothing around them: an outer box would
+          make three peers look like one object. */}
       <motion.ol
-        className="mt-12 divide-y divide-border border-y border-border sm:mt-14 lg:grid lg:grid-cols-3 lg:divide-x lg:divide-y-0"
+        className="mt-16 divide-y divide-line sm:mt-20 lg:grid lg:grid-cols-3 lg:divide-x lg:divide-y-0"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-80px" }}
@@ -30,19 +31,21 @@ export function HowItWorksSection({ content }: { content: HowItWorksContent }) {
           <motion.li
             key={step._key}
             variants={stepVariants}
-            className="py-9 lg:px-8 lg:py-10 lg:first:pl-0 lg:last:pr-0"
+            className="py-10 lg:px-10 lg:py-2 lg:first:pl-0 lg:last:pr-0"
           >
-            {/* The <ol> already conveys order to assistive tech. */}
+            {/* The <ol> already conveys order to assistive tech. Small and set
+                in the label style rather than a display numeral: the step's
+                title is the thing to read, the index only places it. */}
             <span
               aria-hidden="true"
-              className="block font-serif text-4xl leading-none text-muted-foreground"
+              className="block text-label font-semibold uppercase tracking-label text-accent-ink"
             >
               {step.number}
             </span>
-            <h3 className="mt-6 font-serif text-2xl leading-snug text-balance text-foreground">
+            <h3 className="mt-5 text-xl leading-snug tracking-[-0.01em] text-balance text-foreground">
               {step.title}
             </h3>
-            <p className="mt-3 max-w-sm text-base leading-relaxed text-pretty text-muted-foreground">
+            <p className="mt-3 max-w-[38ch] text-base leading-[1.7] text-pretty text-muted-foreground">
               {step.body}
             </p>
           </motion.li>

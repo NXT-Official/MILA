@@ -43,10 +43,11 @@ export function SiteHeader({ sections = [] }: { sections?: NavSection[] }) {
     // listener: nothing about the bar depends on where the page is any more.
     <header className="fixed inset-x-0 top-0 z-50 pt-3">
       <div className="mx-auto w-full max-w-3xl px-5 sm:px-8 lg:px-10">
-        {/* `atelier-on-reel`: the pill floats over the hero's raw reel, which is
-            light footage in both themes, so it stays a cream pill with dark type
-            rather than flipping to a black slab in dark mode. */}
-        <div className="atelier-on-reel relative flex h-14 items-center justify-between gap-4 rounded-pill bg-surface pl-5 pr-1.5 shadow-nav">
+        {/* Unlike the hero, the pill carries its own opaque surface, so it can
+            follow the theme: `bg-surface` and `shadow-nav` both flip under
+            `.dark`, and a dark slab over the light reel still separates. Only
+            type sitting *directly* on the footage has to stay pinned light. */}
+        <div className="relative flex h-14 items-center justify-between gap-4 rounded-pill bg-surface pl-5 pr-1.5 shadow-nav">
           <Wordmark />
 
           {sections.length > 0 && (

@@ -12,23 +12,21 @@ export function SiteFooter({
     // Same ground as every section above it. It used to sit on raw reel, which
     // ended the page on a hard cut from washed to sharp video.
     <footer className="atelier-ground">
-      {/* Tall and bottom-weighted on purpose: the space between the link block
-          and the small print is where the reel actually gets to be seen. */}
-      <div className="atelier-container flex min-h-[60svh] flex-col justify-between gap-16 pb-8 pt-24">
-        <div className="flex flex-col gap-12 sm:flex-row sm:justify-between sm:gap-16">
-          <div className="max-w-xs">
-            <span className="flex items-center gap-2.5 font-serif text-lg font-bold tracking-label text-foreground">
-              <img src="/favicon.svg" alt="" className="size-7" />
+      <div className="atelier-container pb-10 pt-24">
+        <div className="flex flex-col gap-12 sm:flex-row sm:justify-between sm:gap-20">
+          <div className="max-w-[32ch]">
+            <span className="flex items-center gap-2.5 text-base font-bold tracking-label text-foreground">
+              <img src="/favicon.svg" alt="" className="size-6" />
               {content.wordmark}
             </span>
-            <p className="mt-4 text-sm leading-relaxed text-pretty text-muted-foreground">
+            <p className="mt-4 text-sm leading-[1.7] text-pretty text-muted-foreground">
               {content.tagline}
             </p>
           </div>
 
           {sections.length > 0 && (
             <nav aria-label="Footer">
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-wrap gap-x-8 gap-y-3 sm:flex-col sm:gap-y-3">
                 {sections.map((section) => (
                   <li key={section.id}>
                     <a
@@ -44,7 +42,9 @@ export function SiteFooter({
           )}
         </div>
 
-        <p className="text-xs text-muted-foreground">
+        {/* One rule closes the page, the same hairline that separates every peer
+            item above it. */}
+        <p className="mt-20 border-t border-line pt-6 text-xs text-muted-foreground">
           © {new Date().getFullYear()} Mila. All rights reserved.
         </p>
       </div>
