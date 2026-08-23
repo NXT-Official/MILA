@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 export function LoadErrorPanel({ title, onRetry }: { title: string; onRetry: () => void }) {
   return (
     <Card role="alert" className="mx-auto max-w-xl p-10 text-center sm:p-14">
-      <p className="mb-2 font-serif text-2xl text-ink">{title}</p>
+      <h2 className="mb-2 font-serif text-2xl text-ink">{title}</h2>
       <p className="text-sm text-muted">
         Something went wrong on our side. Please try again in a moment.
       </p>

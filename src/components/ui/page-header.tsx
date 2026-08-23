@@ -25,7 +25,7 @@ export function PageHeader({
       <h1
         className={cn(
           size === "compact"
-            ? "font-display text-3xl font-bold leading-none tracking-tight md:text-4xl"
+            ? "font-display text-3xl font-bold tracking-tight md:text-4xl"
             : "atelier-title",
         )}
       >

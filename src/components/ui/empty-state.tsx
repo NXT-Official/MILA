@@ -6,6 +6,8 @@ export interface EmptyStateProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   title: React.ReactNode;
   description?: React.ReactNode;
   action?: React.ReactNode;
+  /** The heading level this empty state sits at. `h1` when it *is* the page. */
+  as?: "h1" | "h2" | "h3";
 }
 
 export function EmptyState({
@@ -14,6 +16,7 @@ export function EmptyState({
   description,
   action,
   className,
+  as: Heading = "h2",
   ...props
 }: EmptyStateProps) {
   return (
@@ -29,7 +32,7 @@ export function EmptyState({
           {icon}
         </div>
       ) : null}
-      <p className="font-display text-xl font-semibold text-ink">{title}</p>
+      <Heading className="font-display text-xl font-semibold text-ink">{title}</Heading>
       {description ? <p className="max-w-reading text-sm text-muted">{description}</p> : null}
       {action ? <div className="mt-2">{action}</div> : null}
     </div>
