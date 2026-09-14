@@ -35,3 +35,4 @@ supabase/.temp/
 # Generated files
 *.txt
 !IN_DEVELOPMENT.txt
+!public/robots.txt
