@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import { DEFAULT_AI_CREDITS, InsufficientCreditsError } from "./credits";
+import { captureServerException } from "./sentry.server";
 
 export type ConsumeCreditStore = (
   userId: string,
@@ -105,6 +106,7 @@ export async function withAiCredit<T>(
   try {
     result = await produce();
   } catch (err) {
+    captureServerException(err);
     await refund();
     throw err;
   }

@@ -2,6 +2,7 @@ import { createClient, type Session } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireEnv } from "./env";
 import { Credentials, Signup, type CredentialsInput, type SignupInput } from "./auth-input";
+import { captureServerException } from "./sentry.server";
 
 type AuthOperation = "login" | "signup";
 
@@ -56,6 +57,7 @@ export async function authenticateWithPassword(
           },
         });
   if (result.error) {
+    captureServerException(result.error);
     if (operation === "login") {
       console.warn(JSON.stringify({ event: "authentication_failure", method: "password" }));
       throw new Error("Email, password, or verification challenge is invalid.");
