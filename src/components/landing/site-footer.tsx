@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import type { FooterContent } from "@/lib/landing-content";
 
 export function SiteFooter({ content }: { content: FooterContent }) {
@@ -8,6 +9,14 @@ export function SiteFooter({ content }: { content: FooterContent }) {
           <img src="/favicon.svg" alt="" className="size-5" />
           {content.wordmark}
         </span>
+        <nav aria-label="Legal" className="flex items-center gap-4 text-xs text-muted-foreground">
+          <Link to="/privacy" className="atelier-focus-ring rounded hover:text-foreground">
+            Privacy
+          </Link>
+          <Link to="/terms" className="atelier-focus-ring rounded hover:text-foreground">
+            Terms
+          </Link>
+        </nav>
         <p className="text-xs text-muted-foreground">
           {content.tagline} · © {new Date().getFullYear()} Mila
         </p>
