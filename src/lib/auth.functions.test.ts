@@ -1,5 +1,10 @@
 import { describe, expect, mock, test } from "bun:test";
-import { authenticateWithPassword, type AuthDependencies } from "./auth-handler.server";
+import {
+  authenticateWithPassword,
+  requestPasswordReset,
+  updatePassword,
+  type AuthDependencies,
+} from "./auth-handler.server";
 
 const credentials = {
   email: "User@Example.com",
@@ -54,5 +59,81 @@ describe("security-sensitive password authentication", () => {
     await expect(
       authenticateWithPassword("login", { ...credentials, captchaToken: "" }, deps),
     ).rejects.toThrow();
+  });
+});
+
+describe("password reset request", () => {
+  function resetDeps(error: unknown = null) {
+    const resetPasswordForEmail = mock(async () => ({ error }));
+    const origin = mock(() => "https://mila.example.com");
+    const deps = {
+      client: () => ({ auth: { resetPasswordForEmail } }),
+      origin,
+    } as unknown as AuthDependencies;
+    return { deps, resetPasswordForEmail, origin };
+  }
+
+  test("sends the recovery redirect and hCaptcha token to Supabase", async () => {
+    const { deps, resetPasswordForEmail, origin } = resetDeps();
+    const result = await requestPasswordReset(
+      { email: "User@Example.com", captchaToken: "captcha-token" },
+      deps,
+    );
+    expect(origin).toHaveBeenCalled();
+    expect(resetPasswordForEmail).toHaveBeenCalledWith("User@Example.com", {
+      redirectTo: "https://mila.example.com/auth/reset-password",
+      captchaToken: "captcha-token",
+    });
+    expect(result).toEqual({ ok: true });
+  });
+
+  test("throws a generic error when Supabase rejects the request", async () => {
+    const { deps } = resetDeps(new Error("captcha verification failed"));
+    await expect(
+      requestPasswordReset({ email: "user@example.com", captchaToken: "bad-token" }, deps),
+    ).rejects.toThrow("Unable to send the reset link right now. Please try again later.");
+  });
+});
+
+describe("password reset completion", () => {
+  function updateDeps(sessionError: unknown = null, updateError: unknown = null) {
+    const setSession = mock(async () => ({ error: sessionError }));
+    const updateUser = mock(async () => ({ error: updateError }));
+    const deps = {
+      client: () => ({ auth: { setSession, updateUser } }),
+    } as unknown as AuthDependencies;
+    return { deps, setSession, updateUser };
+  }
+
+  const payload = {
+    password: "correct-horse-battery-staple",
+    accessToken: "access-token",
+    refreshToken: "refresh-token",
+  };
+
+  test("hydrates the recovery session before updating the password", async () => {
+    const { deps, setSession, updateUser } = updateDeps();
+    const result = await updatePassword(payload, deps);
+    expect(setSession).toHaveBeenCalledWith({
+      access_token: "access-token",
+      refresh_token: "refresh-token",
+    });
+    expect(updateUser).toHaveBeenCalledWith({ password: payload.password });
+    expect(result).toEqual({ ok: true });
+  });
+
+  test("rejects when the recovery session is no longer valid", async () => {
+    const { deps, updateUser } = updateDeps(new Error("invalid refresh token"));
+    await expect(updatePassword(payload, deps)).rejects.toThrow(
+      "Your reset link has expired. Please request a new one.",
+    );
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  test("rejects when Supabase fails to update the password", async () => {
+    const { deps } = updateDeps(null, new Error("weak password"));
+    await expect(updatePassword(payload, deps)).rejects.toThrow(
+      "Unable to update your password. Please try again.",
+    );
   });
 });

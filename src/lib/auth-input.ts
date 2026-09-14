@@ -16,5 +16,22 @@ export const Signup = Credentials.extend({
     .regex(/^[a-zA-Z0-9_-]+$/),
 }).strict();
 
+export const RequestReset = z
+  .object({
+    email: z.string().trim().email().max(254),
+    captchaToken: z.string().min(1).max(4000),
+  })
+  .strict();
+
+export const NewPassword = z
+  .object({
+    password: z.string().min(8).max(128),
+    accessToken: z.string().min(1),
+    refreshToken: z.string().min(1),
+  })
+  .strict();
+
 export type CredentialsInput = z.infer<typeof Credentials>;
 export type SignupInput = z.infer<typeof Signup>;
+export type RequestResetInput = z.infer<typeof RequestReset>;
+export type NewPasswordInput = z.infer<typeof NewPassword>;
