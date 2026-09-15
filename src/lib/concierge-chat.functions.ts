@@ -215,7 +215,10 @@ RULES:
           : { role: "user", content: data.message },
       ];
 
-      const result = await aiChatCompletion(messages, tool);
+      const result = await aiChatCompletion(messages, tool, {
+        supabase: context.supabase,
+        userId: context.userId,
+      });
       if (!result.ok) {
         throw aiFailure(result.status, "Mila couldn't respond just now. Please try again.");
       }

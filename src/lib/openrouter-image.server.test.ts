@@ -42,17 +42,20 @@ describe("OpenRouter outfit image generation", () => {
         choices: [
           { message: { images: [{ image_url: { url: "data:image/png;base64,abc123" } }] } },
         ],
-        usage: { cost: 0.0042 },
+        usage: { cost: 0.0042, prompt_tokens: 120, completion_tokens: 340, total_tokens: 460 },
       });
     }) as unknown as typeof fetch;
 
     await expect(generateOutfitImage(outfit)).resolves.toEqual({
       imageUrl: "data:image/png;base64,abc123",
       costUsd: 0.0042,
+      promptTokens: 120,
+      completionTokens: 340,
+      totalTokens: 460,
     });
   });
 
-  test("returns null cost when OpenRouter omits usage", async () => {
+  test("returns null cost and token counts when OpenRouter omits usage", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     globalThis.fetch = mock(async () =>
       Response.json({
@@ -65,6 +68,9 @@ describe("OpenRouter outfit image generation", () => {
     await expect(generateOutfitImage(outfit)).resolves.toEqual({
       imageUrl: "data:image/png;base64,abc123",
       costUsd: null,
+      promptTokens: null,
+      completionTokens: null,
+      totalTokens: null,
     });
   });
 

@@ -204,6 +204,7 @@ export const findDupes = createServerFn({ method: "POST" })
           },
         ],
         tool,
+        { supabase: context.supabase, userId: context.userId },
       );
       if (!result.ok) throw aiFailure(result.status, "Dupe extraction failed.");
 

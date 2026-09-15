@@ -293,6 +293,7 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
                   },
                 ],
                 toolDef,
+                { supabase: context.supabase, userId: context.userId },
               );
 
             const forced = data.diagnostics?.forceCalibration;
