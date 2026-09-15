@@ -117,9 +117,16 @@ function Dashboard() {
   const saveOutfit = useServerFn(saveOutfitToHistory);
   const fetchLookProducts = useServerFn(findLookProducts);
 
-  async function fetchShopItems(colorSeason: string, bodyType: string, tempF: number | undefined) {
+  async function fetchShopItems(
+    colorSeason: string,
+    bodyType: string,
+    tempF: number | undefined,
+    region: string | undefined,
+  ) {
     try {
-      const items = await fetchLookProducts({ data: { colorSeason, bodyType, tempF } });
+      const items = await fetchLookProducts({
+        data: { colorSeason, bodyType, tempF, region: region || undefined },
+      });
       setShopItems(items);
     } catch (e) {
       console.error("[dashboard] findLookProducts failed", e);
@@ -196,7 +203,7 @@ function Dashboard() {
     }
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
-    void fetchShopItems(profile.color_season, profile.body_type, climate.tempF);
+    void fetchShopItems(profile.color_season, profile.body_type, climate.tempF, climate.country);
     await fetchImage(outfit);
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchLookProducts, scoreProduct } from "./look-products.functions";
+import { isAvailableInRegion, matchLookProducts, scoreProduct } from "./look-products.functions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -14,6 +14,7 @@ type ProductRow = {
   affiliate_link: string;
   seasonal_palettes: string[];
   body_shapes: string[];
+  available_regions: string[];
 };
 
 const PRODUCTS: ProductRow[] = [
@@ -28,6 +29,7 @@ const PRODUCTS: ProductRow[] = [
     affiliate_link: "https://shop.example.com/top-match",
     seasonal_palettes: ["Warm Autumn"],
     body_shapes: ["Hourglass"],
+    available_regions: [],
   },
   {
     id: "top-no-match",
@@ -40,6 +42,7 @@ const PRODUCTS: ProductRow[] = [
     affiliate_link: "https://shop.example.com/top-no-match",
     seasonal_palettes: ["Cool Winter"],
     body_shapes: ["Pear"],
+    available_regions: [],
   },
   {
     id: "outerwear-match",
@@ -52,6 +55,7 @@ const PRODUCTS: ProductRow[] = [
     affiliate_link: "https://shop.example.com/outerwear-match",
     seasonal_palettes: ["Warm Autumn"],
     body_shapes: ["Hourglass"],
+    available_regions: [],
   },
 ];
 
@@ -85,6 +89,22 @@ describe("scoreProduct", () => {
   });
 });
 
+describe("isAvailableInRegion", () => {
+  test("ships everywhere when available_regions is empty", () => {
+    expect(isAvailableInRegion({ available_regions: [] }, "US")).toBe(true);
+    expect(isAvailableInRegion({ available_regions: [] }, undefined)).toBe(true);
+  });
+
+  test("doesn't filter when the user's region is unknown", () => {
+    expect(isAvailableInRegion({ available_regions: ["US", "CA"] }, undefined)).toBe(true);
+  });
+
+  test("gates on an explicit region list", () => {
+    expect(isAvailableInRegion({ available_regions: ["US", "CA"] }, "US")).toBe(true);
+    expect(isAvailableInRegion({ available_regions: ["US", "CA"] }, "JP")).toBe(false);
+  });
+});
+
 describe("matchLookProducts", () => {
   test("returns the top-scoring product per category, dropping non-matches", async () => {
     const supabase = fakeSupabase(PRODUCTS);
@@ -115,5 +135,25 @@ describe("matchLookProducts", () => {
       bodyType: "Rectangle",
     });
     expect(results).toHaveLength(0);
+  });
+
+  test("excludes a product not shipping to the user's region", async () => {
+    const regionLocked: ProductRow[] = [
+      { ...PRODUCTS[0], id: "us-only", available_regions: ["US"] },
+    ];
+    const supabase = fakeSupabase(regionLocked);
+    const inRegion = await matchLookProducts(supabase, {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+      region: "US",
+    });
+    expect(inRegion.find((r) => r.category === "Tops")?.id).toBe("us-only");
+
+    const outOfRegion = await matchLookProducts(supabase, {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+      region: "JP",
+    });
+    expect(outOfRegion.some((r) => r.category === "Tops")).toBe(false);
   });
 });

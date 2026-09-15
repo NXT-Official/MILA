@@ -8,6 +8,8 @@ const Input = z.object({
   colorSeason: z.string().min(1).max(64),
   bodyType: z.string().min(1).max(64),
   tempF: z.number().min(-60).max(140).optional(),
+  /** ISO 3166-1 alpha-2 country code. Empty/omitted = unknown, don't region-filter. */
+  region: z.string().length(2).optional(),
 });
 export type LookProductsInput = z.infer<typeof Input>;
 
@@ -37,12 +39,26 @@ export function scoreProduct(
 }
 
 /**
+ * A product with an empty `available_regions` ships everywhere. An unknown
+ * (empty) user region means "don't filter" rather than excluding everything —
+ * we'd rather over-show than silently hide the whole catalog.
+ */
+export function isAvailableInRegion(
+  product: { available_regions: string[] },
+  region?: string,
+): boolean {
+  if (!region) return true;
+  if (product.available_regions.length === 0) return true;
+  return product.available_regions.includes(region);
+}
+
+/**
  * One top-scoring product per category present in the catalog. Catalog-only —
  * no AI call, no credit charge, same as findSimilarItems in dupe-hunter.functions.ts.
  */
 export async function matchLookProducts(
   supabase: SupabaseClient<Database>,
-  { colorSeason, bodyType, tempF }: LookProductsInput,
+  { colorSeason, bodyType, tempF, region }: LookProductsInput,
 ): Promise<LookProduct[]> {
   const { data: categoryRows, error: categoryError } = await supabase
     .from("products")
@@ -63,7 +79,7 @@ export async function matchLookProducts(
     const { data: candidates, error } = await supabase
       .from("products")
       .select(
-        "id,title,brand_id,category,price,currency,image_url,affiliate_link,seasonal_palettes,body_shapes",
+        "id,title,brand_id,category,price,currency,image_url,affiliate_link,seasonal_palettes,body_shapes,available_regions",
       )
       .eq("category", category)
       .limit(200);
@@ -73,6 +89,7 @@ export async function matchLookProducts(
     }
 
     const best = (candidates ?? [])
+      .filter((product) => isAvailableInRegion(product, region))
       .map((product) => ({ product, score: scoreProduct(product, colorSeason, bodyType) }))
       .filter((r) => r.score > 0)
       .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.product.price - b.product.price))
@@ -82,6 +99,7 @@ export async function matchLookProducts(
       const {
         seasonal_palettes: _seasonalPalettes,
         body_shapes: _bodyShapes,
+        available_regions: _availableRegions,
         ...product
       } = best.product;
       results.push(product);

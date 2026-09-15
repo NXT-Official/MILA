@@ -16,7 +16,12 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { fetchDefaultHubId, localDefaultHubId } from "@/lib/default-hub";
 
-async function fetchClimate(lat: number, lon: number, location: string): Promise<ClimateState> {
+async function fetchClimate(
+  lat: number,
+  lon: number,
+  location: string,
+  country: string,
+): Promise<ClimateState> {
   const r = await fetch(
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m`,
   );
@@ -29,6 +34,7 @@ async function fetchClimate(lat: number, lon: number, location: string): Promise
   return {
     label: `${temp}°C ${weather.description}${windy}`,
     location,
+    country,
     icon: weather.icon,
     tempC: temp,
     tempF: Math.round((temp * 9) / 5 + 32),
@@ -68,7 +74,7 @@ export function ClimateWidget({
       setLoading(true);
       setError(false);
       try {
-        const live = await fetchClimate(hub.lat, hub.lon, hub.city);
+        const live = await fetchClimate(hub.lat, hub.lon, hub.city, hub.country);
         if (req === seq.current) onChange(live);
       } catch {
         if (req === seq.current) setError(true);
@@ -91,6 +97,11 @@ export function ClimateWidget({
             pos.coords.latitude,
             pos.coords.longitude,
             "Your location",
+            // Raw browser geolocation gives no country — no reverse-geocoding
+            // service is wired up. Empty string means "unknown", which the
+            // shoppable-products matcher treats as unfiltered rather than
+            // guessing a region.
+            "",
           );
           if (req === seq.current) onChange(live);
         } catch {
