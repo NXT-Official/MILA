@@ -1,5 +1,13 @@
 import { afterAll, describe, expect, mock, test } from "bun:test";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiChatCompletion } from "./ai.server";
+
+const fakeCaller = {
+  supabase: {
+    from: () => ({ insert: async () => ({ error: null }) }),
+  } as unknown as SupabaseClient,
+  userId: "user-1",
+};
 
 const originalFetch = globalThis.fetch;
 const originalKey = process.env.AI_API_KEY;
@@ -49,6 +57,7 @@ describe("Gemini gateway", () => {
         },
       ],
       tool,
+      fakeCaller,
     );
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -70,16 +79,19 @@ describe("Gemini gateway", () => {
         candidates: [{ content: { parts: [{ text: '```json\n{"value":"ok"}\n```' }] } }],
       }),
     );
-    expect(await aiChatCompletion([], tool)).toEqual({ ok: true, args: { value: "ok" } });
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
+      ok: true,
+      args: { value: "ok" },
+    });
   });
 
   test("surfaces the provider status instead of throwing", async () => {
     stubProvider(new Response("slow down", { status: 429 }));
-    expect(await aiChatCompletion([], tool)).toEqual({ ok: false, status: 429 });
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 429 });
   });
 
   test("reports an unusable reply as 502", async () => {
     stubProvider(Response.json({ candidates: [{ content: { parts: [{ text: "not json" }] } }] }));
-    expect(await aiChatCompletion([], tool)).toEqual({ ok: false, status: 502 });
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
   });
 });

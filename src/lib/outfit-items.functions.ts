@@ -254,6 +254,7 @@ export const analyzeOutfitItems = createServerFn({ method: "POST" })
             },
           ],
           tool,
+          { supabase, userId },
         );
         if (!result.ok) throw aiFailure(result.status, "Outfit detection failed.");
 

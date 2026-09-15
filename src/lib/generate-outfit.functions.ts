@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { logAiSpend } from "./ai-spend.server";
 import { climateForWeatherCode } from "@/constants/climate";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -237,6 +237,7 @@ Always call the report_daily_look tool.`;
           { role: "user", content: "Compose today's complete look." },
         ],
         tool,
+        { supabase: context.supabase, userId: context.userId },
       );
       const failure = "Mila couldn't compose a look this time. Please try again.";
       if (!composed.ok) throw aiFailure(composed.status, failure);
@@ -263,8 +264,16 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     payForLookImage(context.supabase, context.userId, async () => {
       try {
-        const { imageUrl, costUsd } = await generateOutfitImage(data);
-        await logAiSpend(context.supabase, context.userId, costUsd);
+        const { imageUrl, costUsd, promptTokens, completionTokens, totalTokens } =
+          await generateOutfitImage(data);
+        await logAiSpend(context.supabase, context.userId, {
+          provider: "openrouter",
+          model: "meta/muse-image",
+          costUsd,
+          promptTokens,
+          completionTokens,
+          totalTokens,
+        });
         return { imageDataUri: imageUrl };
       } catch (error) {
         console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
@@ -278,18 +287,3 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
       }
     }),
   );
-
-// Best-effort: a failed spend-log insert must never break image delivery to the user.
-async function logAiSpend(
-  supabase: SupabaseClient,
-  userId: string,
-  costUsd: number | null,
-): Promise<void> {
-  const { error } = await supabase.from("ai_spend_log").insert({
-    user_id: userId,
-    provider: "openrouter",
-    model: "meta/muse-image",
-    cost_usd: costUsd,
-  });
-  if (error) console.error("[logAiSpend] insert failed:", error.message);
-}

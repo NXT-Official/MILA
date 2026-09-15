@@ -10,30 +10,39 @@ export type Database = {
     Tables: {
       ai_spend_log: {
         Row: {
+          completion_tokens: number | null;
           cost_usd: number | null;
           created_at: string;
           id: string;
           metadata: Json | null;
           model: string;
+          prompt_tokens: number | null;
           provider: string;
+          total_tokens: number | null;
           user_id: string | null;
         };
         Insert: {
+          completion_tokens?: number | null;
           cost_usd?: number | null;
           created_at?: string;
           id?: string;
           metadata?: Json | null;
           model: string;
+          prompt_tokens?: number | null;
           provider: string;
+          total_tokens?: number | null;
           user_id?: string | null;
         };
         Update: {
+          completion_tokens?: number | null;
           cost_usd?: number | null;
           created_at?: string;
           id?: string;
           metadata?: Json | null;
           model?: string;
+          prompt_tokens?: number | null;
           provider?: string;
+          total_tokens?: number | null;
           user_id?: string | null;
         };
         Relationships: [

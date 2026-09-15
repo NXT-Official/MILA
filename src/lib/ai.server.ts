@@ -1,4 +1,12 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { logAiSpend } from "./ai-spend.server";
+
 type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+
+export interface AiCallerContext {
+  supabase: SupabaseClient;
+  userId: string;
+}
 
 export type AiTool = { function: { name: string; parameters: Record<string, unknown> } };
 
@@ -55,6 +63,7 @@ async function messageParts(content: unknown): Promise<GeminiPart[]> {
 export async function aiChatCompletion(
   messages: Array<Record<string, unknown>>,
   tool: AiTool,
+  caller: AiCallerContext,
 ): Promise<AiResult> {
   const apiKey = process.env.AI_API_KEY;
   const model = process.env.AI_MODEL;
@@ -100,12 +109,31 @@ export async function aiChatCompletion(
 
   const json = (await response.json()) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    usageMetadata?: {
+      promptTokenCount?: number;
+      candidatesTokenCount?: number;
+      totalTokenCount?: number;
+    };
   };
   const text = json.candidates?.[0]?.content?.parts?.find((part) => part.text)?.text;
   if (!text) {
     console.error("[ai] provider returned no text", JSON.stringify(json).slice(0, 500));
     return { ok: false, status: 502 };
   }
+
+  // Gemini reports real token counts on every successful call. No per-token
+  // USD price is hardcoded here — AI_MODEL is a runtime env var and Gemini's
+  // pricing tiers vary by model, so a guessed cost would be worse than none.
+  const usage = json.usageMetadata;
+  await logAiSpend(caller.supabase, caller.userId, {
+    provider: "google",
+    model,
+    costUsd: null,
+    promptTokens: typeof usage?.promptTokenCount === "number" ? usage.promptTokenCount : null,
+    completionTokens:
+      typeof usage?.candidatesTokenCount === "number" ? usage.candidatesTokenCount : null,
+    totalTokens: typeof usage?.totalTokenCount === "number" ? usage.totalTokenCount : null,
+  });
 
   try {
     return { ok: true, args: JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "")) };

@@ -42,6 +42,9 @@ No collage, no text, no captions, no logos, no watermark.`.slice(0, MAX_PROMPT_L
 export interface OutfitImageResult {
   imageUrl: string;
   costUsd: number | null;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  totalTokens: number | null;
 }
 
 export async function generateOutfitImage(outfit: DailyLook): Promise<OutfitImageResult> {
@@ -74,12 +77,23 @@ export async function generateOutfitImage(outfit: DailyLook): Promise<OutfitImag
 
   const json = (await res.json()) as {
     choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
-    usage?: { cost?: number };
+    usage?: {
+      cost?: number;
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
   };
   const imageUrl = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
   if (typeof imageUrl !== "string" || !/^data:image\/[\w.+-]+;base64,/.test(imageUrl)) {
     throw new Error("OpenRouter did not return an image.");
   }
-  const costUsd = typeof json.usage?.cost === "number" ? json.usage.cost : null;
-  return { imageUrl, costUsd };
+  const usage = json.usage;
+  return {
+    imageUrl,
+    costUsd: typeof usage?.cost === "number" ? usage.cost : null,
+    promptTokens: typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
+    completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,
+    totalTokens: typeof usage?.total_tokens === "number" ? usage.total_tokens : null,
+  };
 }
