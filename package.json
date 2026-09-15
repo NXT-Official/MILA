@@ -15,7 +15,8 @@
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify:products": "bun run scripts/verify-product-links.ts"
   },
   "dependencies": {
     "@hcaptcha/react-hcaptcha": "^2.0.2",

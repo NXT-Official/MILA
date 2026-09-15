@@ -1035,6 +1035,9 @@ export const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 export const BODIES = ["Hourglass", "Rectangle", "Pear", "Inverted Triangle", "Apple"] as const;
 export const FACE_SHAPES = ["Oval", "Round", "Square", "Heart", "Diamond", "Oblong"] as const;
 export const HAIR_TYPES = ["Straight/Fine", "Wavy", "Curly", "Coily/Textured"] as const;
+export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"] as const;
+export const HAIR_LENGTHS = ["Bald/Shaved", "Short", "Medium", "Long"] as const;
+export const MAKEUP_PREFERENCES = ["none", "minimal", "natural", "defined"] as const;
 
 export const FACE_SHORT_TO_FULL: Record<string, DetailedColorProfile["faceShape"]> = {
   Oval: "Oval Frame",

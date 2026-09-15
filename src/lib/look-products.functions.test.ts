@@ -15,6 +15,9 @@ type ProductRow = {
   seasonal_palettes: string[];
   body_shapes: string[];
   available_regions: string[];
+  verification_status: string;
+  last_verified_at: string | null;
+  in_stock: boolean;
 };
 
 const PRODUCTS: ProductRow[] = [
@@ -30,6 +33,9 @@ const PRODUCTS: ProductRow[] = [
     seasonal_palettes: ["Warm Autumn"],
     body_shapes: ["Hourglass"],
     available_regions: [],
+    verification_status: "verified",
+    last_verified_at: "2026-01-01T00:00:00.000Z",
+    in_stock: true,
   },
   {
     id: "top-no-match",
@@ -43,6 +49,9 @@ const PRODUCTS: ProductRow[] = [
     seasonal_palettes: ["Cool Winter"],
     body_shapes: ["Pear"],
     available_regions: [],
+    verification_status: "verified",
+    last_verified_at: "2026-01-01T00:00:00.000Z",
+    in_stock: true,
   },
   {
     id: "outerwear-match",
@@ -56,6 +65,9 @@ const PRODUCTS: ProductRow[] = [
     seasonal_palettes: ["Warm Autumn"],
     body_shapes: ["Hourglass"],
     available_regions: [],
+    verification_status: "verified",
+    last_verified_at: "2026-01-01T00:00:00.000Z",
+    in_stock: true,
   },
 ];
 
@@ -64,13 +76,17 @@ function fakeSupabase(rows: ProductRow[]): SupabaseClient<Database> {
     let filterCategory: string | null = null;
     const chain = {
       select: () => chain,
-      eq: (_column: string, value: string) => {
-        filterCategory = value;
+      eq: (column: string, value: string | boolean) => {
+        if (column === "category") filterCategory = value as string;
         return chain;
       },
+      neq: () => chain,
       limit: () => chain,
       then: (resolve: (v: { data: ProductRow[]; error: null }) => void) => {
-        const data = filterCategory ? rows.filter((r) => r.category === filterCategory) : rows;
+        const filtered = rows.filter((r) => r.verification_status !== "broken" && r.in_stock);
+        const data = filterCategory
+          ? filtered.filter((r) => r.category === filterCategory)
+          : filtered;
         resolve({ data, error: null });
       },
     };
@@ -155,5 +171,18 @@ describe("matchLookProducts", () => {
       region: "JP",
     });
     expect(outOfRegion.some((r) => r.category === "Tops")).toBe(false);
+  });
+
+  test("excludes broken links and out-of-stock products even when they'd otherwise win", async () => {
+    const rows: ProductRow[] = [
+      { ...PRODUCTS[0], id: "broken-link", verification_status: "broken" },
+      { ...PRODUCTS[0], id: "sold-out", in_stock: false },
+    ];
+    const supabase = fakeSupabase(rows);
+    const results = await matchLookProducts(supabase, {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+    });
+    expect(results.find((r) => r.category === "Tops")).toBeUndefined();
   });
 });

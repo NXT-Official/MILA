@@ -6,7 +6,16 @@ import { z } from "zod";
 import { aiChatCompletion, aiFailure } from "./ai.server";
 import { withAiCredit, markLookImagePending, payForLookImage } from "./credits.server";
 import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
-import { ImageProviderRateLimitError, generateOutfitImage } from "./openrouter-image.server";
+// TEMPORARY: Cloudflare Flux-1-Schnell (free) stands in for the paid
+// OpenRouter provider for demo/stress testing. To revert, point this import
+// back at "./openrouter-image.server" — same exported names, no other
+// changes needed.
+import {
+  ImageProviderRateLimitError,
+  generateOutfitImage,
+  IMAGE_PROVIDER,
+  IMAGE_MODEL,
+} from "./cloudflare-image.server";
 import { errorMessage } from "@/lib/utils";
 
 const Input = z.object({
@@ -23,78 +32,100 @@ const Input = z.object({
   lat: z.number().min(-90).max(90).optional(),
   lon: z.number().min(-180).max(180).optional(),
   vibe: z.string().min(1).max(64),
+  agenda: z.string().min(1).max(200).optional(),
+  dressCode: z.string().min(1).max(80).optional(),
+  indoorOutdoor: z.enum(["Indoor", "Outdoor", "Mixed"]).optional(),
+  timezone: z.string().min(1).max(64).optional(),
 });
 
-const tool = {
-  function: {
-    name: "report_daily_look",
-    parameters: {
+/**
+ * Male is always disabled; everyone else needs an explicit non-"none"
+ * preference. Computed from the stored profile only — never from client
+ * input — so it can't be spoofed by the request payload.
+ */
+export function computeMakeupEligibility(profile: {
+  gender: string | null | undefined;
+  makeup_preference: string | null | undefined;
+}): boolean {
+  return (
+    profile.gender !== "Male" && !!profile.makeup_preference && profile.makeup_preference !== "none"
+  );
+}
+
+export function buildDailyLookTool(makeupEnabled: boolean) {
+  const properties: Record<string, unknown> = {
+    outfit: {
       type: "object",
       properties: {
-        outfit: {
-          type: "object",
-          properties: {
-            headline: {
-              type: "string",
-              description: "Editorial title, e.g. 'The Architectural Linen Silhouette'.",
-            },
-            description: {
-              type: "string",
-              description:
-                "Compelling 2-4 sentence breakdown of the main garments composed from first principles — name fabrics, colors, silhouettes.",
-            },
-            styling_notes: {
-              type: "string",
-              description:
-                "Quick adjustments, e.g. 'Roll cuffs, push up sleeves, half-tuck the shirt'.",
-            },
-          },
-          required: ["headline", "description", "styling_notes"],
-          additionalProperties: false,
+        headline: {
+          type: "string",
+          description: "Editorial title, e.g. 'The Architectural Linen Silhouette'.",
         },
-        hair: {
-          type: "object",
-          properties: {
-            style: {
-              type: "string",
-              description: "Concrete hairstyle recommendation tuned to hair type + face shape.",
-            },
-            execution_tip: {
-              type: "string",
-              description: "Actionable instruction, e.g. 'Prep with mid-weight texture spray'.",
-            },
-          },
-          required: ["style", "execution_tip"],
-          additionalProperties: false,
-        },
-        makeup: {
-          type: "object",
-          properties: {
-            palette: {
-              type: "string",
-              description: "Color story harmonized with the user's seasonal palette.",
-            },
-            details: {
-              type: "string",
-              description: "Execution steps, e.g. 'Dewy skin base, muted terracotta wash on lids'.",
-            },
-          },
-          required: ["palette", "details"],
-          additionalProperties: false,
-        },
-        vibe_alignment_score: {
-          type: "integer",
-          minimum: 1,
-          maximum: 10,
+        description: {
+          type: "string",
           description:
-            "Integer 1-10 rating how confidently this composition hits the requested Occasion Vibe.",
+            "Compelling 2-4 sentence breakdown of the main garments composed from first principles — name fabrics, colors, silhouettes.",
+        },
+        styling_notes: {
+          type: "string",
+          description:
+            "Quick adjustments, e.g. 'Roll cuffs, push up sleeves, half-tuck the shirt'.",
         },
       },
-      required: ["outfit", "hair", "makeup", "vibe_alignment_score"],
+      required: ["headline", "description", "styling_notes"],
       additionalProperties: false,
     },
-  },
-};
+    hair: {
+      type: "object",
+      properties: {
+        style: {
+          type: "string",
+          description: "Concrete hairstyle recommendation tuned to hair type + face shape.",
+        },
+        execution_tip: {
+          type: "string",
+          description: "Actionable instruction, e.g. 'Prep with mid-weight texture spray'.",
+        },
+      },
+      required: ["style", "execution_tip"],
+      additionalProperties: false,
+    },
+    vibe_alignment_score: {
+      type: "integer",
+      minimum: 1,
+      maximum: 10,
+      description:
+        "Integer 1-10 rating how confidently this composition hits the requested Occasion Vibe.",
+    },
+  };
+  const required = ["outfit", "hair", "vibe_alignment_score"];
+
+  if (makeupEnabled) {
+    properties.makeup = {
+      type: "object",
+      properties: {
+        palette: {
+          type: "string",
+          description: "Color story harmonized with the user's seasonal palette.",
+        },
+        details: {
+          type: "string",
+          description: "Execution steps, e.g. 'Dewy skin base, muted terracotta wash on lids'.",
+        },
+      },
+      required: ["palette", "details"],
+      additionalProperties: false,
+    };
+    required.push("makeup");
+  }
+
+  return {
+    function: {
+      name: "report_daily_look",
+      parameters: { type: "object", properties, required, additionalProperties: false },
+    },
+  };
+}
 
 export const DailyLookSchema = z.object({
   outfit: z.object({
@@ -106,11 +137,17 @@ export const DailyLookSchema = z.object({
     style: z.string().min(1),
     execution_tip: z.string().min(1),
   }),
-  makeup: z.object({
-    palette: z.string().min(1),
-    details: z.string().min(1),
-  }),
+  makeup: z
+    .object({
+      palette: z.string().min(1),
+      details: z.string().min(1),
+    })
+    .nullable(),
   vibe_alignment_score: z.number().int().min(1).max(10),
+  // Set when the live Open-Meteo forecast was actually fetched; null when
+  // the weather came from a client-supplied label instead. Not part of what
+  // the AI composes — filled in server-side after the tool call.
+  forecastRetrievedAt: z.string().nullable().optional(),
 });
 export type DailyLook = z.infer<typeof DailyLookSchema>;
 
@@ -132,15 +169,21 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     return withAiCredit(context.supabase, context.userId, async () => {
       const { data: profileRow } = await context.supabase
         .from("profiles")
-        .select("beauty_preferences")
+        .select("beauty_preferences,gender,makeup_preference,hair_length")
         .eq("id", context.userId)
         .maybeSingle();
 
       const beautyPreferences = normalizeBeautyPreferences(profileRow?.beauty_preferences);
+      const makeupEnabled = computeMakeupEligibility({
+        gender: profileRow?.gender,
+        makeup_preference: profileRow?.makeup_preference,
+      });
+      const hairLengthValue = profileRow?.hair_length?.trim() || null;
 
       let tempF = data.tempF;
       let tempC = data.tempC;
       let condition = data.condition;
+      let forecastRetrievedAt: string | null = null;
       if ((tempF == null || !condition) && data.lat != null && data.lon != null) {
         try {
           const r = await fetch(
@@ -155,6 +198,7 @@ export const generateDailyLook = createServerFn({ method: "POST" })
           tempC = tempC ?? c;
           tempF = tempF ?? Math.round((c * 9) / 5 + 32);
           condition ??= climateForWeatherCode(code, wind).condition;
+          forecastRetrievedAt = new Date().toISOString();
         } catch (err) {
           console.warn("Open-Meteo fetch failed; falling back to label only.", err);
         }
@@ -186,19 +230,27 @@ export const generateDailyLook = createServerFn({ method: "POST" })
         hairTypeValue
           ? `- Hair type: ${hairTypeValue} (use this exact hair-type name in the hair rationale)`
           : null,
+        hairLengthValue ? `- Current hair length: ${hairLengthValue}` : null,
         `- Beauty preferences: ${beautyPrefsLine}`,
       ]
         .filter(Boolean)
         .join("\n");
 
+      const hairLengthRule = hairLengthValue
+        ? hairLengthValue === "Bald/Shaved"
+          ? " The client is bald/shaved — do not prescribe any hairstyle; keep 'style' and 'execution_tip' focused on scalp care or a grooming note instead."
+          : ` The client's current hair length is ${hairLengthValue} — recommend ONLY styles achievable at this length. Never assume added length, extensions, or a different length than what's stated.`
+        : "";
+
       const hairRule =
-        faceShapeValue && hairTypeValue
+        (faceShapeValue && hairTypeValue
           ? `- HAIR (CROSS-REFERENCE REQUIRED): the 'style' MUST be a specific silhouette engineered for BOTH the user's hair type (${hairTypeValue}) AND face shape (${faceShapeValue}). Reference the face shape "${faceShapeValue}" by name inside the rationale. Name the silhouette concretely (parting, length, volume placement, finish). Explain in one clause how it balances the ${faceShapeValue} face shape. NEVER prescribe a silhouette that fights the hair type. The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
           : hairTypeValue
             ? `- HAIR: prescribe a concrete silhouette appropriate to ${hairTypeValue} hair (parting, length, volume placement, finish). The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
             : faceShapeValue
               ? `- HAIR: prescribe a concrete silhouette that flatters a ${faceShapeValue} face shape; reference it by name in the rationale. Name the silhouette concretely and give one execution tip.`
-              : `- HAIR: prescribe a concrete silhouette (parting, length, volume placement, finish) plus one execution tip.`;
+              : `- HAIR: prescribe a concrete silhouette (parting, length, volume placement, finish) plus one execution tip.`) +
+        hairLengthRule;
 
       const systemPrompt = `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup — from first principles. NOT from any inventory.
 
@@ -221,11 +273,24 @@ HARD CLIMATE RULES (non-negotiable):
 - Sunny + warm: lighter colors and breathable weaves.
 
 OCCASION VIBE: ${data.vibe}
+${
+  data.agenda || data.dressCode || data.indoorOutdoor
+    ? `
+TODAY'S AGENDA (when present, this is more specific than the vibe above and takes priority for occasion-appropriateness — do not contradict it):
+${data.agenda ? `- Plan: ${data.agenda}` : ""}
+${data.dressCode ? `- Dress code: ${data.dressCode}` : ""}
+${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
+    : ""
+}
 
 RULES:
 - OUTFIT: write a vivid 'headline', a 2-4 sentence 'description' that names main garments (fabrics, colors, silhouettes harmonized with the ${colorSeasonValue} palette and flattering a ${data.bodyType} figure), and short 'styling_notes' (cuffs, tucking, layering tweaks).
 ${hairRule}
-- MAKEUP (PALETTE LOCKED TO 16-SEASON PROFILE): the 'palette' MUST anchor strictly inside the ${colorSeasonValue} season family and the palette sentence MUST contain the literal string "${colorSeasonValue}". Do NOT name any other season (no "Muted Summer" if the user is "${colorSeasonValue}", etc.). Do not borrow tones from the opposing axis. The 'details' must specify (1) base finish texture, (2) precise placement, and (3) finish/wear. Cross-reference beauty preferences (${beautyPrefsLine}) when choosing finish.
+${
+  makeupEnabled
+    ? `- MAKEUP (PALETTE LOCKED TO 16-SEASON PROFILE): the 'palette' MUST anchor strictly inside the ${colorSeasonValue} season family and the palette sentence MUST contain the literal string "${colorSeasonValue}". Do NOT name any other season (no "Muted Summer" if the user is "${colorSeasonValue}", etc.). Do not borrow tones from the opposing axis. The 'details' must specify (1) base finish texture, (2) precise placement, and (3) finish/wear. Cross-reference beauty preferences (${beautyPrefsLine}) when choosing finish.`
+    : "- MAKEUP: do not include makeup guidance — this client has makeup disabled."
+}
 - Be specific, shoppable, executable. Do NOT reference any owned wardrobe.
 - Tone: read like a luxury fashion editorial — confident, precise, never generic.
 
@@ -236,13 +301,21 @@ Always call the report_daily_look tool.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: "Compose today's complete look." },
         ],
-        tool,
+        buildDailyLookTool(makeupEnabled),
         { supabase: context.supabase, userId: context.userId },
       );
       const failure = "Mila couldn't compose a look this time. Please try again.";
       if (!composed.ok) throw aiFailure(composed.status, failure);
 
-      const look = DailyLookSchema.safeParse(composed.args);
+      // Force makeup to null when disabled regardless of what the model
+      // returned — the tool schema already omits it, but this is the hard
+      // server-side boundary, not a suggestion to the model.
+      const argsWithMakeup = {
+        ...(composed.args as Record<string, unknown>),
+        makeup: makeupEnabled ? ((composed.args as Record<string, unknown>).makeup ?? null) : null,
+        forecastRetrievedAt,
+      };
+      const look = DailyLookSchema.safeParse(argsWithMakeup);
       if (!look.success) throw new Error(failure);
       // The credit charged above covers this look's first visual, rendered by the
       // separate regenerateOutfitImage call the client makes next.
@@ -264,11 +337,16 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     payForLookImage(context.supabase, context.userId, async () => {
       try {
+        const { data: profileRow } = await context.supabase
+          .from("profiles")
+          .select("gender")
+          .eq("id", context.userId)
+          .maybeSingle();
         const { imageUrl, costUsd, promptTokens, completionTokens, totalTokens } =
-          await generateOutfitImage(data);
+          await generateOutfitImage(data, { gender: profileRow?.gender });
         await logAiSpend(context.supabase, context.userId, {
-          provider: "openrouter",
-          model: "meta/muse-image",
+          provider: IMAGE_PROVIDER,
+          model: IMAGE_MODEL,
           costUsd,
           promptTokens,
           completionTokens,
@@ -279,9 +357,12 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
         console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
         return {
           imageDataUri: null,
+          // Surface the specific reason (site-wide quota vs. provider rate
+          // limit) rather than a one-size-fits-all message — both messages
+          // from cloudflare-image.server.ts are already user-appropriate.
           imageGenerationError:
             error instanceof ImageProviderRateLimitError
-              ? "The visual service is temporarily busy. Your written outfit is still available."
+              ? error.message
               : "The outfit was created, but its visual could not be generated.",
         };
       }

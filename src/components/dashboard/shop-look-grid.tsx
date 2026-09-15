@@ -5,7 +5,15 @@ import { formatPrice } from "@/lib/utils";
 import type { LookProduct } from "@/lib/look-products.functions";
 
 export function ShopThisLookGrid({ items }: { items: LookProduct[] | null }) {
-  if (!items || items.length === 0) return null;
+  if (!items) return null;
+
+  if (items.length === 0) {
+    return (
+      <LookSection kicker="Shop This Look">
+        <p className="text-sm text-muted-foreground">No verified matching item found.</p>
+      </LookSection>
+    );
+  }
 
   return (
     <LookSection kicker="Shop This Look">
@@ -41,6 +49,11 @@ export function ShopThisLookGrid({ items }: { items: LookProduct[] | null }) {
                   {item.title}
                 </p>
                 <p className="mt-1 atelier-label">{formatPrice(item.price, item.currency)}</p>
+                <p className="mt-1 text-micro text-muted-foreground">
+                  {item.verification_status === "verified" && item.last_verified_at
+                    ? `Last checked ${new Date(item.last_verified_at).toLocaleDateString()}`
+                    : "Link not yet verified"}
+                </p>
               </div>
               <Button asChild size="pill">
                 <a href={item.affiliate_link} target="_blank" rel="noopener noreferrer sponsored">

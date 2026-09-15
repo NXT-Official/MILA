@@ -22,6 +22,8 @@ export type LookProduct = {
   currency: string;
   image_url: string | null;
   affiliate_link: string;
+  verification_status: string;
+  last_verified_at: string | null;
 };
 
 const HOT_WEATHER_F = 75;
@@ -79,9 +81,11 @@ export async function matchLookProducts(
     const { data: candidates, error } = await supabase
       .from("products")
       .select(
-        "id,title,brand_id,category,price,currency,image_url,affiliate_link,seasonal_palettes,body_shapes,available_regions",
+        "id,title,brand_id,category,price,currency,image_url,affiliate_link,seasonal_palettes,body_shapes,available_regions,verification_status,last_verified_at,in_stock",
       )
       .eq("category", category)
+      .neq("verification_status", "broken")
+      .eq("in_stock", true)
       .limit(200);
     if (error) {
       console.error("[findLookProducts] product query failed", error);
@@ -100,6 +104,7 @@ export async function matchLookProducts(
         seasonal_palettes: _seasonalPalettes,
         body_shapes: _bodyShapes,
         available_regions: _availableRegions,
+        in_stock: _inStock,
         ...product
       } = best.product;
       results.push(product);

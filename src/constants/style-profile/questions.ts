@@ -86,6 +86,103 @@ export const HAIR_TYPE_OPTIONS: MatrixOption[] = [
   },
 ];
 
+export const GENDER_OPTIONS: MatrixOption[] = [
+  {
+    value: "Female",
+    title: "Female",
+    description: "Recommendations styled for a female presentation.",
+  },
+  {
+    value: "Male",
+    title: "Male",
+    description: "Recommendations styled for a male presentation. Makeup is not included.",
+  },
+  {
+    value: "Non-binary",
+    title: "Non-binary / another identity",
+    description: "Recommendations styled without a binary gender assumption.",
+  },
+  {
+    value: "Prefer not to say",
+    title: "Prefer not to say",
+    description: "Mila won't ask again — styling stays neutral on gender presentation.",
+  },
+];
+
+export const HAIR_LENGTH_OPTIONS: MatrixOption[] = [
+  {
+    value: "Bald/Shaved",
+    title: "Bald / Shaved",
+    description: "No hair length to style — Mila skips hairstyle recommendations.",
+  },
+  {
+    value: "Short",
+    title: "Short",
+    description: "Above the chin — pixie, buzz, or short crop lengths.",
+  },
+  {
+    value: "Medium",
+    title: "Medium",
+    description: "Chin to shoulder length.",
+  },
+  {
+    value: "Long",
+    title: "Long",
+    description: "Past the shoulders.",
+  },
+];
+
+export const MAKEUP_PREFERENCE_OPTIONS: MatrixOption[] = [
+  {
+    value: "none",
+    title: "No makeup",
+    description: "Skip makeup guidance entirely.",
+  },
+  {
+    value: "minimal",
+    title: "Minimal",
+    description: "Bare-minimum, barely-there finish.",
+  },
+  {
+    value: "natural",
+    title: "Natural",
+    description: "Everyday, low-effort polish.",
+  },
+  {
+    value: "defined",
+    title: "Defined",
+    description: "Fuller coverage, more defined color and finish.",
+  },
+];
+
+export const SHOPPING_PREFERENCE_TAGS = [
+  "Relaxed Fit",
+  "Tailored Fit",
+  "Petite-Friendly",
+  "Plus-Inclusive",
+  "Budget-Conscious",
+  "Mid-Range",
+  "Investment Pieces",
+  "Sneakers Preferred",
+  "Heels Welcome",
+  "Flats Only",
+  "Bold Color",
+  "Neutral Palette Only",
+  "Modest Coverage",
+  "Bare Shoulders OK",
+] as const;
+
+export const STYLING_CONSTRAINT_TAGS = [
+  "Limited Prep Time (Under 15 Min)",
+  "No Heat Styling Tools",
+  "No Ironing",
+  "Hijab-Friendly",
+  "Mobility Considerations",
+  "Sensory-Friendly Fabrics Only",
+  "Office Dress Code",
+  "Capsule Wardrobe Only",
+] as const;
+
 export const BEAUTY_PREFERENCE_TAGS = [
   "Dewy Base",
   "Glass Skin",
