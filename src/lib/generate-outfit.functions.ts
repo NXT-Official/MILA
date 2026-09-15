@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { climateForWeatherCode } from "@/constants/climate";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -262,7 +263,9 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     payForLookImage(context.supabase, context.userId, async () => {
       try {
-        return { imageDataUri: await generateOutfitImage(data) };
+        const { imageUrl, costUsd } = await generateOutfitImage(data);
+        await logAiSpend(context.supabase, context.userId, costUsd);
+        return { imageDataUri: imageUrl };
       } catch (error) {
         console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
         return {
@@ -275,3 +278,18 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
       }
     }),
   );
+
+// Best-effort: a failed spend-log insert must never break image delivery to the user.
+async function logAiSpend(
+  supabase: SupabaseClient,
+  userId: string,
+  costUsd: number | null,
+): Promise<void> {
+  const { error } = await supabase.from("ai_spend_log").insert({
+    user_id: userId,
+    provider: "openrouter",
+    model: "meta/muse-image",
+    cost_usd: costUsd,
+  });
+  if (error) console.error("[logAiSpend] insert failed:", error.message);
+}

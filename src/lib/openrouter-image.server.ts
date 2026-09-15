@@ -39,7 +39,12 @@ Single subject, centered composition.
 No collage, no text, no captions, no logos, no watermark.`.slice(0, MAX_PROMPT_LENGTH);
 }
 
-export async function generateOutfitImage(outfit: DailyLook): Promise<string> {
+export interface OutfitImageResult {
+  imageUrl: string;
+  costUsd: number | null;
+}
+
+export async function generateOutfitImage(outfit: DailyLook): Promise<OutfitImageResult> {
   const { OPENROUTER_API_KEY } = requireEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   });
@@ -56,6 +61,7 @@ export async function generateOutfitImage(outfit: DailyLook): Promise<string> {
         model: IMAGE_MODEL,
         messages: [{ role: "user", content: buildOutfitImagePrompt(outfit) }],
         modalities: ["image", "text"],
+        usage: { include: true },
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -68,10 +74,12 @@ export async function generateOutfitImage(outfit: DailyLook): Promise<string> {
 
   const json = (await res.json()) as {
     choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
+    usage?: { cost?: number };
   };
   const imageUrl = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
   if (typeof imageUrl !== "string" || !/^data:image\/[\w.+-]+;base64,/.test(imageUrl)) {
     throw new Error("OpenRouter did not return an image.");
   }
-  return imageUrl;
+  const costUsd = typeof json.usage?.cost === "number" ? json.usage.cost : null;
+  return { imageUrl, costUsd };
 }

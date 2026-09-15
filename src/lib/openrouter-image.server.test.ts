@@ -27,7 +27,7 @@ describe("OpenRouter outfit image generation", () => {
     await expect(generateOutfitImage(outfit)).rejects.toThrow("Missing environment variable");
   });
 
-  test("posts the outfit prompt and returns the image data URI", async () => {
+  test("posts the outfit prompt, requests usage cost, and returns image + cost", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
       expect(String(url)).toBe("https://openrouter.ai/api/v1/chat/completions");
@@ -36,15 +36,36 @@ describe("OpenRouter outfit image generation", () => {
       const body = JSON.parse(init?.body as string);
       expect(body.model).toBe("meta/muse-image");
       expect(body.modalities).toEqual(["image", "text"]);
+      expect(body.usage).toEqual({ include: true });
       expect(body.messages[0].content).toContain("The Architectural Linen Silhouette");
       return Response.json({
         choices: [
           { message: { images: [{ image_url: { url: "data:image/png;base64,abc123" } }] } },
         ],
+        usage: { cost: 0.0042 },
       });
     }) as unknown as typeof fetch;
 
-    await expect(generateOutfitImage(outfit)).resolves.toBe("data:image/png;base64,abc123");
+    await expect(generateOutfitImage(outfit)).resolves.toEqual({
+      imageUrl: "data:image/png;base64,abc123",
+      costUsd: 0.0042,
+    });
+  });
+
+  test("returns null cost when OpenRouter omits usage", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    globalThis.fetch = mock(async () =>
+      Response.json({
+        choices: [
+          { message: { images: [{ image_url: { url: "data:image/png;base64,abc123" } }] } },
+        ],
+      }),
+    ) as unknown as typeof fetch;
+
+    await expect(generateOutfitImage(outfit)).resolves.toEqual({
+      imageUrl: "data:image/png;base64,abc123",
+      costUsd: null,
+    });
   });
 
   test("throws ImageProviderRateLimitError on 429", async () => {
