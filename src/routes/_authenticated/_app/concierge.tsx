@@ -136,6 +136,8 @@ function ConciergePage() {
           editingId === c.id ? (
             <div key={c.id} className="flex items-center gap-1 px-3 py-1.5">
               <Input
+                // User-triggered reveal (clicking the edit pencil), not page-load autofocus.
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
