@@ -135,10 +135,10 @@ describe("applyPaddleSubscriptionEvent", () => {
         cancel_at_period_end: false,
       },
     ]);
-    expect(entitlementUpdates).toEqual([{ ads_removed: true, ai_credits: 500 }]);
+    expect(entitlementUpdates).toEqual([{ ai_credits: 500 }]);
   });
 
-  test("refills credits only when the billing period actually advances", async () => {
+  test("does not refill credits when the billing period hasn't advanced", async () => {
     const { db, entitlementUpdates } = fakeDb({
       plan: { data: { id: "plan-1", credits_included: 500 }, error: null },
       existingSubscription: { data: { current_period_end: "2026-07-24T00:00:00Z" }, error: null },
@@ -148,10 +148,10 @@ describe("applyPaddleSubscriptionEvent", () => {
       baseEvent({ current_billing_period: { ends_at: "2026-07-24T00:00:00Z" } }),
     );
 
-    expect(entitlementUpdates).toEqual([{ ads_removed: true }]);
+    expect(entitlementUpdates).toEqual([]);
   });
 
-  test("revokes ads_removed without clawing back credits on cancellation", async () => {
+  test("does not touch entitlements on cancellation", async () => {
     const { db, entitlementUpdates } = fakeDb({
       plan: { data: { id: "plan-1", credits_included: 500 }, error: null },
       existingSubscription: { data: { current_period_end: "2026-08-24T00:00:00Z" }, error: null },
@@ -161,10 +161,10 @@ describe("applyPaddleSubscriptionEvent", () => {
       baseEvent({ status: "canceled", current_billing_period: null }),
     );
 
-    expect(entitlementUpdates).toEqual([{ ads_removed: false }]);
+    expect(entitlementUpdates).toEqual([]);
   });
 
-  test("keeps access during past_due (dunning grace period)", async () => {
+  test("does not refill credits during past_due when the period hasn't advanced", async () => {
     const { db, entitlementUpdates } = fakeDb({
       plan: { data: { id: "plan-1", credits_included: 500 }, error: null },
       existingSubscription: { data: { current_period_end: "2026-08-24T00:00:00Z" }, error: null },
@@ -177,7 +177,7 @@ describe("applyPaddleSubscriptionEvent", () => {
       }),
     );
 
-    expect(entitlementUpdates).toEqual([{ ads_removed: true }]);
+    expect(entitlementUpdates).toEqual([]);
   });
 
   test("skips processing when custom_data.user_id is missing", async () => {

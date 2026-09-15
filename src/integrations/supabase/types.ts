@@ -8,42 +8,6 @@ export type Database = {
   };
   public: {
     Tables: {
-      ad_events: {
-        Row: {
-          ad_type: string;
-          created_at: string;
-          event: string;
-          id: string;
-          metadata: Json | null;
-          placement: string | null;
-          reward_amount: number | null;
-          reward_type: string | null;
-          user_id: string;
-        };
-        Insert: {
-          ad_type: string;
-          created_at?: string;
-          event: string;
-          id?: string;
-          metadata?: Json | null;
-          placement?: string | null;
-          reward_amount?: number | null;
-          reward_type?: string | null;
-          user_id: string;
-        };
-        Update: {
-          ad_type?: string;
-          created_at?: string;
-          event?: string;
-          id?: string;
-          metadata?: Json | null;
-          placement?: string | null;
-          reward_amount?: number | null;
-          reward_type?: string | null;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
       ai_spend_log: {
         Row: {
           cost_usd: number | null;
@@ -700,7 +664,6 @@ export type Database = {
       };
       user_entitlements: {
         Row: {
-          ads_removed: boolean;
           ai_credits: number;
           created_at: string;
           credits_reset_at: string | null;
@@ -710,7 +673,6 @@ export type Database = {
           user_id: string;
         };
         Insert: {
-          ads_removed?: boolean;
           ai_credits?: number;
           created_at?: string;
           credits_reset_at?: string | null;
@@ -720,7 +682,6 @@ export type Database = {
           user_id: string;
         };
         Update: {
-          ads_removed?: boolean;
           ai_credits?: number;
           created_at?: string;
           credits_reset_at?: string | null;

@@ -108,14 +108,11 @@ export async function applyPaddleSubscriptionEvent(
     .is("paddle_customer_id", null);
 
   const inForce = IN_FORCE_SUBSCRIPTION_STATUSES.includes(data.status);
-  const entitlementUpdate: { ads_removed: boolean; ai_credits?: number } = {
-    ads_removed: inForce,
-  };
-  if (inForce && isRenewal) entitlementUpdate.ai_credits = plan.credits_included;
+  if (!inForce || !isRenewal) return;
 
   const { error: entitlementError } = await db
     .from("user_entitlements")
-    .update(entitlementUpdate)
+    .update({ ai_credits: plan.credits_included })
     .eq("user_id", userId);
   if (entitlementError) {
     // The renewal's credits live here. Dropping this silently is how a paying
