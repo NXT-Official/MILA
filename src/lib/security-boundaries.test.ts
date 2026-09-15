@@ -28,7 +28,7 @@ test("each login form refuses a sign-in belonging to the other tree", () => {
     'tree === "staff" ? !viewer.canAccessStaffArea : viewer.canAccessStaffArea',
   );
   expect(hook).toContain("rejectWrongTreeLogin(queryClient, WRONG_TREE_NOTICE[tree])");
-  expect(source("../routes/login.tsx")).toContain('useLoginRedirect("member")');
+  expect(source("../routes/login/index.tsx")).toContain('useLoginRedirect("member")');
   expect(source("../routes/staff.tsx")).toContain('useLoginRedirect("staff")');
   // OAuth returns bypass the login page entirely, so the callback checks too.
   expect(source("../routes/auth/callback.tsx")).toContain(

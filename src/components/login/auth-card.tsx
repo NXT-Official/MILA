@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,13 +74,21 @@ export function AuthCard() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="login" className="mt-4">
+          <TabsContent value="login" className="mt-4 space-y-3">
             <LoginForm
               email={email}
               onEmailChange={setEmail}
               showPassword={showPassword}
               onToggleShowPassword={toggleShowPassword}
             />
+            <div className="text-center">
+              <Link
+                to="/login/forgot-password"
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </TabsContent>
           <TabsContent value="signup" className="mt-4">
             <SignupForm

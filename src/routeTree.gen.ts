@@ -14,8 +14,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ModeratorIndexRouteImport } from './routes/moderator/index'
+import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ModeratorAuthedRouteImport } from './routes/moderator/_authed'
+import { Route as LoginForgotPasswordRouteImport } from './routes/login/forgot-password'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AdminAuthedRouteImport } from './routes/admin/_authed'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -62,6 +65,11 @@ const ModeratorIndexRoute = ModeratorIndexRouteImport.update({
   path: '/moderator/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginIndexRoute = LoginIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LoginRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -70,6 +78,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const ModeratorAuthedRoute = ModeratorAuthedRouteImport.update({
   id: '/moderator/_authed',
   path: '/moderator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginForgotPasswordRoute = LoginForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => LoginRoute,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -187,13 +205,16 @@ const AuthenticatedAppProfileUserIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
+  '/login': typeof LoginRouteWithChildren
   '/staff': typeof StaffRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/admin': typeof AdminAuthedRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/login/forgot-password': typeof LoginForgotPasswordRoute
   '/moderator': typeof ModeratorAuthedRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/login/': typeof LoginIndexRoute
   '/moderator/': typeof ModeratorIndexRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
@@ -215,12 +236,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
   '/staff': typeof StaffRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/admin': typeof AdminIndexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/login/forgot-password': typeof LoginForgotPasswordRoute
   '/moderator': typeof ModeratorIndexRoute
+  '/login': typeof LoginIndexRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
@@ -243,14 +266,17 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/login': typeof LoginRoute
+  '/login': typeof LoginRouteWithChildren
   '/staff': typeof StaffRoute
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/admin/_authed': typeof AdminAuthedRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/login/forgot-password': typeof LoginForgotPasswordRoute
   '/moderator/_authed': typeof ModeratorAuthedRouteWithChildren
   '/admin/': typeof AdminIndexRoute
+  '/login/': typeof LoginIndexRoute
   '/moderator/': typeof ModeratorIndexRoute
   '/_authenticated/_app/concierge': typeof AuthenticatedAppConciergeRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
@@ -279,8 +305,11 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/admin'
     | '/auth/callback'
+    | '/auth/reset-password'
+    | '/login/forgot-password'
     | '/moderator'
     | '/admin/'
+    | '/login/'
     | '/moderator/'
     | '/concierge'
     | '/dashboard'
@@ -302,12 +331,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/login'
     | '/staff'
     | '/onboarding'
     | '/admin'
     | '/auth/callback'
+    | '/auth/reset-password'
+    | '/login/forgot-password'
     | '/moderator'
+    | '/login'
     | '/concierge'
     | '/dashboard'
     | '/feed'
@@ -335,8 +366,11 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/admin/_authed'
     | '/auth/callback'
+    | '/auth/reset-password'
+    | '/login/forgot-password'
     | '/moderator/_authed'
     | '/admin/'
+    | '/login/'
     | '/moderator/'
     | '/_authenticated/_app/concierge'
     | '/_authenticated/_app/dashboard'
@@ -360,10 +394,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  LoginRoute: typeof LoginRoute
+  LoginRoute: typeof LoginRouteWithChildren
   StaffRoute: typeof StaffRoute
   AdminAuthedRoute: typeof AdminAuthedRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   ModeratorAuthedRoute: typeof ModeratorAuthedRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
   ModeratorIndexRoute: typeof ModeratorIndexRoute
@@ -407,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModeratorIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/': {
+      id: '/login/'
+      path: '/'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof LoginRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/admin'
@@ -419,6 +461,20 @@ declare module '@tanstack/react-router' {
       path: '/moderator'
       fullPath: '/moderator'
       preLoaderRoute: typeof ModeratorAuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/forgot-password': {
+      id: '/login/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/login/forgot-password'
+      preLoaderRoute: typeof LoginForgotPasswordRouteImport
+      parentRoute: typeof LoginRoute
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -625,6 +681,18 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface LoginRouteChildren {
+  LoginForgotPasswordRoute: typeof LoginForgotPasswordRoute
+  LoginIndexRoute: typeof LoginIndexRoute
+}
+
+const LoginRouteChildren: LoginRouteChildren = {
+  LoginForgotPasswordRoute: LoginForgotPasswordRoute,
+  LoginIndexRoute: LoginIndexRoute,
+}
+
+const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
+
 interface AdminAuthedRouteChildren {
   AdminAuthedDashboardRoute: typeof AdminAuthedDashboardRoute
   AdminAuthedMembersRoute: typeof AdminAuthedMembersRoute
@@ -662,10 +730,11 @@ const ModeratorAuthedRouteWithChildren = ModeratorAuthedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  LoginRoute: LoginRoute,
+  LoginRoute: LoginRouteWithChildren,
   StaffRoute: StaffRoute,
   AdminAuthedRoute: AdminAuthedRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   ModeratorAuthedRoute: ModeratorAuthedRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
   ModeratorIndexRoute: ModeratorIndexRoute,
