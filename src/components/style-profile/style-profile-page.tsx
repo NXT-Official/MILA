@@ -722,10 +722,17 @@ export function StyleProfile() {
                               </p>
                             </div>
                             <div className="space-y-6">
-                              <div className="space-y-3">
-                                <label className="text-xs uppercase tracking-label text-ink font-medium block">
+                              <div
+                                className="space-y-3"
+                                role="group"
+                                aria-labelledby="season-group-label"
+                              >
+                                <span
+                                  id="season-group-label"
+                                  className="text-xs uppercase tracking-label text-ink font-medium block"
+                                >
                                   Your Prevailing Season
-                                </label>
+                                </span>
                                 <div className="grid grid-cols-2 gap-3">
                                   {[
                                     {
@@ -768,10 +775,17 @@ export function StyleProfile() {
                                   })}
                                 </div>
                               </div>
-                              <div className="space-y-3 pt-4 border-t border-porcelain/30">
-                                <label className="text-xs uppercase tracking-label text-ink font-medium block">
+                              <div
+                                className="space-y-3 pt-4 border-t border-porcelain/30"
+                                role="group"
+                                aria-labelledby="contrast-group-label"
+                              >
+                                <span
+                                  id="contrast-group-label"
+                                  className="text-xs uppercase tracking-label text-ink font-medium block"
+                                >
                                   The Depth of Contrast
-                                </label>
+                                </span>
                                 <p className="text-xs text-stone mb-2">
                                   The relationship between the intensity of your features and
                                   textiles.

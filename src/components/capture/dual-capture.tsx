@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Camera, Loader2, RotateCcw, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, errorMessage } from "@/lib/utils";
@@ -31,6 +31,7 @@ const STEP_COPY: Record<
 };
 
 export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCaptureProps) {
+  const captionId = useId();
   const [step, setStep] = useState<Step>("back");
   const [back, setBack] = useState<File | null>(null);
   const [front, setFront] = useState<File | null>(null);
@@ -135,10 +136,14 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
         </div>
 
         <div className="space-y-2">
-          <label className="text-micro uppercase tracking-label-xwide text-stone">
+          <label
+            htmlFor={captionId}
+            className="text-micro uppercase tracking-label-xwide text-stone"
+          >
             Caption (optional)
           </label>
           <textarea
+            id={captionId}
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             maxLength={500}

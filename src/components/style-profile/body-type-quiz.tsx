@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { OptionTile } from "@/components/ui/option-tile";
 import { type BodyType, BODY_TYPE_INFO } from "@/constants/style-profile";
 import { cn } from "@/lib/utils";
+import { useModalA11y } from "@/hooks/use-modal-a11y";
 
 type Drape = "structured" | "waist" | "relaxed";
 type Balance = "aligned" | "hips" | "upper";
@@ -107,6 +108,8 @@ export function BodyTypeQuiz({
   const [drape, setDrape] = useState<Drape | null>(null);
   const [balance, setBalance] = useState<Balance | null>(null);
   const [saving, setSaving] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  useModalA11y({ containerRef, onClose });
 
   const result = drape && balance ? BODY_BY_ANSWER[drape][balance] : null;
 
@@ -124,7 +127,14 @@ export function BodyTypeQuiz({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-0 sm:p-4">
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Body type quiz"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 bg-background flex items-center justify-center p-0 sm:p-4"
+    >
       <div className="bg-card w-full sm:border sm:border-border max-w-xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto p-6 sm:p-8 flex flex-col shadow-2xl">
         <div className="flex justify-between items-center pb-4 mb-6 border-b border-border/60">
           <p className="text-micro uppercase tracking-label-xwide text-accent">
