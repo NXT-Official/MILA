@@ -352,6 +352,7 @@ export function StudioCameraDrawer({
                     {dupeResult.dupes.length > 0 ? (
                       <div
                         className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1"
+                        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region made keyboard-focusable per WAI-ARIA APG scrolling-region pattern
                         tabIndex={0}
                         role="group"
                         aria-label="Budget alternatives"

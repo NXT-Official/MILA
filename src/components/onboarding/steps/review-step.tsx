@@ -23,6 +23,7 @@ function ReviewSection({
       <button
         type="button"
         onClick={onEdit}
+        aria-label={`Edit ${title}`}
         className="atelier-focus-ring shrink-0 text-xs text-accent hover:underline"
       >
         Edit

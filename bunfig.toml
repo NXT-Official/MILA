@@ -1,3 +1,9 @@
 [install]
 # 24h supply-chain guard: skip package versions published less than a day ago.
 minimumReleaseAge = 86400
+
+[test]
+# tests/e2e/** are Playwright specs (run via `bunx playwright test`), not
+# bun:test files — exclude them so `bun test` doesn't try to execute them
+# directly (Playwright's test()/describe() require its own runner).
+pathIgnorePatterns = ["tests/e2e/**"]

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowLeft, Sun, ShieldCheck, X as XIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { OptionTile } from "@/components/ui/option-tile";
+import { useModalA11y } from "@/hooks/use-modal-a11y";
 import {
   type Season,
   type Swatch,
@@ -70,6 +71,8 @@ export function ColorQuiz({
   const [chroma, setChroma] = useState<Chroma | null>(null);
   const [result, setResult] = useState<DetailedColorProfile | null>(null);
   const [saving, setSaving] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  useModalA11y({ containerRef, onClose });
 
   async function complete(finalAesthetic: AestheticPersona) {
     if (!hue || !value || !drape || !hairDepth || !eyeBrightness || !chroma) return;
@@ -114,7 +117,14 @@ export function ColorQuiz({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-0 sm:p-4">
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Color quiz"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 bg-background flex items-center justify-center p-0 sm:p-4"
+    >
       <div className="bg-card w-full sm:border sm:border-border max-w-2xl h-full sm:h-auto sm:max-h-[92vh] overflow-y-auto flex flex-col shadow-2xl">
         <div className="px-6 py-4 border-b-[0.5px] border-border flex items-center justify-between shrink-0">
           <p className="text-micro uppercase tracking-label-wide text-accent">

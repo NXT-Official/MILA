@@ -70,7 +70,13 @@ export function StaffShell() {
 
       <AnimatePresence>
         {sidebarOpen && (
-          <div key="admin-mobile-drawer" className="fixed inset-0 z-50 lg:hidden">
+          <div
+            key="admin-mobile-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Staff navigation"
+            className="fixed inset-0 z-50 lg:hidden"
+          >
             <motion.button
               type="button"
               initial={{ opacity: 0 }}

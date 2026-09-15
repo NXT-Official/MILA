@@ -41,6 +41,7 @@ export function getSupportColumns({
             type="button"
             onClick={() => onToggleResolved(row.original.id, !row.original.resolved)}
             title={row.original.resolved ? "Mark unresolved" : "Mark resolved"}
+            aria-label={row.original.resolved ? "Mark unresolved" : "Mark resolved"}
             className="text-stone hover:text-ink transition-colors"
           >
             {row.original.resolved ? (

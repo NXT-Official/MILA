@@ -448,7 +448,7 @@ export function ConciergeChat({
             <div className="flex w-fit items-center gap-2.5 rounded-xl border border-foreground/10 bg-background/50 p-2">
               <img
                 src={attachment.preview}
-                alt="Attached image preview"
+                alt={attachment.file.name}
                 className="size-10 rounded-lg object-cover"
               />
               <p className="max-w-40 truncate text-label text-muted-foreground">

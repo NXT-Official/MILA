@@ -74,7 +74,7 @@ export function ModerationPage() {
               {p.image_url_back ? (
                 <img
                   src={p.image_url_back}
-                  alt=""
+                  alt={`Outfit post by ${p.author_name || "member"}`}
                   className={`w-full h-full object-cover ${p.hidden ? "opacity-40 grayscale" : ""}`}
                 />
               ) : null}

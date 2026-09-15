@@ -33,6 +33,7 @@ import {
   SEASONS_MASTER_DATA,
 } from "@/constants/style-profile";
 import { errorMessage } from "@/lib/utils";
+import { useModalA11y } from "@/hooks/use-modal-a11y";
 
 const DRAPE_COLORS = ["#FFB347", "#94A3B8", "#1E3A8A", "#F7B7A3", "#C2410C"] as const;
 const DRAPE_LABELS = [
@@ -74,6 +75,7 @@ export function VisualDiagnosticViewfinder({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [streamErr, setStreamErr] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [drapeIdx, setDrapeIdx] = useState(0);
@@ -87,6 +89,7 @@ export function VisualDiagnosticViewfinder({
   const analyze = useServerFn(analyzeStudioColor);
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  useModalA11y({ containerRef, onClose, resetKey: calibrated });
 
   function pushLog(line: string) {
     setPipelineLog((prev) => [
@@ -320,12 +323,23 @@ export function VisualDiagnosticViewfinder({
   }
 
   return !calibrated ? (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Lighting briefing"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 bg-background flex flex-col"
+    >
       <div className="flex items-center justify-between px-5 py-4 border-b-[0.5px] border-border">
         <span className="text-micro uppercase tracking-label-xwide text-accent">
           Seoul Atelier · Find your light
         </span>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="text-muted-foreground hover:text-foreground"
+        >
           <XIcon className="size-5" />
         </button>
       </div>
@@ -389,12 +403,19 @@ export function VisualDiagnosticViewfinder({
       </div>
     </div>
   ) : (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Studio camera"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 bg-black flex flex-col"
+    >
       <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-5 py-4 bg-linear-to-b from-black/70 to-transparent">
         <span className="text-micro uppercase tracking-label-xwide text-white/90">
           Seoul Atelier · Studio Camera
         </span>
-        <button onClick={onClose} className="text-white/80 hover:text-white">
+        <button onClick={onClose} aria-label="Close" className="text-white/80 hover:text-white">
           <XIcon className="size-5" />
         </button>
       </div>
