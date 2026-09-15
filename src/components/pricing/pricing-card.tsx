@@ -1,4 +1,5 @@
 import { Check, Sparkles } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
@@ -77,6 +78,17 @@ export function PricingCard({
           >
             Choose Plan
           </Button>
+          <p className="mt-3 text-center text-micro leading-relaxed text-muted">
+            By subscribing you agree to our{" "}
+            <Link to="/privacy" className="atelier-focus-ring rounded underline hover:text-ink">
+              Privacy Policy
+            </Link>{" "}
+            and{" "}
+            <Link to="/terms" className="atelier-focus-ring rounded underline hover:text-ink">
+              Terms
+            </Link>
+            .
+          </p>
         </div>
       </li>
     </Card>

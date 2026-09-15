@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowRight, Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,6 +176,18 @@ export function SignupForm({
       )}
 
       {captcha.field}
+
+      <p className="text-micro leading-relaxed text-muted-foreground">
+        By creating an account you agree to our{" "}
+        <Link to="/privacy" className="atelier-focus-ring rounded underline hover:text-foreground">
+          Privacy Policy
+        </Link>{" "}
+        and{" "}
+        <Link to="/terms" className="atelier-focus-ring rounded underline hover:text-foreground">
+          Terms
+        </Link>
+        .
+      </p>
 
       <Button
         type="submit"
