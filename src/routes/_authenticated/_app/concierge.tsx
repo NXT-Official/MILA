@@ -1,17 +1,22 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { SquarePen, MessageSquare, Trash2, PanelLeft } from "lucide-react";
+import { SquarePen, MessageSquare, Trash2, PanelLeft, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ConciergeChat, AnchoredLookCard } from "@/components/concierge/concierge-chat";
 import { useAuth } from "@/hooks/use-auth";
 import { useConcierge } from "@/hooks/use-concierge";
 import { supabase } from "@/integrations/supabase/client";
 import { profileQueryOptions } from "@/lib/queries/profile";
+import { renameConciergeConversation } from "@/lib/concierge-conversations.functions";
 import { queryKeys } from "@/constants/query-keys";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
+
+const MAX_TITLE_LENGTH = 120;
 
 export const Route = createFileRoute("/_authenticated/_app/concierge")({
   component: ConciergePage,
@@ -21,6 +26,7 @@ function ConciergePage() {
   const { user } = useAuth();
   const { look, clearLook, openConcierge } = useConcierge();
   const queryClient = useQueryClient();
+  const renameConversation = useServerFn(renameConciergeConversation);
   const { data: profile } = useQuery({
     ...profileQueryOptions(user?.id),
     enabled: !!user?.id,
@@ -28,6 +34,9 @@ function ConciergePage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [chatKey, setChatKey] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [renaming, setRenaming] = useState(false);
 
   const { data: recents } = useQuery({
     queryKey: queryKeys.conciergeConversations(user?.id),
@@ -76,6 +85,37 @@ function ConciergePage() {
     if (id === activeId) newChat();
   }
 
+  function startEditing(id: string, currentTitle: string) {
+    setEditingId(id);
+    setDraft(currentTitle);
+  }
+
+  function cancelEditing() {
+    setEditingId(null);
+    setDraft("");
+  }
+
+  async function saveTitle(id: string) {
+    if (!user) return;
+    const title = draft.trim();
+    if (!title || title.length > MAX_TITLE_LENGTH) {
+      toast.error(
+        title ? `Title must be ${MAX_TITLE_LENGTH} characters or fewer.` : "Title can't be empty.",
+      );
+      return;
+    }
+    setRenaming(true);
+    try {
+      await renameConversation({ data: { conversation_id: id, title } });
+      queryClient.invalidateQueries({ queryKey: queryKeys.conciergeConversations(user.id) });
+      setEditingId(null);
+    } catch (e) {
+      toast.error(errorMessage(e, "Couldn't rename the conversation. Please try again."));
+    } finally {
+      setRenaming(false);
+    }
+  }
+
   const sidebarContent = (
     <>
       <div className="p-4">
@@ -92,31 +132,74 @@ function ConciergePage() {
         Recents
       </p>
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-        {(recents ?? []).map((c) => (
-          <div
-            key={c.id}
-            className={cn(
-              "group flex items-center rounded-lg transition-colors",
-              c.id === activeId ? "bg-foreground/8" : "hover:bg-foreground/5",
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => openConversation(c.id)}
-              className="min-w-0 flex-1 px-3 py-2 text-left text-[13px] leading-snug text-foreground truncate"
+        {(recents ?? []).map((c) =>
+          editingId === c.id ? (
+            <div key={c.id} className="flex items-center gap-1 px-3 py-1.5">
+              <Input
+                autoFocus
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                maxLength={MAX_TITLE_LENGTH}
+                disabled={renaming}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") saveTitle(c.id);
+                  if (event.key === "Escape") cancelEditing();
+                }}
+                className="h-7 flex-1 text-[13px]"
+              />
+              <button
+                type="button"
+                onClick={() => saveTitle(c.id)}
+                disabled={renaming}
+                aria-label="Save conversation title"
+                className="shrink-0 p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors disabled:opacity-50"
+              >
+                <Check className="size-3.5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={cancelEditing}
+                disabled={renaming}
+                aria-label="Cancel renaming conversation"
+                className="shrink-0 p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-colors disabled:opacity-50"
+              >
+                <X className="size-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          ) : (
+            <div
+              key={c.id}
+              className={cn(
+                "group flex items-center rounded-lg transition-colors",
+                c.id === activeId ? "bg-foreground/8" : "hover:bg-foreground/5",
+              )}
             >
-              {c.title}
-            </button>
-            <button
-              type="button"
-              onClick={() => deleteConversation(c.id)}
-              aria-label={`Delete conversation “${c.title}”`}
-              className="shrink-0 p-2 mr-1 rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
-            >
-              <Trash2 className="size-3.5" aria-hidden="true" />
-            </button>
-          </div>
-        ))}
+              <button
+                type="button"
+                onClick={() => openConversation(c.id)}
+                className="min-w-0 flex-1 px-3 py-2 text-left text-[13px] leading-snug text-foreground truncate"
+              >
+                {c.title}
+              </button>
+              <button
+                type="button"
+                onClick={() => startEditing(c.id, c.title)}
+                aria-label={`Rename conversation “${c.title}”`}
+                className="shrink-0 p-2 rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground hover:bg-foreground/10 transition-all"
+              >
+                <Pencil className="size-3.5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteConversation(c.id)}
+                aria-label={`Delete conversation “${c.title}”`}
+                className="shrink-0 p-2 mr-1 rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
+              >
+                <Trash2 className="size-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          ),
+        )}
         {recents && recents.length === 0 && (
           <div className="flex items-start gap-2.5 px-3 py-2 text-muted-foreground">
             <MessageSquare
