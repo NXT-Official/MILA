@@ -10,29 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as StaffRouteImport } from './routes/staff'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ModeratorIndexRouteImport } from './routes/moderator/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as ModeratorAuthedRouteImport } from './routes/moderator/_authed'
 import { Route as LoginForgotPasswordRouteImport } from './routes/login/forgot-password'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
-import { Route as AdminAuthedRouteImport } from './routes/admin/_authed'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
-import { Route as ModeratorAuthedSupportRouteImport } from './routes/moderator/_authed/support'
-import { Route as ModeratorAuthedModerationRouteImport } from './routes/moderator/_authed/moderation'
 import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
-import { Route as AdminAuthedSupportRouteImport } from './routes/admin/_authed/support'
-import { Route as AdminAuthedSubscriptionPlansRouteImport } from './routes/admin/_authed/subscription-plans'
-import { Route as AdminAuthedModerationRouteImport } from './routes/admin/_authed/moderation'
-import { Route as AdminAuthedMembersRouteImport } from './routes/admin/_authed/members'
-import { Route as AdminAuthedDashboardRouteImport } from './routes/admin/_authed/dashboard'
 import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
@@ -46,11 +34,6 @@ import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_aut
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StaffRoute = StaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -72,25 +55,10 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ModeratorIndexRoute = ModeratorIndexRouteImport.update({
-  id: '/moderator/',
-  path: '/moderator/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LoginRoute,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ModeratorAuthedRoute = ModeratorAuthedRouteImport.update({
-  id: '/moderator/_authed',
-  path: '/moderator',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const LoginForgotPasswordRoute = LoginForgotPasswordRouteImport.update({
   id: '/forgot-password',
@@ -107,11 +75,6 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminAuthedRoute = AdminAuthedRouteImport.update({
-  id: '/admin/_authed',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -121,47 +84,10 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/_app',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const ModeratorAuthedSupportRoute = ModeratorAuthedSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => ModeratorAuthedRoute,
-} as any)
-const ModeratorAuthedModerationRoute =
-  ModeratorAuthedModerationRouteImport.update({
-    id: '/moderation',
-    path: '/moderation',
-    getParentRoute: () => ModeratorAuthedRoute,
-  } as any)
 const ApiWebhooksPaddleRoute = ApiWebhooksPaddleRouteImport.update({
   id: '/api/webhooks/paddle',
   path: '/api/webhooks/paddle',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AdminAuthedSupportRoute = AdminAuthedSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => AdminAuthedRoute,
-} as any)
-const AdminAuthedSubscriptionPlansRoute =
-  AdminAuthedSubscriptionPlansRouteImport.update({
-    id: '/subscription-plans',
-    path: '/subscription-plans',
-    getParentRoute: () => AdminAuthedRoute,
-  } as any)
-const AdminAuthedModerationRoute = AdminAuthedModerationRouteImport.update({
-  id: '/moderation',
-  path: '/moderation',
-  getParentRoute: () => AdminAuthedRoute,
-} as any)
-const AdminAuthedMembersRoute = AdminAuthedMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
-  getParentRoute: () => AdminAuthedRoute,
-} as any)
-const AdminAuthedDashboardRoute = AdminAuthedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AdminAuthedRoute,
 } as any)
 const AuthenticatedOnboardingStyleProfileRoute =
   AuthenticatedOnboardingStyleProfileRouteImport.update({
@@ -219,17 +145,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRouteWithChildren
   '/privacy': typeof PrivacyRoute
-  '/staff': typeof StaffRoute
   '/terms': typeof TermsRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
-  '/admin': typeof AdminAuthedRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/login/forgot-password': typeof LoginForgotPasswordRoute
-  '/moderator': typeof ModeratorAuthedRouteWithChildren
-  '/admin/': typeof AdminIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/moderator/': typeof ModeratorIndexRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
@@ -238,27 +159,17 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
-  '/admin/dashboard': typeof AdminAuthedDashboardRoute
-  '/admin/members': typeof AdminAuthedMembersRoute
-  '/admin/moderation': typeof AdminAuthedModerationRoute
-  '/admin/subscription-plans': typeof AdminAuthedSubscriptionPlansRoute
-  '/admin/support': typeof AdminAuthedSupportRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
-  '/moderator/moderation': typeof ModeratorAuthedModerationRoute
-  '/moderator/support': typeof ModeratorAuthedSupportRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
-  '/staff': typeof StaffRoute
   '/terms': typeof TermsRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
-  '/admin': typeof AdminIndexRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/login/forgot-password': typeof LoginForgotPasswordRoute
-  '/moderator': typeof ModeratorIndexRoute
   '/login': typeof LoginIndexRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
@@ -268,14 +179,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
-  '/admin/dashboard': typeof AdminAuthedDashboardRoute
-  '/admin/members': typeof AdminAuthedMembersRoute
-  '/admin/moderation': typeof AdminAuthedModerationRoute
-  '/admin/subscription-plans': typeof AdminAuthedSubscriptionPlansRoute
-  '/admin/support': typeof AdminAuthedSupportRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
-  '/moderator/moderation': typeof ModeratorAuthedModerationRoute
-  '/moderator/support': typeof ModeratorAuthedSupportRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRoutesById {
@@ -284,18 +188,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRouteWithChildren
   '/privacy': typeof PrivacyRoute
-  '/staff': typeof StaffRoute
   '/terms': typeof TermsRoute
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
-  '/admin/_authed': typeof AdminAuthedRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/login/forgot-password': typeof LoginForgotPasswordRoute
-  '/moderator/_authed': typeof ModeratorAuthedRouteWithChildren
-  '/admin/': typeof AdminIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/moderator/': typeof ModeratorIndexRoute
   '/_authenticated/_app/concierge': typeof AuthenticatedAppConciergeRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/feed': typeof AuthenticatedAppFeedRoute
@@ -304,14 +203,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
-  '/admin/_authed/dashboard': typeof AdminAuthedDashboardRoute
-  '/admin/_authed/members': typeof AdminAuthedMembersRoute
-  '/admin/_authed/moderation': typeof AdminAuthedModerationRoute
-  '/admin/_authed/subscription-plans': typeof AdminAuthedSubscriptionPlansRoute
-  '/admin/_authed/support': typeof AdminAuthedSupportRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
-  '/moderator/_authed/moderation': typeof ModeratorAuthedModerationRoute
-  '/moderator/_authed/support': typeof ModeratorAuthedSupportRoute
   '/_authenticated/_app/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRouteTypes {
@@ -320,17 +212,12 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/privacy'
-    | '/staff'
     | '/terms'
     | '/onboarding'
-    | '/admin'
     | '/auth/callback'
     | '/auth/reset-password'
     | '/login/forgot-password'
-    | '/moderator'
-    | '/admin/'
     | '/login/'
-    | '/moderator/'
     | '/concierge'
     | '/dashboard'
     | '/feed'
@@ -339,27 +226,17 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/style-profile'
     | '/onboarding/style-profile'
-    | '/admin/dashboard'
-    | '/admin/members'
-    | '/admin/moderation'
-    | '/admin/subscription-plans'
-    | '/admin/support'
     | '/api/webhooks/paddle'
-    | '/moderator/moderation'
-    | '/moderator/support'
     | '/profile/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/privacy'
-    | '/staff'
     | '/terms'
     | '/onboarding'
-    | '/admin'
     | '/auth/callback'
     | '/auth/reset-password'
     | '/login/forgot-password'
-    | '/moderator'
     | '/login'
     | '/concierge'
     | '/dashboard'
@@ -369,14 +246,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/style-profile'
     | '/onboarding/style-profile'
-    | '/admin/dashboard'
-    | '/admin/members'
-    | '/admin/moderation'
-    | '/admin/subscription-plans'
-    | '/admin/support'
     | '/api/webhooks/paddle'
-    | '/moderator/moderation'
-    | '/moderator/support'
     | '/profile/$userId'
   id:
     | '__root__'
@@ -384,18 +254,13 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/privacy'
-    | '/staff'
     | '/terms'
     | '/_authenticated/_app'
     | '/_authenticated/onboarding'
-    | '/admin/_authed'
     | '/auth/callback'
     | '/auth/reset-password'
     | '/login/forgot-password'
-    | '/moderator/_authed'
-    | '/admin/'
     | '/login/'
-    | '/moderator/'
     | '/_authenticated/_app/concierge'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/feed'
@@ -404,14 +269,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/pricing'
     | '/_authenticated/_app/style-profile'
     | '/_authenticated/onboarding/style-profile'
-    | '/admin/_authed/dashboard'
-    | '/admin/_authed/members'
-    | '/admin/_authed/moderation'
-    | '/admin/_authed/subscription-plans'
-    | '/admin/_authed/support'
     | '/api/webhooks/paddle'
-    | '/moderator/_authed/moderation'
-    | '/moderator/_authed/support'
     | '/_authenticated/_app/profile/$userId'
   fileRoutesById: FileRoutesById
 }
@@ -420,14 +278,9 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
-  StaffRoute: typeof StaffRoute
   TermsRoute: typeof TermsRoute
-  AdminAuthedRoute: typeof AdminAuthedRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
-  ModeratorAuthedRoute: typeof ModeratorAuthedRouteWithChildren
-  AdminIndexRoute: typeof AdminIndexRoute
-  ModeratorIndexRoute: typeof ModeratorIndexRoute
   ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
 }
 
@@ -438,13 +291,6 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/staff': {
-      id: '/staff'
-      path: '/staff'
-      fullPath: '/staff'
-      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -475,33 +321,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/moderator/': {
-      id: '/moderator/'
-      path: '/moderator'
-      fullPath: '/moderator/'
-      preLoaderRoute: typeof ModeratorIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login/': {
       id: '/login/'
       path: '/'
       fullPath: '/login/'
       preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof LoginRoute
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/moderator/_authed': {
-      id: '/moderator/_authed'
-      path: '/moderator'
-      fullPath: '/moderator'
-      preLoaderRoute: typeof ModeratorAuthedRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/login/forgot-password': {
       id: '/login/forgot-password'
@@ -524,13 +349,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/_authed': {
-      id: '/admin/_authed'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminAuthedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -545,61 +363,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/moderator/_authed/support': {
-      id: '/moderator/_authed/support'
-      path: '/support'
-      fullPath: '/moderator/support'
-      preLoaderRoute: typeof ModeratorAuthedSupportRouteImport
-      parentRoute: typeof ModeratorAuthedRoute
-    }
-    '/moderator/_authed/moderation': {
-      id: '/moderator/_authed/moderation'
-      path: '/moderation'
-      fullPath: '/moderator/moderation'
-      preLoaderRoute: typeof ModeratorAuthedModerationRouteImport
-      parentRoute: typeof ModeratorAuthedRoute
-    }
     '/api/webhooks/paddle': {
       id: '/api/webhooks/paddle'
       path: '/api/webhooks/paddle'
       fullPath: '/api/webhooks/paddle'
       preLoaderRoute: typeof ApiWebhooksPaddleRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/admin/_authed/support': {
-      id: '/admin/_authed/support'
-      path: '/support'
-      fullPath: '/admin/support'
-      preLoaderRoute: typeof AdminAuthedSupportRouteImport
-      parentRoute: typeof AdminAuthedRoute
-    }
-    '/admin/_authed/subscription-plans': {
-      id: '/admin/_authed/subscription-plans'
-      path: '/subscription-plans'
-      fullPath: '/admin/subscription-plans'
-      preLoaderRoute: typeof AdminAuthedSubscriptionPlansRouteImport
-      parentRoute: typeof AdminAuthedRoute
-    }
-    '/admin/_authed/moderation': {
-      id: '/admin/_authed/moderation'
-      path: '/moderation'
-      fullPath: '/admin/moderation'
-      preLoaderRoute: typeof AdminAuthedModerationRouteImport
-      parentRoute: typeof AdminAuthedRoute
-    }
-    '/admin/_authed/members': {
-      id: '/admin/_authed/members'
-      path: '/members'
-      fullPath: '/admin/members'
-      preLoaderRoute: typeof AdminAuthedMembersRouteImport
-      parentRoute: typeof AdminAuthedRoute
-    }
-    '/admin/_authed/dashboard': {
-      id: '/admin/_authed/dashboard'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AdminAuthedDashboardRouteImport
-      parentRoute: typeof AdminAuthedRoute
     }
     '/_authenticated/onboarding/style-profile': {
       id: '/_authenticated/onboarding/style-profile'
@@ -733,53 +502,14 @@ const LoginRouteChildren: LoginRouteChildren = {
 
 const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
 
-interface AdminAuthedRouteChildren {
-  AdminAuthedDashboardRoute: typeof AdminAuthedDashboardRoute
-  AdminAuthedMembersRoute: typeof AdminAuthedMembersRoute
-  AdminAuthedModerationRoute: typeof AdminAuthedModerationRoute
-  AdminAuthedSubscriptionPlansRoute: typeof AdminAuthedSubscriptionPlansRoute
-  AdminAuthedSupportRoute: typeof AdminAuthedSupportRoute
-}
-
-const AdminAuthedRouteChildren: AdminAuthedRouteChildren = {
-  AdminAuthedDashboardRoute: AdminAuthedDashboardRoute,
-  AdminAuthedMembersRoute: AdminAuthedMembersRoute,
-  AdminAuthedModerationRoute: AdminAuthedModerationRoute,
-  AdminAuthedSubscriptionPlansRoute: AdminAuthedSubscriptionPlansRoute,
-  AdminAuthedSupportRoute: AdminAuthedSupportRoute,
-}
-
-const AdminAuthedRouteWithChildren = AdminAuthedRoute._addFileChildren(
-  AdminAuthedRouteChildren,
-)
-
-interface ModeratorAuthedRouteChildren {
-  ModeratorAuthedModerationRoute: typeof ModeratorAuthedModerationRoute
-  ModeratorAuthedSupportRoute: typeof ModeratorAuthedSupportRoute
-}
-
-const ModeratorAuthedRouteChildren: ModeratorAuthedRouteChildren = {
-  ModeratorAuthedModerationRoute: ModeratorAuthedModerationRoute,
-  ModeratorAuthedSupportRoute: ModeratorAuthedSupportRoute,
-}
-
-const ModeratorAuthedRouteWithChildren = ModeratorAuthedRoute._addFileChildren(
-  ModeratorAuthedRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
-  StaffRoute: StaffRoute,
   TermsRoute: TermsRoute,
-  AdminAuthedRoute: AdminAuthedRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
-  ModeratorAuthedRoute: ModeratorAuthedRouteWithChildren,
-  AdminIndexRoute: AdminIndexRoute,
-  ModeratorIndexRoute: ModeratorIndexRoute,
   ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
 }
 export const routeTree = rootRouteImport

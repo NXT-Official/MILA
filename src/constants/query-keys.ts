@@ -7,12 +7,6 @@ export const queryKeys = {
   mySubscription: (userId: string | undefined) => ["my-subscription", userId] as const,
   conciergeConversations: (userId: string | undefined) =>
     ["concierge-conversations", userId] as const,
-  staffGate: ["staff:gate"] as const,
-  adminUsers: ["admin:users"] as const,
-  adminPosts: ["admin:posts"] as const,
-  adminSupportMessages: ["admin:support-messages"] as const,
-  adminDashboard: ["admin:dashboard"] as const,
-  adminSubscriptionPlans: ["admin:subscription-plans"] as const,
   subscriptionPlans: ["subscription-plans"] as const,
   savedPalettes: (userId: string | undefined) => ["saved-palettes", userId] as const,
   similarItems: (postItemId: string) => ["similar-items", postItemId] as const,

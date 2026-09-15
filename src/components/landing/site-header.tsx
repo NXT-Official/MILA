@@ -1,19 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { staffGateQueryOptions } from "@/lib/queries/admin";
-import { MODERATOR_HOME } from "@/lib/authorization";
 
 export type NavSection = { id: string; label: string };
 
 export function SiteHeader({ sections = [] }: { sections?: NavSection[] }) {
   const { session } = useAuth();
-  const { data: gate } = useQuery({ ...staffGateQueryOptions(), enabled: !!session });
-  const staffHome = gate?.is_admin ? "/admin/dashboard" : MODERATOR_HOME;
-  const destination = session ? (gate?.can_access_staff_area ? staffHome : "/dashboard") : "/login";
-  const label = session ? (gate?.can_access_staff_area ? "Staff" : "Dashboard") : "Sign in";
+  const destination = session ? "/dashboard" : "/login";
+  const label = session ? "Dashboard" : "Sign in";
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-canvas/80 backdrop-blur-md">

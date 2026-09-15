@@ -12,7 +12,7 @@ import { AuthProvider } from "@/components/layout/auth-provider";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorState } from "@/components/ui/error-state";
-import { captureClientException } from "@/lib/sentry.client";
+import { captureClientException } from "@/lib/sentry-client";
 
 function NotFoundComponent() {
   return (
