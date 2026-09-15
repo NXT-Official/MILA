@@ -1,0 +1,20 @@
+# Production domain not yet confirmed in repo config (checked .env.example,
+# vite.config.ts) — replace the placeholder below once it's known.
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /moderator
+Disallow: /staff
+Disallow: /concierge
+Disallow: /feed
+Disallow: /history
+Disallow: /palettes
+Disallow: /pricing
+Disallow: /profile
+Disallow: /style-profile
+Disallow: /onboarding
+Disallow: /auth/
+Disallow: /api/
+
+Sitemap: https://your-production-domain.example/sitemap.xml
