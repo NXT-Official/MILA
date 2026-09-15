@@ -48,21 +48,23 @@ export function GeneratedLookDetail({
             />
           </div>
         </LookSection>
-        <LookSection kicker="Makeup">
-          <ExpandableText
-            text={makeup.palette}
-            clampClassName="line-clamp-4"
-            className="font-serif text-base leading-relaxed text-foreground/90"
-          />
-          <div className="mt-3 border-t border-border/70 pt-3">
-            <p className="mb-1 text-xs uppercase tracking-label text-ink">How to</p>
+        {makeup ? (
+          <LookSection kicker="Makeup">
             <ExpandableText
-              text={makeup.details}
-              clampClassName="line-clamp-2"
-              className="text-sm text-muted-foreground"
+              text={makeup.palette}
+              clampClassName="line-clamp-4"
+              className="font-serif text-base leading-relaxed text-foreground/90"
             />
-          </div>
-        </LookSection>
+            <div className="mt-3 border-t border-border/70 pt-3">
+              <p className="mb-1 text-xs uppercase tracking-label text-ink">How to</p>
+              <ExpandableText
+                text={makeup.details}
+                clampClassName="line-clamp-2"
+                className="text-sm text-muted-foreground"
+              />
+            </div>
+          </LookSection>
+        ) : null}
       </div>
     </div>
   );

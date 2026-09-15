@@ -51,6 +51,13 @@ export function ReviewStep({
   const beautyPrefs = Array.isArray(profile.beauty_preferences)
     ? (profile.beauty_preferences as unknown[]).filter((t): t is string => typeof t === "string")
     : [];
+  const shoppingPrefs = Array.isArray(profile.shopping_preferences)
+    ? (profile.shopping_preferences as unknown[]).filter((t): t is string => typeof t === "string")
+    : [];
+  const stylingConstraints = Array.isArray(profile.styling_constraints)
+    ? (profile.styling_constraints as unknown[]).filter((t): t is string => typeof t === "string")
+    : [];
+  const makeupEligible = profile.gender !== "Male";
 
   return (
     <div>
@@ -77,6 +84,11 @@ export function ReviewStep({
           onEdit={() => onEdit("color-result")}
         />
         <ReviewSection
+          title="Gender"
+          value={profile.gender ?? "Not set"}
+          onEdit={() => onEdit("gender")}
+        />
+        <ReviewSection
           title="Body silhouette"
           value={profile.body_type ?? "Not set"}
           onEdit={() => onEdit("body-type")}
@@ -92,6 +104,18 @@ export function ReviewStep({
           onEdit={() => onEdit("hair-type")}
         />
         <ReviewSection
+          title="Hair length"
+          value={profile.hair_length ?? "Not set"}
+          onEdit={() => onEdit("hair-length")}
+        />
+        {makeupEligible ? (
+          <ReviewSection
+            title="Makeup preference"
+            value={profile.makeup_preference ?? "none"}
+            onEdit={() => onEdit("makeup-preference")}
+          />
+        ) : null}
+        <ReviewSection
           title="Beauty preferences"
           value={beautyPrefs.length > 0 ? beautyPrefs.join(", ") : "No preference selected"}
           onEdit={() => onEdit("beauty-preferences")}
@@ -100,6 +124,20 @@ export function ReviewStep({
           title="Location"
           value={hub ? `${hub.city} — ${hub.tagline}` : "Not set"}
           onEdit={() => onEdit("location")}
+        />
+        <ReviewSection
+          title="Shopping preferences"
+          value={shoppingPrefs.length > 0 ? shoppingPrefs.join(", ") : "No preference selected"}
+          onEdit={() => onEdit("shopping-preferences")}
+        />
+        <ReviewSection
+          title="Styling constraints"
+          value={
+            stylingConstraints.length > 0
+              ? stylingConstraints.join(", ")
+              : "No constraints selected"
+          }
+          onEdit={() => onEdit("styling-constraints")}
         />
       </div>
 

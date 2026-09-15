@@ -69,6 +69,9 @@ import { BodyTypeQuiz } from "@/components/style-profile/body-type-quiz";
 import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-diagnostic-viewfinder";
 import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio-view";
 import { studioToDossier, normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteMyProfilePhoto } from "@/lib/profile-photo.functions";
+import { Trash2 } from "lucide-react";
 
 function readString(value: Json | undefined): string | null {
   return typeof value === "string" ? value : null;
@@ -107,8 +110,11 @@ export function StyleProfile() {
   const [viewMode, setViewMode] = useState<"streamlined" | "detailed">("streamlined");
   const [beautyPrefs, setBeautyPrefs] = useState<string[]>([]);
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [photoConsentAt, setPhotoConsentAt] = useState<string | null>(null);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
   const lastSavedRef = useRef<string>("");
   const initialLoadedRef = useRef(false);
+  const deletePhoto = useServerFn(deleteMyProfilePhoto);
 
   useEffect(() => {
     if (!user) return;
@@ -177,6 +183,7 @@ export function StyleProfile() {
           const bp = data.beauty_preferences;
           if (Array.isArray(bp))
             setBeautyPrefs(bp.filter((x): x is string => typeof x === "string"));
+          setPhotoConsentAt(data.photo_consent_at ?? null);
           const normalized = normalizeStoredProfile(json);
           if (normalized && !localStudioUpdateRef.current) {
             setDossier(normalized);
@@ -867,8 +874,42 @@ export function StyleProfile() {
               <VisualDiagnosticViewfinder
                 onClose={() => setDiagOpen(false)}
                 onComplete={handleStudioComplete}
+                onPhotoSaved={() => setPhotoConsentAt(new Date().toISOString())}
               />
             )}
+            {photoConsentAt ? (
+              <div className="mt-6 flex items-center justify-between gap-4 rounded-card border border-border bg-card p-5">
+                <div>
+                  <p className="text-sm font-medium text-ink">Consented photo on file</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Saved {new Date(photoConsentAt).toLocaleDateString()}. Private to your account —
+                    delete it any time.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  loading={deletingPhoto}
+                  onClick={async () => {
+                    setDeletingPhoto(true);
+                    try {
+                      await deletePhoto();
+                      setPhotoConsentAt(null);
+                      toast.success("Your saved photo was removed.");
+                    } catch (err) {
+                      toast.error(
+                        err instanceof Error ? err.message : "Couldn't remove the photo.",
+                      );
+                    } finally {
+                      setDeletingPhoto(false);
+                    }
+                  }}
+                >
+                  <Trash2 className="size-3.5" aria-hidden="true" />
+                  Delete photo
+                </Button>
+              </div>
+            ) : null}
             <div ref={portfolioRef}>
               <StudioPortfolioView
                 key={

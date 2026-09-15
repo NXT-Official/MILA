@@ -1,4 +1,12 @@
-import { UNDERTONES, SEASONS, BODIES, FACE_SHAPES, HAIR_TYPES } from "@/constants/style-profile";
+import {
+  UNDERTONES,
+  SEASONS,
+  BODIES,
+  FACE_SHAPES,
+  HAIR_TYPES,
+  GENDERS,
+  HAIR_LENGTHS,
+} from "@/constants/style-profile";
 
 export interface StyleProfileRow {
   skin_undertone: string | null;
@@ -6,6 +14,8 @@ export interface StyleProfileRow {
   body_type: string | null;
   face_shape: string | null;
   hair_type: string | null;
+  hair_length: string | null;
+  gender: string | null;
   color_profile: unknown;
 }
 
@@ -22,6 +32,8 @@ export function toStyleProfileRow(
     body_type: profile.body_type,
     face_shape: profile.face_shape,
     hair_type: profile.hair_type,
+    hair_length: profile.hair_length,
+    gender: profile.gender,
     color_profile: profile.color_profile,
   };
 }
@@ -40,6 +52,8 @@ export function isStyleProfileComplete(profile: StyleProfileRow | null | undefin
     (BODIES as readonly string[]).includes(profile.body_type ?? "") &&
     (FACE_SHAPES as readonly string[]).includes(profile.face_shape ?? "") &&
     (HAIR_TYPES as readonly string[]).includes(profile.hair_type ?? "") &&
+    (HAIR_LENGTHS as readonly string[]).includes(profile.hair_length ?? "") &&
+    (GENDERS as readonly string[]).includes(profile.gender ?? "") &&
     isNonEmptyColorProfile(profile.color_profile)
   );
 }

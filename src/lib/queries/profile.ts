@@ -15,6 +15,13 @@ export type DashboardProfile = {
   beauty_preferences: Json | null;
   color_profile: Json | null;
   default_location: string | null;
+  gender: string | null;
+  hair_length: string | null;
+  makeup_preference: string | null;
+  shopping_preferences: Json | null;
+  styling_constraints: Json | null;
+  delivery_country: string | null;
+  photo_consent_at: string | null;
 };
 
 const EMPTY_PROFILE: DashboardProfile = {
@@ -28,6 +35,13 @@ const EMPTY_PROFILE: DashboardProfile = {
   beauty_preferences: null,
   color_profile: null,
   default_location: null,
+  gender: null,
+  hair_length: null,
+  makeup_preference: null,
+  shopping_preferences: null,
+  styling_constraints: null,
+  delivery_country: null,
+  photo_consent_at: null,
 };
 
 function normalizeFirstWord(v: unknown): string | null {
@@ -47,6 +61,13 @@ function buildDashboardProfile(
     hair_type: string | null;
     beauty_preferences: Json | null;
     default_location: string | null;
+    gender: string | null;
+    hair_length: string | null;
+    makeup_preference: string | null;
+    shopping_preferences: Json | null;
+    styling_constraints: Json | null;
+    delivery_country: string | null;
+    photo_consent_at: string | null;
   } | null,
 ): DashboardProfile {
   if (!data) return EMPTY_PROFILE;
@@ -75,6 +96,13 @@ function buildDashboardProfile(
     beauty_preferences: data.beauty_preferences ?? null,
     color_profile: data.color_profile ?? null,
     default_location: data.default_location ?? null,
+    gender: data.gender ?? null,
+    hair_length: data.hair_length ?? null,
+    makeup_preference: data.makeup_preference ?? null,
+    shopping_preferences: data.shopping_preferences ?? null,
+    styling_constraints: data.styling_constraints ?? null,
+    delivery_country: data.delivery_country ?? null,
+    photo_consent_at: data.photo_consent_at ?? null,
   };
 }
 
@@ -85,7 +113,7 @@ export function profileQueryOptions(userId: string | undefined) {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "body_type,color_season,skin_undertone,full_name,color_profile,face_shape,hair_type,beauty_preferences,default_location",
+          "body_type,color_season,skin_undertone,full_name,color_profile,face_shape,hair_type,beauty_preferences,default_location,gender,hair_length,makeup_preference,shopping_preferences,styling_constraints,delivery_country,photo_consent_at",
         )
         .eq("id", userId as string)
         .maybeSingle();

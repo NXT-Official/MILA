@@ -9,6 +9,7 @@ export function OutfitVisual({
   headline,
   onRetry,
   retryDisabled,
+  label = "AI-generated outfit inspiration",
 }: {
   imageDataUri: string | null;
   imageGenerationError?: string;
@@ -16,6 +17,7 @@ export function OutfitVisual({
   headline: string;
   onRetry?: () => void;
   retryDisabled?: boolean;
+  label?: string;
 }) {
   if (loading) {
     return (
@@ -32,12 +34,17 @@ export function OutfitVisual({
 
   if (imageDataUri) {
     return (
-      <div className="atelier-media-frame max-w-lg">
-        <img
-          src={imageDataUri}
-          alt={`AI-generated visualization of ${headline}`}
-          className="h-full w-full object-contain bg-foreground/4"
-        />
+      <div className="max-w-lg">
+        <div className="atelier-media-frame">
+          <img
+            src={imageDataUri}
+            alt={`${label} of ${headline}`}
+            className="h-full w-full object-contain bg-foreground/4"
+          />
+        </div>
+        <p className="mt-2 text-micro uppercase tracking-label-xwide text-muted-foreground">
+          {label}
+        </p>
       </div>
     );
   }

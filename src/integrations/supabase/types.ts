@@ -313,9 +313,12 @@ export type Database = {
           description: string | null;
           id: string;
           image_url: string | null;
+          in_stock: boolean;
+          last_verified_at: string | null;
           price: number;
           seasonal_palettes: string[];
           title: string;
+          verification_status: string;
         };
         Insert: {
           affiliate_link: string;
@@ -328,9 +331,12 @@ export type Database = {
           description?: string | null;
           id?: string;
           image_url?: string | null;
+          in_stock?: boolean;
+          last_verified_at?: string | null;
           price?: number;
           seasonal_palettes?: string[];
           title: string;
+          verification_status?: string;
         };
         Update: {
           affiliate_link?: string;
@@ -343,9 +349,12 @@ export type Database = {
           description?: string | null;
           id?: string;
           image_url?: string | null;
+          in_stock?: boolean;
+          last_verified_at?: string | null;
           price?: number;
           seasonal_palettes?: string[];
           title?: string;
+          verification_status?: string;
         };
         Relationships: [
           {
@@ -365,13 +374,21 @@ export type Database = {
           color_season: string | null;
           created_at: string;
           default_location: string | null;
+          delivery_country: string | null;
           face_shape: string | null;
           full_name: string | null;
+          gender: string | null;
+          hair_length: string | null;
           hair_type: string | null;
           id: string;
+          makeup_preference: string;
           paddle_customer_id: string | null;
+          photo_consent_at: string | null;
+          profile_photo_path: string | null;
+          shopping_preferences: Json;
           skin_undertone: string | null;
           style_goals: string[];
+          styling_constraints: Json;
           suspended: boolean;
           updated_at: string;
           username: string | null;
@@ -383,13 +400,21 @@ export type Database = {
           color_season?: string | null;
           created_at?: string;
           default_location?: string | null;
+          delivery_country?: string | null;
           face_shape?: string | null;
           full_name?: string | null;
+          gender?: string | null;
+          hair_length?: string | null;
           hair_type?: string | null;
           id: string;
+          makeup_preference?: string;
           paddle_customer_id?: string | null;
+          photo_consent_at?: string | null;
+          profile_photo_path?: string | null;
+          shopping_preferences?: Json;
           skin_undertone?: string | null;
           style_goals?: string[];
+          styling_constraints?: Json;
           suspended?: boolean;
           updated_at?: string;
           username?: string | null;
@@ -401,13 +426,21 @@ export type Database = {
           color_season?: string | null;
           created_at?: string;
           default_location?: string | null;
+          delivery_country?: string | null;
           face_shape?: string | null;
           full_name?: string | null;
+          gender?: string | null;
+          hair_length?: string | null;
           hair_type?: string | null;
           id?: string;
+          makeup_preference?: string;
           paddle_customer_id?: string | null;
+          photo_consent_at?: string | null;
+          profile_photo_path?: string | null;
+          shopping_preferences?: Json;
           skin_undertone?: string | null;
           style_goals?: string[];
+          styling_constraints?: Json;
           suspended?: boolean;
           updated_at?: string;
           username?: string | null;

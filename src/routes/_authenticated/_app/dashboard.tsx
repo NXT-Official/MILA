@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,6 +26,7 @@ import { OutfitResultSkeleton } from "@/components/dashboard/outfit-result-skele
 import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detail";
 import { ShopThisLookGrid } from "@/components/dashboard/shop-look-grid";
 import { findLookProducts, type LookProduct } from "@/lib/look-products.functions";
+import { generatePhotoPreview } from "@/lib/photo-preview.functions";
 import { toast } from "sonner";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 import { isInsufficientCreditsError } from "@/lib/credits";
@@ -37,6 +38,7 @@ import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerat
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { errorMessage } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 const VIBES = [
   "Everyday Casual",
@@ -109,13 +111,20 @@ function Dashboard() {
   const [savedLook, setSavedLook] = useState<{ id: string; imageUrl: string } | null>(null);
   const lookSaved = !!savedLook;
   const [vibe, setVibe] = useState<Vibe>("Everyday Casual");
+  const [agenda, setAgenda] = useState("");
+  const [dressCode, setDressCode] = useState("");
+  const [indoorOutdoor, setIndoorOutdoor] = useState<"Indoor" | "Outdoor" | "Mixed" | "">("");
   const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
   const [climate, setClimate] = useState<ClimateState | null>(null);
+  const [previewMode, setPreviewMode] = useState<"inspiration" | "photo_edit">("inspiration");
+  const [photoPreviewLoading, setPhotoPreviewLoading] = useState(false);
+  const [inspirationImageDataUri, setInspirationImageDataUri] = useState<string | null>(null);
 
   const generate = useServerFn(generateDailyLook);
   const regenerateImage = useServerFn(regenerateOutfitImage);
   const saveOutfit = useServerFn(saveOutfitToHistory);
   const fetchLookProducts = useServerFn(findLookProducts);
+  const generatePhotoPreviewFn = useServerFn(generatePhotoPreview);
 
   async function fetchShopItems(
     colorSeason: string,
@@ -140,6 +149,8 @@ function Dashboard() {
       const res = await regenerateImage({ data: outfit });
       setLook((prev) => (prev ? { ...prev, imageGenerationError: undefined, ...res } : prev));
       setSavedLook(null);
+      setPreviewMode("inspiration");
+      if (res.imageDataUri) setInspirationImageDataUri(res.imageDataUri);
       return res;
     } catch (e) {
       if (isInsufficientCreditsError(e)) {
@@ -174,6 +185,8 @@ function Dashboard() {
     setLook(null);
     setShopItems(null);
     setSavedLook(null);
+    setPreviewMode("inspiration");
+    setInspirationImageDataUri(null);
     let outfit: DailyLook;
     try {
       const payload = {
@@ -188,6 +201,10 @@ function Dashboard() {
         condition: climate.condition,
         location: climate.location,
         vibe,
+        agenda: agenda.trim() || undefined,
+        dressCode: dressCode.trim() || undefined,
+        indoorOutdoor: indoorOutdoor || undefined,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
       outfit = await generate({ data: payload });
@@ -203,7 +220,12 @@ function Dashboard() {
     }
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
-    void fetchShopItems(profile.color_season, profile.body_type, climate.tempF, climate.country);
+    void fetchShopItems(
+      profile.color_season,
+      profile.body_type,
+      climate.tempF,
+      profile.delivery_country || climate.country,
+    );
     await fetchImage(outfit);
   }
 
@@ -216,6 +238,56 @@ function Dashboard() {
     } else if (res.imageGenerationError) {
       toast.error(res.imageGenerationError);
     }
+  }
+
+  async function previewOnMyPhoto() {
+    if (!look || photoPreviewLoading || imageLoading || generating) return;
+    const referenceProductIds = (shopItems ?? [])
+      .filter((item) => item.image_url)
+      .slice(0, 3)
+      .map((item) => item.id);
+    setPhotoPreviewLoading(true);
+    try {
+      const { outfit, hair, makeup, vibe_alignment_score } = look;
+      const res = await generatePhotoPreviewFn({
+        data: {
+          outfit: { outfit, hair, makeup, vibe_alignment_score },
+          productIds: referenceProductIds,
+        },
+      });
+      if (res.mode === "photo_edit") {
+        setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
+        setPreviewMode("photo_edit");
+        setSavedLook(null);
+        toast.success("Photo preview ready.");
+      } else {
+        toast.error(res.reason);
+      }
+    } catch (e) {
+      if (isInsufficientCreditsError(e)) {
+        setCreditPaywallOpen(true);
+      } else {
+        toast.error(errorMessage(e, "Couldn't create a photo preview. Please try again."));
+      }
+    } finally {
+      setPhotoPreviewLoading(false);
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
+    }
+  }
+
+  function backToInspirationImage() {
+    if (!look) return;
+    setSavedLook(null);
+    if (inspirationImageDataUri) {
+      setLook((prev) =>
+        prev
+          ? { ...prev, imageDataUri: inspirationImageDataUri, imageGenerationError: undefined }
+          : prev,
+      );
+      setPreviewMode("inspiration");
+      return;
+    }
+    void retryImage();
   }
 
   async function saveLookToHistory() {
@@ -235,6 +307,9 @@ function Dashboard() {
           hair: look.hair,
           makeup: look.makeup,
           vibe_alignment_score: look.vibe_alignment_score,
+          forecastRetrievedAt: look.forecastRetrievedAt ?? null,
+          productIds: (shopItems ?? []).map((item) => item.id),
+          previewMode,
         },
       });
       setSavedLook({ id: row.id, imageUrl: row.image_url });
@@ -283,6 +358,18 @@ function Dashboard() {
                   Let Mila compose an ideal OOTD for today's weather, your palette, and your
                   silhouette.
                 </p>
+                {profile?.gender ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Styling for {profile.gender}
+                    {profile.gender !== "Male"
+                      ? ` · Makeup: ${profile.makeup_preference && profile.makeup_preference !== "none" ? profile.makeup_preference : "off"}`
+                      : ""}
+                    {" · "}
+                    <Link to="/style-profile" className="underline hover:text-foreground">
+                      Change
+                    </Link>
+                  </p>
+                ) : null}
               </div>
               <ClimateWidget value={climate} onChange={setClimate} />
             </div>
@@ -308,6 +395,68 @@ function Dashboard() {
                         {v}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-full sm:max-w-2xs">
+                <label
+                  htmlFor="agenda-input"
+                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
+                >
+                  Today's plan (optional)
+                </label>
+                <Input
+                  id="agenda-input"
+                  value={agenda}
+                  onChange={(e) => setAgenda(e.target.value)}
+                  placeholder="e.g. Client dinner at 7pm"
+                  maxLength={200}
+                  className="h-11 rounded-full border-border bg-card text-sm"
+                />
+              </div>
+              <div className="w-full sm:max-w-3xs">
+                <label
+                  htmlFor="dress-code-input"
+                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
+                >
+                  Dress code (optional)
+                </label>
+                <Input
+                  id="dress-code-input"
+                  value={dressCode}
+                  onChange={(e) => setDressCode(e.target.value)}
+                  placeholder="e.g. Smart casual"
+                  maxLength={80}
+                  className="h-11 rounded-full border-border bg-card text-sm"
+                />
+              </div>
+              <div className="w-full sm:max-w-3xs">
+                <span
+                  id="setting-label"
+                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
+                >
+                  Setting (optional)
+                </span>
+                <Select
+                  value={indoorOutdoor || undefined}
+                  onValueChange={(v) => setIndoorOutdoor(v as "Indoor" | "Outdoor" | "Mixed")}
+                >
+                  <SelectTrigger
+                    aria-labelledby="setting-label"
+                    className="h-11 rounded-full border-border bg-card text-sm"
+                  >
+                    <SelectValue placeholder="Indoor, outdoor, or mixed" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Indoor" className="text-sm">
+                      Indoor
+                    </SelectItem>
+                    <SelectItem value="Outdoor" className="text-sm">
+                      Outdoor
+                    </SelectItem>
+                    <SelectItem value="Mixed" className="text-sm">
+                      Mixed
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -375,19 +524,50 @@ function Dashboard() {
                       hair={look.hair}
                       makeup={look.makeup}
                       media={
-                        <OutfitVisual
-                          imageDataUri={look.imageDataUri}
-                          imageGenerationError={look.imageGenerationError}
-                          loading={imageLoading}
-                          headline={look.outfit.headline}
-                          onRetry={retryImage}
-                          retryDisabled={imageLoading || generating}
-                        />
+                        <div>
+                          <OutfitVisual
+                            imageDataUri={look.imageDataUri}
+                            imageGenerationError={look.imageGenerationError}
+                            loading={imageLoading || photoPreviewLoading}
+                            headline={look.outfit.headline}
+                            onRetry={retryImage}
+                            retryDisabled={imageLoading || generating || photoPreviewLoading}
+                            label={
+                              previewMode === "photo_edit"
+                                ? "AI-edited preview of your photo"
+                                : "AI-generated outfit inspiration"
+                            }
+                          />
+                          {profile?.photo_consent_at && !imageLoading ? (
+                            <div className="mt-3 flex max-w-lg items-center gap-2">
+                              {previewMode === "inspiration" ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  loading={photoPreviewLoading}
+                                  disabled={generating}
+                                  onClick={previewOnMyPhoto}
+                                >
+                                  Preview on my photo
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={photoPreviewLoading || generating}
+                                  onClick={backToInspirationImage}
+                                >
+                                  Back to inspiration image
+                                </Button>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
                       }
                     />
                   </motion.div>
 
-                  {shopItems && shopItems.length > 0 && (
+                  {shopItems && (
                     <motion.div variants={resultItemVariants}>
                       <ShopThisLookGrid items={shopItems} />
                     </motion.div>

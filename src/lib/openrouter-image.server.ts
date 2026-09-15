@@ -4,7 +4,8 @@ import type { DailyLook } from "./generate-outfit.functions";
 const TIMEOUT_MS = 75_000;
 const MAX_PROMPT_LENGTH = 2048;
 const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
-const IMAGE_MODEL = "meta/muse-image";
+export const IMAGE_PROVIDER = "openrouter";
+export const IMAGE_MODEL = "meta/muse-image";
 
 export class ImageProviderRateLimitError extends Error {}
 
@@ -17,16 +18,15 @@ function buildOutfitImagePrompt(outfit: DailyLook): string {
     .filter(Boolean)
     .join(" ");
 
+  const makeupBlock = outfit.makeup ? `\n\nMakeup:\n${outfit.makeup.palette}` : "";
+
   return `Create a realistic full-body luxury fashion editorial photograph.
 
 Outfit:
 ${outfitLine}
 
 Hair:
-${outfit.hair.style}
-
-Makeup:
-${outfit.makeup.palette}
+${outfit.hair.style}${makeupBlock}
 
 Presentation:
 Show one adult fashion model from head to toe.

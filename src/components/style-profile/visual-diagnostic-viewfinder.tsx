@@ -26,6 +26,7 @@ import {
   analyzePersonalColor as analyzeStudioColor,
   type StudioColorProfile,
 } from "@/lib/analyzePersonalColor.functions";
+import { saveConsentedProfilePhoto } from "@/lib/profile-photo.functions";
 import {
   type StudioTelemetry,
   MANUAL_SEASON_GROUPS,
@@ -67,9 +68,11 @@ function BriefingRule({
 export function VisualDiagnosticViewfinder({
   onClose,
   onComplete,
+  onPhotoSaved,
 }: {
   onClose: () => void;
   onComplete: (p: StudioColorProfile, t?: StudioTelemetry) => Promise<void> | void;
+  onPhotoSaved?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -83,6 +86,8 @@ export function VisualDiagnosticViewfinder({
   const [elapsed, setElapsed] = useState(0);
   const [calibrated, setCalibrated] = useState(false);
   const [lightingConfirmed, setLightingConfirmed] = useState(false);
+  const [photoConsent, setPhotoConsent] = useState(false);
+  const savePhoto = useServerFn(saveConsentedProfilePhoto);
   const [telemetryOpen, setTelemetryOpen] = useState(true);
   const [pipelineLog, setPipelineLog] = useState<string[]>(["Waiting for the right light…"]);
   const [manualCalibrateOpen, setManualCalibrateOpen] = useState(false);
@@ -209,12 +214,13 @@ export function VisualDiagnosticViewfinder({
       return;
     }
     pushLog(`Captured. Looking at your photo now…`);
-    await runAnalyze(base64, opts);
+    await runAnalyze(base64, opts, "image/jpeg");
   }
 
   async function runAnalyze(
     base64: string,
     opts?: { stressTest?: boolean; source?: "live" | "stress-test" | "upload" },
+    mimeType = "image/jpeg",
   ) {
     try {
       pushLog(`Studying the light in your photo…`);
@@ -248,6 +254,14 @@ export function VisualDiagnosticViewfinder({
         source: opts?.stressTest ? "stress-test" : opts?.source === "upload" ? "live" : "live",
       };
       pushLog(`Got it — you're a ${profile.subSeason}.`);
+      if (photoConsent) {
+        savePhoto({ data: { imageDataUri: `data:${mimeType};base64,${base64}` } })
+          .then(() => onPhotoSaved?.())
+          .catch((err) => {
+            console.error("[VisualDiagnosticViewfinder] consented photo save failed:", err);
+            toast.warning("Your look was analyzed, but the photo couldn't be saved for later.");
+          });
+      }
       stopCamera();
       await onComplete(profile, telemetry);
     } catch (error) {
@@ -284,7 +298,7 @@ export function VisualDiagnosticViewfinder({
         setAnalyzing(false);
         return;
       }
-      await runAnalyze(base64, { source: "upload" });
+      await runAnalyze(base64, { source: "upload" }, file.type);
     };
     reader.onerror = () => {
       toast.error("Failed to read archive image.");
@@ -382,6 +396,19 @@ export function VisualDiagnosticViewfinder({
             />
             <span className="text-xs text-muted-foreground leading-relaxed">
               I'm in soft, indirect natural daylight. Let's go.
+            </span>
+          </label>
+          <label className="mt-3 flex items-start gap-3 border-[0.5px] border-border p-4 cursor-pointer hover:border-foreground/40 transition-colors">
+            <input
+              type="checkbox"
+              checked={photoConsent}
+              onChange={(e) => setPhotoConsent(e.target.checked)}
+              className="mt-0.5 accent-foreground"
+            />
+            <span className="text-xs text-muted-foreground leading-relaxed">
+              Optional: save this photo to my account (private, deletable any time from Account
+              Settings) so Mila can use it for future photo-based outfit previews. Unchecked, the
+              photo is analyzed and discarded immediately.
             </span>
           </label>
           <Button

@@ -14,15 +14,26 @@ export interface StyleProfileUpdatePayload {
   hair_type?: string | null;
   beauty_preferences?: Json;
   default_location?: string | null;
+  gender?: string | null;
+  hair_length?: string | null;
+  makeup_preference?: string;
+  shopping_preferences?: Json;
+  styling_constraints?: Json;
+  delivery_country?: string | null;
 }
 
 export type StyleProfileUpdateResult = StyleProfileRow & {
   beauty_preferences: Json;
   default_location: string | null;
+  hair_length: string | null;
+  makeup_preference: string | null;
+  shopping_preferences: Json;
+  styling_constraints: Json;
+  delivery_country: string | null;
 };
 
 const RETURNING_COLUMNS =
-  "skin_undertone,color_season,color_profile,body_type,face_shape,hair_type,beauty_preferences,default_location";
+  "skin_undertone,color_season,color_profile,body_type,face_shape,hair_type,beauty_preferences,default_location,gender,hair_length,makeup_preference,shopping_preferences,styling_constraints,delivery_country";
 
 export function useUpdateStyleProfile() {
   const { user } = useAuth();

@@ -1,4 +1,12 @@
-import { UNDERTONES, SEASONS, BODIES, FACE_SHAPES, HAIR_TYPES } from "@/constants/style-profile";
+import {
+  UNDERTONES,
+  SEASONS,
+  BODIES,
+  FACE_SHAPES,
+  HAIR_TYPES,
+  GENDERS,
+  HAIR_LENGTHS,
+} from "@/constants/style-profile";
 import { isNonEmptyColorProfile } from "@/lib/style-profile/completion";
 import type { DashboardProfile } from "@/lib/queries/profile";
 
@@ -6,11 +14,16 @@ export type OnboardingStepId =
   | "welcome"
   | "color-path"
   | "color-result"
+  | "gender"
   | "body-type"
   | "face-shape"
   | "hair-type"
+  | "hair-length"
+  | "makeup-preference"
   | "beauty-preferences"
   | "location"
+  | "shopping-preferences"
+  | "styling-constraints"
   | "review";
 
 export interface OnboardingStep {
@@ -35,6 +48,12 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     shortTitle: "Color result",
   },
   {
+    id: "gender",
+    title: "Gender",
+    shortTitle: "Gender",
+    description: "This shapes whether Mila includes makeup guidance in your daily look.",
+  },
+  {
     id: "body-type",
     title: "Body silhouette",
     shortTitle: "Silhouette",
@@ -50,6 +69,19 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     shortTitle: "Hair type",
   },
   {
+    id: "hair-length",
+    title: "Hair length",
+    shortTitle: "Hair length",
+    description: "Mila only recommends styles achievable at your current length.",
+  },
+  {
+    id: "makeup-preference",
+    title: "Makeup preference",
+    shortTitle: "Makeup",
+    description: "Skipped automatically if you didn't select a makeup-eligible gender.",
+    optional: true,
+  },
+  {
     id: "beauty-preferences",
     title: "Beauty preferences",
     shortTitle: "Beauty",
@@ -61,6 +93,20 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "Location & weather",
     shortTitle: "Location",
     description: "Mila can adapt recommendations to your weather.",
+    optional: true,
+  },
+  {
+    id: "shopping-preferences",
+    title: "Shopping preferences",
+    shortTitle: "Shopping",
+    description: "Fit, coverage, color, footwear, sizing, and budget preferences.",
+    optional: true,
+  },
+  {
+    id: "styling-constraints",
+    title: "Styling constraints",
+    shortTitle: "Constraints",
+    description: "Prep time, tools, and any other constraints Mila should respect.",
     optional: true,
   },
   { id: "review", title: "Your Mila profile is ready", shortTitle: "Review" },
@@ -87,6 +133,8 @@ type ProfileSnapshot = Pick<
   | "body_type"
   | "face_shape"
   | "hair_type"
+  | "gender"
+  | "hair_length"
 >;
 
 export function hasColorProfile(profile: ProfileSnapshot | null | undefined): boolean {
@@ -110,6 +158,14 @@ export function hasHairType(profile: ProfileSnapshot | null | undefined): boolea
   return !!profile && (HAIR_TYPES as readonly string[]).includes(profile.hair_type ?? "");
 }
 
+export function hasGender(profile: ProfileSnapshot | null | undefined): boolean {
+  return !!profile && (GENDERS as readonly string[]).includes(profile.gender ?? "");
+}
+
+export function hasHairLength(profile: ProfileSnapshot | null | undefined): boolean {
+  return !!profile && (HAIR_LENGTHS as readonly string[]).includes(profile.hair_length ?? "");
+}
+
 export function isOnboardingStepComplete(
   step: OnboardingStepId,
   profile: ProfileSnapshot | null | undefined,
@@ -121,21 +177,30 @@ export function isOnboardingStepComplete(
       return true;
     case "color-result":
       return hasColorProfile(profile);
+    case "gender":
+      return hasGender(profile);
     case "body-type":
       return hasBodyType(profile);
     case "face-shape":
       return hasFaceShape(profile);
     case "hair-type":
       return hasHairType(profile);
+    case "hair-length":
+      return hasHairLength(profile);
+    case "makeup-preference":
     case "beauty-preferences":
     case "location":
+    case "shopping-preferences":
+    case "styling-constraints":
       return true;
     case "review":
       return (
         hasColorProfile(profile) &&
+        hasGender(profile) &&
         hasBodyType(profile) &&
         hasFaceShape(profile) &&
-        hasHairType(profile)
+        hasHairType(profile) &&
+        hasHairLength(profile)
       );
   }
 }
@@ -143,9 +208,11 @@ export function isOnboardingStepComplete(
 function isBlankProfile(profile: ProfileSnapshot | null | undefined): boolean {
   return (
     !hasColorProfile(profile) &&
+    !hasGender(profile) &&
     !hasBodyType(profile) &&
     !hasFaceShape(profile) &&
-    !hasHairType(profile)
+    !hasHairType(profile) &&
+    !hasHairLength(profile)
   );
 }
 
@@ -154,9 +221,11 @@ export function getFirstIncompleteOnboardingStep(
 ): OnboardingStepId {
   if (isBlankProfile(profile)) return "welcome";
   if (!hasColorProfile(profile)) return "color-path";
+  if (!hasGender(profile)) return "gender";
   if (!hasBodyType(profile)) return "body-type";
   if (!hasFaceShape(profile)) return "face-shape";
   if (!hasHairType(profile)) return "hair-type";
+  if (!hasHairLength(profile)) return "hair-length";
   return "beauty-preferences";
 }
 
