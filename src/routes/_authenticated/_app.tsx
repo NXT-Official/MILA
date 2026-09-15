@@ -20,9 +20,6 @@ export const Route = createFileRoute("/_authenticated/_app")({
     if (!userId) return;
     const viewer = await loadAuthenticatedViewerState(context.queryClient, userId);
     const isProfileRoute = location.pathname.startsWith("/profile/");
-    if (viewer.canAccessStaffArea && !isProfileRoute) {
-      throw redirect({ to: viewer.destination, replace: true });
-    }
     if (!viewer.isStyleProfileComplete && !isProfileRoute) {
       throw redirect({ to: "/onboarding/style-profile", replace: true });
     }
@@ -39,29 +36,12 @@ function AppLayout() {
 
   useEffect(() => {
     if (!user || viewer.isLoading) return;
-    if (viewer.canAccessStaffArea && !isProfileRoute) {
-      navigate({ to: viewer.destination, replace: true });
-      return;
-    }
     if (!viewer.isStyleProfileComplete && !isProfileRoute) {
       navigate({ to: "/onboarding/style-profile", replace: true });
     }
-  }, [
-    user,
-    viewer.isLoading,
-    viewer.canAccessStaffArea,
-    viewer.destination,
-    viewer.isStyleProfileComplete,
-    isProfileRoute,
-    navigate,
-  ]);
+  }, [user, viewer.isLoading, viewer.isStyleProfileComplete, isProfileRoute, navigate]);
 
-  if (
-    !user ||
-    viewer.isLoading ||
-    (viewer.canAccessStaffArea && !isProfileRoute) ||
-    (!viewer.isStyleProfileComplete && !isProfileRoute)
-  ) {
+  if (!user || viewer.isLoading || (!viewer.isStyleProfileComplete && !isProfileRoute)) {
     return <AtelierSplash />;
   }
 

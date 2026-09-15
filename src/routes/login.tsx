@@ -8,7 +8,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  useLoginRedirect("member");
+  useLoginRedirect();
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">

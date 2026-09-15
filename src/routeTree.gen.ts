@@ -9,25 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as StaffRouteImport } from './routes/staff'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ModeratorIndexRouteImport } from './routes/moderator/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as ModeratorAuthedRouteImport } from './routes/moderator/_authed'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
-import { Route as AdminAuthedRouteImport } from './routes/admin/_authed'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
-import { Route as ModeratorAuthedSupportRouteImport } from './routes/moderator/_authed/support'
-import { Route as ModeratorAuthedModerationRouteImport } from './routes/moderator/_authed/moderation'
 import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
-import { Route as AdminAuthedSupportRouteImport } from './routes/admin/_authed/support'
-import { Route as AdminAuthedSubscriptionPlansRouteImport } from './routes/admin/_authed/subscription-plans'
-import { Route as AdminAuthedModerationRouteImport } from './routes/admin/_authed/moderation'
-import { Route as AdminAuthedMembersRouteImport } from './routes/admin/_authed/members'
-import { Route as AdminAuthedDashboardRouteImport } from './routes/admin/_authed/dashboard'
 import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
@@ -38,11 +26,6 @@ import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
 import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_authenticated/_app/profile.$userId'
 
-const StaffRoute = StaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -57,29 +40,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ModeratorIndexRoute = ModeratorIndexRouteImport.update({
-  id: '/moderator/',
-  path: '/moderator/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ModeratorAuthedRoute = ModeratorAuthedRouteImport.update({
-  id: '/moderator/_authed',
-  path: '/moderator',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminAuthedRoute = AdminAuthedRouteImport.update({
-  id: '/admin/_authed',
-  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -91,47 +54,10 @@ const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/_app',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const ModeratorAuthedSupportRoute = ModeratorAuthedSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => ModeratorAuthedRoute,
-} as any)
-const ModeratorAuthedModerationRoute =
-  ModeratorAuthedModerationRouteImport.update({
-    id: '/moderation',
-    path: '/moderation',
-    getParentRoute: () => ModeratorAuthedRoute,
-  } as any)
 const ApiWebhooksPaddleRoute = ApiWebhooksPaddleRouteImport.update({
   id: '/api/webhooks/paddle',
   path: '/api/webhooks/paddle',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AdminAuthedSupportRoute = AdminAuthedSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => AdminAuthedRoute,
-} as any)
-const AdminAuthedSubscriptionPlansRoute =
-  AdminAuthedSubscriptionPlansRouteImport.update({
-    id: '/subscription-plans',
-    path: '/subscription-plans',
-    getParentRoute: () => AdminAuthedRoute,
-  } as any)
-const AdminAuthedModerationRoute = AdminAuthedModerationRouteImport.update({
-  id: '/moderation',
-  path: '/moderation',
-  getParentRoute: () => AdminAuthedRoute,
-} as any)
-const AdminAuthedMembersRoute = AdminAuthedMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
-  getParentRoute: () => AdminAuthedRoute,
-} as any)
-const AdminAuthedDashboardRoute = AdminAuthedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AdminAuthedRoute,
 } as any)
 const AuthenticatedOnboardingStyleProfileRoute =
   AuthenticatedOnboardingStyleProfileRouteImport.update({
@@ -188,13 +114,8 @@ const AuthenticatedAppProfileUserIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/staff': typeof StaffRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
-  '/admin': typeof AdminAuthedRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
-  '/moderator': typeof ModeratorAuthedRouteWithChildren
-  '/admin/': typeof AdminIndexRoute
-  '/moderator/': typeof ModeratorIndexRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
@@ -203,24 +124,14 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
-  '/admin/dashboard': typeof AdminAuthedDashboardRoute
-  '/admin/members': typeof AdminAuthedMembersRoute
-  '/admin/moderation': typeof AdminAuthedModerationRoute
-  '/admin/subscription-plans': typeof AdminAuthedSubscriptionPlansRoute
-  '/admin/support': typeof AdminAuthedSupportRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
-  '/moderator/moderation': typeof ModeratorAuthedModerationRoute
-  '/moderator/support': typeof ModeratorAuthedSupportRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/staff': typeof StaffRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
-  '/admin': typeof AdminIndexRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/moderator': typeof ModeratorIndexRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
@@ -229,14 +140,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof AuthenticatedAppPricingRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
-  '/admin/dashboard': typeof AdminAuthedDashboardRoute
-  '/admin/members': typeof AdminAuthedMembersRoute
-  '/admin/moderation': typeof AdminAuthedModerationRoute
-  '/admin/subscription-plans': typeof AdminAuthedSubscriptionPlansRoute
-  '/admin/support': typeof AdminAuthedSupportRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
-  '/moderator/moderation': typeof ModeratorAuthedModerationRoute
-  '/moderator/support': typeof ModeratorAuthedSupportRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRoutesById {
@@ -244,14 +148,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/staff': typeof StaffRoute
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
-  '/admin/_authed': typeof AdminAuthedRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
-  '/moderator/_authed': typeof ModeratorAuthedRouteWithChildren
-  '/admin/': typeof AdminIndexRoute
-  '/moderator/': typeof ModeratorIndexRoute
   '/_authenticated/_app/concierge': typeof AuthenticatedAppConciergeRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/feed': typeof AuthenticatedAppFeedRoute
@@ -260,14 +159,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
-  '/admin/_authed/dashboard': typeof AdminAuthedDashboardRoute
-  '/admin/_authed/members': typeof AdminAuthedMembersRoute
-  '/admin/_authed/moderation': typeof AdminAuthedModerationRoute
-  '/admin/_authed/subscription-plans': typeof AdminAuthedSubscriptionPlansRoute
-  '/admin/_authed/support': typeof AdminAuthedSupportRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
-  '/moderator/_authed/moderation': typeof ModeratorAuthedModerationRoute
-  '/moderator/_authed/support': typeof ModeratorAuthedSupportRoute
   '/_authenticated/_app/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
 }
 export interface FileRouteTypes {
@@ -275,13 +167,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/staff'
     | '/onboarding'
-    | '/admin'
     | '/auth/callback'
-    | '/moderator'
-    | '/admin/'
-    | '/moderator/'
     | '/concierge'
     | '/dashboard'
     | '/feed'
@@ -290,24 +177,14 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/style-profile'
     | '/onboarding/style-profile'
-    | '/admin/dashboard'
-    | '/admin/members'
-    | '/admin/moderation'
-    | '/admin/subscription-plans'
-    | '/admin/support'
     | '/api/webhooks/paddle'
-    | '/moderator/moderation'
-    | '/moderator/support'
     | '/profile/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
-    | '/staff'
     | '/onboarding'
-    | '/admin'
     | '/auth/callback'
-    | '/moderator'
     | '/concierge'
     | '/dashboard'
     | '/feed'
@@ -316,28 +193,16 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/style-profile'
     | '/onboarding/style-profile'
-    | '/admin/dashboard'
-    | '/admin/members'
-    | '/admin/moderation'
-    | '/admin/subscription-plans'
-    | '/admin/support'
     | '/api/webhooks/paddle'
-    | '/moderator/moderation'
-    | '/moderator/support'
     | '/profile/$userId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
-    | '/staff'
     | '/_authenticated/_app'
     | '/_authenticated/onboarding'
-    | '/admin/_authed'
     | '/auth/callback'
-    | '/moderator/_authed'
-    | '/admin/'
-    | '/moderator/'
     | '/_authenticated/_app/concierge'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/feed'
@@ -346,14 +211,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/pricing'
     | '/_authenticated/_app/style-profile'
     | '/_authenticated/onboarding/style-profile'
-    | '/admin/_authed/dashboard'
-    | '/admin/_authed/members'
-    | '/admin/_authed/moderation'
-    | '/admin/_authed/subscription-plans'
-    | '/admin/_authed/support'
     | '/api/webhooks/paddle'
-    | '/moderator/_authed/moderation'
-    | '/moderator/_authed/support'
     | '/_authenticated/_app/profile/$userId'
   fileRoutesById: FileRoutesById
 }
@@ -361,24 +219,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
-  StaffRoute: typeof StaffRoute
-  AdminAuthedRoute: typeof AdminAuthedRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
-  ModeratorAuthedRoute: typeof ModeratorAuthedRouteWithChildren
-  AdminIndexRoute: typeof AdminIndexRoute
-  ModeratorIndexRoute: typeof ModeratorIndexRoute
   ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/staff': {
-      id: '/staff'
-      path: '/staff'
-      fullPath: '/staff'
-      preLoaderRoute: typeof StaffRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -400,39 +246,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/moderator/': {
-      id: '/moderator/'
-      path: '/moderator'
-      fullPath: '/moderator/'
-      preLoaderRoute: typeof ModeratorIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/moderator/_authed': {
-      id: '/moderator/_authed'
-      path: '/moderator'
-      fullPath: '/moderator'
-      preLoaderRoute: typeof ModeratorAuthedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/_authed': {
-      id: '/admin/_authed'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminAuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/onboarding': {
@@ -449,61 +267,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/moderator/_authed/support': {
-      id: '/moderator/_authed/support'
-      path: '/support'
-      fullPath: '/moderator/support'
-      preLoaderRoute: typeof ModeratorAuthedSupportRouteImport
-      parentRoute: typeof ModeratorAuthedRoute
-    }
-    '/moderator/_authed/moderation': {
-      id: '/moderator/_authed/moderation'
-      path: '/moderation'
-      fullPath: '/moderator/moderation'
-      preLoaderRoute: typeof ModeratorAuthedModerationRouteImport
-      parentRoute: typeof ModeratorAuthedRoute
-    }
     '/api/webhooks/paddle': {
       id: '/api/webhooks/paddle'
       path: '/api/webhooks/paddle'
       fullPath: '/api/webhooks/paddle'
       preLoaderRoute: typeof ApiWebhooksPaddleRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/admin/_authed/support': {
-      id: '/admin/_authed/support'
-      path: '/support'
-      fullPath: '/admin/support'
-      preLoaderRoute: typeof AdminAuthedSupportRouteImport
-      parentRoute: typeof AdminAuthedRoute
-    }
-    '/admin/_authed/subscription-plans': {
-      id: '/admin/_authed/subscription-plans'
-      path: '/subscription-plans'
-      fullPath: '/admin/subscription-plans'
-      preLoaderRoute: typeof AdminAuthedSubscriptionPlansRouteImport
-      parentRoute: typeof AdminAuthedRoute
-    }
-    '/admin/_authed/moderation': {
-      id: '/admin/_authed/moderation'
-      path: '/moderation'
-      fullPath: '/admin/moderation'
-      preLoaderRoute: typeof AdminAuthedModerationRouteImport
-      parentRoute: typeof AdminAuthedRoute
-    }
-    '/admin/_authed/members': {
-      id: '/admin/_authed/members'
-      path: '/members'
-      fullPath: '/admin/members'
-      preLoaderRoute: typeof AdminAuthedMembersRouteImport
-      parentRoute: typeof AdminAuthedRoute
-    }
-    '/admin/_authed/dashboard': {
-      id: '/admin/_authed/dashboard'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AdminAuthedDashboardRouteImport
-      parentRoute: typeof AdminAuthedRoute
     }
     '/_authenticated/onboarding/style-profile': {
       id: '/_authenticated/onboarding/style-profile'
@@ -625,50 +394,11 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
-interface AdminAuthedRouteChildren {
-  AdminAuthedDashboardRoute: typeof AdminAuthedDashboardRoute
-  AdminAuthedMembersRoute: typeof AdminAuthedMembersRoute
-  AdminAuthedModerationRoute: typeof AdminAuthedModerationRoute
-  AdminAuthedSubscriptionPlansRoute: typeof AdminAuthedSubscriptionPlansRoute
-  AdminAuthedSupportRoute: typeof AdminAuthedSupportRoute
-}
-
-const AdminAuthedRouteChildren: AdminAuthedRouteChildren = {
-  AdminAuthedDashboardRoute: AdminAuthedDashboardRoute,
-  AdminAuthedMembersRoute: AdminAuthedMembersRoute,
-  AdminAuthedModerationRoute: AdminAuthedModerationRoute,
-  AdminAuthedSubscriptionPlansRoute: AdminAuthedSubscriptionPlansRoute,
-  AdminAuthedSupportRoute: AdminAuthedSupportRoute,
-}
-
-const AdminAuthedRouteWithChildren = AdminAuthedRoute._addFileChildren(
-  AdminAuthedRouteChildren,
-)
-
-interface ModeratorAuthedRouteChildren {
-  ModeratorAuthedModerationRoute: typeof ModeratorAuthedModerationRoute
-  ModeratorAuthedSupportRoute: typeof ModeratorAuthedSupportRoute
-}
-
-const ModeratorAuthedRouteChildren: ModeratorAuthedRouteChildren = {
-  ModeratorAuthedModerationRoute: ModeratorAuthedModerationRoute,
-  ModeratorAuthedSupportRoute: ModeratorAuthedSupportRoute,
-}
-
-const ModeratorAuthedRouteWithChildren = ModeratorAuthedRoute._addFileChildren(
-  ModeratorAuthedRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
-  StaffRoute: StaffRoute,
-  AdminAuthedRoute: AdminAuthedRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
-  ModeratorAuthedRoute: ModeratorAuthedRouteWithChildren,
-  AdminIndexRoute: AdminIndexRoute,
-  ModeratorIndexRoute: ModeratorIndexRoute,
   ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
 }
 export const routeTree = rootRouteImport
