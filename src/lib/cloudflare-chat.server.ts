@@ -1,0 +1,198 @@
+import { logAiSpend } from "./ai-spend.server";
+import type { AiCallerContext, AiResult, AiTool } from "./ai.server";
+
+// Temporary stand-in for the Gemini stylist brain while AI_API_KEY/AI_MODEL
+// are unconfigured. Reuses the same Cloudflare Workers AI Free-plan account
+// already wired up for outfit images, so it costs nothing extra to enable
+// and can be dropped the moment a real Gemini key is set (see ai.server.ts).
+const TEXT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+const VISION_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+type ChatMessage = { text: string } | { imageUrl: string };
+
+function extractParts(content: unknown): ChatMessage[] {
+  if (typeof content === "string") return [{ text: content }];
+  if (!Array.isArray(content)) return [];
+
+  const parts: ChatMessage[] = [];
+  for (const part of content) {
+    if (!part || typeof part !== "object") continue;
+    if ("text" in part && typeof part.text === "string") parts.push({ text: part.text });
+    if (
+      "image_url" in part &&
+      part.image_url &&
+      typeof part.image_url === "object" &&
+      "url" in part.image_url &&
+      typeof part.image_url.url === "string"
+    ) {
+      parts.push({ imageUrl: part.image_url.url });
+    }
+  }
+  return parts;
+}
+
+async function imageToByteArray(url: string): Promise<number[]> {
+  const inline = url.match(/^data:image\/[\w.+-]+;base64,(.+)$/s);
+  const bytes = inline
+    ? Buffer.from(inline[1], "base64")
+    : await (async () => {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Mila couldn't load the image for analysis.");
+        return Buffer.from(await response.arrayBuffer());
+      })();
+  if (bytes.byteLength > MAX_IMAGE_BYTES) {
+    throw new Error("Mila couldn't use that image for analysis.");
+  }
+  return Array.from(bytes);
+}
+
+function stripJsonFence(text: string): string {
+  return text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+}
+
+// The vision model doesn't honor response_format/json_schema (confirmed via
+// a live smoke test — Cloudflare silently ignores it for this model). A
+// concrete filled-in example is far more reliably followed than an abstract
+// schema dump, so build one from the tool's JSON schema instead of quoting
+// the schema itself.
+function exampleFromSchema(schema: unknown): unknown {
+  if (!schema || typeof schema !== "object") return null;
+  const s = schema as {
+    type?: string;
+    enum?: unknown[];
+    properties?: Record<string, unknown>;
+    items?: unknown;
+  };
+  if (s.enum?.length) return s.enum[0];
+  if (s.type === "object" && s.properties) {
+    return Object.fromEntries(
+      Object.entries(s.properties).map(([key, value]) => [key, exampleFromSchema(value)]),
+    );
+  }
+  if (s.type === "array") return s.items ? [exampleFromSchema(s.items)] : [];
+  if (s.type === "number" || s.type === "integer") return 0;
+  if (s.type === "boolean") return false;
+  return "...";
+}
+
+export function isCloudflareChatConfigured(): boolean {
+  return Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN);
+}
+
+export async function cloudflareChatCompletion(
+  messages: Array<Record<string, unknown>>,
+  tool: AiTool,
+  caller: AiCallerContext,
+): Promise<AiResult> {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+  if (!accountId || !apiToken) {
+    throw new Error(
+      "AI provider not configured — set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN",
+    );
+  }
+
+  const systemTexts: string[] = [];
+  const turns: Array<{ role: "system" | "user" | "assistant"; text: string }> = [];
+  let firstImage: number[] | null = null;
+
+  for (const message of messages) {
+    const role =
+      message.role === "assistant" ? "assistant" : message.role === "system" ? "system" : "user";
+    const parts = extractParts(message.content);
+    const text = parts
+      .filter((part): part is { text: string } => "text" in part)
+      .map((part) => part.text)
+      .join("\n");
+    if (role === "system") {
+      if (text) systemTexts.push(text);
+      continue;
+    }
+    if (text) turns.push({ role, text });
+    if (!firstImage) {
+      const imagePart = parts.find((part): part is { imageUrl: string } => "imageUrl" in part);
+      if (imagePart) firstImage = await imageToByteArray(imagePart.imageUrl);
+    }
+  }
+
+  const model = firstImage ? VISION_MODEL : TEXT_MODEL;
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+
+  const body: Record<string, unknown> = firstImage
+    ? {
+        prompt: [
+          ...systemTexts,
+          ...turns.map((turn) => turn.text),
+          `Respond with ONLY this exact JSON shape, filled in with your real answer, nothing else, no explanation, no markdown fences:\n${JSON.stringify(exampleFromSchema(tool.function.parameters))}`,
+        ].join("\n\n"),
+        image: firstImage,
+        max_tokens: 2048,
+        temperature: 0.2,
+      }
+    : {
+        messages: [
+          {
+            role: "system",
+            content: [
+              ...systemTexts,
+              `Return only the ${tool.function.name} arguments as strict JSON matching this schema, with no markdown fences and no commentary:\n${JSON.stringify(tool.function.parameters)}`,
+            ].join("\n\n"),
+          },
+          ...turns.map((turn) => ({ role: turn.role, content: turn.text })),
+        ],
+        response_format: { type: "json_schema", json_schema: tool.function.parameters },
+        max_tokens: 2048,
+      };
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    console.error("[cloudflare-chat] provider error", response.status, await response.text());
+    return { ok: false, status: response.status };
+  }
+
+  const json = (await response.json()) as {
+    success: boolean;
+    result?: {
+      // When response_format:json_schema is used, Cloudflare returns the
+      // already-parsed object here rather than a JSON string (confirmed via
+      // a live smoke test — the documented "response: string" shape only
+      // holds for the plain-prompt/vision path).
+      response?: string | Record<string, unknown>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    };
+    errors?: Array<{ message: string }>;
+  };
+  if (!json.success || json.result?.response === undefined) {
+    console.error(
+      "[cloudflare-chat] provider returned no text",
+      JSON.stringify(json).slice(0, 500),
+    );
+    return { ok: false, status: 502 };
+  }
+
+  await logAiSpend(caller.supabase, caller.userId, {
+    provider: "cloudflare",
+    model,
+    costUsd: 0,
+    promptTokens: json.result.usage?.prompt_tokens ?? null,
+    completionTokens: json.result.usage?.completion_tokens ?? null,
+    totalTokens: json.result.usage?.total_tokens ?? null,
+  });
+
+  if (typeof json.result.response !== "string") {
+    return { ok: true, args: json.result.response };
+  }
+  try {
+    return { ok: true, args: JSON.parse(stripJsonFence(json.result.response)) };
+  } catch {
+    console.error("[cloudflare-chat] provider returned unparseable JSON", {
+      length: json.result.response.length,
+    });
+    return { ok: false, status: 502 };
+  }
+}

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAiSpend } from "./ai-spend.server";
+import { cloudflareChatCompletion, isCloudflareChatConfigured } from "./cloudflare-chat.server";
 
 type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
 
@@ -15,8 +16,12 @@ export type AiResult = { ok: true; args: unknown } | { ok: false; status: number
 const GEMINI_API = "https://generativelanguage.googleapis.com/v1beta";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
+// Gemini (AI_API_KEY/AI_MODEL) is the intended long-term stylist brain.
+// Cloudflare Workers AI is a temporary, zero-cost stand-in used only while
+// Gemini is unconfigured — setting AI_API_KEY/AI_MODEL takes priority again
+// automatically, with no code change needed to switch back.
 export function isAiConfigured(): boolean {
-  return Boolean(process.env.AI_API_KEY && process.env.AI_MODEL);
+  return Boolean((process.env.AI_API_KEY && process.env.AI_MODEL) || isCloudflareChatConfigured());
 }
 
 export function aiFailure(status: number, fallback: string): Error {
@@ -68,6 +73,7 @@ export async function aiChatCompletion(
   const apiKey = process.env.AI_API_KEY;
   const model = process.env.AI_MODEL;
   if (!apiKey || !model) {
+    if (isCloudflareChatConfigured()) return cloudflareChatCompletion(messages, tool, caller);
     throw new Error("AI provider not configured — set AI_API_KEY and AI_MODEL");
   }
 
