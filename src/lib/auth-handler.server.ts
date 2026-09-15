@@ -12,6 +12,7 @@ import {
   type RequestResetInput,
   type NewPasswordInput,
 } from "./auth-input";
+import { captureServerException } from "./sentry.server";
 
 type AuthOperation = "login" | "signup";
 
@@ -72,6 +73,7 @@ export async function authenticateWithPassword(
           },
         });
   if (result.error) {
+    captureServerException(result.error);
     if (operation === "login") {
       console.warn(JSON.stringify({ event: "authentication_failure", method: "password" }));
       throw new Error("Email, password, or verification challenge is invalid.");
@@ -92,6 +94,7 @@ export async function requestPasswordReset(
     captchaToken: data.captchaToken,
   });
   if (error) {
+    captureServerException(error);
     console.warn(JSON.stringify({ event: "password_reset_request_failure" }));
     throw new Error("Unable to send the reset link right now. Please try again later.");
   }
@@ -111,11 +114,13 @@ export async function updatePassword(
     refresh_token: data.refreshToken,
   });
   if (sessionError) {
+    captureServerException(sessionError);
     console.warn(JSON.stringify({ event: "password_reset_session_invalid" }));
     throw new Error("Your reset link has expired. Please request a new one.");
   }
   const { error } = await client.auth.updateUser({ password: data.password });
   if (error) {
+    captureServerException(error);
     console.warn(JSON.stringify({ event: "password_reset_update_failure" }));
     throw new Error("Unable to update your password. Please try again.");
   }

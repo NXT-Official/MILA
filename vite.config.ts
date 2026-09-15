@@ -37,6 +37,8 @@ function buildCsp(supabaseUrl: string | undefined): string {
       "https://api.open-meteo.com",
       "https://hcaptcha.com",
       "https://*.hcaptcha.com",
+      "https://*.ingest.sentry.io",
+      "https://*.sentry.io",
     ],
     "frame-src": [
       "https://hcaptcha.com",
