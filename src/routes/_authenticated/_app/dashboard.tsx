@@ -24,6 +24,8 @@ import { saveOutfitToHistory } from "@/lib/save-outfit.functions";
 import { OutfitVisual } from "@/components/dashboard/outfit-visual";
 import { OutfitResultSkeleton } from "@/components/dashboard/outfit-result-skeleton";
 import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detail";
+import { ShopThisLookGrid } from "@/components/dashboard/shop-look-grid";
+import { findLookProducts, type LookProduct } from "@/lib/look-products.functions";
 import { toast } from "sonner";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 import { isInsufficientCreditsError } from "@/lib/credits";
@@ -101,6 +103,7 @@ function Dashboard() {
   const { openConcierge } = useConcierge();
   const [generating, setGenerating] = useState(false);
   const [look, setLook] = useState<GeneratedLook | null>(null);
+  const [shopItems, setShopItems] = useState<LookProduct[] | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [savingLook, setSavingLook] = useState(false);
   const [savedLook, setSavedLook] = useState<{ id: string; imageUrl: string } | null>(null);
@@ -112,6 +115,24 @@ function Dashboard() {
   const generate = useServerFn(generateDailyLook);
   const regenerateImage = useServerFn(regenerateOutfitImage);
   const saveOutfit = useServerFn(saveOutfitToHistory);
+  const fetchLookProducts = useServerFn(findLookProducts);
+
+  async function fetchShopItems(
+    colorSeason: string,
+    bodyType: string,
+    tempF: number | undefined,
+    region: string | undefined,
+  ) {
+    try {
+      const items = await fetchLookProducts({
+        data: { colorSeason, bodyType, tempF, region: region || undefined },
+      });
+      setShopItems(items);
+    } catch (e) {
+      console.error("[dashboard] findLookProducts failed", e);
+      setShopItems(null);
+    }
+  }
 
   async function fetchImage(outfit: DailyLook) {
     setImageLoading(true);
@@ -151,6 +172,7 @@ function Dashboard() {
     }
     setGenerating(true);
     setLook(null);
+    setShopItems(null);
     setSavedLook(null);
     let outfit: DailyLook;
     try {
@@ -181,6 +203,7 @@ function Dashboard() {
     }
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
+    void fetchShopItems(profile.color_season, profile.body_type, climate.tempF, climate.country);
     await fetchImage(outfit);
   }
 
@@ -363,6 +386,12 @@ function Dashboard() {
                       }
                     />
                   </motion.div>
+
+                  {shopItems && shopItems.length > 0 && (
+                    <motion.div variants={resultItemVariants}>
+                      <ShopThisLookGrid items={shopItems} />
+                    </motion.div>
+                  )}
 
                   <motion.div variants={resultItemVariants} className="border-t border-border pt-6">
                     <div className="flex flex-wrap items-center gap-3">

@@ -54,6 +54,8 @@ export function climateForWeatherCode(code: number, windKph = 0): ClimateWeather
 export interface ClimateState {
   label: string;
   location: string;
+  /** ISO 3166-1 alpha-2 country code for the selected hub, e.g. "US", "JP". */
+  country: string;
   icon: ClimateIcon;
   tempF: number;
   tempC: number;
@@ -68,15 +70,52 @@ export const HUBS: Array<{
   tagline: string;
   lat: number;
   lon: number;
+  /** ISO 3166-1 alpha-2 country code, used to region-gate shoppable product results. */
+  country: string;
 }> = [
-  { id: "manila", city: "Manila", tagline: "Tropical Humid", lat: 14.6, lon: 120.98 },
-  { id: "singapore", city: "Singapore", tagline: "Equatorial Humid", lat: 1.35, lon: 103.82 },
-  { id: "dubai", city: "Dubai", tagline: "Arid Heat", lat: 25.2, lon: 55.27 },
-  { id: "la", city: "Los Angeles", tagline: "Warm & Dry", lat: 34.05, lon: -118.24 },
-  { id: "seoul", city: "Seoul", tagline: "Crisp Spring", lat: 37.57, lon: 126.98 },
-  { id: "tokyo", city: "Tokyo", tagline: "Mild Overcast", lat: 35.68, lon: 139.69 },
-  { id: "paris", city: "Paris", tagline: "Cool Drizzle", lat: 48.86, lon: 2.35 },
-  { id: "london", city: "London", tagline: "Overcast Chill", lat: 51.51, lon: -0.13 },
-  { id: "nyc", city: "New York", tagline: "Brisk Autumn", lat: 40.71, lon: -74.01 },
-  { id: "stockholm", city: "Stockholm", tagline: "Frost & Snow", lat: 59.33, lon: 18.07 },
+  {
+    id: "manila",
+    city: "Manila",
+    tagline: "Tropical Humid",
+    lat: 14.6,
+    lon: 120.98,
+    country: "PH",
+  },
+  {
+    id: "singapore",
+    city: "Singapore",
+    tagline: "Equatorial Humid",
+    lat: 1.35,
+    lon: 103.82,
+    country: "SG",
+  },
+  { id: "dubai", city: "Dubai", tagline: "Arid Heat", lat: 25.2, lon: 55.27, country: "AE" },
+  {
+    id: "la",
+    city: "Los Angeles",
+    tagline: "Warm & Dry",
+    lat: 34.05,
+    lon: -118.24,
+    country: "US",
+  },
+  { id: "seoul", city: "Seoul", tagline: "Crisp Spring", lat: 37.57, lon: 126.98, country: "KR" },
+  { id: "tokyo", city: "Tokyo", tagline: "Mild Overcast", lat: 35.68, lon: 139.69, country: "JP" },
+  { id: "paris", city: "Paris", tagline: "Cool Drizzle", lat: 48.86, lon: 2.35, country: "FR" },
+  {
+    id: "london",
+    city: "London",
+    tagline: "Overcast Chill",
+    lat: 51.51,
+    lon: -0.13,
+    country: "GB",
+  },
+  { id: "nyc", city: "New York", tagline: "Brisk Autumn", lat: 40.71, lon: -74.01, country: "US" },
+  {
+    id: "stockholm",
+    city: "Stockholm",
+    tagline: "Frost & Snow",
+    lat: 59.33,
+    lon: 18.07,
+    country: "SE",
+  },
 ];

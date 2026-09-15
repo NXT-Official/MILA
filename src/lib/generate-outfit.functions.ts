@@ -5,7 +5,7 @@ import { z } from "zod";
 import { aiChatCompletion, aiFailure } from "./ai.server";
 import { withAiCredit, markLookImagePending, payForLookImage } from "./credits.server";
 import { normalizeBeautyPreferences, formatBeautyPreferencesForPrompt } from "./beauty-preferences";
-import { CloudflareRateLimitError, generateOutfitImage } from "./cloudflare-image.server";
+import { ImageProviderRateLimitError, generateOutfitImage } from "./openrouter-image.server";
 import { errorMessage } from "@/lib/utils";
 
 const Input = z.object({
@@ -268,7 +268,7 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
         return {
           imageDataUri: null,
           imageGenerationError:
-            error instanceof CloudflareRateLimitError
+            error instanceof ImageProviderRateLimitError
               ? "The visual service is temporarily busy. Your written outfit is still available."
               : "The outfit was created, but its visual could not be generated.",
         };
