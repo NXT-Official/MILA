@@ -44,6 +44,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      ai_spend_log: {
+        Row: {
+          cost_usd: number | null;
+          created_at: string;
+          id: string;
+          metadata: Json | null;
+          model: string;
+          provider: string;
+          user_id: string | null;
+        };
+        Insert: {
+          cost_usd?: number | null;
+          created_at?: string;
+          id?: string;
+          metadata?: Json | null;
+          model: string;
+          provider: string;
+          user_id?: string | null;
+        };
+        Update: {
+          cost_usd?: number | null;
+          created_at?: string;
+          id?: string;
+          metadata?: Json | null;
+          model?: string;
+          provider?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_spend_log_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       brands: {
         Row: {
           affiliate_network: string | null;
