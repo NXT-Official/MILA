@@ -6,6 +6,7 @@ import { editOutfitPhoto } from "./cloudflare-photo-edit.server";
 import { ImageProviderRateLimitError } from "./cloudflare-image.server";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
 import { CloudflareMultiImageUnsupportedError } from "./cloudflare-chat.server";
+import { verifyFaceMatch } from "./face-match.server";
 import { logAiSpend } from "./ai-spend.server";
 import { payForLookImage } from "./credits.server";
 import { errorMessage } from "@/lib/utils";
@@ -145,6 +146,14 @@ function bytesFromArrayBuffer(buf: ArrayBuffer): Uint8Array {
   return new Uint8Array(buf);
 }
 
+const JPEG_DATA_URI_PATTERN = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/;
+
+function jpegDataUriToBytes(dataUri: string): Uint8Array {
+  const match = dataUri.trim().match(JPEG_DATA_URI_PATTERN);
+  if (!match) throw new Error("Expected a JPEG data URI from the photo editor.");
+  return new Uint8Array(Buffer.from(match[1], "base64"));
+}
+
 export type PhotoPreviewResult =
   | { imageDataUri: string; mode: "photo_edit" }
   | { imageDataUri: null; mode: "unavailable"; reason: string };
@@ -227,10 +236,24 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
             });
 
             if (verification.passes) {
-              // Not persisted here — same as the text-to-image inspiration
-              // path, this is a preview; saveOutfitToHistory uploads it
-              // only if/when the user explicitly saves the look.
-              return { imageDataUri: imageUrl, mode: "photo_edit" };
+              // A real, mathematical identity check — not another model's
+              // opinion. Runs only after the structural check passes, since
+              // it answers a different question ("is this the same face?"
+              // vs. "is this face structurally intact?").
+              const faceMatch = await verifyFaceMatch(userPhotoBytes, jpegDataUriToBytes(imageUrl));
+              if (faceMatch.isMatch) {
+                // Not persisted here — same as the text-to-image inspiration
+                // path, this is a preview; saveOutfitToHistory uploads it
+                // only if/when the user explicitly saves the look.
+                return { imageDataUri: imageUrl, mode: "photo_edit" };
+              }
+              console.warn(
+                `[generatePhotoPreview] face-match check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+                faceMatch.reason,
+                { distance: faceMatch.distance },
+              );
+              lastReason = "Your photo preview couldn't be verified safe this time.";
+              continue;
             }
             console.warn(
               `[generatePhotoPreview] protected-region check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
