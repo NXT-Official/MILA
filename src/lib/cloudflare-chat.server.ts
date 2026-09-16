@@ -64,7 +64,11 @@ function exampleFromSchema(schema: unknown): unknown {
     properties?: Record<string, unknown>;
     items?: unknown;
   };
-  if (s.enum?.length) return s.enum[0];
+  // Show the full valid vocabulary, not just the first option — a single
+  // example value lets the model guess a plausible-sounding synonym (e.g.
+  // "Footwear" instead of the actual allowed "Shoes") for anything it
+  // hasn't seen the rest of the list for.
+  if (s.enum?.length) return `<EXACTLY one of: ${s.enum.join(" | ")}>`;
   if (s.type === "object" && s.properties) {
     return Object.fromEntries(
       Object.entries(s.properties).map(([key, value]) => [key, exampleFromSchema(value)]),
