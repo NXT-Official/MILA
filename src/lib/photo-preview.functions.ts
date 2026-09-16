@@ -40,12 +40,17 @@ const verifyTool = {
 
 // Single-image fallback for providers that can't take two images in one
 // call (Cloudflare Workers AI's vision endpoint takes exactly one — see
-// CloudflareMultiImageUnsupportedError). This can't do a true side-by-side
-// identity diff, so it checks two achievable things instead: the edited
-// photo isn't structurally broken (garbled face, wrong number of hands),
-// and its apparent gender presentation and hair length are still
-// consistent with what the user's own profile says — the closest
-// single-image proxy for "this still looks like the same person."
+// CloudflareMultiImageUnsupportedError). Confirmed live in production logs
+// (2026-09-16) that this small 11B model's pass/fail judgment on this task
+// is unreliable — it rejected edits while stating in its own reason that
+// the depicted traits MATCHED the expected ones (e.g. "Gender presentation
+// is female, hair length is long" given as the failure reason for a user
+// who is exactly that), a third distinct failure mode from this model this
+// session. Blocking real user output on a verdict that's been shown to be
+// backwards is worse than not gating at all, so this path is advisory
+// only: it's logged for visibility but never blocks the result. The full
+// two-image comparison above (when Gemini is configured) remains a hard
+// gate — that one has not shown this failure mode.
 const singleImageVerifyTool = {
   function: {
     name: "report_edit_sanity_check",
@@ -115,33 +120,42 @@ async function verifyProtectedRegions(
     .filter(Boolean)
     .join(" ");
 
-  const result = await aiChatCompletion(
-    [
-      {
-        role: "system",
-        content:
-          "You are a strict photo-editing QA reviewer checking a single edited photo for obvious problems, since you cannot see the original for comparison. Call report_edit_sanity_check with your verdict.",
-      },
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Check this edited photo. ${traitLine} Flag it if the face looks distorted, melted, or wrong, if hands look abnormal, or if the person's apparent gender presentation or hair length clearly contradicts the expectations above.`,
-          },
-          { type: "image_url", image_url: { url: editedDataUri } },
-        ],
-      },
-    ],
-    singleImageVerifyTool,
-    caller,
-  );
-  if (!result.ok) return { passes: false, reason: "Verification check failed to run." };
-  const parsed = result.args as { passes?: unknown; reason?: unknown };
-  return {
-    passes: parsed.passes === true,
-    reason: typeof parsed.reason === "string" ? parsed.reason : "No reason given.",
-  };
+  try {
+    const result = await aiChatCompletion(
+      [
+        {
+          role: "system",
+          content:
+            "You are a strict photo-editing QA reviewer checking a single edited photo for obvious problems, since you cannot see the original for comparison. Call report_edit_sanity_check with your verdict.",
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Check this edited photo. ${traitLine} Flag it if the face looks distorted, melted, or wrong, if hands look abnormal, or if the person's apparent gender presentation or hair length clearly contradicts the expectations above.`,
+            },
+            { type: "image_url", image_url: { url: editedDataUri } },
+          ],
+        },
+      ],
+      singleImageVerifyTool,
+      caller,
+    );
+    if (result.ok) {
+      const parsed = result.args as { passes?: unknown; reason?: unknown };
+      if (parsed.passes !== true) {
+        console.warn(
+          "[generatePhotoPreview] single-image sanity check flagged a concern (advisory only, not blocking):",
+          typeof parsed.reason === "string" ? parsed.reason : "No reason given.",
+        );
+      }
+    }
+  } catch (err) {
+    console.warn("[generatePhotoPreview] single-image sanity check failed to run:", err);
+  }
+  // Advisory only — see the comment above singleImageVerifyTool.
+  return { passes: true, reason: "" };
 }
 
 function bytesFromArrayBuffer(buf: ArrayBuffer): Uint8Array {
