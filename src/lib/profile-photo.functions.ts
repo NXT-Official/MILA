@@ -1,9 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { uploadProfilePhoto, deleteProfilePhoto } from "./profile-photo-storage.server";
+import {
+  uploadProfilePhoto,
+  deleteProfilePhoto,
+  getSignedProfilePhotoUrl,
+} from "./profile-photo-storage.server";
 
 const Input = z.object({ imageDataUri: z.string().min(1) });
+
+/** Signed thumbnail URL for the currently consented photo, if any. */
+export const getMyProfilePhotoUrl = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("profiles")
+      .select("profile_photo_path")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (!data?.profile_photo_path) return { url: null };
+    const url = await getSignedProfilePhotoUrl(context.supabase, data.profile_photo_path);
+    return { url };
+  });
 
 /**
  * Consented profile photo storage — separate from the ephemeral photo sent

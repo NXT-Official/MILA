@@ -10,4 +10,5 @@ export const queryKeys = {
   subscriptionPlans: ["subscription-plans"] as const,
   savedPalettes: (userId: string | undefined) => ["saved-palettes", userId] as const,
   similarItems: (postItemId: string) => ["similar-items", postItemId] as const,
+  profilePhotoUrl: (userId: string | undefined) => ["profile-photo-url", userId] as const,
 };

@@ -9,6 +9,10 @@ interface Props {
   disabled?: boolean;
   analyzing?: boolean;
   frozenPreview?: string | null;
+  /** "user" = front/selfie camera, "environment" = back camera (default). */
+  facingMode?: "user" | "environment";
+  title?: string;
+  subtitle?: string;
 }
 
 export function CameraCapture({
@@ -17,6 +21,9 @@ export function CameraCapture({
   disabled,
   analyzing,
   frozenPreview,
+  facingMode = "environment",
+  title = "Open Camera & Scan",
+  subtitle = "Capture your outfit in real time for instant stylist analysis.",
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -38,7 +45,7 @@ export function CameraCapture({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { ideal: facingMode },
           width: { ideal: 1280 },
           height: { ideal: 1280 },
         },
@@ -108,12 +115,10 @@ export function CameraCapture({
               )}
             </div>
             <p className="font-serif text-2xl md:text-3xl mb-2">
-              {disabled ? "Complete your profile first" : "Open Camera & Scan"}
+              {disabled ? "Complete your profile first" : title}
             </p>
             <p className="text-sm text-muted-foreground max-w-sm">
-              {disabled
-                ? "Set body type & color season above to unlock the scanner."
-                : "Capture your outfit in real time for instant stylist analysis."}
+              {disabled ? "Set body type & color season above to unlock the scanner." : subtitle}
             </p>
             {error && <p className="mt-4 text-xs text-destructive max-w-sm">{error}</p>}
           </div>

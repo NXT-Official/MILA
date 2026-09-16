@@ -27,6 +27,7 @@ import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detai
 import { ShopThisLookGrid } from "@/components/dashboard/shop-look-grid";
 import { findLookProducts, type LookProduct } from "@/lib/look-products.functions";
 import { generatePhotoPreview } from "@/lib/photo-preview.functions";
+import { SelfiePhotoWidget } from "@/components/dashboard/selfie-photo-widget";
 import { toast } from "sonner";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 import { isInsufficientCreditsError } from "@/lib/credits";
@@ -431,6 +432,9 @@ function Dashboard() {
                     </Link>
                   </p>
                 ) : null}
+                <div className="mt-3">
+                  <SelfiePhotoWidget hasConsent={!!profile?.photo_consent_at} userId={user?.id} />
+                </div>
               </div>
               <ClimateWidget value={climate} onChange={setClimate} />
             </div>
