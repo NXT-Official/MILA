@@ -28,7 +28,19 @@ const SITE_WINDOW_SECONDS = 86_400;
 
 export class ImageProviderRateLimitError extends Error {}
 
-function buildOutfitImagePrompt(outfit: DailyLook, gender?: string | null): string {
+const SKIN_DEPTH_DESCRIPTORS: Record<string, string> = {
+  Fair: "fair",
+  Light: "light",
+  Medium: "medium",
+  Tan: "tan",
+  Deep: "deep-toned",
+};
+
+function buildOutfitImagePrompt(
+  outfit: DailyLook,
+  gender?: string | null,
+  skinDepth?: string | null,
+): string {
   const outfitLine = [
     outfit.outfit.headline,
     outfit.outfit.description,
@@ -37,10 +49,12 @@ function buildOutfitImagePrompt(outfit: DailyLook, gender?: string | null): stri
     .filter(Boolean)
     .join(" ");
 
-  const modelLine =
+  const genderLine =
     gender && gender !== "Prefer not to say" && gender !== "Non-binary"
-      ? `one adult model presenting as ${gender.toLowerCase()}`
-      : "one adult model";
+      ? `presenting as ${gender.toLowerCase()}`
+      : null;
+  const skinLine = skinDepth ? `with ${SKIN_DEPTH_DESCRIPTORS[skinDepth] ?? skinDepth} skin` : null;
+  const modelLine = `one adult model ${[genderLine, skinLine].filter(Boolean).join(" ")}`.trim();
   const makeupLine = outfit.makeup ? ` Makeup: ${outfit.makeup.palette}.` : "";
 
   return `Editorial full-body luxury fashion photograph of ${modelLine} wearing: ${outfitLine}
@@ -65,7 +79,7 @@ function utcDateKey(): string {
 
 export async function generateOutfitImage(
   outfit: DailyLook,
-  deps: { rateLimitStore?: RateLimitStore; gender?: string | null } = {},
+  deps: { rateLimitStore?: RateLimitStore; gender?: string | null; skinDepth?: string | null } = {},
 ): Promise<OutfitImageResult> {
   const { CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN } = requireEnv({
     CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID,
@@ -99,7 +113,7 @@ export async function generateOutfitImage(
           Accept: "application/json",
         },
         body: JSON.stringify({
-          prompt: buildOutfitImagePrompt(outfit, deps.gender),
+          prompt: buildOutfitImagePrompt(outfit, deps.gender, deps.skinDepth),
           steps: GENERATION_STEPS,
         }),
         signal: AbortSignal.timeout(TIMEOUT_MS),

@@ -40,17 +40,14 @@ const verifyTool = {
 
 // Single-image fallback for providers that can't take two images in one
 // call (Cloudflare Workers AI's vision endpoint takes exactly one — see
-// CloudflareMultiImageUnsupportedError). Confirmed live in production logs
-// (2026-09-16) that this small 11B model's pass/fail judgment on this task
-// is unreliable — it rejected edits while stating in its own reason that
-// the depicted traits MATCHED the expected ones (e.g. "Gender presentation
-// is female, hair length is long" given as the failure reason for a user
-// who is exactly that), a third distinct failure mode from this model this
-// session. Blocking real user output on a verdict that's been shown to be
-// backwards is worse than not gating at all, so this path is advisory
-// only: it's logged for visibility but never blocks the result. The full
-// two-image comparison above (when Gemini is configured) remains a hard
-// gate — that one has not shown this failure mode.
+// CloudflareMultiImageUnsupportedError). A prior version of this comment
+// claimed the model's rejections were "backwards" and made this advisory
+// only — that diagnosis was wrong. Checked against the real user's stored
+// profile (gender: "Male") for the exact rejection this was based on
+// ("Gender presentation is female, hair length is long"): the edit had
+// actually rendered the wrong gender, and the check correctly caught it.
+// Disabling the gate let that bad edit reach the user. Restored as a real
+// gate below.
 const singleImageVerifyTool = {
   function: {
     name: "report_edit_sanity_check",
@@ -120,42 +117,33 @@ async function verifyProtectedRegions(
     .filter(Boolean)
     .join(" ");
 
-  try {
-    const result = await aiChatCompletion(
-      [
-        {
-          role: "system",
-          content:
-            "You are a strict photo-editing QA reviewer checking a single edited photo for obvious problems, since you cannot see the original for comparison. Call report_edit_sanity_check with your verdict.",
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Check this edited photo. ${traitLine} Flag it if the face looks distorted, melted, or wrong, if hands look abnormal, or if the person's apparent gender presentation or hair length clearly contradicts the expectations above.`,
-            },
-            { type: "image_url", image_url: { url: editedDataUri } },
-          ],
-        },
-      ],
-      singleImageVerifyTool,
-      caller,
-    );
-    if (result.ok) {
-      const parsed = result.args as { passes?: unknown; reason?: unknown };
-      if (parsed.passes !== true) {
-        console.warn(
-          "[generatePhotoPreview] single-image sanity check flagged a concern (advisory only, not blocking):",
-          typeof parsed.reason === "string" ? parsed.reason : "No reason given.",
-        );
-      }
-    }
-  } catch (err) {
-    console.warn("[generatePhotoPreview] single-image sanity check failed to run:", err);
-  }
-  // Advisory only — see the comment above singleImageVerifyTool.
-  return { passes: true, reason: "" };
+  const result = await aiChatCompletion(
+    [
+      {
+        role: "system",
+        content:
+          "You are a strict photo-editing QA reviewer checking a single edited photo for obvious problems, since you cannot see the original for comparison. Call report_edit_sanity_check with your verdict.",
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Check this edited photo. ${traitLine} Flag it if the face looks distorted, melted, or wrong, if hands look abnormal, or if the person's apparent gender presentation or hair length clearly contradicts the expectations above.`,
+          },
+          { type: "image_url", image_url: { url: editedDataUri } },
+        ],
+      },
+    ],
+    singleImageVerifyTool,
+    caller,
+  );
+  if (!result.ok) return { passes: false, reason: "Verification check failed to run." };
+  const parsed = result.args as { passes?: unknown; reason?: unknown };
+  return {
+    passes: parsed.passes === true,
+    reason: typeof parsed.reason === "string" ? parsed.reason : "No reason given.",
+  };
 }
 
 function bytesFromArrayBuffer(buf: ArrayBuffer): Uint8Array {
@@ -220,47 +208,55 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
             makeup_preference: profileRow.makeup_preference,
           });
 
-          const { imageUrl, costUsd } = await editOutfitPhoto({
-            userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
-            referenceImages,
-            outfit: data.outfit,
-            makeupEnabled,
-            hairLength: profileRow.hair_length,
-          });
-
           const originalDataUri = `data:${userPhotoContentType};base64,${Buffer.from(userPhotoBytes).toString("base64")}`;
-          const verification = await verifyProtectedRegions(
-            originalDataUri,
-            imageUrl,
-            { gender: profileRow.gender, hairLength: profileRow.hair_length },
-            { supabase: context.supabase, userId: context.userId },
-          );
 
-          await logAiSpend(context.supabase, context.userId, {
-            provider: "cloudflare",
-            model: "@cf/black-forest-labs/flux-2-klein-4b",
-            costUsd,
-            promptTokens: null,
-            completionTokens: null,
-            totalTokens: null,
-          });
+          // flux-2-klein-4b's identity/gender preservation is inconsistent
+          // run-to-run — a failed verification is often the model, not a
+          // structurally bad request, so retry once with a fresh generation
+          // before giving up. Never skip verification just because a retry
+          // was needed — a second bad result should still fall back.
+          const MAX_ATTEMPTS = 2;
+          let lastReason = "Your photo preview couldn't be verified safe this time.";
+          for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            const { imageUrl, costUsd } = await editOutfitPhoto({
+              userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
+              referenceImages,
+              outfit: data.outfit,
+              makeupEnabled,
+              hairLength: profileRow.hair_length,
+              gender: profileRow.gender,
+            });
 
-          if (!verification.passes) {
+            const verification = await verifyProtectedRegions(
+              originalDataUri,
+              imageUrl,
+              { gender: profileRow.gender, hairLength: profileRow.hair_length },
+              { supabase: context.supabase, userId: context.userId },
+            );
+
+            await logAiSpend(context.supabase, context.userId, {
+              provider: "cloudflare",
+              model: "@cf/black-forest-labs/flux-2-klein-4b",
+              costUsd,
+              promptTokens: null,
+              completionTokens: null,
+              totalTokens: null,
+            });
+
+            if (verification.passes) {
+              // Not persisted here — same as the text-to-image inspiration
+              // path, this is a preview; saveOutfitToHistory uploads it
+              // only if/when the user explicitly saves the look.
+              return { imageDataUri: imageUrl, mode: "photo_edit" };
+            }
             console.warn(
-              "[generatePhotoPreview] protected-region check failed:",
+              `[generatePhotoPreview] protected-region check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
               verification.reason,
             );
-            return {
-              imageDataUri: null,
-              mode: "unavailable",
-              reason: "Your photo preview couldn't be verified safe this time.",
-            };
+            lastReason = "Your photo preview couldn't be verified safe this time.";
           }
 
-          // Not persisted here — same as the text-to-image inspiration path,
-          // this is a preview; saveOutfitToHistory uploads it only if/when the
-          // user explicitly saves the look.
-          return { imageDataUri: imageUrl, mode: "photo_edit" };
+          return { imageDataUri: null, mode: "unavailable", reason: lastReason };
         } catch (error) {
           console.error("[generatePhotoPreview] failed:", errorMessage(error, "Unknown error"));
           if (error instanceof ImageProviderRateLimitError) {

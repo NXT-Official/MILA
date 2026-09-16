@@ -39,11 +39,13 @@ function buildEditPrompt({
   outfit,
   makeupEnabled,
   hairLength,
+  gender,
   referenceCount,
 }: {
   outfit: DailyLook;
   makeupEnabled: boolean;
   hairLength: string | null;
+  gender: string | null;
   referenceCount: number;
 }): string {
   const garmentLine =
@@ -51,8 +53,11 @@ function buildEditPrompt({
       ? `Change ONLY the clothing to match the ${referenceCount} reference garment image(s) provided (${outfit.outfit.headline}: ${outfit.outfit.description}).`
       : `Change ONLY the clothing to: ${outfit.outfit.headline}. ${outfit.outfit.description}`;
 
-  const protectedLine =
-    "Preserve exactly: the person's face, identity, skin tone, body proportions, pose, hands, and background. Do not beautify, slim, reshape, smooth skin, or relight the image.";
+  const genderLine =
+    gender && gender !== "Prefer not to say"
+      ? ` This is a ${gender.toLowerCase()}-presenting person — the edit MUST keep them looking ${gender.toLowerCase()}-presenting; never shift apparent gender, sex characteristics, or facial structure.`
+      : "";
+  const protectedLine = `Preserve exactly: the person's face, identity, facial structure, apparent gender presentation, skin tone, body proportions, pose, hands, and background.${genderLine} Do not beautify, slim, reshape, smooth skin, or relight the image.`;
 
   const hairLine =
     hairLength && hairLength !== "Bald/Shaved"
@@ -86,12 +91,14 @@ export async function editOutfitPhoto(
     outfit,
     makeupEnabled,
     hairLength,
+    gender,
   }: {
     userPhoto: { bytes: Uint8Array; contentType: string };
     referenceImages: Array<{ bytes: Uint8Array; contentType: string }>;
     outfit: DailyLook;
     makeupEnabled: boolean;
     hairLength: string | null;
+    gender: string | null;
   },
   deps: { rateLimitStore?: RateLimitStore } = {},
 ): Promise<PhotoEditResult> {
@@ -119,7 +126,13 @@ export async function editOutfitPhoto(
   const form = new FormData();
   form.append(
     "prompt",
-    buildEditPrompt({ outfit, makeupEnabled, hairLength, referenceCount: references.length }),
+    buildEditPrompt({
+      outfit,
+      makeupEnabled,
+      hairLength,
+      gender,
+      referenceCount: references.length,
+    }),
   );
   const toBlobPart = (bytes: Uint8Array) => bytes as unknown as BlobPart;
   form.append(

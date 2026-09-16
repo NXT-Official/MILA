@@ -18,6 +18,53 @@ import {
 } from "./cloudflare-image.server";
 import { errorMessage } from "@/lib/utils";
 
+// Named 2026 haircut trends, sourced from current hairstylist/salon
+// coverage (Refinery29 spring/fall 2026 haircut roundups, Pete & Pedro and
+// Blumaan men's 2026 look books, WECOLOUR) — not fabricated. Given as
+// reference vocabulary so hair recommendations name concrete, currently
+// trending cuts instead of a generic silhouette description. The existing
+// hair-length rule still governs what's actually achievable.
+const HAIRSTYLE_TRENDS_2026: Record<string, string[]> = {
+  Male: [
+    "Textured Crop",
+    "Modern Buzz Cut",
+    "Overgrown Buzz",
+    "Crew Cut",
+    "Modern Mullet",
+    "Baby Mullet",
+    "Wolf Cut",
+    "Fab Four Cut",
+    "Undercut with a textured top",
+    "Low Taper Fade",
+    "Man Bun / long-hair revival",
+  ],
+  Female: [
+    "Graduated Bob (Pob)",
+    "Varsity Bob",
+    "Ripped Bob",
+    "Italian Bob",
+    "Sculpted French Bob",
+    "Baroque Bob",
+    "Cloud Bob",
+    "Trixie (pixie-bixie hybrid)",
+    "Tapered Bixie",
+    "Gemini Cut",
+    "Chillet (soft mullet)",
+    "Tinkerbell Pixie",
+    "Curve Cut",
+    "J-Shape Haircut",
+    "Wolf Cut",
+    "Birkin Bangs",
+  ],
+};
+const UNISEX_HAIRSTYLE_TRENDS_2026 = [
+  "Wolf Cut",
+  "Textured Crop",
+  "Modern Shag",
+  "Birkin Bangs",
+  "Curtain Fringe",
+];
+
 const Input = z.object({
   bodyType: z.string().min(1).max(64),
   colorSeason: z.string().min(1).max(64),
@@ -169,7 +216,9 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     return withAiCredit(context.supabase, context.userId, async () => {
       const { data: profileRow } = await context.supabase
         .from("profiles")
-        .select("beauty_preferences,gender,makeup_preference,hair_length")
+        .select(
+          "beauty_preferences,gender,makeup_preference,hair_length,skin_depth,height_cm,weight_kg",
+        )
         .eq("id", context.userId)
         .maybeSingle();
 
@@ -179,6 +228,11 @@ export const generateDailyLook = createServerFn({ method: "POST" })
         makeup_preference: profileRow?.makeup_preference,
       });
       const hairLengthValue = profileRow?.hair_length?.trim() || null;
+      const genderValue =
+        profileRow?.gender && profileRow.gender !== "Prefer not to say" ? profileRow.gender : null;
+      const skinDepthValue = profileRow?.skin_depth?.trim() || null;
+      const heightCm = profileRow?.height_cm ?? null;
+      const weightKg = profileRow?.weight_kg ?? null;
 
       let tempF = data.tempF;
       let tempC = data.tempC;
@@ -221,9 +275,18 @@ export const generateDailyLook = createServerFn({ method: "POST" })
         throw new Error("Body type missing from profile. Complete your Studio dossier first.");
 
       const profileLines = [
+        genderValue
+          ? `- Gender presentation: ${genderValue} (AUTHORITATIVE — garment types, cuts, and silhouettes must suit this presentation; for Non-binary favor gender-neutral/androgynous silhouettes; never default to a gendered assumption otherwise)`
+          : null,
         `- Body type: ${data.bodyType}`,
+        heightCm != null || weightKg != null
+          ? `- Build: ${[heightCm != null ? `${heightCm}cm` : null, weightKg != null ? `${weightKg}kg` : null].filter(Boolean).join(", ")} (use this only to inform proportion/scale language — e.g. petite framing, elongating lines, tailored volume — never restate these numbers back in the output)`
+          : null,
         `- 16-season color profile: ${colorSeasonValue} (AUTHORITATIVE — every color reference in outfit/hair/makeup MUST be drawn from this exact season; do NOT substitute a different season name)`,
         data.skinUndertone ? `- Skin undertone: ${data.skinUndertone}` : null,
+        skinDepthValue
+          ? `- Skin depth: ${skinDepthValue} (combine with undertone above when judging color contrast, saturation, and finish choices)`
+          : null,
         faceShapeValue
           ? `- Face shape: ${faceShapeValue} (use this exact face-shape name in the hair rationale)`
           : null,
@@ -242,6 +305,12 @@ export const generateDailyLook = createServerFn({ method: "POST" })
           : ` The client's current hair length is ${hairLengthValue} — recommend ONLY styles achievable at this length. Never assume added length, extensions, or a different length than what's stated.`
         : "";
 
+      const trendList =
+        genderValue === "Male" || genderValue === "Female"
+          ? HAIRSTYLE_TRENDS_2026[genderValue]
+          : UNISEX_HAIRSTYLE_TRENDS_2026;
+      const trendLine = ` Draw from named 2026 trending cuts where they fit — e.g. ${trendList.join(", ")} — adapted to the length/type/face-shape constraints below; don't force a fit if none of these suit the client's stated length or type.`;
+
       const hairRule =
         (faceShapeValue && hairTypeValue
           ? `- HAIR (CROSS-REFERENCE REQUIRED): the 'style' MUST be a specific silhouette engineered for BOTH the user's hair type (${hairTypeValue}) AND face shape (${faceShapeValue}). Reference the face shape "${faceShapeValue}" by name inside the rationale. Name the silhouette concretely (parting, length, volume placement, finish). Explain in one clause how it balances the ${faceShapeValue} face shape. NEVER prescribe a silhouette that fights the hair type. The 'execution_tip' must name a specific product class, tool size, or technique appropriate to ${hairTypeValue} hair.`
@@ -250,6 +319,7 @@ export const generateDailyLook = createServerFn({ method: "POST" })
             : faceShapeValue
               ? `- HAIR: prescribe a concrete silhouette that flatters a ${faceShapeValue} face shape; reference it by name in the rationale. Name the silhouette concretely and give one execution tip.`
               : `- HAIR: prescribe a concrete silhouette (parting, length, volume placement, finish) plus one execution tip.`) +
+        trendLine +
         hairLengthRule;
 
       const systemPrompt = `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup — from first principles. NOT from any inventory.
@@ -339,11 +409,14 @@ export const regenerateOutfitImage = createServerFn({ method: "POST" })
       try {
         const { data: profileRow } = await context.supabase
           .from("profiles")
-          .select("gender")
+          .select("gender,skin_depth")
           .eq("id", context.userId)
           .maybeSingle();
         const { imageUrl, costUsd, promptTokens, completionTokens, totalTokens } =
-          await generateOutfitImage(data, { gender: profileRow?.gender });
+          await generateOutfitImage(data, {
+            gender: profileRow?.gender,
+            skinDepth: profileRow?.skin_depth,
+          });
         await logAiSpend(context.supabase, context.userId, {
           provider: IMAGE_PROVIDER,
           model: IMAGE_MODEL,

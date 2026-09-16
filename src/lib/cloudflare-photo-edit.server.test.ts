@@ -59,6 +59,7 @@ describe("Cloudflare photo-edit (flux-2-klein-4b)", () => {
         outfit,
         makeupEnabled: true,
         hairLength: "Medium",
+        gender: null,
       }),
     ).rejects.toThrow("Missing environment variable");
   });
@@ -87,6 +88,7 @@ describe("Cloudflare photo-edit (flux-2-klein-4b)", () => {
         outfit,
         makeupEnabled: true,
         hairLength: "Medium",
+        gender: "Female",
       },
       { rateLimitStore: allowStore },
     );
@@ -97,6 +99,7 @@ describe("Cloudflare photo-edit (flux-2-klein-4b)", () => {
     expect(capturedBody?.get("input_image_2")).toBeTruthy();
     expect(capturedBody?.has("input_image_3")).toBe(false);
     expect(String(capturedBody?.get("prompt"))).toContain("The Architectural Linen Silhouette");
+    expect(String(capturedBody?.get("prompt"))).toContain("female-presenting");
   });
 
   test("caps reference images at 3 even when more are given", async () => {
@@ -119,6 +122,7 @@ describe("Cloudflare photo-edit (flux-2-klein-4b)", () => {
         outfit,
         makeupEnabled: false,
         hairLength: null,
+        gender: null,
       },
       { rateLimitStore: allowStore },
     );
@@ -136,7 +140,14 @@ describe("Cloudflare photo-edit (flux-2-klein-4b)", () => {
     }) as unknown as typeof fetch;
 
     await editOutfitPhoto(
-      { userPhoto, referenceImages: [], outfit, makeupEnabled: false, hairLength: "Medium" },
+      {
+        userPhoto,
+        referenceImages: [],
+        outfit,
+        makeupEnabled: false,
+        hairLength: "Medium",
+        gender: null,
+      },
       { rateLimitStore: allowStore },
     );
 
@@ -150,7 +161,14 @@ describe("Cloudflare photo-edit (flux-2-klein-4b)", () => {
     }) as unknown as typeof fetch;
     await expect(
       editOutfitPhoto(
-        { userPhoto, referenceImages: [], outfit, makeupEnabled: true, hairLength: "Medium" },
+        {
+          userPhoto,
+          referenceImages: [],
+          outfit,
+          makeupEnabled: true,
+          hairLength: "Medium",
+          gender: null,
+        },
         { rateLimitStore: denyStore },
       ),
     ).rejects.toThrow(ImageProviderRateLimitError);
@@ -163,7 +181,14 @@ describe("Cloudflare photo-edit (flux-2-klein-4b)", () => {
     ) as unknown as typeof fetch;
     await expect(
       editOutfitPhoto(
-        { userPhoto, referenceImages: [], outfit, makeupEnabled: true, hairLength: "Medium" },
+        {
+          userPhoto,
+          referenceImages: [],
+          outfit,
+          makeupEnabled: true,
+          hairLength: "Medium",
+          gender: null,
+        },
         { rateLimitStore: allowStore },
       ),
     ).rejects.toThrow(ImageProviderRateLimitError);
@@ -176,7 +201,14 @@ describe("Cloudflare photo-edit (flux-2-klein-4b)", () => {
     ) as unknown as typeof fetch;
     await expect(
       editOutfitPhoto(
-        { userPhoto, referenceImages: [], outfit, makeupEnabled: true, hairLength: "Medium" },
+        {
+          userPhoto,
+          referenceImages: [],
+          outfit,
+          makeupEnabled: true,
+          hairLength: "Medium",
+          gender: null,
+        },
         { rateLimitStore: allowStore },
       ),
     ).rejects.toThrow("did not return an edited image");
