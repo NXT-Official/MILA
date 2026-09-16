@@ -59,9 +59,13 @@ function buildEditPrompt({
       : "";
   const protectedLine = `Preserve exactly: the person's face, identity, facial structure, apparent gender presentation, skin tone, body proportions, pose, hands, and background.${genderLine} Do not beautify, slim, reshape, smooth skin, or relight the image.`;
 
+  const hairGenderGuard =
+    gender && gender !== "Prefer not to say"
+      ? ` The restyled hair must still read as ${gender.toLowerCase()}-presenting and consistent with the stated length — never grow, lengthen, or add volume beyond what "${hairLength}" allows.`
+      : "";
   const hairLine =
     hairLength && hairLength !== "Bald/Shaved"
-      ? `Hair may be restyled to: ${outfit.hair.style} — but do not change hair length, add extensions, or change hair color.`
+      ? `Hair may be restyled to: ${outfit.hair.style} — but do not change hair length, add extensions, or change hair color.${hairGenderGuard}`
       : "Do not alter hair.";
 
   const makeupLine =

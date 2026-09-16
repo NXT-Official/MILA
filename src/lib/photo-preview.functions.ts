@@ -7,13 +7,11 @@ import { ImageProviderRateLimitError } from "./cloudflare-image.server";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
 import { CloudflareMultiImageUnsupportedError } from "./cloudflare-chat.server";
 import { logAiSpend } from "./ai-spend.server";
-import { safeExternalFetch } from "./safe-external-fetch.server";
 import { payForLookImage } from "./credits.server";
 import { errorMessage } from "@/lib/utils";
 
 const Input = z.object({
   outfit: DailyLookSchema,
-  productIds: z.array(z.string().uuid()).max(3),
 });
 
 const verifyTool = {
@@ -168,12 +166,6 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
       return { imageDataUri: null, mode: "unavailable", reason: "No consented photo on file." };
     }
 
-    const { data: productRows } = await context.supabase
-      .from("products")
-      .select("image_url")
-      .in("id", data.productIds)
-      .not("image_url", "is", null);
-
     return payForLookImage(
       context.supabase,
       context.userId,
@@ -188,21 +180,6 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
           const userPhotoBytes = bytesFromArrayBuffer(await photoBlob.arrayBuffer());
           const userPhotoContentType = photoBlob.type || "image/jpeg";
 
-          const referenceImages: Array<{ bytes: Uint8Array; contentType: string }> = [];
-          for (const row of productRows ?? []) {
-            if (!row.image_url) continue;
-            try {
-              const res = await safeExternalFetch(row.image_url);
-              if (!res.ok) continue;
-              referenceImages.push({
-                bytes: bytesFromArrayBuffer(await res.arrayBuffer()),
-                contentType: res.headers.get("content-type") || "image/jpeg",
-              });
-            } catch (err) {
-              console.warn("[generatePhotoPreview] reference image fetch failed:", err);
-            }
-          }
-
           const makeupEnabled = computeMakeupEligibility({
             gender: profileRow.gender,
             makeup_preference: profileRow.makeup_preference,
@@ -210,17 +187,28 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
 
           const originalDataUri = `data:${userPhotoContentType};base64,${Buffer.from(userPhotoBytes).toString("base64")}`;
 
+          // No product reference images: verified live that this catalog is
+          // entirely modeled fashion photography (real people, mostly
+          // women's fashion — matchLookProducts isn't gender-aware), and a
+          // second person's face/body in the reference images is a real
+          // identity-contamination risk for an edit that's supposed to
+          // preserve exactly one person. The garment's text description
+          // (outfit.outfit.description) already carries the styling detail
+          // this model needs — verified live that text-only edits render
+          // correctly without needing a photo reference.
+          //
           // flux-2-klein-4b's identity/gender preservation is inconsistent
-          // run-to-run — a failed verification is often the model, not a
-          // structurally bad request, so retry once with a fresh generation
-          // before giving up. Never skip verification just because a retry
-          // was needed — a second bad result should still fall back.
-          const MAX_ATTEMPTS = 2;
+          // run-to-run even without references (diffusion models have no
+          // fixed seed here) — a failed verification is often the model,
+          // not a structurally bad request, so retry before giving up.
+          // Never skip verification just because a retry was needed — a
+          // bad result should still fall back.
+          const MAX_ATTEMPTS = 3;
           let lastReason = "Your photo preview couldn't be verified safe this time.";
           for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             const { imageUrl, costUsd } = await editOutfitPhoto({
               userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
-              referenceImages,
+              referenceImages: [],
               outfit: data.outfit,
               makeupEnabled,
               hairLength: profileRow.hair_length,

@@ -236,25 +236,19 @@ function Dashboard() {
       return;
     }
 
-    // Consented users get the face-on-photo version by default — shop items
-    // must resolve first so their images can serve as garment references.
-    const [items] = await Promise.all([
-      fetchShopItems(
-        profile.color_season,
-        profile.body_type,
-        climate.tempF,
-        profile.delivery_country || climate.country,
-      ),
-      fetchImage(outfit),
-    ]);
+    // Consented users get the face-on-photo version by default.
+    void fetchShopItems(
+      profile.color_season,
+      profile.body_type,
+      climate.tempF,
+      profile.delivery_country || climate.country,
+    );
+    await fetchImage(outfit);
 
     setPhotoPreviewLoading(true);
     try {
       const { outfit: outfitBody, hair, makeup, vibe_alignment_score } = outfit;
-      const res = await runPhotoPreview(
-        { outfit: outfitBody, hair, makeup, vibe_alignment_score },
-        referenceProductIdsFor(items),
-      );
+      const res = await runPhotoPreview({ outfit: outfitBody, hair, makeup, vibe_alignment_score });
       if (res.mode === "photo_edit") {
         setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
         setPreviewMode("photo_edit");
@@ -286,26 +280,14 @@ function Dashboard() {
     }
   }
 
-  function referenceProductIdsFor(items: LookProduct[] | null): string[] {
-    return (items ?? [])
-      .filter((item) => item.image_url)
-      .slice(0, 3)
-      .map((item) => item.id);
-  }
-
   /** Shared with the automatic post-generation attempt in generateLook(). */
-  async function runPhotoPreview(
-    outfitForEdit: {
-      outfit: DailyLook["outfit"];
-      hair: DailyLook["hair"];
-      makeup: DailyLook["makeup"];
-      vibe_alignment_score: DailyLook["vibe_alignment_score"];
-    },
-    referenceProductIds: string[],
-  ) {
-    return generatePhotoPreviewFn({
-      data: { outfit: outfitForEdit, productIds: referenceProductIds },
-    });
+  async function runPhotoPreview(outfitForEdit: {
+    outfit: DailyLook["outfit"];
+    hair: DailyLook["hair"];
+    makeup: DailyLook["makeup"];
+    vibe_alignment_score: DailyLook["vibe_alignment_score"];
+  }) {
+    return generatePhotoPreviewFn({ data: { outfit: outfitForEdit } });
   }
 
   async function previewOnMyPhoto() {
@@ -313,10 +295,7 @@ function Dashboard() {
     setPhotoPreviewLoading(true);
     try {
       const { outfit, hair, makeup, vibe_alignment_score } = look;
-      const res = await runPhotoPreview(
-        { outfit, hair, makeup, vibe_alignment_score },
-        referenceProductIdsFor(shopItems),
-      );
+      const res = await runPhotoPreview({ outfit, hair, makeup, vibe_alignment_score });
       if (res.mode === "photo_edit") {
         setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
         setPreviewMode("photo_edit");
