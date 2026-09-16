@@ -1,6 +1,20 @@
 import { logAiSpend } from "./ai-spend.server";
 import type { AiCallerContext, AiResult, AiTool } from "./ai.server";
 
+// Cloudflare's vision REST endpoint accepts exactly one image per call (a
+// single `image` field, not an array) — confirmed against the documented
+// input schema. A caller sending 2+ images (e.g. an original-vs-edited
+// comparison) must not have the extras silently dropped: that produced a
+// vacuous "pass" earlier (the check only ever saw the first image and
+// never the one it was supposed to judge). Throw instead so callers can
+// adapt — see photo-preview.functions.ts's single-image fallback.
+export class CloudflareMultiImageUnsupportedError extends Error {
+  constructor() {
+    super("Cloudflare Workers AI vision only supports one image per call.");
+    this.name = "CloudflareMultiImageUnsupportedError";
+  }
+}
+
 // Temporary stand-in for the Gemini stylist brain while AI_API_KEY/AI_MODEL
 // are unconfigured. Reuses the same Cloudflare Workers AI Free-plan account
 // already wired up for outfit images, so it costs nothing extra to enable
@@ -150,7 +164,7 @@ export async function cloudflareChatCompletion(
 
   const systemTexts: string[] = [];
   const turns: Array<{ role: "system" | "user" | "assistant"; text: string }> = [];
-  let firstImage: number[] | null = null;
+  const imageUrls: string[] = [];
 
   for (const message of messages) {
     const role =
@@ -165,11 +179,13 @@ export async function cloudflareChatCompletion(
       continue;
     }
     if (text) turns.push({ role, text });
-    if (!firstImage) {
-      const imagePart = parts.find((part): part is { imageUrl: string } => "imageUrl" in part);
-      if (imagePart) firstImage = await imageToByteArray(imagePart.imageUrl);
+    for (const part of parts) {
+      if ("imageUrl" in part) imageUrls.push(part.imageUrl);
     }
   }
+
+  if (imageUrls.length > 1) throw new CloudflareMultiImageUnsupportedError();
+  const firstImage = imageUrls.length ? await imageToByteArray(imageUrls[0]) : null;
 
   const model = firstImage ? VISION_MODEL : TEXT_MODEL;
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;

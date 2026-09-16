@@ -5,6 +5,7 @@ import { DailyLookSchema, computeMakeupEligibility } from "./generate-outfit.fun
 import { editOutfitPhoto } from "./cloudflare-photo-edit.server";
 import { ImageProviderRateLimitError } from "./cloudflare-image.server";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
+import { CloudflareMultiImageUnsupportedError } from "./cloudflare-chat.server";
 import { logAiSpend } from "./ai-spend.server";
 import { safeExternalFetch } from "./safe-external-fetch.server";
 import { payForLookImage } from "./credits.server";
@@ -37,30 +38,102 @@ const verifyTool = {
   },
 };
 
+// Single-image fallback for providers that can't take two images in one
+// call (Cloudflare Workers AI's vision endpoint takes exactly one — see
+// CloudflareMultiImageUnsupportedError). This can't do a true side-by-side
+// identity diff, so it checks two achievable things instead: the edited
+// photo isn't structurally broken (garbled face, wrong number of hands),
+// and its apparent gender presentation and hair length are still
+// consistent with what the user's own profile says — the closest
+// single-image proxy for "this still looks like the same person."
+const singleImageVerifyTool = {
+  function: {
+    name: "report_edit_sanity_check",
+    parameters: {
+      type: "object",
+      properties: {
+        passes: {
+          type: "boolean",
+          description:
+            "true only if this shows one intact, undistorted human face and normal hands/body with no visible editing artifacts, AND the apparent gender presentation and hair length are consistent with the stated expectations.",
+        },
+        reason: {
+          type: "string",
+          description: "One short sentence, especially if passes is false.",
+        },
+      },
+      required: ["passes", "reason"],
+      additionalProperties: false,
+    },
+  },
+};
+
 async function verifyProtectedRegions(
   originalDataUri: string,
   editedDataUri: string,
+  expectedTraits: { gender: string | null; hairLength: string | null },
   caller: { supabase: Parameters<typeof aiChatCompletion>[2]["supabase"]; userId: string },
 ): Promise<{ passes: boolean; reason: string }> {
   if (!isAiConfigured()) return { passes: false, reason: "Verification service not configured." };
+  try {
+    const result = await aiChatCompletion(
+      [
+        {
+          role: "system",
+          content:
+            "You are a strict photo-editing QA reviewer. Compare the ORIGINAL and EDITED photos. The edit is only allowed to change clothing (and hair/makeup if explicitly mentioned). Face, identity, skin tone, body proportions, pose, hands, and background must be unchanged. Call report_protected_region_check with your verdict.",
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "ORIGINAL photo:" },
+            { type: "image_url", image_url: { url: originalDataUri } },
+            { type: "text", text: "EDITED photo:" },
+            { type: "image_url", image_url: { url: editedDataUri } },
+          ],
+        },
+      ],
+      verifyTool,
+      caller,
+    );
+    if (!result.ok) return { passes: false, reason: "Verification check failed to run." };
+    const parsed = result.args as { passes?: unknown; reason?: unknown };
+    return {
+      passes: parsed.passes === true,
+      reason: typeof parsed.reason === "string" ? parsed.reason : "No reason given.",
+    };
+  } catch (err) {
+    if (!(err instanceof CloudflareMultiImageUnsupportedError)) throw err;
+  }
+
+  const traitLine = [
+    expectedTraits.gender && expectedTraits.gender !== "Prefer not to say"
+      ? `Expected gender presentation: ${expectedTraits.gender}.`
+      : null,
+    expectedTraits.hairLength ? `Expected hair length: ${expectedTraits.hairLength}.` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   const result = await aiChatCompletion(
     [
       {
         role: "system",
         content:
-          "You are a strict photo-editing QA reviewer. Compare the ORIGINAL and EDITED photos. The edit is only allowed to change clothing (and hair/makeup if explicitly mentioned). Face, identity, skin tone, body proportions, pose, hands, and background must be unchanged. Call report_protected_region_check with your verdict.",
+          "You are a strict photo-editing QA reviewer checking a single edited photo for obvious problems, since you cannot see the original for comparison. Call report_edit_sanity_check with your verdict.",
       },
       {
         role: "user",
         content: [
-          { type: "text", text: "ORIGINAL photo:" },
-          { type: "image_url", image_url: { url: originalDataUri } },
-          { type: "text", text: "EDITED photo:" },
+          {
+            type: "text",
+            text: `Check this edited photo. ${traitLine} Flag it if the face looks distorted, melted, or wrong, if hands look abnormal, or if the person's apparent gender presentation or hair length clearly contradicts the expectations above.`,
+          },
           { type: "image_url", image_url: { url: editedDataUri } },
         ],
       },
     ],
-    verifyTool,
+    singleImageVerifyTool,
     caller,
   );
   if (!result.ok) return { passes: false, reason: "Verification check failed to run." };
@@ -142,10 +215,12 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
           });
 
           const originalDataUri = `data:${userPhotoContentType};base64,${Buffer.from(userPhotoBytes).toString("base64")}`;
-          const verification = await verifyProtectedRegions(originalDataUri, imageUrl, {
-            supabase: context.supabase,
-            userId: context.userId,
-          });
+          const verification = await verifyProtectedRegions(
+            originalDataUri,
+            imageUrl,
+            { gender: profileRow.gender, hairLength: profileRow.hair_length },
+            { supabase: context.supabase, userId: context.userId },
+          );
 
           await logAiSpend(context.supabase, context.userId, {
             provider: "cloudflare",
