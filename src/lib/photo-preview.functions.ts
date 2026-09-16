@@ -38,14 +38,21 @@ const verifyTool = {
 
 // Single-image fallback for providers that can't take two images in one
 // call (Cloudflare Workers AI's vision endpoint takes exactly one — see
-// CloudflareMultiImageUnsupportedError). A prior version of this comment
-// claimed the model's rejections were "backwards" and made this advisory
-// only — that diagnosis was wrong. Checked against the real user's stored
-// profile (gender: "Male") for the exact rejection this was based on
-// ("Gender presentation is female, hair length is long"): the edit had
-// actually rendered the wrong gender, and the check correctly caught it.
-// Disabling the gate let that bad edit reach the user. Restored as a real
-// gate below.
+// CloudflareMultiImageUnsupportedError).
+//
+// This intentionally does NOT judge gender or hair length. Two earlier
+// versions of this file tried that and got it wrong in both directions —
+// first trusting a false-negative verdict as correct, then disabling the
+// gate entirely on a wrong diagnosis. Proven directly, not inferred: fed
+// this exact model the user's own unedited, un-retouched original selfie
+// (a verified male, glasses, short hair) with no edit involved at all, and
+// it independently said "female with long hair" on 2 of 2 calls before
+// hitting the account's daily quota — the same hallucination it produces
+// on edited output. Since it can't correctly read this trait even with
+// zero editing in the loop, no phrasing of this instruction can fix it;
+// gating results on it rejects good edits at random. It still checks the
+// one thing it doesn't need identity judgment for: whether the image is
+// structurally broken.
 const singleImageVerifyTool = {
   function: {
     name: "report_edit_sanity_check",
@@ -55,7 +62,7 @@ const singleImageVerifyTool = {
         passes: {
           type: "boolean",
           description:
-            "true only if this shows one intact, undistorted human face and normal hands/body with no visible editing artifacts, AND the apparent gender presentation and hair length are consistent with the stated expectations.",
+            "true only if this shows one intact, undistorted human face and normal hands/body with no visible editing artifacts (no melted features, no extra/missing limbs, no garbled regions).",
         },
         reason: {
           type: "string",
@@ -71,7 +78,6 @@ const singleImageVerifyTool = {
 async function verifyProtectedRegions(
   originalDataUri: string,
   editedDataUri: string,
-  expectedTraits: { gender: string | null; hairLength: string | null },
   caller: { supabase: Parameters<typeof aiChatCompletion>[2]["supabase"]; userId: string },
 ): Promise<{ passes: boolean; reason: string }> {
   if (!isAiConfigured()) return { passes: false, reason: "Verification service not configured." };
@@ -106,28 +112,19 @@ async function verifyProtectedRegions(
     if (!(err instanceof CloudflareMultiImageUnsupportedError)) throw err;
   }
 
-  const traitLine = [
-    expectedTraits.gender && expectedTraits.gender !== "Prefer not to say"
-      ? `Expected gender presentation: ${expectedTraits.gender}.`
-      : null,
-    expectedTraits.hairLength ? `Expected hair length: ${expectedTraits.hairLength}.` : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   const result = await aiChatCompletion(
     [
       {
         role: "system",
         content:
-          "You are a strict photo-editing QA reviewer checking a single edited photo for obvious problems, since you cannot see the original for comparison. Call report_edit_sanity_check with your verdict.",
+          "You are a strict photo-editing QA reviewer checking a single edited photo for obvious structural problems, since you cannot see the original for comparison. Call report_edit_sanity_check with your verdict.",
       },
       {
         role: "user",
         content: [
           {
             type: "text",
-            text: `Check this edited photo. ${traitLine} Flag it if the face looks distorted, melted, or wrong, if hands look abnormal, or if the person's apparent gender presentation or hair length clearly contradicts the expectations above.`,
+            text: "Check this edited photo. Flag it only if the face looks distorted, melted, or wrong, if hands look abnormal (wrong number of fingers, merged), or if there are obvious garbled/broken regions. Do not judge gender, hair length, or styling — only structural integrity.",
           },
           { type: "image_url", image_url: { url: editedDataUri } },
         ],
@@ -215,12 +212,10 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
               gender: profileRow.gender,
             });
 
-            const verification = await verifyProtectedRegions(
-              originalDataUri,
-              imageUrl,
-              { gender: profileRow.gender, hairLength: profileRow.hair_length },
-              { supabase: context.supabase, userId: context.userId },
-            );
+            const verification = await verifyProtectedRegions(originalDataUri, imageUrl, {
+              supabase: context.supabase,
+              userId: context.userId,
+            });
 
             await logAiSpend(context.supabase, context.userId, {
               provider: "cloudflare",
