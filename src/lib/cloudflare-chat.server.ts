@@ -84,6 +84,57 @@ export function isCloudflareChatConfigured(): boolean {
   return Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN);
 }
 
+/**
+ * Repair path for vision responses that don't parse as JSON. Very long,
+ * elaborate system prompts (this app's color-analysis prompts run to
+ * thousands of tokens) reliably make the 11B vision model answer in prose
+ * or markdown instead of raw JSON — confirmed live: the model still gets
+ * the analysis right, it just narrates it. Rather than losing that answer,
+ * hand the raw text to the text model, which has confirmed reliable native
+ * json_schema enforcement, and ask it to structure what's already there.
+ */
+async function repairViaTextModel(
+  rawText: string,
+  tool: AiTool,
+  accountId: string,
+  apiToken: string,
+): Promise<{ response: Record<string, unknown>; usage?: CloudflareUsage } | null> {
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${TEXT_MODEL}`;
+  const body = {
+    messages: [
+      {
+        role: "system",
+        content: `Extract the answer already present in the following text into strict JSON matching the schema. Do not invent new facts — only restructure what's given. If a value doesn't exactly match an allowed enum option, pick the closest valid option.\n\nTEXT:\n${rawText}`,
+      },
+      { role: "user", content: "Extract now." },
+    ],
+    response_format: { type: "json_schema", json_schema: tool.function.parameters },
+    max_tokens: 1024,
+  };
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) return null;
+  const json = (await response.json()) as CloudflareEnvelope;
+  if (!json.success || typeof json.result?.response !== "object" || !json.result.response) {
+    return null;
+  }
+  return { response: json.result.response, usage: json.result.usage };
+}
+
+type CloudflareUsage = {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+};
+type CloudflareEnvelope = {
+  success: boolean;
+  result?: { response?: string | Record<string, unknown>; usage?: CloudflareUsage };
+  errors?: Array<{ message: string }>;
+};
+
 export async function cloudflareChatCompletion(
   messages: Array<Record<string, unknown>>,
   tool: AiTool,
@@ -159,18 +210,11 @@ export async function cloudflareChatCompletion(
     return { ok: false, status: response.status };
   }
 
-  const json = (await response.json()) as {
-    success: boolean;
-    result?: {
-      // When response_format:json_schema is used, Cloudflare returns the
-      // already-parsed object here rather than a JSON string (confirmed via
-      // a live smoke test — the documented "response: string" shape only
-      // holds for the plain-prompt/vision path).
-      response?: string | Record<string, unknown>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-    };
-    errors?: Array<{ message: string }>;
-  };
+  // When response_format:json_schema is used, Cloudflare returns the
+  // already-parsed object here rather than a JSON string (confirmed via a
+  // live smoke test — the documented "response: string" shape only holds
+  // for the plain-prompt/vision path).
+  const json = (await response.json()) as CloudflareEnvelope;
   if (!json.success || json.result?.response === undefined) {
     console.error(
       "[cloudflare-chat] provider returned no text",
@@ -194,9 +238,19 @@ export async function cloudflareChatCompletion(
   try {
     return { ok: true, args: JSON.parse(stripJsonFence(json.result.response)) };
   } catch {
-    console.error("[cloudflare-chat] provider returned unparseable JSON", {
+    console.error("[cloudflare-chat] provider returned unparseable JSON, attempting repair", {
       length: json.result.response.length,
     });
-    return { ok: false, status: 502 };
+    const repaired = await repairViaTextModel(json.result.response, tool, accountId, apiToken);
+    if (!repaired) return { ok: false, status: 502 };
+    await logAiSpend(caller.supabase, caller.userId, {
+      provider: "cloudflare",
+      model: `${TEXT_MODEL} (repair)`,
+      costUsd: 0,
+      promptTokens: repaired.usage?.prompt_tokens ?? null,
+      completionTokens: repaired.usage?.completion_tokens ?? null,
+      totalTokens: repaired.usage?.total_tokens ?? null,
+    });
+    return { ok: true, args: repaired.response };
   }
 }

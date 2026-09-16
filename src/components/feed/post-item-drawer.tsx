@@ -14,14 +14,21 @@ import { queryKeys } from "@/constants/query-keys";
 import { findSimilarItems } from "@/lib/dupe-hunter.functions";
 import { sourceUrlHost, type PostItem } from "@/lib/outfit-items";
 import { formatPrice } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { profileQueryOptions } from "@/lib/queries/profile";
 
 const MATCH_CACHE_MS = 24 * 60 * 60 * 1000;
 
 export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClose: () => void }) {
   const fetchSimilar = useServerFn(findSimilarItems);
+  const { user } = useAuth();
+  const { data: profile } = useQuery({ ...profileQueryOptions(user?.id), enabled: !!user });
   const { data: similar, isLoading } = useQuery({
     queryKey: queryKeys.similarItems(item?.id ?? ""),
-    queryFn: () => fetchSimilar({ data: { attributes: item!.attributes } }),
+    queryFn: () =>
+      fetchSimilar({
+        data: { attributes: item!.attributes, region: profile?.delivery_country || undefined },
+      }),
     enabled: !!item,
     staleTime: MATCH_CACHE_MS,
     gcTime: MATCH_CACHE_MS,
@@ -113,6 +120,11 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                       </p>
                       <p className="mt-1 atelier-label">
                         {formatPrice(match.price, match.currency)}
+                      </p>
+                      <p className="mt-1 text-micro text-muted-foreground">
+                        {match.verification_status === "verified" && match.last_verified_at
+                          ? `Last checked ${new Date(match.last_verified_at).toLocaleDateString()}`
+                          : "Link not yet verified"}
                       </p>
                     </div>
                   </a>

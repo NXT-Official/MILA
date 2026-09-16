@@ -10,12 +10,15 @@ import { withAiCredit } from "./credits.server";
 import { consumeRateLimit } from "./rate-limit.server";
 import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { ClothingAttributesSchema, type ClothingAttributes } from "./outfit-items";
+import { isAvailableInRegion } from "./look-products.functions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 const Input = z.object({
   imageUrl: z.string().url(),
   maxResults: z.number().int().min(1).max(20).optional().default(6),
+  /** ISO 3166-1 alpha-2 country code. Empty/omitted = unknown, don't region-filter. */
+  region: z.string().length(2).optional(),
 });
 
 const tool = {
@@ -57,6 +60,8 @@ export type DupeMatch = {
   description: string | null;
   match_score: number;
   match_reasons: string[];
+  verification_status: string;
+  last_verified_at: string | null;
 };
 
 export type DupeHuntResult = {
@@ -122,13 +127,16 @@ async function rankDupes(
   supabase: SupabaseClient<Database>,
   inspiration: ClothingAttributes,
   maxResults: number,
+  region?: string,
 ): Promise<DupeMatch[]> {
   const { data: candidates, error } = await supabase
     .from("products")
     .select(
-      "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes",
+      "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes,available_regions,in_stock,verification_status,last_verified_at",
     )
     .ilike("category", inspiration.category)
+    .neq("verification_status", "broken")
+    .eq("in_stock", true)
     .limit(200);
 
   if (error) {
@@ -137,7 +145,7 @@ async function rankDupes(
   }
 
   return (candidates ?? [])
-    .filter((p) => !!p.affiliate_link)
+    .filter((p) => !!p.affiliate_link && isAvailableInRegion(p, region))
     .map((product) => {
       const { score, reasons } = scoreCandidate(inspiration, product);
       return { product, score, reasons };
@@ -160,6 +168,8 @@ async function rankDupes(
       description: product.description,
       match_score: score,
       match_reasons: reasons,
+      verification_status: product.verification_status,
+      last_verified_at: product.last_verified_at,
     }));
 }
 
@@ -174,11 +184,12 @@ export const findSimilarItems = createServerFn({ method: "POST" })
       .object({
         attributes: ClothingAttributesSchema,
         maxResults: z.number().int().min(1).max(20).optional().default(6),
+        region: z.string().length(2).optional(),
       })
       .parse(input),
   )
   .handler(({ data, context }): Promise<DupeMatch[]> =>
-    rankDupes(context.supabase, data.attributes, data.maxResults),
+    rankDupes(context.supabase, data.attributes, data.maxResults, data.region),
   );
 
 export const findDupes = createServerFn({ method: "POST" })
@@ -209,7 +220,7 @@ export const findDupes = createServerFn({ method: "POST" })
       if (!result.ok) throw aiFailure(result.status, "Dupe extraction failed.");
 
       const inspiration = ClothingAttributesSchema.parse(result.args);
-      const dupes = await rankDupes(context.supabase, inspiration, data.maxResults);
+      const dupes = await rankDupes(context.supabase, inspiration, data.maxResults, data.region);
       return { inspiration, dupes };
     });
   });

@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { profileQueryOptions } from "@/lib/queries/profile";
 import {
   Sheet,
   SheetContent,
@@ -66,6 +68,10 @@ export function StudioCameraDrawer({
   const [postingSubmitting, setPostingSubmitting] = useState(false);
   const dupeFileRef = useRef<HTMLInputElement>(null);
   const runDupes = useServerFn(findDupes);
+  const { data: profile } = useQuery({
+    ...profileQueryOptions(userId ?? undefined),
+    enabled: !!userId,
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const copy = COPY[mode];
@@ -95,7 +101,9 @@ export function StudioCameraDrawer({
       const {
         data: { publicUrl },
       } = supabase.storage.from("outfits").getPublicUrl(path);
-      const result = await runDupes({ data: { imageUrl: publicUrl } });
+      const result = await runDupes({
+        data: { imageUrl: publicUrl, region: profile?.delivery_country || undefined },
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(userId) });
       setDupeResult(result);
       if (result.dupes.length === 0) {
@@ -405,6 +413,11 @@ export function StudioCameraDrawer({
                                     {d.match_reasons[0]}
                                   </p>
                                 )}
+                                <p className="text-micro text-muted-foreground">
+                                  {d.verification_status === "verified" && d.last_verified_at
+                                    ? `Last checked ${new Date(d.last_verified_at).toLocaleDateString()}`
+                                    : "Link not yet verified"}
+                                </p>
                                 <Button asChild size="pill">
                                   <a
                                     href={d.affiliate_link}
