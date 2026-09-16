@@ -13,6 +13,7 @@ import {
   GENDER_OPTIONS,
   HAIR_LENGTH_OPTIONS,
   MAKEUP_PREFERENCE_OPTIONS,
+  SKIN_DEPTH_OPTIONS,
   SHOPPING_PREFERENCE_TAGS,
   STYLING_CONSTRAINT_TAGS,
   type MatrixOption,
@@ -34,6 +35,7 @@ import { ColorResultStep } from "./steps/color-result-step";
 import { SingleSelectStep } from "./steps/single-select-step";
 import { BeautyPreferencesStep } from "./steps/beauty-preferences-step";
 import { TagSelectStep } from "./steps/tag-select-step";
+import { MeasurementsStep } from "./steps/measurements-step";
 import { LocationStep } from "./steps/location-step";
 import { ReviewStep } from "./steps/review-step";
 import { errorMessage } from "@/lib/utils";
@@ -50,6 +52,16 @@ const SELECT_STEPS = {
       "Mila only includes makeup guidance and shopping links for makeup-eligible selections. This never gets inferred — you choose it, and you can change it any time.",
     requiredMessage: "Select an option to continue.",
     back: "color-result",
+    next: "skin-depth",
+  },
+  "skin-depth": {
+    field: "skin_depth",
+    fieldLabel: "Your skin depth",
+    options: SKIN_DEPTH_OPTIONS,
+    guidance:
+      "How light or deep your skin tone is, separate from your undertone (warm/cool/neutral). This helps Mila put your own face in generated looks accurately.",
+    requiredMessage: "Select a skin depth to continue.",
+    back: "gender",
     next: "body-type",
   },
   "body-type": {
@@ -59,8 +71,8 @@ const SELECT_STEPS = {
     guidance:
       "Choose the shape that most closely describes how your shoulders, waist, and hips relate to one another. This drives every cut, drape, and proportion recommendation — there's no wrong answer.",
     requiredMessage: "Select a body silhouette to continue.",
-    back: "gender",
-    next: "face-shape",
+    back: "skin-depth",
+    next: "measurements",
   },
   "face-shape": {
     field: "face_shape",
@@ -69,7 +81,7 @@ const SELECT_STEPS = {
     guidance:
       "Pick whichever shape reads closest — Mila uses this to guide hairstyling, eyewear, and framing suggestions. You can always refine it later.",
     requiredMessage: "Select a face shape to continue.",
-    back: "body-type",
+    back: "measurements",
     next: "hair-type",
   },
   "hair-type": {
@@ -106,7 +118,13 @@ const SELECT_STEPS = {
   string,
   {
     field:
-      "gender" | "body_type" | "face_shape" | "hair_type" | "hair_length" | "makeup_preference";
+      | "gender"
+      | "skin_depth"
+      | "body_type"
+      | "face_shape"
+      | "hair_type"
+      | "hair_length"
+      | "makeup_preference";
     fieldLabel: string;
     options: MatrixOption[];
     guidance: string;
@@ -255,6 +273,15 @@ export function StyleProfileOnboarding({
           save={async (value) => {
             await updateProfile.mutateAsync({ [selectStep.field]: value });
           }}
+        />
+      )}
+
+      {step === "measurements" && (
+        <MeasurementsStep
+          heightCm={profile?.height_cm ?? null}
+          weightKg={profile?.weight_kg ?? null}
+          onBack={() => goTo("body-type")}
+          onSaved={() => goTo("face-shape")}
         />
       )}
 

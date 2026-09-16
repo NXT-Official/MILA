@@ -6,6 +6,7 @@ import {
   HAIR_TYPES,
   GENDERS,
   HAIR_LENGTHS,
+  SKIN_DEPTHS,
 } from "@/constants/style-profile";
 import { isNonEmptyColorProfile } from "@/lib/style-profile/completion";
 import type { DashboardProfile } from "@/lib/queries/profile";
@@ -15,7 +16,9 @@ export type OnboardingStepId =
   | "color-path"
   | "color-result"
   | "gender"
+  | "skin-depth"
   | "body-type"
+  | "measurements"
   | "face-shape"
   | "hair-type"
   | "hair-length"
@@ -54,9 +57,22 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     description: "This shapes whether Mila includes makeup guidance in your daily look.",
   },
   {
+    id: "skin-depth",
+    title: "Skin depth",
+    shortTitle: "Skin depth",
+    description: "How light or deep your skin tone is — separate from your undertone.",
+  },
+  {
     id: "body-type",
     title: "Body silhouette",
     shortTitle: "Silhouette",
+  },
+  {
+    id: "measurements",
+    title: "Body measurements",
+    shortTitle: "Measurements",
+    description: "Optional — helps Mila describe fit and proportion in your looks.",
+    optional: true,
   },
   {
     id: "face-shape",
@@ -135,6 +151,7 @@ type ProfileSnapshot = Pick<
   | "hair_type"
   | "gender"
   | "hair_length"
+  | "skin_depth"
 >;
 
 export function hasColorProfile(profile: ProfileSnapshot | null | undefined): boolean {
@@ -166,6 +183,10 @@ export function hasHairLength(profile: ProfileSnapshot | null | undefined): bool
   return !!profile && (HAIR_LENGTHS as readonly string[]).includes(profile.hair_length ?? "");
 }
 
+export function hasSkinDepth(profile: ProfileSnapshot | null | undefined): boolean {
+  return !!profile && (SKIN_DEPTHS as readonly string[]).includes(profile.skin_depth ?? "");
+}
+
 export function isOnboardingStepComplete(
   step: OnboardingStepId,
   profile: ProfileSnapshot | null | undefined,
@@ -179,8 +200,12 @@ export function isOnboardingStepComplete(
       return hasColorProfile(profile);
     case "gender":
       return hasGender(profile);
+    case "skin-depth":
+      return hasSkinDepth(profile);
     case "body-type":
       return hasBodyType(profile);
+    case "measurements":
+      return true;
     case "face-shape":
       return hasFaceShape(profile);
     case "hair-type":
@@ -197,6 +222,7 @@ export function isOnboardingStepComplete(
       return (
         hasColorProfile(profile) &&
         hasGender(profile) &&
+        hasSkinDepth(profile) &&
         hasBodyType(profile) &&
         hasFaceShape(profile) &&
         hasHairType(profile) &&
@@ -222,6 +248,7 @@ export function getFirstIncompleteOnboardingStep(
   if (isBlankProfile(profile)) return "welcome";
   if (!hasColorProfile(profile)) return "color-path";
   if (!hasGender(profile)) return "gender";
+  if (!hasSkinDepth(profile)) return "skin-depth";
   if (!hasBodyType(profile)) return "body-type";
   if (!hasFaceShape(profile)) return "face-shape";
   if (!hasHairType(profile)) return "hair-type";

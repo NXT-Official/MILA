@@ -131,15 +131,17 @@ function Dashboard() {
     bodyType: string,
     tempF: number | undefined,
     region: string | undefined,
-  ) {
+  ): Promise<LookProduct[] | null> {
     try {
       const items = await fetchLookProducts({
         data: { colorSeason, bodyType, tempF, region: region || undefined },
       });
       setShopItems(items);
+      return items;
     } catch (e) {
       console.error("[dashboard] findLookProducts failed", e);
       setShopItems(null);
+      return null;
     }
   }
 
@@ -220,13 +222,56 @@ function Dashboard() {
     }
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
-    void fetchShopItems(
-      profile.color_season,
-      profile.body_type,
-      climate.tempF,
-      profile.delivery_country || climate.country,
-    );
-    await fetchImage(outfit);
+
+    const hasConsentedPhoto = !!profile.photo_consent_at;
+    if (!hasConsentedPhoto) {
+      void fetchShopItems(
+        profile.color_season,
+        profile.body_type,
+        climate.tempF,
+        profile.delivery_country || climate.country,
+      );
+      await fetchImage(outfit);
+      return;
+    }
+
+    // Consented users get the face-on-photo version by default — shop items
+    // must resolve first so their images can serve as garment references.
+    const [items] = await Promise.all([
+      fetchShopItems(
+        profile.color_season,
+        profile.body_type,
+        climate.tempF,
+        profile.delivery_country || climate.country,
+      ),
+      fetchImage(outfit),
+    ]);
+
+    setPhotoPreviewLoading(true);
+    try {
+      const { outfit: outfitBody, hair, makeup, vibe_alignment_score } = outfit;
+      const res = await runPhotoPreview(
+        { outfit: outfitBody, hair, makeup, vibe_alignment_score },
+        referenceProductIdsFor(items),
+      );
+      if (res.mode === "photo_edit") {
+        setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
+        setPreviewMode("photo_edit");
+      } else {
+        // Inspiration image (already generated above) stays as the shown
+        // result — never a hard failure, since it's already a usable look.
+        toast.info(res.reason);
+      }
+    } catch (e) {
+      if (!isInsufficientCreditsError(e)) {
+        console.error("[dashboard] automatic photo preview failed", e);
+      }
+      // Silent fallback to the inspiration image — the user didn't click
+      // anything for this attempt, so don't interrupt with a paywall here.
+    } finally {
+      setPhotoPreviewLoading(false);
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
+    }
   }
 
   async function retryImage() {
@@ -240,21 +285,37 @@ function Dashboard() {
     }
   }
 
-  async function previewOnMyPhoto() {
-    if (!look || photoPreviewLoading || imageLoading || generating) return;
-    const referenceProductIds = (shopItems ?? [])
+  function referenceProductIdsFor(items: LookProduct[] | null): string[] {
+    return (items ?? [])
       .filter((item) => item.image_url)
       .slice(0, 3)
       .map((item) => item.id);
+  }
+
+  /** Shared with the automatic post-generation attempt in generateLook(). */
+  async function runPhotoPreview(
+    outfitForEdit: {
+      outfit: DailyLook["outfit"];
+      hair: DailyLook["hair"];
+      makeup: DailyLook["makeup"];
+      vibe_alignment_score: DailyLook["vibe_alignment_score"];
+    },
+    referenceProductIds: string[],
+  ) {
+    return generatePhotoPreviewFn({
+      data: { outfit: outfitForEdit, productIds: referenceProductIds },
+    });
+  }
+
+  async function previewOnMyPhoto() {
+    if (!look || photoPreviewLoading || imageLoading || generating) return;
     setPhotoPreviewLoading(true);
     try {
       const { outfit, hair, makeup, vibe_alignment_score } = look;
-      const res = await generatePhotoPreviewFn({
-        data: {
-          outfit: { outfit, hair, makeup, vibe_alignment_score },
-          productIds: referenceProductIds,
-        },
-      });
+      const res = await runPhotoPreview(
+        { outfit, hair, makeup, vibe_alignment_score },
+        referenceProductIdsFor(shopItems),
+      );
       if (res.mode === "photo_edit") {
         setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
         setPreviewMode("photo_edit");
@@ -538,7 +599,12 @@ function Dashboard() {
                                 : "AI-generated outfit inspiration"
                             }
                           />
-                          {profile?.photo_consent_at && !imageLoading ? (
+                          {profile?.photo_consent_at && photoPreviewLoading ? (
+                            <p className="mt-3 text-xs text-muted-foreground">
+                              Personalizing to your photo…
+                            </p>
+                          ) : null}
+                          {profile?.photo_consent_at && !imageLoading && !photoPreviewLoading ? (
                             <div className="mt-3 flex max-w-lg items-center gap-2">
                               {previewMode === "inspiration" ? (
                                 <Button
@@ -548,7 +614,7 @@ function Dashboard() {
                                   disabled={generating}
                                   onClick={previewOnMyPhoto}
                                 >
-                                  Preview on my photo
+                                  Regenerate photo preview
                                 </Button>
                               ) : (
                                 <Button

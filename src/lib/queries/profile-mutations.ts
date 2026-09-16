@@ -20,6 +20,9 @@ export interface StyleProfileUpdatePayload {
   shopping_preferences?: Json;
   styling_constraints?: Json;
   delivery_country?: string | null;
+  skin_depth?: string | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
 }
 
 export type StyleProfileUpdateResult = StyleProfileRow & {
@@ -30,10 +33,13 @@ export type StyleProfileUpdateResult = StyleProfileRow & {
   shopping_preferences: Json;
   styling_constraints: Json;
   delivery_country: string | null;
+  skin_depth: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
 };
 
 const RETURNING_COLUMNS =
-  "skin_undertone,color_season,color_profile,body_type,face_shape,hair_type,beauty_preferences,default_location,gender,hair_length,makeup_preference,shopping_preferences,styling_constraints,delivery_country";
+  "skin_undertone,color_season,color_profile,body_type,face_shape,hair_type,beauty_preferences,default_location,gender,hair_length,makeup_preference,shopping_preferences,styling_constraints,delivery_country,skin_depth,height_cm,weight_kg";
 
 export function useUpdateStyleProfile() {
   const { user } = useAuth();

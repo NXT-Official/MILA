@@ -22,6 +22,9 @@ export type DashboardProfile = {
   styling_constraints: Json | null;
   delivery_country: string | null;
   photo_consent_at: string | null;
+  skin_depth: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
 };
 
 const EMPTY_PROFILE: DashboardProfile = {
@@ -42,6 +45,9 @@ const EMPTY_PROFILE: DashboardProfile = {
   styling_constraints: null,
   delivery_country: null,
   photo_consent_at: null,
+  skin_depth: null,
+  height_cm: null,
+  weight_kg: null,
 };
 
 function normalizeFirstWord(v: unknown): string | null {
@@ -68,6 +74,9 @@ function buildDashboardProfile(
     styling_constraints: Json | null;
     delivery_country: string | null;
     photo_consent_at: string | null;
+    skin_depth: string | null;
+    height_cm: number | null;
+    weight_kg: number | null;
   } | null,
 ): DashboardProfile {
   if (!data) return EMPTY_PROFILE;
@@ -103,6 +112,9 @@ function buildDashboardProfile(
     styling_constraints: data.styling_constraints ?? null,
     delivery_country: data.delivery_country ?? null,
     photo_consent_at: data.photo_consent_at ?? null,
+    skin_depth: data.skin_depth ?? null,
+    height_cm: data.height_cm ?? null,
+    weight_kg: data.weight_kg ?? null,
   };
 }
 
@@ -113,7 +125,7 @@ export function profileQueryOptions(userId: string | undefined) {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "body_type,color_season,skin_undertone,full_name,color_profile,face_shape,hair_type,beauty_preferences,default_location,gender,hair_length,makeup_preference,shopping_preferences,styling_constraints,delivery_country,photo_consent_at",
+          "body_type,color_season,skin_undertone,full_name,color_profile,face_shape,hair_type,beauty_preferences,default_location,gender,hair_length,makeup_preference,shopping_preferences,styling_constraints,delivery_country,photo_consent_at,skin_depth,height_cm,weight_kg",
         )
         .eq("id", userId as string)
         .maybeSingle();

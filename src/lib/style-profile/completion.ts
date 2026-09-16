@@ -6,6 +6,7 @@ import {
   HAIR_TYPES,
   GENDERS,
   HAIR_LENGTHS,
+  SKIN_DEPTHS,
 } from "@/constants/style-profile";
 
 export interface StyleProfileRow {
@@ -16,6 +17,7 @@ export interface StyleProfileRow {
   hair_type: string | null;
   hair_length: string | null;
   gender: string | null;
+  skin_depth: string | null;
   color_profile: unknown;
 }
 
@@ -34,6 +36,7 @@ export function toStyleProfileRow(
     hair_type: profile.hair_type,
     hair_length: profile.hair_length,
     gender: profile.gender,
+    skin_depth: profile.skin_depth,
     color_profile: profile.color_profile,
   };
 }
@@ -54,6 +57,7 @@ export function isStyleProfileComplete(profile: StyleProfileRow | null | undefin
     (HAIR_TYPES as readonly string[]).includes(profile.hair_type ?? "") &&
     (HAIR_LENGTHS as readonly string[]).includes(profile.hair_length ?? "") &&
     (GENDERS as readonly string[]).includes(profile.gender ?? "") &&
+    (SKIN_DEPTHS as readonly string[]).includes(profile.skin_depth ?? "") &&
     isNonEmptyColorProfile(profile.color_profile)
   );
 }

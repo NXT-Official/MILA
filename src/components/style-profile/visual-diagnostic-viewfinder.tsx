@@ -370,6 +370,9 @@ export function VisualDiagnosticViewfinder({
             Before I open the camera, find a window with soft, indirect daylight — no direct sun, no
             overhead yellow bulbs. That's how I see your true tones.
           </p>
+          <p className="mt-2 text-xs text-muted-foreground leading-relaxed text-center">
+            This scan also lets Mila show your outfits on your real photo, not just a model.
+          </p>
           <ul className="mt-7 space-y-5">
             <BriefingRule
               icon={<Sun className="size-4" />}
@@ -406,9 +409,9 @@ export function VisualDiagnosticViewfinder({
               className="mt-0.5 accent-foreground"
             />
             <span className="text-xs text-muted-foreground leading-relaxed">
-              Optional: save this photo to my account (private, deletable any time from Account
-              Settings) so Mila can use it for future photo-based outfit previews. Unchecked, the
-              photo is analyzed and discarded immediately.
+              Save this photo so Mila can put your own face in your generated looks — private,
+              deletable anytime from Account Settings. Unchecked, the photo is analyzed and
+              discarded immediately, and looks use a generic model instead.
             </span>
           </label>
           <Button

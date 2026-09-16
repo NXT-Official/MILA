@@ -155,6 +155,34 @@ export const MAKEUP_PREFERENCE_OPTIONS: MatrixOption[] = [
   },
 ];
 
+export const SKIN_DEPTH_OPTIONS: MatrixOption[] = [
+  {
+    value: "Fair",
+    title: "Fair",
+    description: "Burns easily, very light in the sun.",
+  },
+  {
+    value: "Light",
+    title: "Light",
+    description: "Fair to light, sometimes tans.",
+  },
+  {
+    value: "Medium",
+    title: "Medium",
+    description: "Tans easily, olive to golden.",
+  },
+  {
+    value: "Tan",
+    title: "Tan",
+    description: "Naturally tan to brown.",
+  },
+  {
+    value: "Deep",
+    title: "Deep",
+    description: "Deep brown to darkest skin tones.",
+  },
+];
+
 export const SHOPPING_PREFERENCE_TAGS = [
   "Relaxed Fit",
   "Tailored Fit",

@@ -1038,6 +1038,7 @@ export const HAIR_TYPES = ["Straight/Fine", "Wavy", "Curly", "Coily/Textured"] a
 export const GENDERS = ["Female", "Male", "Non-binary", "Prefer not to say"] as const;
 export const HAIR_LENGTHS = ["Bald/Shaved", "Short", "Medium", "Long"] as const;
 export const MAKEUP_PREFERENCES = ["none", "minimal", "natural", "defined"] as const;
+export const SKIN_DEPTHS = ["Fair", "Light", "Medium", "Tan", "Deep"] as const;
 
 export const FACE_SHORT_TO_FULL: Record<string, DetailedColorProfile["faceShape"]> = {
   Oval: "Oval Frame",

@@ -89,9 +89,28 @@ export function ReviewStep({
           onEdit={() => onEdit("gender")}
         />
         <ReviewSection
+          title="Skin depth"
+          value={profile.skin_depth ?? "Not set"}
+          onEdit={() => onEdit("skin-depth")}
+        />
+        <ReviewSection
           title="Body silhouette"
           value={profile.body_type ?? "Not set"}
           onEdit={() => onEdit("body-type")}
+        />
+        <ReviewSection
+          title="Body measurements"
+          value={
+            profile.height_cm || profile.weight_kg
+              ? [
+                  profile.height_cm ? `${profile.height_cm} cm` : null,
+                  profile.weight_kg ? `${profile.weight_kg} kg` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : "Not set (optional)"
+          }
+          onEdit={() => onEdit("measurements")}
         />
         <ReviewSection
           title="Face shape"
