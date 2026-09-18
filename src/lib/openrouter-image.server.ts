@@ -9,7 +9,19 @@ export const IMAGE_MODEL = "meta/muse-image";
 
 export class ImageProviderRateLimitError extends Error {}
 
-function buildOutfitImagePrompt(outfit: DailyLook): string {
+const SKIN_DEPTH_DESCRIPTORS: Record<string, string> = {
+  Fair: "fair",
+  Light: "light",
+  Medium: "medium",
+  Tan: "tan",
+  Deep: "deep-toned",
+};
+
+function buildOutfitImagePrompt(
+  outfit: DailyLook,
+  gender?: string | null,
+  skinDepth?: string | null,
+): string {
   const outfitLine = [
     outfit.outfit.headline,
     outfit.outfit.description,
@@ -18,6 +30,12 @@ function buildOutfitImagePrompt(outfit: DailyLook): string {
     .filter(Boolean)
     .join(" ");
 
+  const genderLine =
+    gender && gender !== "Prefer not to say" && gender !== "Non-binary"
+      ? `presenting as ${gender.toLowerCase()}`
+      : null;
+  const skinLine = skinDepth ? `with ${SKIN_DEPTH_DESCRIPTORS[skinDepth] ?? skinDepth} skin` : null;
+  const modelLine = `one adult model ${[genderLine, skinLine].filter(Boolean).join(" ")}`.trim();
   const makeupBlock = outfit.makeup ? `\n\nMakeup:\n${outfit.makeup.palette}` : "";
 
   return `Create a realistic full-body luxury fashion editorial photograph.
@@ -29,7 +47,7 @@ Hair:
 ${outfit.hair.style}${makeupBlock}
 
 Presentation:
-Show one adult fashion model from head to toe.
+Show ${modelLine} from head to toe.
 The complete outfit and shoes must be visible.
 Natural realistic proportions.
 Accurate fabric textures and garment colors.
@@ -47,7 +65,10 @@ export interface OutfitImageResult {
   totalTokens: number | null;
 }
 
-export async function generateOutfitImage(outfit: DailyLook): Promise<OutfitImageResult> {
+export async function generateOutfitImage(
+  outfit: DailyLook,
+  deps: { gender?: string | null; skinDepth?: string | null } = {},
+): Promise<OutfitImageResult> {
   const { OPENROUTER_API_KEY } = requireEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   });
@@ -62,7 +83,9 @@ export async function generateOutfitImage(outfit: DailyLook): Promise<OutfitImag
       },
       body: JSON.stringify({
         model: IMAGE_MODEL,
-        messages: [{ role: "user", content: buildOutfitImagePrompt(outfit) }],
+        messages: [
+          { role: "user", content: buildOutfitImagePrompt(outfit, deps.gender, deps.skinDepth) },
+        ],
         modalities: ["image", "text"],
         usage: { include: true },
       }),

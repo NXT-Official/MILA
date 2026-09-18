@@ -2,10 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { DailyLookSchema, computeMakeupEligibility } from "./generate-outfit.functions";
-import { editOutfitPhoto } from "./cloudflare-photo-edit.server";
-import { ImageProviderRateLimitError } from "./cloudflare-image.server";
+import {
+  editOutfitPhoto,
+  PHOTO_EDIT_PROVIDER,
+  PHOTO_EDIT_MODEL,
+} from "./openrouter-photo-edit.server";
+import { ImageProviderRateLimitError } from "./openrouter-image.server";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
-import { CloudflareMultiImageUnsupportedError } from "./cloudflare-chat.server";
 import { verifyFaceMatch } from "./face-match.server";
 import { logAiSpend } from "./ai-spend.server";
 import { payForLookImage } from "./credits.server";
@@ -37,101 +40,30 @@ const verifyTool = {
   },
 };
 
-// Single-image fallback for providers that can't take two images in one
-// call (Cloudflare Workers AI's vision endpoint takes exactly one — see
-// CloudflareMultiImageUnsupportedError).
-//
-// This intentionally does NOT judge gender or hair length. Two earlier
-// versions of this file tried that and got it wrong in both directions —
-// first trusting a false-negative verdict as correct, then disabling the
-// gate entirely on a wrong diagnosis. Proven directly, not inferred: fed
-// this exact model the user's own unedited, un-retouched original selfie
-// (a verified male, glasses, short hair) with no edit involved at all, and
-// it independently said "female with long hair" on 2 of 2 calls before
-// hitting the account's daily quota — the same hallucination it produces
-// on edited output. Since it can't correctly read this trait even with
-// zero editing in the loop, no phrasing of this instruction can fix it;
-// gating results on it rejects good edits at random. It still checks the
-// one thing it doesn't need identity judgment for: whether the image is
-// structurally broken.
-const singleImageVerifyTool = {
-  function: {
-    name: "report_edit_sanity_check",
-    parameters: {
-      type: "object",
-      properties: {
-        passes: {
-          type: "boolean",
-          description:
-            "true only if this shows one intact, undistorted human face and normal hands/body with no visible editing artifacts (no melted features, no extra/missing limbs, no garbled regions).",
-        },
-        reason: {
-          type: "string",
-          description: "One short sentence, especially if passes is false.",
-        },
-      },
-      required: ["passes", "reason"],
-      additionalProperties: false,
-    },
-  },
-};
-
 async function verifyProtectedRegions(
   originalDataUri: string,
   editedDataUri: string,
   caller: { supabase: Parameters<typeof aiChatCompletion>[2]["supabase"]; userId: string },
 ): Promise<{ passes: boolean; reason: string }> {
   if (!isAiConfigured()) return { passes: false, reason: "Verification service not configured." };
-  try {
-    const result = await aiChatCompletion(
-      [
-        {
-          role: "system",
-          content:
-            "You are a strict photo-editing QA reviewer. Compare the ORIGINAL and EDITED photos. The edit is only allowed to change clothing (and hair/makeup if explicitly mentioned). Face, identity, skin tone, body proportions, pose, hands, and background must be unchanged. Call report_protected_region_check with your verdict.",
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "ORIGINAL photo:" },
-            { type: "image_url", image_url: { url: originalDataUri } },
-            { type: "text", text: "EDITED photo:" },
-            { type: "image_url", image_url: { url: editedDataUri } },
-          ],
-        },
-      ],
-      verifyTool,
-      caller,
-    );
-    if (!result.ok) return { passes: false, reason: "Verification check failed to run." };
-    const parsed = result.args as { passes?: unknown; reason?: unknown };
-    return {
-      passes: parsed.passes === true,
-      reason: typeof parsed.reason === "string" ? parsed.reason : "No reason given.",
-    };
-  } catch (err) {
-    if (!(err instanceof CloudflareMultiImageUnsupportedError)) throw err;
-  }
-
   const result = await aiChatCompletion(
     [
       {
         role: "system",
         content:
-          "You are a strict photo-editing QA reviewer checking a single edited photo for obvious structural problems, since you cannot see the original for comparison. Call report_edit_sanity_check with your verdict.",
+          "You are a strict photo-editing QA reviewer. Compare the ORIGINAL and EDITED photos. The edit is only allowed to change clothing (and hair/makeup if explicitly mentioned). Face, identity, skin tone, body proportions, pose, hands, and background must be unchanged. Call report_protected_region_check with your verdict.",
       },
       {
         role: "user",
         content: [
-          {
-            type: "text",
-            text: "Check this edited photo. Flag it only if the face looks distorted, melted, or wrong, if hands look abnormal (wrong number of fingers, merged), or if there are obvious garbled/broken regions. Do not judge gender, hair length, or styling — only structural integrity.",
-          },
+          { type: "text", text: "ORIGINAL photo:" },
+          { type: "image_url", image_url: { url: originalDataUri } },
+          { type: "text", text: "EDITED photo:" },
           { type: "image_url", image_url: { url: editedDataUri } },
         ],
       },
     ],
-    singleImageVerifyTool,
+    verifyTool,
     caller,
   );
   if (!result.ok) return { passes: false, reason: "Verification check failed to run." };
@@ -203,7 +135,7 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
           // this model needs — verified live that text-only edits render
           // correctly without needing a photo reference.
           //
-          // flux-2-klein-4b's identity/gender preservation is inconsistent
+          // meta/muse-image's identity/gender preservation is inconsistent
           // run-to-run even without references (diffusion models have no
           // fixed seed here) — a failed verification is often the model,
           // not a structurally bad request, so retry before giving up.
@@ -227,8 +159,8 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
             });
 
             await logAiSpend(context.supabase, context.userId, {
-              provider: "cloudflare",
-              model: "@cf/black-forest-labs/flux-2-klein-4b",
+              provider: PHOTO_EDIT_PROVIDER,
+              model: PHOTO_EDIT_MODEL,
               costUsd,
               promptTokens: null,
               completionTokens: null,
@@ -242,6 +174,13 @@ export const generatePhotoPreview = createServerFn({ method: "POST" })
               // vs. "is this face structurally intact?").
               const faceMatch = await verifyFaceMatch(userPhotoBytes, jpegDataUriToBytes(imageUrl));
               if (faceMatch.isMatch) {
+                // Logged on every attempt (pass or fail) so drift in the
+                // image-gen provider — a model update, a prompt regression —
+                // shows up in distance trends before it starts failing outright.
+                console.log(
+                  `[generatePhotoPreview] face-match check passed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+                  { distance: faceMatch.distance },
+                );
                 // Not persisted here — same as the text-to-image inspiration
                 // path, this is a preview; saveOutfitToHistory uploads it
                 // only if/when the user explicitly saves the look.

@@ -61,6 +61,7 @@ export type Database = {
           commission_rate: number | null;
           created_at: string;
           id: string;
+          is_verified_seller: boolean;
           logo_url: string | null;
           name: string;
           status: string;
@@ -72,6 +73,7 @@ export type Database = {
           commission_rate?: number | null;
           created_at?: string;
           id?: string;
+          is_verified_seller?: boolean;
           logo_url?: string | null;
           name: string;
           status?: string;
@@ -83,6 +85,7 @@ export type Database = {
           commission_rate?: number | null;
           created_at?: string;
           id?: string;
+          is_verified_seller?: boolean;
           logo_url?: string | null;
           name?: string;
           status?: string;
@@ -311,13 +314,17 @@ export type Database = {
           currency: string;
           date_added: string;
           description: string | null;
+          discount_percent: number | null;
           id: string;
           image_url: string | null;
           in_stock: boolean;
           last_verified_at: string | null;
           price: number;
+          rating: number | null;
           seasonal_palettes: string[];
+          shipping_info: string | null;
           title: string;
+          units_sold: number | null;
           verification_status: string;
         };
         Insert: {
@@ -329,13 +336,17 @@ export type Database = {
           currency?: string;
           date_added?: string;
           description?: string | null;
+          discount_percent?: number | null;
           id?: string;
           image_url?: string | null;
           in_stock?: boolean;
           last_verified_at?: string | null;
           price?: number;
+          rating?: number | null;
           seasonal_palettes?: string[];
+          shipping_info?: string | null;
           title: string;
+          units_sold?: number | null;
           verification_status?: string;
         };
         Update: {
@@ -347,13 +358,17 @@ export type Database = {
           currency?: string;
           date_added?: string;
           description?: string | null;
+          discount_percent?: number | null;
           id?: string;
           image_url?: string | null;
           in_stock?: boolean;
           last_verified_at?: string | null;
           price?: number;
+          rating?: number | null;
           seasonal_palettes?: string[];
+          shipping_info?: string | null;
           title?: string;
+          units_sold?: number | null;
           verification_status?: string;
         };
         Relationships: [

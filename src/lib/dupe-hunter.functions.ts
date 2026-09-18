@@ -13,6 +13,7 @@ import { ClothingAttributesSchema, type ClothingAttributes } from "./outfit-item
 import { isAvailableInRegion } from "./look-products.functions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { findSimilarItemsForUser } from "@/server/services/dupes";
 
 const Input = z.object({
   imageUrl: z.string().url(),
@@ -62,6 +63,11 @@ export type DupeMatch = {
   match_reasons: string[];
   verification_status: string;
   last_verified_at: string | null;
+  rating: number | null;
+  units_sold: number | null;
+  shipping_info: string | null;
+  discount_percent: number | null;
+  is_verified_seller: boolean;
 };
 
 export type DupeHuntResult = {
@@ -123,7 +129,7 @@ function scoreCandidate(
  * Attributes in, ranked catalog matches out. No vision, no credit — the drawer
  * already has the attributes stored on the post item.
  */
-async function rankDupes(
+export async function rankDupes(
   supabase: SupabaseClient<Database>,
   inspiration: ClothingAttributes,
   maxResults: number,
@@ -132,7 +138,7 @@ async function rankDupes(
   const { data: candidates, error } = await supabase
     .from("products")
     .select(
-      "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes,available_regions,in_stock,verification_status,last_verified_at",
+      "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes,available_regions,in_stock,verification_status,last_verified_at,rating,units_sold,shipping_info,discount_percent,brands(is_verified_seller)",
     )
     .ilike("category", inspiration.category)
     .neq("verification_status", "broken")
@@ -170,8 +176,20 @@ async function rankDupes(
       match_reasons: reasons,
       verification_status: product.verification_status,
       last_verified_at: product.last_verified_at,
+      rating: product.rating,
+      units_sold: product.units_sold,
+      shipping_info: product.shipping_info,
+      discount_percent: product.discount_percent,
+      is_verified_seller: product.brands?.is_verified_seller ?? false,
     }));
 }
+
+export const FindSimilarItemsInput = z.object({
+  attributes: ClothingAttributesSchema,
+  maxResults: z.number().int().min(1).max(20).optional().default(6),
+  region: z.string().length(2).optional(),
+});
+export type FindSimilarItemsInputData = z.infer<typeof FindSimilarItemsInput>;
 
 /**
  * Similar pieces for a garment Mila already catalogued on a post. Skips the
@@ -179,17 +197,9 @@ async function rankDupes(
  */
 export const findSimilarItems = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) =>
-    z
-      .object({
-        attributes: ClothingAttributesSchema,
-        maxResults: z.number().int().min(1).max(20).optional().default(6),
-        region: z.string().length(2).optional(),
-      })
-      .parse(input),
-  )
+  .validator((input: unknown) => FindSimilarItemsInput.parse(input))
   .handler(({ data, context }): Promise<DupeMatch[]> =>
-    rankDupes(context.supabase, data.attributes, data.maxResults, data.region),
+    findSimilarItemsForUser(context.supabase, data),
   );
 
 export const findDupes = createServerFn({ method: "POST" })

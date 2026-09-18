@@ -1,8 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAiSpend } from "./ai-spend.server";
-import { cloudflareChatCompletion, isCloudflareChatConfigured } from "./cloudflare-chat.server";
-
-type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
 
 export interface AiCallerContext {
   supabase: SupabaseClient;
@@ -13,15 +10,18 @@ export type AiTool = { function: { name: string; parameters: Record<string, unkn
 
 export type AiResult = { ok: true; args: unknown } | { ok: false; status: number };
 
-const GEMINI_API = "https://generativelanguage.googleapis.com/v1beta";
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Gemini (AI_API_KEY/AI_MODEL) is the intended long-term stylist brain.
-// Cloudflare Workers AI is a temporary, zero-cost stand-in used only while
-// Gemini is unconfigured — setting AI_API_KEY/AI_MODEL takes priority again
-// automatically, with no code change needed to switch back.
+// The one permanent text/vision brain — multimodal, handles every
+// aiChatCompletion caller (text-only look composition and image-bearing
+// calls like item detection, personal-color analysis, and photo-edit
+// verification) without a separate vision model. Bump this one line to
+// upgrade; every call site is unaffected.
+export const TEXT_MODEL = "deepseek/deepseek-v4.1-flash";
+export const TEXT_PROVIDER = "openrouter";
+
 export function isAiConfigured(): boolean {
-  return Boolean((process.env.AI_API_KEY && process.env.AI_MODEL) || isCloudflareChatConfigured());
+  return Boolean(process.env.OPENROUTER_API_KEY);
 }
 
 export function aiFailure(status: number, fallback: string): Error {
@@ -30,39 +30,8 @@ export function aiFailure(status: number, fallback: string): Error {
   return new Error(fallback);
 }
 
-async function imagePart(url: string): Promise<GeminiPart> {
-  const inline = url.match(/^data:(image\/[\w.+-]+);base64,(.+)$/s);
-  if (inline) return { inlineData: { mimeType: inline[1], data: inline[2] } };
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Mila couldn't load the image for analysis.");
-  const bytes = await response.arrayBuffer();
-  const mimeType = response.headers.get("content-type")?.split(";")[0];
-  if (!mimeType?.startsWith("image/") || bytes.byteLength > MAX_IMAGE_BYTES) {
-    throw new Error("Mila couldn't use that image for analysis.");
-  }
-  return { inlineData: { mimeType, data: Buffer.from(bytes).toString("base64") } };
-}
-
-async function messageParts(content: unknown): Promise<GeminiPart[]> {
-  if (typeof content === "string") return [{ text: content }];
-  if (!Array.isArray(content)) return [];
-
-  const parts: GeminiPart[] = [];
-  for (const part of content) {
-    if (!part || typeof part !== "object") continue;
-    if ("text" in part && typeof part.text === "string") parts.push({ text: part.text });
-    if (
-      "image_url" in part &&
-      part.image_url &&
-      typeof part.image_url === "object" &&
-      "url" in part.image_url &&
-      typeof part.image_url.url === "string"
-    ) {
-      parts.push(await imagePart(part.image_url.url));
-    }
-  }
-  return parts;
+function stripJsonFence(text: string): string {
+  return text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
 }
 
 export async function aiChatCompletion(
@@ -70,42 +39,22 @@ export async function aiChatCompletion(
   tool: AiTool,
   caller: AiCallerContext,
 ): Promise<AiResult> {
-  const apiKey = process.env.AI_API_KEY;
-  const model = process.env.AI_MODEL;
-  if (!apiKey || !model) {
-    if (isCloudflareChatConfigured()) return cloudflareChatCompletion(messages, tool, caller);
-    throw new Error("AI provider not configured — set AI_API_KEY and AI_MODEL");
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI provider not configured — set OPENROUTER_API_KEY");
   }
 
-  const system = messages
-    .filter((message) => message.role === "system" && typeof message.content === "string")
-    .map((message) => message.content as string);
-  system.push(
-    `Return only the ${tool.function.name} arguments as JSON matching the required schema.`,
-  );
-
-  const contents: Array<{ role: "user" | "model"; parts: GeminiPart[] }> = [];
-  for (const message of messages) {
-    if (message.role === "system") continue;
-    const role = message.role === "assistant" ? "model" : "user";
-    const parts = await messageParts(message.content);
-    if (!parts.length) continue;
-    const previous = contents.at(-1);
-    if (previous?.role === role) previous.parts.push(...parts);
-    else contents.push({ role, parts });
-  }
-
-  const response = await fetch(`${GEMINI_API}/models/${model}:generateContent`, {
+  const response = await fetch(OPENROUTER_CHAT_URL, {
     method: "POST",
-    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents,
-      systemInstruction: { parts: [{ text: system.join("\n\n") }] },
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseJsonSchema: tool.function.parameters,
+      model: TEXT_MODEL,
+      messages,
+      response_format: {
+        type: "json_schema",
+        json_schema: { name: tool.function.name, schema: tool.function.parameters, strict: true },
       },
-      store: false,
+      usage: { include: true },
     }),
   });
   if (!response.ok) {
@@ -114,35 +63,32 @@ export async function aiChatCompletion(
   }
 
   const json = (await response.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    usageMetadata?: {
-      promptTokenCount?: number;
-      candidatesTokenCount?: number;
-      totalTokenCount?: number;
+    choices?: Array<{ message?: { content?: string } }>;
+    usage?: {
+      cost?: number;
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
     };
   };
-  const text = json.candidates?.[0]?.content?.parts?.find((part) => part.text)?.text;
+  const text = json.choices?.[0]?.message?.content;
   if (!text) {
     console.error("[ai] provider returned no text", JSON.stringify(json).slice(0, 500));
     return { ok: false, status: 502 };
   }
 
-  // Gemini reports real token counts on every successful call. No per-token
-  // USD price is hardcoded here — AI_MODEL is a runtime env var and Gemini's
-  // pricing tiers vary by model, so a guessed cost would be worse than none.
-  const usage = json.usageMetadata;
+  const usage = json.usage;
   await logAiSpend(caller.supabase, caller.userId, {
-    provider: "google",
-    model,
-    costUsd: null,
-    promptTokens: typeof usage?.promptTokenCount === "number" ? usage.promptTokenCount : null,
-    completionTokens:
-      typeof usage?.candidatesTokenCount === "number" ? usage.candidatesTokenCount : null,
-    totalTokens: typeof usage?.totalTokenCount === "number" ? usage.totalTokenCount : null,
+    provider: TEXT_PROVIDER,
+    model: TEXT_MODEL,
+    costUsd: typeof usage?.cost === "number" ? usage.cost : null,
+    promptTokens: typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
+    completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,
+    totalTokens: typeof usage?.total_tokens === "number" ? usage.total_tokens : null,
   });
 
   try {
-    return { ok: true, args: JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "")) };
+    return { ok: true, args: JSON.parse(stripJsonFence(text)) };
   } catch {
     console.error("[ai] provider returned unparseable JSON", { length: text.length });
     return { ok: false, status: 502 };

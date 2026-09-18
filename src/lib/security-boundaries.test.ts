@@ -30,8 +30,10 @@ test("the shared captcha hook clears expired/error tokens and resets after attem
 
 test("publishing a post refuses image paths outside the poster's own storage folder", () => {
   // Storage RLS only constrains uploads, so the insert has to re-check ownership
-  // or a member could claim someone else's photo as their OOTD.
-  expect(source("./posts.functions.ts")).toContain("path.startsWith(`${userId}/`)");
+  // or a member could claim someone else's photo as their OOTD. This check now
+  // lives in the extracted service both the web `createPost` server function and
+  // the mobile `POST /api/v1/posts/create` route share.
+  expect(source("../server/services/posts.ts")).toContain("path.startsWith(`${userId}/`)");
   // ...and the uploader must keep writing paths that satisfy that prefix.
   expect(source("./publish-ootd.ts")).toContain("`${userId}/back-");
   expect(source("./publish-ootd.ts")).toContain("`${userId}/front-");
@@ -54,9 +56,11 @@ test("every hCaptcha form goes through that hook rather than mounting its own wi
 
 test("a moderator viewing a member profile can only see hidden posts through the checked path", () => {
   // Staff role/permission management now lives entirely in MILA_ADMIN; the only
-  // surviving use of roles in this app is this read-only visibility check.
-  const posts = source("./posts.functions.ts");
-  expect(posts).toContain("getCurrentUserRoles(context.supabase, context.userId)");
+  // surviving use of roles in this app is this read-only visibility check. It now
+  // lives in the extracted service both the web `getMemberProfile` server
+  // function and the mobile `GET /api/v1/profile/member` route share.
+  const posts = source("../server/services/posts.ts");
+  expect(posts).toContain("getCurrentUserRoles(supabase, userId)");
   expect(posts).toContain('hasPermission(roles, "moderation.view")');
 });
 

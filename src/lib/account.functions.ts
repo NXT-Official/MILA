@@ -59,7 +59,7 @@ async function admin() {
   return supabaseAdmin;
 }
 
-const supabaseDeleteAccountDeps: DeleteAccountDeps = {
+export const supabaseDeleteAccountDeps: DeleteAccountDeps = {
   getEmail: async (userId) => {
     const { data, error } = await (await admin()).auth.admin.getUserById(userId);
     if (error) throw error;

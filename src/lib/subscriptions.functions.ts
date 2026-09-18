@@ -15,7 +15,7 @@ export type MarkCancelAtPeriodEndStore = (
   cancelAtPeriodEnd: boolean,
 ) => Promise<void>;
 
-const markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = async (
+export const markCancelAtPeriodEnd: MarkCancelAtPeriodEndStore = async (
   paddleSubscriptionId,
   cancelAtPeriodEnd,
 ) => {
@@ -121,7 +121,7 @@ export async function cancelViaPaddleApi(
   return { endsAt };
 }
 
-async function resumeViaPaddleApi(
+export async function resumeViaPaddleApi(
   paddleSubscriptionId: string,
 ): Promise<{ renewsAt: string } | { error: unknown }> {
   const { PADDLE_SANDBOX_API_KEY } = requireEnv({

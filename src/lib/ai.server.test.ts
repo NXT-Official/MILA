@@ -1,6 +1,6 @@
-import { afterAll, describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { aiChatCompletion } from "./ai.server";
+import { aiChatCompletion, isAiConfigured } from "./ai.server";
 
 const fakeCaller = {
   supabase: {
@@ -10,13 +10,12 @@ const fakeCaller = {
 };
 
 const originalFetch = globalThis.fetch;
-const originalKey = process.env.AI_API_KEY;
-const originalModel = process.env.AI_MODEL;
+const originalKey = process.env.OPENROUTER_API_KEY;
 
-afterAll(() => {
+afterEach(() => {
   globalThis.fetch = originalFetch;
-  process.env.AI_API_KEY = originalKey;
-  process.env.AI_MODEL = originalModel;
+  if (originalKey === undefined) delete process.env.OPENROUTER_API_KEY;
+  else process.env.OPENROUTER_API_KEY = originalKey;
 });
 
 const tool = {
@@ -32,17 +31,31 @@ const tool = {
 };
 
 function stubProvider(response: Response) {
-  process.env.AI_API_KEY = "test-key";
-  process.env.AI_MODEL = "gemini-test";
+  process.env.OPENROUTER_API_KEY = "test-key";
   const fetchMock = mock(async () => response);
   globalThis.fetch = fetchMock as unknown as typeof fetch;
   return fetchMock;
 }
 
-describe("Gemini gateway", () => {
-  test("sends native structured output and returns the parsed tool arguments", async () => {
+describe("isAiConfigured", () => {
+  test("false when OPENROUTER_API_KEY is unset", () => {
+    delete process.env.OPENROUTER_API_KEY;
+    expect(isAiConfigured()).toBe(false);
+  });
+
+  test("true when OPENROUTER_API_KEY is set", () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    expect(isAiConfigured()).toBe(true);
+  });
+});
+
+describe("OpenRouter chat gateway", () => {
+  test("sends structured output request and returns the parsed tool arguments", async () => {
     const fetchMock = stubProvider(
-      Response.json({ candidates: [{ content: { parts: [{ text: '{"value":"ok"}' }] } }] }),
+      Response.json({
+        choices: [{ message: { content: '{"value":"ok"}' } }],
+        usage: { cost: 0.001, prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      }),
     );
 
     const result = await aiChatCompletion(
@@ -62,22 +75,21 @@ describe("Gemini gateway", () => {
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     const body = JSON.parse(String(init.body));
-    expect(url).toBe(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent",
-    );
-    expect(body.contents[0].parts[1]).toEqual({
-      inlineData: { mimeType: "image/jpeg", data: "YQ==" },
+    expect(url).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer test-key");
+    expect(body.model).toBe("deepseek/deepseek-v4.1-flash");
+    expect(body.messages[1].content[1]).toEqual({
+      type: "image_url",
+      image_url: { url: "data:image/jpeg;base64,YQ==" },
     });
-    expect(body.generationConfig.responseJsonSchema.additionalProperties).toBe(false);
-    expect(body.systemInstruction.parts[0].text).toContain("report_test");
+    expect(body.response_format.json_schema.name).toBe("report_test");
+    expect(body.response_format.json_schema.schema.additionalProperties).toBe(false);
     expect(result).toEqual({ ok: true, args: { value: "ok" } });
   });
 
   test("tolerates a fenced JSON reply", async () => {
     stubProvider(
-      Response.json({
-        candidates: [{ content: { parts: [{ text: '```json\n{"value":"ok"}\n```' }] } }],
-      }),
+      Response.json({ choices: [{ message: { content: '```json\n{"value":"ok"}\n```' } }] }),
     );
     expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
       ok: true,
@@ -91,7 +103,14 @@ describe("Gemini gateway", () => {
   });
 
   test("reports an unusable reply as 502", async () => {
-    stubProvider(Response.json({ candidates: [{ content: { parts: [{ text: "not json" }] } }] }));
+    stubProvider(Response.json({ choices: [{ message: { content: "not json" } }] }));
     expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+  });
+
+  test("throws when OPENROUTER_API_KEY is missing", async () => {
+    delete process.env.OPENROUTER_API_KEY;
+    await expect(aiChatCompletion([], tool, fakeCaller)).rejects.toThrow(
+      "AI provider not configured",
+    );
   });
 });

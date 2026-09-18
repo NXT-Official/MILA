@@ -252,7 +252,7 @@ export const analyzePersonalColor = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<ColorAnalysisResult> => {
     try {
       if (!isAiConfigured()) {
-        console.error("[analyzePersonalColor] AI provider not configured (AI_API_KEY / AI_MODEL)");
+        console.error("[analyzePersonalColor] AI provider not configured (OPENROUTER_API_KEY)");
         return { success: false, error: "CONFIG_MISSING_API_KEY" };
       }
 
