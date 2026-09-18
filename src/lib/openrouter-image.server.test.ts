@@ -27,27 +27,24 @@ describe("OpenRouter outfit image generation", () => {
     await expect(generateOutfitImage(outfit)).rejects.toThrow("Missing environment variable");
   });
 
-  test("posts the outfit prompt, requests usage cost, and returns image + cost", async () => {
+  test("posts to the Images API with the outfit prompt and jpeg output, returns image + cost", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
-      expect(String(url)).toBe("https://openrouter.ai/api/v1/chat/completions");
+      expect(String(url)).toBe("https://openrouter.ai/api/v1/images");
       const headers = init?.headers as Record<string, string>;
       expect(headers.Authorization).toBe("Bearer test-key");
       const body = JSON.parse(init?.body as string);
       expect(body.model).toBe("meta/muse-image");
-      expect(body.modalities).toEqual(["image", "text"]);
-      expect(body.usage).toEqual({ include: true });
-      expect(body.messages[0].content).toContain("The Architectural Linen Silhouette");
+      expect(body.output_format).toBe("jpeg");
+      expect(body.prompt).toContain("The Architectural Linen Silhouette");
       return Response.json({
-        choices: [
-          { message: { images: [{ image_url: { url: "data:image/png;base64,abc123" } }] } },
-        ],
+        data: [{ b64_json: "abc123", media_type: "image/jpeg" }],
         usage: { cost: 0.0042, prompt_tokens: 120, completion_tokens: 340, total_tokens: 460 },
       });
     }) as unknown as typeof fetch;
 
     await expect(generateOutfitImage(outfit)).resolves.toEqual({
-      imageUrl: "data:image/png;base64,abc123",
+      imageUrl: "data:image/jpeg;base64,abc123",
       costUsd: 0.0042,
       promptTokens: 120,
       completionTokens: 340,
@@ -58,15 +55,11 @@ describe("OpenRouter outfit image generation", () => {
   test("returns null cost and token counts when OpenRouter omits usage", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     globalThis.fetch = mock(async () =>
-      Response.json({
-        choices: [
-          { message: { images: [{ image_url: { url: "data:image/png;base64,abc123" } }] } },
-        ],
-      }),
+      Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] }),
     ) as unknown as typeof fetch;
 
     await expect(generateOutfitImage(outfit)).resolves.toEqual({
-      imageUrl: "data:image/png;base64,abc123",
+      imageUrl: "data:image/jpeg;base64,abc123",
       costUsd: null,
       promptTokens: null,
       completionTokens: null,
@@ -92,9 +85,7 @@ describe("OpenRouter outfit image generation", () => {
 
   test("throws when the response has no image", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
-    globalThis.fetch = mock(async () =>
-      Response.json({ choices: [{ message: { content: "I couldn't render that." } }] }),
-    ) as unknown as typeof fetch;
+    globalThis.fetch = mock(async () => Response.json({ data: [] })) as unknown as typeof fetch;
     await expect(generateOutfitImage(outfit)).rejects.toThrow("did not return an image");
   });
 });

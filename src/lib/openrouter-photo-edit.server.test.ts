@@ -67,32 +67,23 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
     );
   });
 
-  test("sends the user photo, reference images, and prompt; returns edited image + cost", async () => {
+  test("posts to the Images API with prompt, input_references, and jpeg output", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
-      expect(String(url)).toBe("https://openrouter.ai/api/v1/chat/completions");
+      expect(String(url)).toBe("https://openrouter.ai/api/v1/images");
       const headers = init?.headers as Record<string, string>;
       expect(headers.Authorization).toBe("Bearer test-key");
       const body = JSON.parse(init?.body as string);
       expect(body.model).toBe("meta/muse-image");
-      expect(body.modalities).toEqual(["image", "text"]);
-      const content = body.messages[0].content;
-      expect(content[0].type).toBe("text");
-      expect(content[0].text).toContain("The Architectural Linen Silhouette");
-      expect(content[0].text).toContain("female-presenting");
-      expect(content[1]).toEqual({
-        type: "image_url",
-        image_url: { url: "data:image/jpeg;base64,AQID" },
-      });
-      expect(content[2]).toEqual({
-        type: "image_url",
-        image_url: { url: "data:image/png;base64,BA==" },
-      });
-      expect(content.length).toBe(3);
+      expect(body.output_format).toBe("jpeg");
+      expect(body.prompt).toContain("The Architectural Linen Silhouette");
+      expect(body.prompt).toContain("female-presenting");
+      expect(body.input_references).toEqual([
+        { type: "image_url", image_url: { url: "data:image/jpeg;base64,AQID" } },
+        { type: "image_url", image_url: { url: "data:image/png;base64,BA==" } },
+      ]);
       return Response.json({
-        choices: [
-          { message: { images: [{ image_url: { url: "data:image/png;base64,edited123" } }] } },
-        ],
+        data: [{ b64_json: "edited123", media_type: "image/jpeg" }],
         usage: { cost: 0.01 },
       });
     }) as unknown as typeof fetch;
@@ -105,17 +96,15 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
       { rateLimitStore: allowStore },
     );
 
-    expect(result).toEqual({ imageUrl: "data:image/png;base64,edited123", costUsd: 0.01 });
+    expect(result).toEqual({ imageUrl: "data:image/jpeg;base64,edited123", costUsd: 0.01 });
   });
 
   test("caps reference images at 3 even when more are given", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
-    let capturedContent: Array<Record<string, unknown>> | undefined;
+    let capturedReferences: Array<Record<string, unknown>> | undefined;
     globalThis.fetch = mock(async (_url, init?: RequestInit) => {
-      capturedContent = JSON.parse(init?.body as string).messages[0].content;
-      return Response.json({
-        choices: [{ message: { images: [{ image_url: { url: "data:image/png;base64,x" } }] } }],
-      });
+      capturedReferences = JSON.parse(init?.body as string).input_references;
+      return Response.json({ data: [{ b64_json: "x", media_type: "image/jpeg" }] });
     }) as unknown as typeof fetch;
 
     await editOutfitPhoto(
@@ -131,20 +120,18 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
       { rateLimitStore: allowStore },
     );
 
-    // 1 text part + 1 user photo + capped at 3 references = 5
-    expect(capturedContent?.length).toBe(5);
+    // 1 user photo + capped at 3 references = 4
+    expect(capturedReferences?.length).toBe(4);
   });
 
   test("returns null cost when OpenRouter omits usage", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     globalThis.fetch = mock(async () =>
-      Response.json({
-        choices: [{ message: { images: [{ image_url: { url: "data:image/png;base64,x" } }] } }],
-      }),
+      Response.json({ data: [{ b64_json: "x", media_type: "image/jpeg" }] }),
     ) as unknown as typeof fetch;
 
     await expect(editOutfitPhoto(editArgs(), { rateLimitStore: allowStore })).resolves.toEqual({
-      imageUrl: "data:image/png;base64,x",
+      imageUrl: "data:image/jpeg;base64,x",
       costUsd: null,
     });
   });
@@ -181,9 +168,7 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
 
   test("throws when the response has no image", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
-    globalThis.fetch = mock(async () =>
-      Response.json({ choices: [{ message: { content: "I couldn't edit that." } }] }),
-    ) as unknown as typeof fetch;
+    globalThis.fetch = mock(async () => Response.json({ data: [] })) as unknown as typeof fetch;
     await expect(editOutfitPhoto(editArgs(), { rateLimitStore: allowStore })).rejects.toThrow(
       "did not return an edited image",
     );

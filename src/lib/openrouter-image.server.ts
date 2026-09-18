@@ -3,7 +3,12 @@ import type { DailyLook } from "./generate-outfit.functions";
 
 const TIMEOUT_MS = 75_000;
 const MAX_PROMPT_LENGTH = 2048;
-const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+// meta/muse-image is an image-generation model — it only exists behind
+// OpenRouter's dedicated Images API (/api/v1/images), not the general
+// chat/completions endpoint. Confirmed live: chat/completions returns 404
+// "cannot be used with the chat/completions endpoint. Use the
+// /api/v1/images endpoint instead."
+export const OPENROUTER_IMAGES_URL = "https://openrouter.ai/api/v1/images";
 export const IMAGE_PROVIDER = "openrouter";
 export const IMAGE_MODEL = "meta/muse-image";
 
@@ -75,7 +80,7 @@ export async function generateOutfitImage(
 
   let res: Response;
   try {
-    res = await fetch(OPENROUTER_CHAT_URL, {
+    res = await fetch(OPENROUTER_IMAGES_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
@@ -83,11 +88,8 @@ export async function generateOutfitImage(
       },
       body: JSON.stringify({
         model: IMAGE_MODEL,
-        messages: [
-          { role: "user", content: buildOutfitImagePrompt(outfit, deps.gender, deps.skinDepth) },
-        ],
-        modalities: ["image", "text"],
-        usage: { include: true },
+        prompt: buildOutfitImagePrompt(outfit, deps.gender, deps.skinDepth),
+        output_format: "jpeg",
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -99,7 +101,7 @@ export async function generateOutfitImage(
   if (!res.ok) throw new Error(`OpenRouter image request failed (${res.status}).`);
 
   const json = (await res.json()) as {
-    choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
+    data?: Array<{ b64_json?: string; media_type?: string }>;
     usage?: {
       cost?: number;
       prompt_tokens?: number;
@@ -107,13 +109,13 @@ export async function generateOutfitImage(
       total_tokens?: number;
     };
   };
-  const imageUrl = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (typeof imageUrl !== "string" || !/^data:image\/[\w.+-]+;base64,/.test(imageUrl)) {
+  const image = json.data?.[0];
+  if (!image?.b64_json || !image.media_type) {
     throw new Error("OpenRouter did not return an image.");
   }
   const usage = json.usage;
   return {
-    imageUrl,
+    imageUrl: `data:${image.media_type};base64,${image.b64_json}`,
     costUsd: typeof usage?.cost === "number" ? usage.cost : null,
     promptTokens: typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
     completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,

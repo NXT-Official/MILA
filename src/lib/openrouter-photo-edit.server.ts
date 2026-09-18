@@ -4,10 +4,13 @@ import {
   RateLimitExceededError,
   type RateLimitStore,
 } from "@/lib/rate-limit.server";
-import { ImageProviderRateLimitError, IMAGE_MODEL } from "./openrouter-image.server";
+import {
+  ImageProviderRateLimitError,
+  IMAGE_MODEL,
+  OPENROUTER_IMAGES_URL,
+} from "./openrouter-image.server";
 import type { DailyLook } from "./generate-outfit.functions";
 
-const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 const TIMEOUT_MS = 75_000;
 const MAX_REFERENCE_IMAGES = 3;
 const MAX_PROMPT_LENGTH = 2048;
@@ -137,15 +140,18 @@ export async function editOutfitPhoto(
     referenceCount: references.length,
   });
 
-  const content: Array<Record<string, unknown>> = [
-    { type: "text", text: prompt },
-    { type: "image_url", image_url: { url: toDataUri(userPhoto) } },
-    ...references.map((ref) => ({ type: "image_url", image_url: { url: toDataUri(ref) } })),
-  ];
+  // meta/muse-image's image-to-image path: reference images ride in
+  // input_references, not inline chat message content — confirmed live
+  // against the real Images API (/api/v1/images), which is a distinct
+  // endpoint from chat/completions this model doesn't support at all.
+  const inputReferences = [userPhoto, ...references].map((image) => ({
+    type: "image_url",
+    image_url: { url: toDataUri(image) },
+  }));
 
   let res: Response;
   try {
-    res = await fetch(OPENROUTER_CHAT_URL, {
+    res = await fetch(OPENROUTER_IMAGES_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
@@ -153,9 +159,12 @@ export async function editOutfitPhoto(
       },
       body: JSON.stringify({
         model: PHOTO_EDIT_MODEL,
-        messages: [{ role: "user", content }],
-        modalities: ["image", "text"],
-        usage: { include: true },
+        prompt,
+        input_references: inputReferences,
+        // face-match.server.ts's jpeg-js decoder and this file's caller
+        // (photo-preview.functions.ts's JPEG_DATA_URI_PATTERN) both require
+        // JPEG — the model defaults to webp otherwise (confirmed live).
+        output_format: "jpeg",
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -167,16 +176,16 @@ export async function editOutfitPhoto(
   if (!res.ok) throw new Error(`OpenRouter photo-edit request failed (${res.status}).`);
 
   const json = (await res.json()) as {
-    choices?: Array<{ message?: { images?: Array<{ image_url?: { url?: string } }> } }>;
+    data?: Array<{ b64_json?: string; media_type?: string }>;
     usage?: { cost?: number };
   };
-  const imageUrl = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (typeof imageUrl !== "string" || !/^data:image\/[\w.+-]+;base64,/.test(imageUrl)) {
+  const image = json.data?.[0];
+  if (!image?.b64_json || !image.media_type) {
     throw new Error("OpenRouter did not return an edited image.");
   }
 
   return {
-    imageUrl,
+    imageUrl: `data:${image.media_type};base64,${image.b64_json}`,
     costUsd: typeof json.usage?.cost === "number" ? json.usage.cost : null,
   };
 }
