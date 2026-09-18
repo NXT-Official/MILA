@@ -99,6 +99,22 @@ export default defineConfig(({ command, mode }) => {
                   headers: { "Cache-Control": "public, max-age=31536000, immutable" },
                 },
               },
+              rollupConfig: {
+                output: {
+                  // @tensorflow/tfjs-core and @vladmandic/face-api (bundled here by
+                  // noExternals: true, into their own _libs/*.mjs chunks) contain a
+                  // literal Node-environment `require(...)` call for their Node
+                  // platform detection. Rollup's ESM output doesn't auto-shim bare
+                  // `require` the way Node's own CJS-in-ESM interop does — confirmed
+                  // live in prod: "ReferenceError: require is not defined in ES
+                  // module scope" thrown from face-match.server.ts's tfjs import
+                  // chain. Inject the one Node-native shim these chunks need.
+                  banner: (chunk: { fileName: string }) =>
+                    /tensorflow|vladmandic/.test(chunk.fileName)
+                      ? "import{createRequire as __createRequire}from'node:module';const require=globalThis.require??__createRequire(import.meta.url);"
+                      : "",
+                },
+              },
             }),
           ]
         : []),

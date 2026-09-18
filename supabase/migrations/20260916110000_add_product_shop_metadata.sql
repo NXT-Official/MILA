@@ -20,19 +20,6 @@ GRANT SELECT (rating, units_sold, shipping_info, discount_percent)
   ON public.products TO authenticated;
 GRANT SELECT (is_verified_seller) ON public.brands TO authenticated;
 
--- Mock/placeholder values so the new "Shop" tab UI has something to render
--- against during development. Explicitly fake data pending a real merchant
--- feed — flagged here, not silently passed off as real.
-UPDATE public.products
-SET
-  rating = 4.0 + (('x' || substr(md5(id::text), 1, 6))::bit(24)::int % 10) / 10.0,
-  units_sold = 50 + (('x' || substr(md5(id::text || 'u'), 1, 6))::bit(24)::int % 5000),
-  shipping_info = 'Ships in 3-5 days',
-  discount_percent = CASE
-    WHEN (('x' || substr(md5(id::text || 'd'), 1, 6))::bit(24)::int % 3) = 0
-      THEN 10 + (('x' || substr(md5(id::text || 'p'), 1, 6))::bit(24)::int % 30)
-    ELSE NULL
-  END
-WHERE rating IS NULL;
-
+-- rating/units_sold/shipping_info/discount_percent stay NULL until real
+-- merchant data is available — no synthetic placeholder values seeded here.
 UPDATE public.brands SET is_verified_seller = true WHERE status = 'active';
