@@ -56,6 +56,10 @@ export const UNISEX_HAIRSTYLE_TRENDS_2026 = [
 // Pinterest Predicts) — not fabricated. Refresh quarterly; do not let this go
 // stale silently.
 export const OUTFIT_TREND_PIECES_2026: string[] = [
+  "Boxy cropped camp-collar shirts, worn open over a plain tee or half-buttoned — Korean-minimal streetwear, everyday casual",
+  "Wide-leg / baggy straight denim, deliberately oversized through the leg — Y2K revival, streetwear, everyday casual",
+  "Loafers or leather derbies styled with denim/casual pieces instead of sneakers — quiet-luxury streetwear crossover, everyday casual, street casual",
+  "Deliberate proportion contrast: one boxy/oversized piece (top or bottom) paired with one fitted piece, never both fitted — Korean-minimal streetwear, everyday casual",
   "Wedge heels (understated, patent or satin) — Y2K revival, glam",
   "Napoleon jackets (military shoulders, braiding) — grunge/indie, streetwear",
   "Kangol-style flat caps and bucket hats — streetwear, techwear",
