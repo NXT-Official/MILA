@@ -1,6 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -113,8 +111,3 @@ export async function matchLookProducts(
 
   return results;
 }
-
-export const findLookProducts = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => Input.parse(input))
-  .handler(({ data, context }) => matchLookProducts(context.supabase, data));

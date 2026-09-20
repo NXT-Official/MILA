@@ -32,7 +32,6 @@ import { OutfitVisual } from "@/components/dashboard/outfit-visual";
 import { OutfitResultSkeleton } from "@/components/dashboard/outfit-result-skeleton";
 import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detail";
 import { ShopThisLookGrid } from "@/components/dashboard/shop-look-grid";
-import { findLookProducts, type LookProduct } from "@/lib/look-products.functions";
 import { generatePhotoPreview } from "@/lib/photo-preview.functions";
 import { generateStyleSheetPreview } from "@/lib/style-sheet.functions";
 import { SelfiePhotoWidget } from "@/components/dashboard/selfie-photo-widget";
@@ -115,7 +114,6 @@ function Dashboard() {
   const { openConcierge } = useConcierge();
   const [generating, setGenerating] = useState(false);
   const [look, setLook] = useState<GeneratedLook | null>(null);
-  const [shopItems, setShopItems] = useState<LookProduct[] | null>(null);
   const [savingLook, setSavingLook] = useState(false);
   const [savedLook, setSavedLook] = useState<{ id: string; imageUrl: string } | null>(null);
   const lookSaved = !!savedLook;
@@ -131,28 +129,8 @@ function Dashboard() {
 
   const generate = useServerFn(generateDailyLook);
   const saveOutfit = useServerFn(saveOutfitToHistory);
-  const fetchLookProducts = useServerFn(findLookProducts);
   const generatePhotoPreviewFn = useServerFn(generatePhotoPreview);
   const generateStyleSheetFn = useServerFn(generateStyleSheetPreview);
-
-  async function fetchShopItems(
-    colorSeason: string,
-    bodyType: string,
-    tempF: number | undefined,
-    region: string | undefined,
-  ): Promise<LookProduct[] | null> {
-    try {
-      const items = await fetchLookProducts({
-        data: { colorSeason, bodyType, tempF, region: region || undefined },
-      });
-      setShopItems(items);
-      return items;
-    } catch (e) {
-      console.error("[dashboard] findLookProducts failed", e);
-      setShopItems(null);
-      return null;
-    }
-  }
 
   /** Shared by the auto-generation in generateLook() and the manual retry button. */
   async function generateStyleSheetVisual(outfitForSheet: {
@@ -198,7 +176,6 @@ function Dashboard() {
     }
     setGenerating(true);
     setLook(null);
-    setShopItems(null);
     setSavedLook(null);
     setStyleSheetImageDataUri(null);
     let outfit: DailyLook;
@@ -234,13 +211,6 @@ function Dashboard() {
     }
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
-
-    void fetchShopItems(
-      profile.color_season,
-      profile.body_type,
-      climate.tempF,
-      profile.delivery_country || climate.country,
-    );
 
     // No stock-model fallback anymore — a visual requires a consented
     // photo, since the style sheet is now the only auto-generated image.
@@ -327,7 +297,7 @@ function Dashboard() {
           makeup: look.makeup,
           vibe_alignment_score: look.vibe_alignment_score,
           forecastRetrievedAt: look.forecastRetrievedAt ?? null,
-          productIds: (shopItems ?? []).map((item) => item.id),
+          productIds: (look.shoppable_picks ?? []).map((item) => item.id),
           previewMode: styleSheetImageDataUri ? "style_sheet" : "photo_edit",
         },
       });
@@ -646,9 +616,9 @@ function Dashboard() {
                     />
                   </motion.div>
 
-                  {shopItems && (
+                  {look.shoppable_picks && (
                     <motion.div variants={resultItemVariants}>
-                      <ShopThisLookGrid items={shopItems} />
+                      <ShopThisLookGrid items={look.shoppable_picks} />
                     </motion.div>
                   )}
 
