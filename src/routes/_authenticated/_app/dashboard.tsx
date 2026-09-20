@@ -44,10 +44,15 @@ import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/c
 import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { errorMessage } from "@/lib/utils";
+import { errorMessage, isStaleBundleError } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+
+function reloadForNewVersion() {
+  toast.error("Mila just updated — reloading to grab the latest version. Try again after reload.");
+  window.location.reload();
+}
 
 const VIBES = [
   "Everyday Casual",
@@ -152,7 +157,9 @@ function Dashboard() {
       toast.error(res.reason);
       return false;
     } catch (e) {
-      if (isInsufficientCreditsError(e)) {
+      if (isStaleBundleError(e)) {
+        reloadForNewVersion();
+      } else if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
       } else {
         toast.error(errorMessage(e, "Couldn't create your style sheet. Please try again."));
@@ -202,7 +209,9 @@ function Dashboard() {
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     } catch (e) {
       setGenerating(false);
-      if (isInsufficientCreditsError(e)) {
+      if (isStaleBundleError(e)) {
+        reloadForNewVersion();
+      } else if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
       } else {
         toast.error(errorMessage(e, "Couldn’t compose a look. Please try again."));
@@ -250,7 +259,9 @@ function Dashboard() {
         toast.error(res.reason);
       }
     } catch (e) {
-      if (isInsufficientCreditsError(e)) {
+      if (isStaleBundleError(e)) {
+        reloadForNewVersion();
+      } else if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
       } else {
         toast.error(errorMessage(e, "Couldn't create a photo preview. Please try again."));
@@ -304,7 +315,11 @@ function Dashboard() {
       setSavedLook({ id: row.id, imageUrl: row.image_url });
       toast.success("Saved to your history.");
     } catch (e) {
-      toast.error(errorMessage(e, "We couldn’t save that look. Please try again."));
+      if (isStaleBundleError(e)) {
+        reloadForNewVersion();
+      } else {
+        toast.error(errorMessage(e, "We couldn’t save that look. Please try again."));
+      }
     } finally {
       setSavingLook(false);
     }

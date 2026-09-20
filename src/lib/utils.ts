@@ -14,6 +14,20 @@ export function errorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+// TanStack Start's server-function IDs are content-hashed per deployment. A
+// tab left open across a deploy still runs the old client bundle, which
+// calls a hash the new deployment's server never registered — surfacing as
+// this exact message instead of a normal HTTP error. Confirmed live: the
+// same hash 500'd as "not found" across two consecutive deployments,
+// ruling out a transient server bug. Detecting it lets callers force a
+// reload instead of showing a raw internal error string and letting the
+// action silently keep failing.
+const STALE_BUNDLE_ERROR = /server function info not found/i;
+
+export function isStaleBundleError(error: unknown): boolean {
+  return STALE_BUNDLE_ERROR.test(errorMessage(error, ""));
+}
+
 export function formatPrice(price: number, currency: string): string {
   try {
     return new Intl.NumberFormat("en-US", {
