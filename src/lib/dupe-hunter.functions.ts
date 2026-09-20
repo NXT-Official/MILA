@@ -1,53 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { aiChatCompletion, aiFailure } from "./ai.server";
-import {
-  CLOTHING_CATEGORIES as CATEGORIES,
-  CLOTHING_UNDERTONES as UNDERTONES,
-} from "@/constants/wardrobe";
-import { withAiCredit } from "./credits.server";
-import { consumeRateLimit } from "./rate-limit.server";
-import { assertTrustedStorageImageUrl } from "./trusted-image-url.server";
 import { ClothingAttributesSchema, type ClothingAttributes } from "./outfit-items";
-import { isAvailableInRegion } from "./look-products.functions";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-import { findSimilarItemsForUser } from "@/server/services/dupes";
+import { findDupesForUser, findSimilarItemsForUser } from "@/server/services/dupes";
 
-const Input = z.object({
+export const Input = z.object({
   imageUrl: z.string().url(),
   maxResults: z.number().int().min(1).max(20).optional().default(6),
   /** ISO 3166-1 alpha-2 country code. Empty/omitted = unknown, don't region-filter. */
   region: z.string().length(2).optional(),
 });
-
-const tool = {
-  function: {
-    name: "report_clothing_attributes",
-    parameters: {
-      type: "object",
-      properties: {
-        name: {
-          type: "string",
-          description: "Vivid luxury descriptor, e.g. 'cream quilted top-handle vanity case'.",
-        },
-        category: { type: "string", enum: CATEGORIES as unknown as string[] },
-        primary_color: { type: "string" },
-        color_undertone: { type: "string", enum: UNDERTONES as unknown as string[] },
-        silhouette_tags: {
-          type: "array",
-          minItems: 2,
-          maxItems: 4,
-          items: { type: "string" },
-          description: "Structural shape/construction cues the dupe must match.",
-        },
-      },
-      required: ["name", "category", "primary_color", "color_undertone", "silhouette_tags"],
-      additionalProperties: false,
-    },
-  },
-};
+export type FindDupesInputData = z.infer<typeof Input>;
 
 export type DupeMatch = {
   id: string;
@@ -75,115 +38,6 @@ export type DupeHuntResult = {
   dupes: DupeMatch[];
 };
 
-function scoreCandidate(
-  inspiration: ClothingAttributes,
-  product: {
-    title: string;
-    description: string | null;
-    category: string;
-    seasonal_palettes: string[];
-  },
-): { score: number; reasons: string[] } {
-  const reasons: string[] = [];
-  let score = 0;
-
-  if (product.category.toLowerCase() === inspiration.category.toLowerCase()) {
-    score += 40;
-    reasons.push(`Same category (${product.category})`);
-  }
-
-  const haystack = `${product.title} ${product.description ?? ""}`.toLowerCase();
-
-  let silhouetteHits = 0;
-  for (const tag of inspiration.silhouette_tags) {
-    if (haystack.includes(tag.toLowerCase())) {
-      silhouetteHits += 1;
-      reasons.push(`Matches "${tag}"`);
-    }
-  }
-  score += silhouetteHits * 15;
-
-  if (haystack.includes(inspiration.primary_color.toLowerCase())) {
-    score += 20;
-    reasons.push(`Shares ${inspiration.primary_color} color`);
-  }
-
-  const undertoneMap: Record<string, string[]> = {
-    Warm: ["spring", "autumn"],
-    Cool: ["summer", "winter"],
-    Neutral: ["spring", "summer", "autumn", "winter"],
-  };
-  const undertoneFamilies = undertoneMap[inspiration.color_undertone] ?? [];
-  const paletteHit = product.seasonal_palettes.some((p) =>
-    undertoneFamilies.some((fam) => p.toLowerCase().includes(fam)),
-  );
-  if (paletteHit) {
-    score += 10;
-    reasons.push(`${inspiration.color_undertone} undertone fit`);
-  }
-
-  return { score, reasons };
-}
-
-/**
- * Attributes in, ranked catalog matches out. No vision, no credit — the drawer
- * already has the attributes stored on the post item.
- */
-export async function rankDupes(
-  supabase: SupabaseClient<Database>,
-  inspiration: ClothingAttributes,
-  maxResults: number,
-  region?: string,
-): Promise<DupeMatch[]> {
-  const { data: candidates, error } = await supabase
-    .from("products")
-    .select(
-      "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes,available_regions,in_stock,verification_status,last_verified_at,rating,units_sold,shipping_info,discount_percent,brands(is_verified_seller)",
-    )
-    .ilike("category", inspiration.category)
-    .neq("verification_status", "broken")
-    .eq("in_stock", true)
-    .limit(200);
-
-  if (error) {
-    console.error("Product query failed", error);
-    throw new Error("Couldn't search the dupe catalog.");
-  }
-
-  return (candidates ?? [])
-    .filter((p) => !!p.affiliate_link && isAvailableInRegion(p, region))
-    .map((product) => {
-      const { score, reasons } = scoreCandidate(inspiration, product);
-      return { product, score, reasons };
-    })
-    .filter((r) => r.score > 0)
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.product.price - b.product.price;
-    })
-    .slice(0, maxResults)
-    .map(({ product, score, reasons }) => ({
-      id: product.id,
-      title: product.title,
-      brand_id: product.brand_id,
-      category: product.category,
-      price: product.price,
-      currency: product.currency,
-      image_url: product.image_url,
-      affiliate_link: product.affiliate_link,
-      description: product.description,
-      match_score: score,
-      match_reasons: reasons,
-      verification_status: product.verification_status,
-      last_verified_at: product.last_verified_at,
-      rating: product.rating,
-      units_sold: product.units_sold,
-      shipping_info: product.shipping_info,
-      discount_percent: product.discount_percent,
-      is_verified_seller: product.brands?.is_verified_seller ?? false,
-    }));
-}
-
 export const FindSimilarItemsInput = z.object({
   attributes: ClothingAttributesSchema,
   maxResults: z.number().int().min(1).max(20).optional().default(6),
@@ -194,6 +48,11 @@ export type FindSimilarItemsInputData = z.infer<typeof FindSimilarItemsInput>;
 /**
  * Similar pieces for a garment Mila already catalogued on a post. Skips the
  * vision step findDupes needs, so opening a hotspot drawer costs one query.
+ *
+ * The ranking itself lives in `src/server/services/dupes.ts` — shared
+ * verbatim with the mobile `POST /api/v1/dupes/similar` route so the same
+ * garment returns identical matches on both clients (Phase 11
+ * shared-service extraction).
  */
 export const findSimilarItems = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -202,35 +61,14 @@ export const findSimilarItems = createServerFn({ method: "POST" })
     findSimilarItemsForUser(context.supabase, data),
   );
 
+/**
+ * Vision extraction (1 AI credit) + catalogue ranking. The pipeline lives in
+ * `src/server/services/dupes.ts`, shared verbatim with the mobile
+ * `POST /api/v1/dupes/find` route.
+ */
 export const findDupes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
-  .handler(async ({ data, context }): Promise<DupeHuntResult> => {
-    await consumeRateLimit(`ai:findDupes:${context.userId}`, { limit: 15, windowSeconds: 3600 });
-    return withAiCredit(context.supabase, context.userId, async () => {
-      const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
-
-      const systemPrompt =
-        "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract precise structural silhouette and color attributes so we can match budget dupes. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match. Always call the report_clothing_attributes tool.";
-
-      const result = await aiChatCompletion(
-        [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extract the structural attributes for dupe hunting." },
-              { type: "image_url", image_url: { url: imageUrl } },
-            ],
-          },
-        ],
-        tool,
-        { supabase: context.supabase, userId: context.userId },
-      );
-      if (!result.ok) throw aiFailure(result.status, "Dupe extraction failed.");
-
-      const inspiration = ClothingAttributesSchema.parse(result.args);
-      const dupes = await rankDupes(context.supabase, inspiration, data.maxResults, data.region);
-      return { inspiration, dupes };
-    });
-  });
+  .handler(({ data, context }): Promise<DupeHuntResult> =>
+    findDupesForUser(context.supabase, context.userId, data),
+  );

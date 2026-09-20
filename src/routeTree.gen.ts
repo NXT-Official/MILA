@@ -33,10 +33,13 @@ import { Route as ApiV1SupportMessageRouteImport } from './routes/api/v1/support
 import { Route as ApiV1ProfileMemberRouteImport } from './routes/api/v1/profile/member'
 import { Route as ApiV1PostsFeedRouteImport } from './routes/api/v1/posts/feed'
 import { Route as ApiV1PostsCreateRouteImport } from './routes/api/v1/posts/create'
+import { Route as ApiV1LookStyleSheetRouteImport } from './routes/api/v1/look/style-sheet'
+import { Route as ApiV1LookPhotoPreviewRouteImport } from './routes/api/v1/look/photo-preview'
 import { Route as ApiV1LookImageRouteImport } from './routes/api/v1/look/image'
 import { Route as ApiV1LookGenerateRouteImport } from './routes/api/v1/look/generate'
 import { Route as ApiV1ItemsAnalyzeRouteImport } from './routes/api/v1/items/analyze'
 import { Route as ApiV1DupesSimilarRouteImport } from './routes/api/v1/dupes/similar'
+import { Route as ApiV1DupesFindRouteImport } from './routes/api/v1/dupes/find'
 import { Route as ApiV1ConciergeChatRouteImport } from './routes/api/v1/concierge/chat'
 import { Route as ApiV1BillingSyncRouteImport } from './routes/api/v1/billing/sync'
 import { Route as ApiV1BillingResumeRouteImport } from './routes/api/v1/billing/resume'
@@ -169,6 +172,16 @@ const ApiV1PostsCreateRoute = ApiV1PostsCreateRouteImport.update({
   path: '/api/v1/posts/create',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1LookStyleSheetRoute = ApiV1LookStyleSheetRouteImport.update({
+  id: '/api/v1/look/style-sheet',
+  path: '/api/v1/look/style-sheet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1LookPhotoPreviewRoute = ApiV1LookPhotoPreviewRouteImport.update({
+  id: '/api/v1/look/photo-preview',
+  path: '/api/v1/look/photo-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1LookImageRoute = ApiV1LookImageRouteImport.update({
   id: '/api/v1/look/image',
   path: '/api/v1/look/image',
@@ -187,6 +200,11 @@ const ApiV1ItemsAnalyzeRoute = ApiV1ItemsAnalyzeRouteImport.update({
 const ApiV1DupesSimilarRoute = ApiV1DupesSimilarRouteImport.update({
   id: '/api/v1/dupes/similar',
   path: '/api/v1/dupes/similar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1DupesFindRoute = ApiV1DupesFindRouteImport.update({
+  id: '/api/v1/dupes/find',
+  path: '/api/v1/dupes/find',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1ConciergeChatRoute = ApiV1ConciergeChatRouteImport.update({
@@ -258,10 +276,13 @@ export interface FileRoutesByFullPath {
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
   '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
   '/api/v1/look/image': typeof ApiV1LookImageRoute
+  '/api/v1/look/photo-preview': typeof ApiV1LookPhotoPreviewRoute
+  '/api/v1/look/style-sheet': typeof ApiV1LookStyleSheetRoute
   '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
@@ -293,10 +314,13 @@ export interface FileRoutesByTo {
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
   '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
   '/api/v1/look/image': typeof ApiV1LookImageRoute
+  '/api/v1/look/photo-preview': typeof ApiV1LookPhotoPreviewRoute
+  '/api/v1/look/style-sheet': typeof ApiV1LookStyleSheetRoute
   '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
@@ -332,10 +356,13 @@ export interface FileRoutesById {
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
   '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
   '/api/v1/look/image': typeof ApiV1LookImageRoute
+  '/api/v1/look/photo-preview': typeof ApiV1LookPhotoPreviewRoute
+  '/api/v1/look/style-sheet': typeof ApiV1LookStyleSheetRoute
   '/api/v1/posts/create': typeof ApiV1PostsCreateRoute
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
@@ -370,10 +397,13 @@ export interface FileRouteTypes {
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
+    | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
     | '/api/v1/look/generate'
     | '/api/v1/look/image'
+    | '/api/v1/look/photo-preview'
+    | '/api/v1/look/style-sheet'
     | '/api/v1/posts/create'
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
@@ -405,10 +435,13 @@ export interface FileRouteTypes {
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
+    | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
     | '/api/v1/look/generate'
     | '/api/v1/look/image'
+    | '/api/v1/look/photo-preview'
+    | '/api/v1/look/style-sheet'
     | '/api/v1/posts/create'
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
@@ -443,10 +476,13 @@ export interface FileRouteTypes {
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
+    | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
     | '/api/v1/look/generate'
     | '/api/v1/look/image'
+    | '/api/v1/look/photo-preview'
+    | '/api/v1/look/style-sheet'
     | '/api/v1/posts/create'
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
@@ -469,10 +505,13 @@ export interface RootRouteChildren {
   ApiV1BillingResumeRoute: typeof ApiV1BillingResumeRoute
   ApiV1BillingSyncRoute: typeof ApiV1BillingSyncRoute
   ApiV1ConciergeChatRoute: typeof ApiV1ConciergeChatRoute
+  ApiV1DupesFindRoute: typeof ApiV1DupesFindRoute
   ApiV1DupesSimilarRoute: typeof ApiV1DupesSimilarRoute
   ApiV1ItemsAnalyzeRoute: typeof ApiV1ItemsAnalyzeRoute
   ApiV1LookGenerateRoute: typeof ApiV1LookGenerateRoute
   ApiV1LookImageRoute: typeof ApiV1LookImageRoute
+  ApiV1LookPhotoPreviewRoute: typeof ApiV1LookPhotoPreviewRoute
+  ApiV1LookStyleSheetRoute: typeof ApiV1LookStyleSheetRoute
   ApiV1PostsCreateRoute: typeof ApiV1PostsCreateRoute
   ApiV1PostsFeedRoute: typeof ApiV1PostsFeedRoute
   ApiV1ProfileMemberRoute: typeof ApiV1ProfileMemberRoute
@@ -649,6 +688,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1PostsCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/look/style-sheet': {
+      id: '/api/v1/look/style-sheet'
+      path: '/api/v1/look/style-sheet'
+      fullPath: '/api/v1/look/style-sheet'
+      preLoaderRoute: typeof ApiV1LookStyleSheetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/look/photo-preview': {
+      id: '/api/v1/look/photo-preview'
+      path: '/api/v1/look/photo-preview'
+      fullPath: '/api/v1/look/photo-preview'
+      preLoaderRoute: typeof ApiV1LookPhotoPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/look/image': {
       id: '/api/v1/look/image'
       path: '/api/v1/look/image'
@@ -675,6 +728,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/dupes/similar'
       fullPath: '/api/v1/dupes/similar'
       preLoaderRoute: typeof ApiV1DupesSimilarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/dupes/find': {
+      id: '/api/v1/dupes/find'
+      path: '/api/v1/dupes/find'
+      fullPath: '/api/v1/dupes/find'
+      preLoaderRoute: typeof ApiV1DupesFindRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/concierge/chat': {
@@ -818,10 +878,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1BillingResumeRoute: ApiV1BillingResumeRoute,
   ApiV1BillingSyncRoute: ApiV1BillingSyncRoute,
   ApiV1ConciergeChatRoute: ApiV1ConciergeChatRoute,
+  ApiV1DupesFindRoute: ApiV1DupesFindRoute,
   ApiV1DupesSimilarRoute: ApiV1DupesSimilarRoute,
   ApiV1ItemsAnalyzeRoute: ApiV1ItemsAnalyzeRoute,
   ApiV1LookGenerateRoute: ApiV1LookGenerateRoute,
   ApiV1LookImageRoute: ApiV1LookImageRoute,
+  ApiV1LookPhotoPreviewRoute: ApiV1LookPhotoPreviewRoute,
+  ApiV1LookStyleSheetRoute: ApiV1LookStyleSheetRoute,
   ApiV1PostsCreateRoute: ApiV1PostsCreateRoute,
   ApiV1PostsFeedRoute: ApiV1PostsFeedRoute,
   ApiV1ProfileMemberRoute: ApiV1ProfileMemberRoute,
