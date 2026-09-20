@@ -194,6 +194,7 @@ function Dashboard() {
     setSavedLook(null);
     setPreviewMode("inspiration");
     setInspirationImageDataUri(null);
+    setStyleSheetImageDataUri(null);
     let outfit: DailyLook;
     try {
       const payload = {
@@ -269,6 +270,41 @@ function Dashboard() {
       // anything for this attempt, so don't interrupt with a paywall here.
     } finally {
       setPhotoPreviewLoading(false);
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
+    }
+
+    // Style sheet rides along with the same "Create my look" click for
+    // consented users, rather than requiring a second manual "Generate style
+    // sheet" click — the manual button still works afterward, for a retry.
+    setStyleSheetLoading(true);
+    try {
+      const { outfit: outfitBody, hair, makeup, vibe_alignment_score, shoppable_picks, forecastRetrievedAt } =
+        outfit;
+      const res = await generateStyleSheetFn({
+        data: {
+          outfit: {
+            outfit: outfitBody,
+            hair,
+            makeup,
+            vibe_alignment_score,
+            shoppable_picks,
+            forecastRetrievedAt,
+          },
+        },
+      });
+      if (res.mode === "style_sheet") {
+        setStyleSheetImageDataUri(res.imageDataUri);
+      } else {
+        // Same non-blocking fallback as the photo preview above — the
+        // portrait visual is already a usable result on its own.
+        toast.info(res.reason);
+      }
+    } catch (e) {
+      if (!isInsufficientCreditsError(e)) {
+        console.error("[dashboard] automatic style sheet failed", e);
+      }
+    } finally {
+      setStyleSheetLoading(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
@@ -373,7 +409,10 @@ function Dashboard() {
 
   async function saveLookToHistory() {
     if (!user || !look || !climate) return;
-    if (!look.imageDataUri) {
+    // The style sheet — when the auto-generation on "Create my look"
+    // produced one — is the richer artifact, so it's what gets saved.
+    const imageToSave = styleSheetImageDataUri ?? look.imageDataUri;
+    if (!imageToSave) {
       toast.error("Your look needs its visual before it can be saved.");
       return;
     }
@@ -381,7 +420,7 @@ function Dashboard() {
     try {
       const row = await saveOutfit({
         data: {
-          imageDataUri: look.imageDataUri,
+          imageDataUri: imageToSave,
           weather: `${climate.label} (${climate.location})`,
           vibe,
           outfit: look.outfit,
@@ -390,7 +429,7 @@ function Dashboard() {
           vibe_alignment_score: look.vibe_alignment_score,
           forecastRetrievedAt: look.forecastRetrievedAt ?? null,
           productIds: (shopItems ?? []).map((item) => item.id),
-          previewMode,
+          previewMode: styleSheetImageDataUri ? "style_sheet" : previewMode,
         },
       });
       setSavedLook({ id: row.id, imageUrl: row.image_url });
@@ -409,7 +448,7 @@ function Dashboard() {
       : null;
 
   const saveBlockedReason =
-    look && !look.imageDataUri && !savingLook && !lookSaved
+    look && !styleSheetImageDataUri && !look.imageDataUri && !savingLook && !lookSaved
       ? "Your look needs its visual before it can be saved."
       : null;
 
@@ -627,6 +666,14 @@ function Dashboard() {
                               Personalizing to your photo…
                             </p>
                           ) : null}
+                          {profile?.photo_consent_at &&
+                          !photoPreviewLoading &&
+                          styleSheetLoading &&
+                          !styleSheetImageDataUri ? (
+                            <p className="mt-3 text-xs text-muted-foreground">
+                              Building your style sheet…
+                            </p>
+                          ) : null}
                           {profile?.photo_consent_at && !imageLoading && !photoPreviewLoading ? (
                             <div className="mt-3 flex max-w-lg items-center gap-2">
                               {previewMode === "inspiration" ? (
@@ -685,7 +732,9 @@ function Dashboard() {
                       <Button
                         variant="outline"
                         onClick={saveLookToHistory}
-                        disabled={savingLook || lookSaved || !look.imageDataUri}
+                        disabled={
+                          savingLook || lookSaved || !(styleSheetImageDataUri || look.imageDataUri)
+                        }
                         aria-describedby={saveBlockedReason ? "save-blocked" : undefined}
                         size="pill"
                       >

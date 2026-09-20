@@ -49,8 +49,14 @@ function buildEditPrompt({
 
   const protectedLine = buildIdentityLockLine(gender);
 
+  // Was "Full-body or three-quarter framing" unconditionally — that directly
+  // contradicted the identity-lock line's "preserve exactly... pose...
+  // background" for close-up/selfie-style source photos, causing the model
+  // to reframe, reposition, and change the background to comply (confirmed
+  // live: repeated protected-region QA rejections citing exactly this).
+  // Framing now follows the source photo instead of overriding it.
   const framingLine =
-    " Full-body or three-quarter framing so the full outfit is visible. Match lighting and image quality to the source photo so the result reads as one continuous photograph, not a composite.";
+    " Keep the exact same framing, crop, camera angle, and pose as the original photo — do not zoom out, reframe to full-body, or change the composition. Match lighting and image quality to the source photo so the result reads as one continuous photograph, not a composite.";
 
   const negativeLine =
     " Avoid: generic or stock-photo-looking face, any face that doesn't match the input photo, face-swap artifacts, plastic/airbrushed skin, uncanny-valley expression, warped or extra fingers/limbs, mismatched lighting between face and body, blurry or duplicated facial features, a different apparent ethnicity or skin tone than the source photo, sexualized or exposed content, hallucinated brand logos.";

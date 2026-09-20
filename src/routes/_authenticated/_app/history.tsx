@@ -73,7 +73,7 @@ function normalizeAnalysisResult(raw: unknown): NormalizedAnalysis {
     isPlainObject(value.outfit) &&
     typeof value.outfit.headline === "string" &&
     isPlainObject(value.hair) &&
-    isPlainObject(value.makeup)
+    (value.makeup === null || isPlainObject(value.makeup))
   ) {
     return { kind: "daily_look", data: value as unknown as DailyLookAnalysis };
   }

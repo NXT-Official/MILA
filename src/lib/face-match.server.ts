@@ -1,7 +1,5 @@
-import { join } from "node:path";
 import jpeg from "jpeg-js";
 import * as tf from "@tensorflow/tfjs";
-import * as wasm from "@tensorflow/tfjs-backend-wasm";
 // This subpath (not the package's default `main`, which pulls in the native
 // @tensorflow/tfjs-node binding) is the canvas-free, native-binding-free
 // build — see node_modules/@vladmandic/face-api/demo/node-wasm.js, the
@@ -9,8 +7,19 @@ import * as wasm from "@tensorflow/tfjs-backend-wasm";
 import * as faceapi from "@vladmandic/face-api/dist/face-api.node-wasm.js";
 import type { TNetInput } from "@vladmandic/face-api";
 
-const MODEL_DIR = join(process.cwd(), "node_modules/@vladmandic/face-api/model");
-const WASM_DIR = join(process.cwd(), "node_modules/@tensorflow/tfjs-backend-wasm/dist/");
+// Loaded from jsdelivr's npm CDN mirror (pinned to the installed package
+// version) rather than the local node_modules/@vladmandic/face-api/model
+// directory. Vercel's serverless bundling (nitro, noExternals: true) traces
+// and bundles JS but doesn't copy non-JS model asset files into the deployed
+// function — confirmed live in prod: ENOENT on the manifest json at
+// /var/task/node_modules/... The wasm backend was dropped for the same
+// reason plus a second, unrelated crash — tfjs-backend-wasm's locateFile
+// logic references the CJS global __dirname, which doesn't exist in nitro's
+// ESM output bundle (confirmed live: "ReferenceError: __dirname is not
+// defined"). The cpu backend is pure JS, needs no external binary or model
+// directory, and this workload (one face descriptor per attempt, rate
+// limited to 30/day) doesn't need wasm's speed.
+const MODEL_URL = `https://cdn.jsdelivr.net/npm/@vladmandic/face-api@${faceapi.version}/model`;
 
 // Verified live against this exact model pairing (scripts/verify-face-match.ts):
 // identical descriptors compare to ~0, but two different real people in
@@ -25,17 +34,24 @@ const DETECTION_MIN_CONFIDENCE = 0.5;
 
 let modelsReady: Promise<void> | null = null;
 
-/** Cached across warm serverless invocations — only a cold start pays this. */
+/**
+ * Cached across warm serverless invocations — only a cold start pays this.
+ * Resets on failure rather than caching a rejected promise: a transient CDN
+ * fetch error shouldn't permanently break face-match for the rest of this
+ * container's warm lifetime.
+ */
 function ensureModelsLoaded(): Promise<void> {
   if (!modelsReady) {
     modelsReady = (async () => {
-      wasm.setWasmPaths(WASM_DIR);
-      await tf.setBackend("wasm");
+      await tf.setBackend("cpu");
       await tf.ready();
-      await faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_DIR);
-      await faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_DIR);
-      await faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_DIR);
-    })();
+      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+    })().catch((err) => {
+      modelsReady = null;
+      throw err;
+    });
   }
   return modelsReady;
 }
@@ -81,8 +97,8 @@ export type FaceMatchResult = {
 /**
  * Real, mathematical face-identity check — not an AI model's opinion. Verified
  * live (scripts/verify-face-match.ts) to produce consistent, discriminating
- * descriptors in this exact runtime (Bun + TFJS WASM backend, no native
- * bindings, no canvas).
+ * descriptors in this exact runtime (TFJS CPU backend, no native bindings,
+ * no canvas).
  */
 export async function verifyFaceMatch(
   originalBytes: Uint8Array,

@@ -9,7 +9,7 @@ const SaveOutfitInput = DailyLookSchema.extend({
   weather: z.string().min(1).max(160),
   vibe: z.string().min(1).max(64),
   productIds: z.array(z.string().uuid()).max(20).optional(),
-  previewMode: z.enum(["inspiration", "photo_edit"]).optional(),
+  previewMode: z.enum(["inspiration", "photo_edit", "style_sheet"]).optional(),
 });
 
 export const saveOutfitToHistory = createServerFn({ method: "POST" })
