@@ -3,7 +3,9 @@ import {
   computeMakeupEligibility,
   buildDailyLookTool,
   DailyLookSchema,
+  hydrateShoppablePicks,
 } from "./generate-outfit.functions";
+import type { LookProduct } from "./look-products.functions";
 
 describe("computeMakeupEligibility", () => {
   test("Male is always disabled, regardless of makeup_preference", () => {
@@ -40,6 +42,73 @@ describe("buildDailyLookTool", () => {
     const params = tool.function.parameters;
     expect(params.properties).toHaveProperty("makeup");
     expect(params.required).toContain("makeup");
+  });
+
+  test("omits shoppable_picks when no candidate products exist", () => {
+    const tool = buildDailyLookTool(false, []);
+    const params = tool.function.parameters;
+    expect(params.properties).not.toHaveProperty("shoppable_picks");
+    expect(params.required).not.toContain("shoppable_picks");
+  });
+
+  test("constrains shoppable_picks.product_id to the exact candidate id enum", () => {
+    const tool = buildDailyLookTool(false, ["prod-1", "prod-2"]);
+    const params = tool.function.parameters as {
+      properties: {
+        shoppable_picks: { items: { properties: { product_id: { enum: string[] } } } };
+      };
+      required: string[];
+    };
+    expect(params.properties.shoppable_picks.items.properties.product_id.enum).toEqual([
+      "prod-1",
+      "prod-2",
+    ]);
+    expect(params.required).toContain("shoppable_picks");
+  });
+});
+
+describe("hydrateShoppablePicks", () => {
+  const candidates: LookProduct[] = [
+    {
+      id: "prod-1",
+      title: "Structured Linen Blazer",
+      brand_id: "brand-1",
+      category: "Outerwear",
+      price: 128,
+      currency: "USD",
+      image_url: null,
+      affiliate_link: "https://shop.example.com/prod-1",
+      verification_status: "verified",
+      last_verified_at: "2026-09-01T00:00:00.000Z",
+    },
+  ];
+
+  test("hydrates a real product_id into the full real product row", () => {
+    const result = hydrateShoppablePicks(
+      [{ product_id: "prod-1", rationale: "Balances a round face with structured shoulders." }],
+      candidates,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      id: "prod-1",
+      title: "Structured Linen Blazer",
+      price: 128,
+      affiliate_link: "https://shop.example.com/prod-1",
+      rationale: "Balances a round face with structured shoulders.",
+    });
+  });
+
+  test("drops a hallucinated product_id that isn't a real candidate", () => {
+    const result = hydrateShoppablePicks(
+      [{ product_id: "invented-id", rationale: "This item doesn't exist." }],
+      candidates,
+    );
+    expect(result).toEqual([]);
+  });
+
+  test("returns an empty array when shoppable_picks is missing or malformed", () => {
+    expect(hydrateShoppablePicks(undefined, candidates)).toEqual([]);
+    expect(hydrateShoppablePicks("not an array", candidates)).toEqual([]);
   });
 });
 

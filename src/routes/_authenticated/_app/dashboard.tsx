@@ -27,6 +27,7 @@ import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detai
 import { ShopThisLookGrid } from "@/components/dashboard/shop-look-grid";
 import { findLookProducts, type LookProduct } from "@/lib/look-products.functions";
 import { generatePhotoPreview } from "@/lib/photo-preview.functions";
+import { generateStyleSheetPreview } from "@/lib/style-sheet.functions";
 import { SelfiePhotoWidget } from "@/components/dashboard/selfie-photo-widget";
 import { toast } from "sonner";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
@@ -120,12 +121,15 @@ function Dashboard() {
   const [previewMode, setPreviewMode] = useState<"inspiration" | "photo_edit">("inspiration");
   const [photoPreviewLoading, setPhotoPreviewLoading] = useState(false);
   const [inspirationImageDataUri, setInspirationImageDataUri] = useState<string | null>(null);
+  const [styleSheetLoading, setStyleSheetLoading] = useState(false);
+  const [styleSheetImageDataUri, setStyleSheetImageDataUri] = useState<string | null>(null);
 
   const generate = useServerFn(generateDailyLook);
   const regenerateImage = useServerFn(regenerateOutfitImage);
   const saveOutfit = useServerFn(saveOutfitToHistory);
   const fetchLookProducts = useServerFn(findLookProducts);
   const generatePhotoPreviewFn = useServerFn(generatePhotoPreview);
+  const generateStyleSheetFn = useServerFn(generateStyleSheetPreview);
 
   async function fetchShopItems(
     colorSeason: string,
@@ -312,6 +316,42 @@ function Dashboard() {
       }
     } finally {
       setPhotoPreviewLoading(false);
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
+    }
+  }
+
+  async function previewStyleSheet() {
+    if (!look || styleSheetLoading || imageLoading || generating) return;
+    setStyleSheetLoading(true);
+    try {
+      const { outfit, hair, makeup, vibe_alignment_score, shoppable_picks, forecastRetrievedAt } =
+        look;
+      const res = await generateStyleSheetFn({
+        data: {
+          outfit: {
+            outfit,
+            hair,
+            makeup,
+            vibe_alignment_score,
+            shoppable_picks,
+            forecastRetrievedAt,
+          },
+        },
+      });
+      if (res.mode === "style_sheet") {
+        setStyleSheetImageDataUri(res.imageDataUri);
+        toast.success("Style sheet ready.");
+      } else {
+        toast.error(res.reason);
+      }
+    } catch (e) {
+      if (isInsufficientCreditsError(e)) {
+        setCreditPaywallOpen(true);
+      } else {
+        toast.error(errorMessage(e, "Couldn't create a style sheet. Please try again."));
+      }
+    } finally {
+      setStyleSheetLoading(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
@@ -609,6 +649,24 @@ function Dashboard() {
                                   Back to inspiration image
                                 </Button>
                               )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                loading={styleSheetLoading}
+                                disabled={imageLoading || generating || photoPreviewLoading}
+                                onClick={previewStyleSheet}
+                              >
+                                Generate style sheet
+                              </Button>
+                            </div>
+                          ) : null}
+                          {styleSheetImageDataUri ? (
+                            <div className="mt-3">
+                              <img
+                                src={styleSheetImageDataUri}
+                                alt="Identity-locked 5-view style sheet of today's recommended look"
+                                className="w-full rounded-lg border"
+                              />
                             </div>
                           ) : null}
                         </div>

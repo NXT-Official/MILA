@@ -22,9 +22,11 @@ import {
   HAIRSTYLE_TRENDS_2026,
   UNISEX_HAIRSTYLE_TRENDS_2026,
   OUTFIT_TREND_PIECES_2026,
+  hydrateShoppablePicks,
   type DailyLook,
   type GenerateLookInputData,
 } from "@/lib/generate-outfit.functions";
+import { matchLookProducts } from "@/lib/look-products.functions";
 import { AiUnavailableError, DomainValidationError } from "@/server/http/api-errors";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
@@ -108,6 +110,16 @@ export async function generateLookForUser(
         "Body type missing from profile. Complete your Studio dossier first.",
       );
     }
+
+    // Real, in-stock, non-broken catalog rows — the only things deepseek is
+    // allowed to recommend as shoppable picks (see RawShoppablePickSchema's
+    // enum constraint below). Never invented by the model.
+    const candidateProducts = await matchLookProducts(supabase, {
+      colorSeason: colorSeasonValue,
+      bodyType: data.bodyType,
+      tempF,
+      region: data.region,
+    });
 
     const profileLines = [
       genderValue
@@ -199,25 +211,43 @@ ${
 - Be specific, shoppable, executable. Do NOT reference any owned wardrobe.
 - Tone: read like a luxury fashion editorial — confident, precise, never generic.
 
+SHOPPABLE PICKS (REAL INVENTORY — the only products that exist; never invent a title, price, id, or link):
+${
+  candidateProducts.length > 0
+    ? candidateProducts
+        .map((p) => `- id="${p.id}" | ${p.category} | ${p.title} | ${p.price} ${p.currency}`)
+        .join("\n")
+    : "(none available right now — omit shoppable_picks entirely)"
+}
+For each pick you choose, the 'rationale' must name concretely why it suits face shape ${faceShapeValue ?? "the client's face shape"} and skin tone/undertone (${skinDepthValue ?? "n/a"}${data.skinUndertone ? `, ${data.skinUndertone} undertone` : ""}) — e.g. necklines/collars that balance the face shape, colors that harmonize with skin depth/undertone. Only choose product_id values from the list above, verbatim. Skip a category entirely if nothing in the list suits the look — never force a pick.
+
 Always call the report_daily_look tool.`;
 
+    const candidateProductIds = candidateProducts.map((p) => p.id);
     const composed = await aiChatCompletion(
       [
         { role: "system", content: systemPrompt },
         { role: "user", content: "Compose today's complete look." },
       ],
-      buildDailyLookTool(makeupEnabled),
+      buildDailyLookTool(makeupEnabled, candidateProductIds),
       { supabase, userId },
     );
     const failure = "Mila couldn't compose a look this time. Please try again.";
     if (!composed.ok) throw new AiUnavailableError(failure);
 
+    // Hydrate the model's product_id/rationale picks into full, real product
+    // rows — price/link/title the client sees always come from here, never
+    // from model text (see hydrateShoppablePicks for the drop-unknown-id logic).
+    const rawArgs = composed.args as Record<string, unknown>;
+    const hydratedPicks = hydrateShoppablePicks(rawArgs.shoppable_picks, candidateProducts);
+
     // Force makeup to null when disabled regardless of what the model
     // returned — the tool schema already omits it, but this is the hard
     // server-side boundary, not a suggestion to the model.
     const argsWithMakeup = {
-      ...(composed.args as Record<string, unknown>),
-      makeup: makeupEnabled ? ((composed.args as Record<string, unknown>).makeup ?? null) : null,
+      ...rawArgs,
+      makeup: makeupEnabled ? (rawArgs.makeup ?? null) : null,
+      shoppable_picks: hydratedPicks,
       forecastRetrievedAt,
     };
     const look = DailyLookSchema.safeParse(argsWithMakeup);

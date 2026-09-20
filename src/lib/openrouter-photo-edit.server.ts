@@ -9,6 +9,7 @@ import {
   IMAGE_MODEL,
   OPENROUTER_IMAGES_URL,
 } from "./openrouter-image.server";
+import { buildIdentityLockLine } from "./identity-lock.server";
 import type { DailyLook } from "./generate-outfit.functions";
 
 const TIMEOUT_MS = 75_000;
@@ -46,11 +47,7 @@ function buildEditPrompt({
       ? `Change ONLY the clothing to match the ${referenceCount} reference garment image(s) provided (${outfit.outfit.headline}: ${outfit.outfit.description}).`
       : `Change ONLY the clothing to: ${outfit.outfit.headline}. ${outfit.outfit.description}`;
 
-  const genderLine =
-    gender && gender !== "Prefer not to say"
-      ? ` This is a ${gender.toLowerCase()}-presenting person — the edit MUST keep them looking ${gender.toLowerCase()}-presenting; never shift apparent gender, sex characteristics, or facial structure.`
-      : "";
-  const protectedLine = `Preserve exactly: the person's face, identity, facial structure, eye shape and color, nose, lips, eyebrows, hairline, apparent gender presentation, skin tone and texture, freckles/moles/scars, apparent age, body proportions, pose, hands, and background.${genderLine} Do not beautify, smooth, symmetrize, lighten/darken skin, slim the face or body, reshape, or relight the image — fidelity to the source photo beats aesthetic polish.`;
+  const protectedLine = buildIdentityLockLine(gender);
 
   const framingLine =
     " Full-body or three-quarter framing so the full outfit is visible. Match lighting and image quality to the source photo so the result reads as one continuous photograph, not a composite.";

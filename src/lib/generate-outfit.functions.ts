@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { generateLookForUser, renderLookImageForUser } from "@/server/services/look";
+import type { LookProduct } from "@/lib/look-products.functions";
 
 // Named 2026 haircut trends, sourced from current hairstylist/salon
 // coverage (Refinery29 spring/fall 2026 haircut roundups, Pete & Pedro and
@@ -90,6 +91,8 @@ export const Input = z.object({
   dressCode: z.string().min(1).max(80).optional(),
   indoorOutdoor: z.enum(["Indoor", "Outdoor", "Mixed"]).optional(),
   timezone: z.string().min(1).max(64).optional(),
+  /** ISO 3166-1 alpha-2 country code. Empty/omitted = unknown, don't region-filter shoppable picks. */
+  region: z.string().length(2).optional(),
 });
 export type GenerateLookInputData = z.infer<typeof Input>;
 
@@ -107,7 +110,7 @@ export function computeMakeupEligibility(profile: {
   );
 }
 
-export function buildDailyLookTool(makeupEnabled: boolean) {
+export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: string[] = []) {
   const properties: Record<string, unknown> = {
     outfit: {
       type: "object",
@@ -174,6 +177,30 @@ export function buildDailyLookTool(makeupEnabled: boolean) {
     required.push("makeup");
   }
 
+  // The enum is the hallucination guard: the model can only name a product_id
+  // that's actually a live row from the AVAILABLE INVENTORY prompt block —
+  // it can't emit a title, price, or link, so those always come from the
+  // server-side DB hydration in look.ts, never from model text.
+  if (candidateProductIds.length > 0) {
+    properties.shoppable_picks = {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          product_id: { type: "string", enum: candidateProductIds },
+          rationale: {
+            type: "string",
+            description:
+              "One concrete sentence naming why this item suits the client's face shape and skin tone/undertone.",
+          },
+        },
+        required: ["product_id", "rationale"],
+        additionalProperties: false,
+      },
+    };
+    required.push("shoppable_picks");
+  }
+
   return {
     function: {
       name: "report_daily_look",
@@ -199,12 +226,63 @@ export const DailyLookSchema = z.object({
     })
     .nullable(),
   vibe_alignment_score: z.number().int().min(1).max(10),
+  // Server-hydrated real product rows (mirrors LookProduct in
+  // look-products.functions.ts) — never the model's raw product_id/rationale
+  // output. See RawShoppablePickSchema below for what the model actually emits.
+  shoppable_picks: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        brand_id: z.string(),
+        category: z.string(),
+        price: z.number(),
+        currency: z.string(),
+        image_url: z.string().nullable(),
+        affiliate_link: z.string(),
+        verification_status: z.string(),
+        last_verified_at: z.string().nullable(),
+        rationale: z.string().min(1),
+      }),
+    )
+    .optional(),
   // Set when the live Open-Meteo forecast was actually fetched; null when
   // the weather came from a client-supplied label instead. Not part of what
   // the AI composes — filled in server-side after the tool call.
   forecastRetrievedAt: z.string().nullable().optional(),
 });
 export type DailyLook = z.infer<typeof DailyLookSchema>;
+export type ShoppablePick = NonNullable<DailyLook["shoppable_picks"]>[number];
+
+// What the model itself is allowed to emit for a pick — just an id (schema-
+// enum-constrained to real candidates) and a rationale. look.ts hydrates
+// this into a full ShoppablePick by joining back to the live DB row.
+export const RawShoppablePickSchema = z.object({
+  product_id: z.string(),
+  rationale: z.string().min(1),
+});
+
+/**
+ * Joins the model's raw product_id/rationale picks back to real, live DB
+ * rows (candidateProducts — already fetched by the caller from
+ * matchLookProducts). Any product_id that doesn't match a real candidate is
+ * dropped rather than trusted — defense in depth on top of the tool
+ * schema's enum constraint, since the final price/link/title the client
+ * sees must always come from here, never from model text.
+ */
+export function hydrateShoppablePicks(
+  rawShoppablePicks: unknown,
+  candidateProducts: LookProduct[],
+): ShoppablePick[] {
+  const rawPicksResult = z.array(RawShoppablePickSchema).optional().safeParse(rawShoppablePicks);
+  const rawPicks = rawPicksResult.success ? (rawPicksResult.data ?? []) : [];
+  return rawPicks
+    .map((pick): ShoppablePick | null => {
+      const product = candidateProducts.find((p) => p.id === pick.product_id);
+      return product ? { ...product, rationale: pick.rationale } : null;
+    })
+    .filter((pick): pick is ShoppablePick => pick !== null);
+}
 
 export type GeneratedLook = DailyLook & {
   imageDataUri: string | null;
