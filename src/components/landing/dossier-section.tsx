@@ -9,10 +9,10 @@ export function DossierSection({ content }: { content: DossierContent }) {
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
         <SectionHeading kicker={content.kicker} heading={content.heading} body={content.body} />
 
-        <div className="overflow-hidden rounded-card border border-border bg-surface transition-shadow duration-200 ease-editorial hover:shadow-paper">
+        <div className="overflow-hidden rounded-card border border-border bg-card shadow-paper">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-7 py-6">
             <span className="flex items-center gap-3.5">
-              <IconTile icon={FileText} className="size-10" />
+              <IconTile icon={FileText} size="sm" />
               <span className="font-serif text-lg text-foreground">{content.cardTitle}</span>
             </span>
             <SeasonTag season={content.season} />
@@ -22,10 +22,10 @@ export function DossierSection({ content }: { content: DossierContent }) {
             {content.rows.map((row) => (
               <div
                 key={row._key}
-                className="flex flex-wrap justify-between gap-x-6 gap-y-1 px-7 py-5 text-sm"
+                className="flex flex-wrap justify-between gap-x-6 gap-y-1 px-7 py-4 text-sm"
               >
-                <dt className="text-muted-foreground">{row.label}</dt>
-                <dd className="text-right text-foreground">{row.value}</dd>
+                <dt className="min-w-0 text-muted-foreground">{row.label}</dt>
+                <dd className="min-w-0 text-right text-foreground">{row.value}</dd>
               </div>
             ))}
           </dl>
@@ -38,10 +38,10 @@ export function DossierSection({ content }: { content: DossierContent }) {
               </span>
             </div>
             {/* ponytail: decorative bar — the percentage above already carries the value. */}
-            <div className="mt-3 h-1 overflow-hidden rounded-full bg-border" aria-hidden="true">
+            <div className="mt-3 h-px overflow-hidden bg-border" aria-hidden="true">
               {/* Inline width — Tailwind cannot generate a class from a runtime value. */}
               <div
-                className="h-full rounded-full bg-accent"
+                className="h-full bg-accent"
                 style={{ width: `${content.completionPercent}%` }}
               />
             </div>

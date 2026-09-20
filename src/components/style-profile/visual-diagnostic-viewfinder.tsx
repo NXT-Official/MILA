@@ -36,6 +36,9 @@ import {
 import { errorMessage } from "@/lib/utils";
 import { useModalA11y } from "@/hooks/use-modal-a11y";
 
+// Intentionally theme-independent — mimics a native camera app's chrome, not a themed surface.
+const CAMERA_CHROME_BG = "#0B0B0B";
+
 const DRAPE_COLORS = ["#FFB347", "#94A3B8", "#1E3A8A", "#F7B7A3", "#C2410C"] as const;
 const DRAPE_LABELS = [
   "READING YOUR TRUE TONES…",
@@ -635,7 +638,8 @@ export function VisualDiagnosticViewfinder({
       <Sheet open={manualCalibrateOpen} onOpenChange={setManualCalibrateOpen}>
         <SheetContent
           side="bottom"
-          className="bg-[#0B0B0B] text-white border-t border-white/10 rounded-t-2xl max-h-[85vh] overflow-y-auto"
+          style={{ backgroundColor: CAMERA_CHROME_BG }}
+          className="text-white border-t border-white/10 rounded-t-2xl max-h-[85vh] overflow-y-auto"
         >
           <SheetHeader className="text-left">
             <p className="text-nano uppercase tracking-label-max text-white/50">Seoul Atelier</p>

@@ -76,10 +76,7 @@ export function OotdTaggingSheet({
 
   return (
     <Sheet open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
-      <SheetContent
-        side="bottom"
-        className="rounded-t-3xl border-t border-porcelain/60 px-6 pt-8 pb-10 max-h-[92vh] overflow-y-auto"
-      >
+      <SheetContent side="bottom" className="px-6 pt-8 pb-10 max-h-[92vh] overflow-y-auto">
         <SheetHeader className="text-center space-y-2 mb-6">
           <p className="text-micro uppercase tracking-label-max text-muted-foreground">
             Tag Your Pieces
@@ -95,7 +92,7 @@ export function OotdTaggingSheet({
 
         <div className="max-w-md mx-auto space-y-4">
           {drafts.map((draft) => (
-            <div key={draft.id} className="rounded-2xl atelier-glass p-4 space-y-3">
+            <div key={draft.id} className="rounded-card border border-border bg-card p-4 space-y-3">
               <div className="flex items-center gap-3">
                 <span className="text-nano uppercase tracking-label-xwide text-stone px-2 py-0.5 rounded-full border border-porcelain/60 shrink-0">
                   {draft.category}

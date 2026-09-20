@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { isAvailableInRegion, matchLookProducts, scoreProduct } from "./look-products.functions";
+import {
+  isAvailableInRegion,
+  isGenderMatch,
+  matchLookProducts,
+  scoreProduct,
+} from "./look-products.functions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -18,6 +23,7 @@ type ProductRow = {
   verification_status: string;
   last_verified_at: string | null;
   in_stock: boolean;
+  gender: string;
 };
 
 const PRODUCTS: ProductRow[] = [
@@ -36,6 +42,7 @@ const PRODUCTS: ProductRow[] = [
     verification_status: "verified",
     last_verified_at: "2026-01-01T00:00:00.000Z",
     in_stock: true,
+    gender: "Unisex",
   },
   {
     id: "top-no-match",
@@ -52,6 +59,7 @@ const PRODUCTS: ProductRow[] = [
     verification_status: "verified",
     last_verified_at: "2026-01-01T00:00:00.000Z",
     in_stock: true,
+    gender: "Unisex",
   },
   {
     id: "outerwear-match",
@@ -68,6 +76,7 @@ const PRODUCTS: ProductRow[] = [
     verification_status: "verified",
     last_verified_at: "2026-01-01T00:00:00.000Z",
     in_stock: true,
+    gender: "Unisex",
   },
 ];
 
@@ -184,5 +193,51 @@ describe("matchLookProducts", () => {
       bodyType: "Hourglass",
     });
     expect(results.find((r) => r.category === "Tops")).toBeUndefined();
+  });
+
+  test("excludes opposite-gender products, keeps Unisex ones, when a gender is requested", async () => {
+    const rows: ProductRow[] = [
+      { ...PRODUCTS[0], id: "womens-top", gender: "Female" },
+      { ...PRODUCTS[0], id: "unisex-top", gender: "Unisex", price: 10 },
+    ];
+    const supabase = fakeSupabase(rows);
+    const results = await matchLookProducts(supabase, {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+      gender: "Male",
+    });
+    // Both score equally; unisex-top wins on the price tiebreak, but the
+    // real assertion is that womens-top was never a candidate at all.
+    expect(results.find((r) => r.category === "Tops")?.id).toBe("unisex-top");
+  });
+
+  test("doesn't gender-filter when no gender is requested", async () => {
+    const rows: ProductRow[] = [{ ...PRODUCTS[0], id: "womens-top", gender: "Female" }];
+    const supabase = fakeSupabase(rows);
+    const results = await matchLookProducts(supabase, {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+    });
+    expect(results.find((r) => r.category === "Tops")?.id).toBe("womens-top");
+  });
+});
+
+describe("isGenderMatch", () => {
+  test("matches when no gender was requested — show everything rather than guess", () => {
+    expect(isGenderMatch("Male", undefined)).toBe(true);
+    expect(isGenderMatch("Female", undefined)).toBe(true);
+    expect(isGenderMatch("Unisex", undefined)).toBe(true);
+  });
+
+  test("Unisex products always match a requested gender", () => {
+    expect(isGenderMatch("Unisex", "Male")).toBe(true);
+    expect(isGenderMatch("Unisex", "Female")).toBe(true);
+  });
+
+  test("gendered products only match their own gender", () => {
+    expect(isGenderMatch("Male", "Male")).toBe(true);
+    expect(isGenderMatch("Male", "Female")).toBe(false);
+    expect(isGenderMatch("Female", "Female")).toBe(true);
+    expect(isGenderMatch("Female", "Male")).toBe(false);
   });
 });

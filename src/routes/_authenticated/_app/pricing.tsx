@@ -20,7 +20,7 @@ function PricingPage() {
   const { openCheckout, ready } = usePaddleCheckout(user?.id);
 
   return (
-    <div className="atelier-page max-w-6xl">
+    <div className="atelier-page">
       <PageHeader
         align="center"
         kicker="Membership"
@@ -41,7 +41,7 @@ function PricingPage() {
           description="Please check back soon."
         />
       ) : (
-        <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+        <ul className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 md:grid-cols-3 lg:gap-8">
           {data.map((plan) => (
             <PricingCard
               key={plan.id}
@@ -63,7 +63,7 @@ function PricingSkeleton() {
     <div
       role="status"
       aria-label="Loading membership plans"
-      className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8"
+      className="mx-auto grid max-w-5xl grid-cols-1 gap-6 pt-5 sm:grid-cols-2 md:grid-cols-3 lg:gap-8"
     >
       {Array.from({ length: 3 }).map((_, i) => (
         <Skeleton key={i} className="atelier-card h-100" />

@@ -6,6 +6,7 @@ import { CalendarDays, EyeOff, Images, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PostCanvas } from "@/components/feed/post-canvas";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { queryKeys } from "@/constants/query-keys";
@@ -101,12 +102,9 @@ function MemberProfilePage() {
                   ["Hair", data.profile.hair_type ?? "—"],
                 ] as const
               ).map(([label, value]) => (
-                <span
-                  key={label}
-                  className="rounded-full border border-porcelain/60 bg-background/60 px-2.5 py-1"
-                >
+                <Badge key={label} className="text-nano tracking-label font-normal">
                   {label} · {value}
-                </span>
+                </Badge>
               ))}
             </div>
             <p className="mt-3 flex items-center gap-1.5 text-nano uppercase tracking-label text-stone">

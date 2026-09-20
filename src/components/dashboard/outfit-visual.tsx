@@ -1,6 +1,8 @@
-import { ImageOff, Loader2, RotateCcw } from "lucide-react";
+import { Download, ImageOff, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { downloadImage } from "@/lib/download-image";
 
 export function OutfitVisual({
   imageDataUri,
@@ -41,6 +43,17 @@ export function OutfitVisual({
             alt={`${label} of ${headline}`}
             className="h-full w-full object-contain bg-foreground/4"
           />
+          <IconButton
+            label="Download image"
+            variant="outline"
+            size="sm"
+            className="absolute right-3 top-3 bg-background/80 backdrop-blur-sm"
+            onClick={() =>
+              downloadImage(imageDataUri, `mila-${headline.toLowerCase().replace(/\s+/g, "-")}.jpg`)
+            }
+          >
+            <Download />
+          </IconButton>
         </div>
         <p className="mt-2 text-micro uppercase tracking-label-xwide text-muted-foreground">
           {label}

@@ -9,14 +9,14 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { CameraCapture } from "@/components/capture/camera-capture";
 import { DualCapture } from "@/components/capture/dual-capture";
-import { cn, errorMessage, formatPrice } from "@/lib/utils";
+import { DupeHunterResults } from "@/components/dashboard/dupe-hunter-results";
+import { cn, errorMessage } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, Camera, ArrowLeft, ImageOff, ArrowRight } from "lucide-react";
+import { Camera, ArrowLeft, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { findDupes, type DupeHuntResult } from "@/lib/dupe-hunter.functions";
 import { publishOotd } from "@/lib/publish-ootd";
@@ -298,153 +298,12 @@ export function StudioCameraDrawer({
                   }}
                 />
 
-                {dupeLoading && (
-                  <div className="flex flex-col items-center justify-center gap-4 py-12">
-                    <div className="relative size-16">
-                      <span className="absolute inset-0 rounded-full border border-accent/40 animate-ping" />
-                      <span className="absolute inset-2 rounded-full border border-accent/60 animate-pulse" />
-                      <Loader2
-                        className="absolute inset-0 m-auto size-5 text-accent animate-spin"
-                        strokeWidth={1.25}
-                      />
-                    </div>
-                    <p className="text-micro uppercase tracking-label-xwide text-muted-foreground">
-                      Scanning for luxury attributes…
-                    </p>
-                  </div>
-                )}
-
-                {dupeResult && !dupeLoading && (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-4 rounded-control border border-border bg-canvas p-4">
-                      {inspirationPreview && (
-                        <img
-                          src={inspirationPreview}
-                          alt="Your inspiration"
-                          className="size-16 rounded-control object-cover border border-border"
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-nano uppercase tracking-label-xwide text-muted-foreground">
-                          Inspiration
-                        </p>
-                        <p className="font-serif text-base text-ink truncate">
-                          {dupeResult.inspiration.name}
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-1.5">
-                          {dupeResult.inspiration.silhouette_tags.slice(0, 3).map((t) => (
-                            <span
-                              key={t}
-                              className="text-nano uppercase tracking-label text-muted-foreground px-1.5 py-0.5 rounded-full border border-border"
-                            >
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <p className="text-micro uppercase tracking-label-xwide text-muted-foreground">
-                        {dupeResult.dupes.length} budget alternatives
-                      </p>
-                      <button
-                        type="button"
-                        onClick={resetDupeState}
-                        className="atelier-focus-ring rounded-control atelier-label hover:text-ink"
-                      >
-                        Hunt again
-                      </button>
-                    </div>
-
-                    {dupeResult.dupes.length > 0 ? (
-                      <div
-                        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1"
-                        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region made keyboard-focusable per WAI-ARIA APG scrolling-region pattern
-                        tabIndex={0}
-                        role="group"
-                        aria-label="Budget alternatives"
-                      >
-                        {dupeResult.dupes.map((d) => (
-                          <div
-                            key={d.id}
-                            className="min-w-0 shrink-0 basis-[78%] snap-start sm:basis-[calc(50%-0.375rem)]"
-                          >
-                            <div className="h-full rounded-control border border-border bg-canvas overflow-hidden flex flex-col shadow-paper">
-                              <div className="aspect-3/4 bg-canvas/60 overflow-hidden">
-                                {d.image_url && (
-                                  <img
-                                    src={d.image_url}
-                                    alt={d.title}
-                                    className="h-full w-full object-cover"
-                                    loading="lazy"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = "none";
-                                      e.currentTarget.nextElementSibling?.classList.replace(
-                                        "hidden",
-                                        "flex",
-                                      );
-                                    }}
-                                  />
-                                )}
-                                <div
-                                  className={cn(
-                                    "h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground",
-                                    d.image_url ? "hidden" : "flex",
-                                  )}
-                                >
-                                  <ImageOff className="size-5" strokeWidth={1.5} />
-                                  <span className="text-micro uppercase tracking-label-xwide">
-                                    Image not available
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="p-4 flex-1 flex flex-col gap-3">
-                                <div className="flex-1">
-                                  <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
-                                    {d.title}
-                                  </p>
-                                  <p className="mt-1 atelier-label">
-                                    {formatPrice(d.price, d.currency)}
-                                  </p>
-                                </div>
-                                {d.match_reasons[0] && (
-                                  <p className="text-micro text-muted-foreground line-clamp-2">
-                                    {d.match_reasons[0]}
-                                  </p>
-                                )}
-                                <p className="text-micro text-muted-foreground">
-                                  {d.verification_status === "verified" && d.last_verified_at
-                                    ? `Last checked ${new Date(d.last_verified_at).toLocaleDateString()}`
-                                    : "Link not yet verified"}
-                                </p>
-                                <Button asChild size="pill">
-                                  <a
-                                    href={d.affiliate_link}
-                                    target="_blank"
-                                    rel="noopener noreferrer sponsored"
-                                  >
-                                    Shop the Dupe
-                                    <ExternalLink aria-hidden="true" strokeWidth={1.75} />
-                                  </a>
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-control border border-dashed border-border p-6 text-center">
-                        <p className="font-serif text-base text-ink">
-                          No close matches in the catalog yet.
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Try a cleaner background or a different angle.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <DupeHunterResults
+                  loading={dupeLoading}
+                  result={dupeResult}
+                  inspirationPreview={inspirationPreview}
+                  onReset={resetDupeState}
+                />
               </div>
             )}
           </div>

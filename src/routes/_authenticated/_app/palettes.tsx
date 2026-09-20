@@ -44,7 +44,7 @@ function PaletteCard({ row, onDelete }: { row: SavedPalette; onDelete: () => Pro
         {swatches.map((s) => (
           <div
             key={s.label}
-            className="h-16 flex-1 rounded-xl border border-border/40"
+            className="h-16 flex-1 rounded-control border border-border/40"
             style={{ backgroundColor: s.hex }}
           />
         ))}
@@ -110,7 +110,7 @@ function SavedPalettes() {
   }
 
   return (
-    <div className="atelier-page max-w-5xl">
+    <div className="atelier-page">
       <PageHeader
         kicker="Colour"
         title="Saved palettes."
@@ -121,7 +121,7 @@ function SavedPalettes() {
         <div
           role="status"
           aria-label="Loading saved palettes"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3"
         >
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="atelier-card h-72" />
@@ -138,7 +138,7 @@ function SavedPalettes() {
           description="Tap the bookmark on your daily palette and it will be waiting here."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
           {palettes.map((row) => (
             <PaletteCard key={row.id} row={row} onDelete={() => remove(row.id)} />
           ))}

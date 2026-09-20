@@ -10,6 +10,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { PostCanvas } from "@/components/feed/post-canvas";
 import { OotdTaggingSheet } from "@/components/feed/ootd-tagging-sheet";
 import { DualCapture } from "@/components/capture/dual-capture";
@@ -63,7 +64,7 @@ function FeedPage() {
 
   return (
     <>
-      <section className="max-w-2xl mx-auto px-4 md:px-6 py-10 md:py-14 space-y-8 relative">
+      <section className="atelier-page-narrow space-y-8 relative">
         <header className="text-center space-y-3">
           <p className="text-micro uppercase tracking-label-max text-muted-foreground">
             The Atelier Feed
@@ -74,22 +75,27 @@ function FeedPage() {
           <p className="text-sm text-stone max-w-md mx-auto">
             One outfit, one mirror, one mood — your community's daily blueprints.
           </p>
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="pill"
             onClick={() => setIsPostOpen(true)}
-            className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-ink text-atelier-ivory text-micro uppercase tracking-label-xwide hover:bg-ink/90 transition-colors shadow-atelier-soft"
+            className="px-8"
           >
             <Camera className="size-4" strokeWidth={1.75} />
             Post Today's OOTD
-          </button>
+          </Button>
         </header>
 
         {isLoading && (
           <div className="space-y-6">
             {[0, 1].map((i) => (
-              <div key={i} className="rounded-3xl atelier-glass overflow-hidden">
-                <div className="h-16 bg-porcelain/30" />
-                <Skeleton className="aspect-3/4 bg-porcelain/20" />
+              <div
+                key={i}
+                className="rounded-card border border-border bg-card shadow-paper overflow-hidden"
+              >
+                <Skeleton className="h-16" />
+                <Skeleton className="aspect-3/4" />
               </div>
             ))}
           </div>
@@ -117,10 +123,7 @@ function FeedPage() {
       </section>
 
       <Sheet open={isPostOpen} onOpenChange={(o) => !submitting && setIsPostOpen(o)}>
-        <SheetContent
-          side="bottom"
-          className="rounded-t-3xl border-t border-porcelain/60 px-6 pt-8 pb-10 max-h-[95vh] overflow-y-auto"
-        >
+        <SheetContent side="bottom" className="px-6 pt-8 pb-10 max-h-[95vh] overflow-y-auto">
           <SheetHeader className="text-center space-y-2 mb-6">
             <p className="text-micro uppercase tracking-label-max text-muted-foreground">
               Daily Drop

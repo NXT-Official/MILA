@@ -9,8 +9,12 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { DossierSection } from "@/components/landing/dossier-section";
+import { DailyPaletteSection } from "@/components/landing/daily-palette-section";
+import { ConciergeSection } from "@/components/landing/concierge-section";
 import { DupeHunterSection } from "@/components/landing/dupe-hunter-section";
+import { FeedSection } from "@/components/landing/feed-section";
 import { CommunitySection } from "@/components/landing/community-section";
+import { PricingSection } from "@/components/landing/pricing-section";
 import { FinalCtaSection } from "@/components/landing/final-cta-section";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { AtelierSplash } from "@/components/layout/atelier-splash";
@@ -48,6 +52,7 @@ function LandingPage() {
     { id: "dossier", label: content.dossier.kicker },
     { id: "dupe-hunter", label: content.dupeHunter.kicker },
     { id: "community", label: content.community.kicker },
+    { id: "pricing", label: "Pricing" },
   ];
 
   return (
@@ -57,10 +62,14 @@ function LandingPage() {
         <HeroSection content={content.hero} />
         <HowItWorksSection content={content.howItWorks} />
         <DossierSection content={content.dossier} />
+        <DailyPaletteSection />
+        <ConciergeSection />
         <DupeHunterSection content={content.dupeHunter} />
+        <FeedSection />
         <CommunitySection content={content.community}>
           <TestimonialsSection testimonials={content.testimonials} />
         </CommunitySection>
+        <PricingSection />
         <FinalCtaSection content={content.finalCta} />
       </main>
       <SiteFooter content={content.footer} />

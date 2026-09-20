@@ -14,17 +14,24 @@ export function SyncBadge({ status }: { status: "idle" | "syncing" | "synced" | 
           : "Awaiting Edits";
   const dot =
     status === "syncing"
-      ? "bg-amber-500 animate-pulse"
+      ? "bg-warning animate-pulse"
       : status === "error"
-        ? "bg-red-500"
+        ? "bg-destructive"
         : status === "synced"
-          ? "bg-emerald-600"
+          ? "bg-success"
           : "bg-foreground/30";
   return (
-    <div className="hidden sm:flex items-center gap-2 px-3 py-2 backdrop-blur-xl bg-white/40 dark:bg-white/5 border border-foreground/10 rounded-full shrink-0">
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-      <span className="text-nano uppercase tracking-label-xwide text-foreground/75">{label}</span>
-    </div>
+    <>
+      <div className="hidden sm:flex items-center gap-2 px-3 py-2 atelier-glass rounded-full shrink-0">
+        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+        <span className="text-nano uppercase tracking-label-xwide text-foreground/75">{label}</span>
+      </div>
+      <span
+        className={`sm:hidden inline-flex size-2.5 rounded-full shrink-0 ${dot}`}
+        role="status"
+        aria-label={label}
+      />
+    </>
   );
 }
 
@@ -40,7 +47,7 @@ export function PerspectiveSwitcher({
     { id: "detailed", label: "Detailed Dossier" },
   ];
   return (
-    <div className="inline-flex relative p-1 rounded-full backdrop-blur-xl bg-white/45 dark:bg-white/5 border border-foreground/10 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset] dark:shadow-none">
+    <div className="inline-flex relative p-1 rounded-full atelier-glass">
       {opts.map((o) => {
         const active = value === o.id;
         return (
@@ -111,10 +118,7 @@ export function DossierAccordion({
   const complete = hasProgress && filled >= total;
   const partial = hasProgress && filled > 0 && filled < total;
   return (
-    <AccordionItem
-      value={value}
-      className="border-[0.5px] border-border bg-white/40 dark:bg-white/5 backdrop-blur-xl rounded-card px-5 sm:px-8"
-    >
+    <AccordionItem value={value} className="atelier-glass rounded-card px-5 sm:px-8">
       <AccordionTrigger className="py-6 hover:no-underline">
         <div className="flex items-center justify-between w-full gap-3">
           <div className="flex flex-col items-start text-left gap-1">
@@ -129,10 +133,7 @@ export function DossierAccordion({
             </p>
           </div>
           {complete && (
-            <CheckCircle2
-              className="size-5 text-emerald-600 shrink-0"
-              aria-label="Section complete"
-            />
+            <CheckCircle2 className="size-5 text-success shrink-0" aria-label="Section complete" />
           )}
           {partial && (
             <span className="inline-flex items-center gap-1.5 text-muted-foreground shrink-0">

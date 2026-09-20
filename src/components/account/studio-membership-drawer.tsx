@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 import {
   Sheet,
   SheetContent,
@@ -8,60 +7,25 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { Link } from "@tanstack/react-router";
-import {
-  Archive,
-  AlertCircle,
-  ArrowRight,
-  Check,
-  Download,
-  Loader2,
-  X,
-  Palette,
-} from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
 import { HUBS } from "@/constants/climate";
 import { passwordChecks } from "@/constants/password";
 import { fetchDefaultHubId, localDefaultHubId, saveDefaultHubId } from "@/lib/default-hub";
-import { CreditsUsageMeter } from "@/components/account/credits-usage-meter";
-import { VerifiedBadge } from "@/components/ui/verified-badge";
-import { DEFAULT_AI_CREDITS } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.functions";
 import { deleteMyAccount } from "@/lib/account.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
-import { cn, errorMessage } from "@/lib/utils";
-import { AvatarInitial } from "../ui/avatar-initial";
-
-const drawerActionVariants = cva(
-  "w-full rounded-lg py-3 text-label uppercase tracking-label-wide transition-colors disabled:opacity-60",
-  {
-    variants: {
-      tone: {
-        neutral:
-          "border border-stone/20 bg-background/60 text-ink hover:bg-accent-soft dark:hover:bg-white/10",
-        danger:
-          "border border-destructive/30 text-destructive hover:bg-destructive/5 disabled:cursor-not-allowed",
-        primary: "bg-ink font-semibold text-white hover:bg-ink/90",
-      },
-    },
-    defaultVariants: { tone: "neutral" },
-  },
-);
-
-function DrawerAction({
-  tone,
-  className,
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof drawerActionVariants>) {
-  return <button className={cn(drawerActionVariants({ tone }), className)} {...props} />;
-}
+import { errorMessage } from "@/lib/utils";
+import { MembershipView } from "@/components/account/drawer-views/membership-view";
+import { PreferencesView } from "@/components/account/drawer-views/preferences-view";
+import { LocationView } from "@/components/account/drawer-views/location-view";
+import { SecurityView } from "@/components/account/drawer-views/security-view";
+import { PrivacyView } from "@/components/account/drawer-views/privacy-view";
 
 interface StudioMembershipDrawerProps {
   isOpen: boolean;
@@ -76,15 +40,15 @@ interface StudioMembershipDrawerProps {
   };
 }
 
+type DrawerView = "membership" | "preferences" | "location" | "privacy" | "security";
+
 export function StudioMembershipDrawer({
   isOpen,
   onClose,
   credits,
   user,
 }: StudioMembershipDrawerProps) {
-  const [view, setView] = useState<
-    "membership" | "preferences" | "location" | "privacy" | "security"
-  >("membership");
+  const [view, setView] = useState<DrawerView>("membership");
   const { user: authUser, signOut, signingOut } = useAuth();
   const queryClient = useQueryClient();
   const { data: subscription } = useQuery({
@@ -250,12 +214,6 @@ export function StudioMembershipDrawer({
     security: { title: "Email & Security", sub: "Login Credentials" },
   }[view];
 
-  const missing = [
-    !user.season && "Color Season",
-    !user.faceShape && "Face Shape",
-    !user.hairType && "Hair Type",
-  ].filter(Boolean) as string[];
-
   return (
     <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-background">
@@ -289,420 +247,60 @@ export function StudioMembershipDrawer({
 
         <div className="flex-1 overflow-y-auto px-6 pb-8">
           {view === "membership" ? (
-            <div className="space-y-8">
-              <div className="relative overflow-hidden rounded-2xl border border-porcelain/60 bg-linear-to-br from-atelier-champagne/25 via-background to-porcelain/20 p-4 shadow-atelier-soft">
-                <div className="relative grid grid-cols-[auto_1fr_auto] items-center gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-3">
-                      <AvatarInitial
-                        name={user.fullName || user.username}
-                        className="size-14 shrink-0"
-                      />
-
-                      <div className="min-w-0 flex flex-col">
-                        <p className="flex items-center gap-1.5 font-serif text-lg text-ink">
-                          <span className="truncate">{user.fullName}</span>
-                          {subscription && <VerifiedBadge className="size-4" />}
-                        </p>
-                        <p className="truncate text-label text-stone">@{user.username}</p>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1.5 text-pico uppercase tracking-label-tight">
-                      <span className="rounded-full border border-porcelain/60 bg-background/60 px-2 py-1 text-ink">
-                        Season · {user.season ?? "Unset"}
-                      </span>
-                      <span
-                        className={`rounded-full border px-2 py-1 ${user.faceShape ? "border-porcelain/60 bg-background/60 text-ink" : "border-amber-400/40 bg-amber-50/60 text-amber-700"}`}
-                      >
-                        Face · {user.faceShape ?? "—"}
-                      </span>
-                      <span
-                        className={`rounded-full border px-2 py-1 ${user.hairType ? "border-porcelain/60 bg-background/60 text-ink" : "border-amber-400/40 bg-amber-50/60 text-amber-700"}`}
-                      >
-                        Hair · {user.hairType ?? "—"}
-                      </span>
-                      {authUser && (
-                        <Link
-                          to="/profile/$userId"
-                          params={{ userId: authUser.id }}
-                          onClick={onClose}
-                          className="rounded-full border border-porcelain/60 bg-background/60 px-2 py-1 text-ink flex items-center gap-1.5"
-                        >
-                          View Profile
-                          <ArrowRight className="size-3" aria-hidden="true" />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {missing.length > 0 && (
-                  <Link
-                    to="/style-profile"
-                    onClick={onClose}
-                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-50/60 px-3 py-2 text-nano uppercase tracking-label text-amber-800 transition-colors hover:bg-amber-50"
-                  >
-                    <AlertCircle className="size-3" strokeWidth={1.6} />
-                    Complete {missing.join(", ")} in the Studio
-                  </Link>
-                )}
-              </div>
-              <div className="relative overflow-hidden rounded-2xl border border-porcelain/60 bg-linear-to-br from-atelier-champagne/30 via-background to-porcelain/20 p-6 shadow-atelier-soft">
-                <div
-                  aria-hidden
-                  className="absolute -top-16 -right-16 h-44 w-44 rounded-full bg-atelier-champagne/30 blur-3xl pointer-events-none"
-                />
-                <div className="relative">
-                  <div className="flex flex-col gap-2 mb-3">
-                    <div className="flex items-end justify-between">
-                      <span className="atelier-label">Concierge Access</span>
-                      <div className="text-right">
-                        <div className="font-serif text-2xl text-ink leading-none">Atelier</div>
-                        <div className="text-micro uppercase tracking-label text-stone mt-1">
-                          Membership
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="uppercase tracking-label text-stone text-micro">
-                        Current Tier
-                      </span>
-                      <span className="font-semibold text-ink">
-                        {subscription ? subscription.plan_title : "Free"}
-                      </span>
-                    </div>
-
-                    {subscription ? (
-                      <>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="uppercase tracking-label text-micro text-stone">
-                            {subscription.cancel_at_period_end ? "Ends" : "Renews"}
-                          </span>
-                          <span className="font-semibold text-ink">
-                            {subscription.current_period_end
-                              ? new Date(subscription.current_period_end).toLocaleDateString()
-                              : "—"}
-                          </span>
-                        </div>
-                        {subscription.cancel_at_period_end ? (
-                          <DrawerAction
-                            type="button"
-                            onClick={handleResume}
-                            disabled={resuming}
-                            className="text-xs rounded-2xl"
-                          >
-                            {resuming ? "Renewing…" : "Renew Membership"}
-                          </DrawerAction>
-                        ) : (
-                          <DrawerAction
-                            type="button"
-                            onClick={() => setCancelDialogOpen(true)}
-                            className="text-xs rounded-2xl"
-                          >
-                            Cancel Membership
-                          </DrawerAction>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <p className="pt-1 text-xs leading-relaxed text-stone">
-                          Compare Atelier memberships and their included styling credits on the
-                          plans page.
-                        </p>
-                        <Link
-                          to="/pricing"
-                          onClick={onClose}
-                          className="w-full py-3 rounded-lg border border-stone/20 bg-background/60 text-label uppercase tracking-label-wide text-ink hover:bg-accent-soft dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                        >
-                          View Membership Plans
-                          <span aria-hidden="true">→</span>
-                        </Link>
-                      </>
-                    )}
-                  </div>
-
-                  {(subscription || (credits ?? 0) > 0) && (
-                    <CreditsUsageMeter
-                      remaining={credits ?? DEFAULT_AI_CREDITS}
-                      total={subscription?.credits_included ?? DEFAULT_AI_CREDITS}
-                    />
-                  )}
-
-                  {subscription && (credits ?? 0) === 0 && (
-                    <p className="text-micro text-center leading-relaxed text-stone">
-                      You're out of credits for today — they reset tomorrow.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-px rounded-xl overflow-hidden border border-porcelain/30">
-                <Link
-                  to="/style-profile"
-                  onClick={onClose}
-                  className="flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors border-b border-porcelain/30"
-                >
-                  <span className="text-micro uppercase tracking-label text-ink flex items-center gap-2">
-                    <Palette className="size-3.5" strokeWidth={1.75} />
-                    Review Color Dossier
-                  </span>
-                  <span className="text-stone">
-                    <ArrowRight className="size-3.5" strokeWidth={1.75} />
-                  </span>
-                </Link>
-                <Link
-                  to="/history"
-                  onClick={onClose}
-                  className="flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors"
-                >
-                  <span className="text-micro uppercase tracking-label text-ink flex items-center gap-2">
-                    <Archive className="size-3.5" strokeWidth={1.75} />
-                    Outfit Archive
-                  </span>
-                  <span className="text-stone">
-                    <ArrowRight className="size-3.5" strokeWidth={1.75} />
-                  </span>
-                </Link>
-              </div>
-            </div>
+            <MembershipView
+              user={user}
+              authUserId={authUser?.id}
+              subscription={subscription}
+              credits={credits}
+              onClose={onClose}
+              resuming={resuming}
+              onResume={handleResume}
+              onCancelClick={() => setCancelDialogOpen(true)}
+            />
           ) : view === "preferences" ? (
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <p className="atelier-label">Account details</p>
-                <div className="rounded-xl border border-porcelain/30 overflow-hidden">
-                  <button
-                    onClick={() => setView("security")}
-                    className="w-full flex items-center justify-between px-5 py-4 bg-background hover:bg-porcelain/20 transition-colors border-b border-porcelain/30"
-                  >
-                    <span className="text-sm text-ink">Email &amp; Security</span>
-                    <span className="text-stone">
-                      <ArrowRight className="size-3.5" strokeWidth={1.75} />
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <p className="atelier-label">Styling parameters</p>
-                <div className="rounded-xl border border-porcelain/30 overflow-hidden divide-y divide-porcelain/30">
-                  <div className="flex items-center justify-between px-5 py-4">
-                    <span className="text-sm text-ink">Climate Measurement</span>
-                    <span className="text-micro uppercase tracking-label text-stone">
-                      Celsius (°C)
-                    </span>
-                  </div>
-                  <button onClick={() => setView("location")} className="atelier-row-action">
-                    <span className="text-sm text-ink">Default Location</span>
-                    <span className="flex items-center gap-3">
-                      <span className="text-micro uppercase tracking-label text-stone">
-                        {HUBS.find((h) => h.id === defaultHubId)?.city}
-                      </span>{" "}
-                      <span className="text-stone">
-                        <ArrowRight className="size-3.5" strokeWidth={1.75} />
-                      </span>
-                    </span>
-                  </button>
-                  <button onClick={() => setView("privacy")} className="atelier-row-action">
-                    <span className="text-sm text-ink">Privacy &amp; Data</span>{" "}
-                    <span className="text-stone">
-                      <ArrowRight className="size-3.5" strokeWidth={1.75} />
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-porcelain/30">
-                <DrawerAction
-                  onClick={() => signOut()}
-                  disabled={signingOut}
-                  tone="danger"
-                  className="flex items-center justify-center gap-2 text-xs rounded-xl"
-                >
-                  {signingOut && <Loader2 className="size-3.5 animate-spin" />}
-                  {signingOut ? "Signing Out…" : "Sign Out of Studio"}
-                </DrawerAction>
-              </div>
-            </div>
+            <PreferencesView
+              defaultHubId={defaultHubId}
+              onNavigate={setView}
+              onSignOut={() => signOut()}
+              signingOut={signingOut}
+            />
           ) : view === "location" ? (
-            <div className="space-y-3">
-              <p className="atelier-label">Climate sync hub</p>
-              <div className="rounded-xl border border-porcelain/30 overflow-hidden divide-y divide-porcelain/30">
-                {HUBS.map((h) => (
-                  <button
-                    key={h.id}
-                    onClick={() => {
-                      setDefaultHubId(h.id);
-                      void saveDefaultHubId(authUser?.id, h.id);
-                      setView("preferences");
-                    }}
-                    className="atelier-row-action"
-                  >
-                    <span className="text-sm text-ink">{h.city}</span>
-                    <span className="flex items-center gap-3 text-micro uppercase tracking-label text-stone">
-                      {h.tagline}
-                      {defaultHubId === h.id && (
-                        <Check className="size-3.5 text-ink" strokeWidth={1.6} />
-                      )}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <p className="text-micro text-stone leading-relaxed px-1">
-                Your default hub sets the dashboard climate sync each time you open the studio.
-              </p>
-            </div>
+            <LocationView
+              defaultHubId={defaultHubId}
+              onSelectHub={(hubId) => {
+                setDefaultHubId(hubId);
+                void saveDefaultHubId(authUser?.id, hubId);
+                setView("preferences");
+              }}
+            />
           ) : view === "security" ? (
-            <div className="space-y-8">
-              <form onSubmit={changeEmail} className="space-y-3">
-                <p className="atelier-label">Email address</p>
-                <p className="text-xs text-stone">
-                  Current: <span className="text-ink">{authUser?.email}</span>
-                </p>
-                <Input
-                  type="email"
-                  placeholder="new@email.com"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  className="h-10"
-                />
-                <DrawerAction
-                  type="submit"
-                  disabled={emailSubmitting || !newEmail.trim() || newEmail === authUser?.email}
-                  className="text-xs rounded-2xl"
-                >
-                  {emailSubmitting ? "Sending confirmation…" : "Update Email"}
-                </DrawerAction>
-              </form>
-
-              <form
-                onSubmit={changePassword}
-                className="space-y-3 pt-6 border-t border-porcelain/30"
-              >
-                <p className="atelier-label">Change password</p>
-                <Input
-                  type="password"
-                  placeholder="Current password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="h-10"
-                />
-                <Input
-                  type="password"
-                  placeholder="New password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="h-10"
-                />
-                <Input
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="h-10"
-                />
-                {newPassword && (
-                  <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
-                    {passwordChecks.map((c) => {
-                      const ok = c.test(newPassword);
-                      return (
-                        <li
-                          key={c.label}
-                          className={`flex items-center gap-1.5 text-label ${
-                            ok ? "text-emerald-600" : "text-stone"
-                          }`}
-                        >
-                          {ok ? <Check className="size-3" /> : <X className="size-3" />}
-                          {c.label}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                {confirmPassword && newPassword !== confirmPassword && (
-                  <p className="text-label text-destructive">Passwords don't match.</p>
-                )}
-                <DrawerAction
-                  type="submit"
-                  disabled={
-                    passwordSubmitting ||
-                    !currentPassword ||
-                    !newPasswordOk ||
-                    newPassword !== confirmPassword
-                  }
-                  className="text-xs rounded-2xl"
-                >
-                  {passwordSubmitting ? "Updating…" : "Update Password"}
-                </DrawerAction>
-              </form>
-
-              <div className="space-y-3 pt-6 border-t border-destructive/20">
-                <p className="text-micro uppercase tracking-label-wide text-destructive">
-                  Delete account
-                </p>
-                <p className="text-xs text-stone leading-relaxed">
-                  This erases your profile, looks, posts, favorites and uploaded photos for good.
-                  Any active membership is canceled at once. This cannot be undone.
-                </p>
-                <label htmlFor="delete-confirm-email" className="block text-label text-stone">
-                  Type <span className="text-ink font-medium">{authUser?.email}</span> to confirm.
-                </label>
-                <Input
-                  id="delete-confirm-email"
-                  type="email"
-                  autoComplete="off"
-                  placeholder={authUser?.email ?? "your@email.com"}
-                  value={deleteEmail}
-                  onChange={(e) => setDeleteEmail(e.target.value)}
-                  className="h-10"
-                />
-                <DrawerAction
-                  type="button"
-                  onClick={handleDeleteAccount}
-                  disabled={!deleteEmailMatches || deleting}
-                  tone="danger"
-                  className="flex items-center justify-center gap-2 disabled:opacity-50 text-xs rounded-2xl"
-                >
-                  {deleting && <Loader2 className="size-3.5 animate-spin" />}
-                  {deleting ? "Deleting…" : "Delete My Account"}
-                </DrawerAction>
-              </div>
-            </div>
+            <SecurityView
+              authUserEmail={authUser?.email}
+              newEmail={newEmail}
+              onNewEmailChange={setNewEmail}
+              emailSubmitting={emailSubmitting}
+              onChangeEmail={changeEmail}
+              currentPassword={currentPassword}
+              onCurrentPasswordChange={setCurrentPassword}
+              newPassword={newPassword}
+              onNewPasswordChange={setNewPassword}
+              confirmPassword={confirmPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              newPasswordOk={newPasswordOk}
+              passwordSubmitting={passwordSubmitting}
+              onChangePassword={changePassword}
+              deleteEmail={deleteEmail}
+              onDeleteEmailChange={setDeleteEmail}
+              deleteEmailMatches={deleteEmailMatches}
+              deleting={deleting}
+              onDeleteAccount={handleDeleteAccount}
+            />
           ) : (
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <p className="atelier-label">Your data</p>
-                <p className="text-xs text-stone leading-relaxed">
-                  Mila stores your style profile, outfit analyses, community posts, and favorites to
-                  tailor your recommendations. Your data is never sold and is only used within the
-                  studio.
-                </p>
-                <DrawerAction
-                  onClick={downloadData}
-                  disabled={exporting}
-                  className="flex items-center justify-center gap-3 text-xs rounded-2xl"
-                >
-                  {exporting ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Download className="size-3.5" strokeWidth={1.75} />
-                  )}
-                  <span>{exporting ? "Preparing export…" : "Download My Data"}</span>
-                </DrawerAction>
-                <p className="text-micro text-stone leading-relaxed">
-                  Exports your profile, outfits, posts, and favorites as JSON.
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-porcelain/30 space-y-3">
-                <p className="atelier-label">Account removal</p>
-                <p className="text-micro text-stone leading-relaxed">
-                  You can permanently delete your account and all associated data yourself, under
-                  Email &amp; Security.
-                </p>
-                <DrawerAction onClick={() => setView("security")} className="text-xs rounded-2xl">
-                  Go to Email &amp; Security
-                </DrawerAction>
-              </div>
-            </div>
+            <PrivacyView
+              exporting={exporting}
+              onDownloadData={downloadData}
+              onNavigateSecurity={() => setView("security")}
+            />
           )}
         </div>
       </SheetContent>

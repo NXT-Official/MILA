@@ -13,7 +13,7 @@ export function PostCanvas({ post }: { post: FeedPost }) {
   const [openItem, setOpenItem] = useState<PostItem | null>(null);
 
   return (
-    <article className="rounded-3xl atelier-glass shadow-atelier-soft overflow-hidden">
+    <article className="rounded-card border border-border bg-card shadow-paper overflow-hidden">
       <header className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
           <AvatarInitial name={author} className="size-9" />

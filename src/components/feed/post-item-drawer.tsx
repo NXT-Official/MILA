@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
+import { ProductCard } from "@/components/ui/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { queryKeys } from "@/constants/query-keys";
 import { findSimilarItems, type DupeMatch } from "@/lib/dupe-hunter.functions";
@@ -55,10 +56,7 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
 
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side="bottom"
-        className="rounded-t-3xl border-t border-porcelain/60 px-6 pt-8 pb-10 max-h-[85vh] overflow-y-auto"
-      >
+      <SheetContent side="bottom" className="px-6 pt-8 pb-10 max-h-[85vh] overflow-y-auto">
         {item && (
           <div className="max-w-md mx-auto space-y-6">
             <SheetHeader className="text-center space-y-2">
@@ -87,7 +85,7 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                     href={item.source_url}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    className="atelier-focus-ring flex items-center justify-between gap-3 rounded-2xl atelier-glass px-5 py-4"
+                    className="atelier-focus-ring flex items-center justify-between gap-3 rounded-card border border-border bg-card px-5 py-4"
                   >
                     <span className="min-w-0">
                       <span className="block text-nano uppercase tracking-label-xwide text-stone">
@@ -100,7 +98,7 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                     <ExternalLink className="size-4 shrink-0 text-stone" strokeWidth={1.75} />
                   </a>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-porcelain/60 p-6 text-center">
+                  <div className="rounded-card border border-dashed border-border p-6 text-center">
                     <p className="font-serif text-base text-ink">
                       The poster didn't tag a link for this piece.
                     </p>
@@ -130,13 +128,13 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
 
                 {isLoading && (
                   <div className="grid grid-cols-2 gap-3">
-                    <Skeleton className="aspect-3/4 rounded-2xl bg-porcelain/20" />
-                    <Skeleton className="aspect-3/4 rounded-2xl bg-porcelain/20" />
+                    <Skeleton className="aspect-3/4 rounded-card" />
+                    <Skeleton className="aspect-3/4 rounded-card" />
                   </div>
                 )}
 
                 {!isLoading && !sortedMatches.length && (
-                  <div className="rounded-2xl border border-dashed border-porcelain/60 p-6 text-center">
+                  <div className="rounded-card border border-dashed border-border p-6 text-center">
                     <p className="font-serif text-base text-ink">
                       Nothing close in the catalog yet.
                     </p>
@@ -148,32 +146,32 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
 
                 <div className="grid grid-cols-2 gap-3">
                   {sortedMatches.map((match) => (
-                    <a
+                    <ProductCard
                       key={match.id}
+                      as="a"
                       href={match.affiliate_link}
-                      target="_blank"
-                      rel="noopener noreferrer sponsored"
-                      className="atelier-focus-ring rounded-2xl atelier-glass overflow-hidden flex flex-col shadow-atelier-soft"
+                      image={
+                        <>
+                          <ImageWithFallback
+                            src={match.image_url}
+                            alt={match.title}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                            fallback={
+                              <div className="h-full w-full flex items-center justify-center text-stone">
+                                <ImageOff className="size-5" strokeWidth={1.5} />
+                              </div>
+                            }
+                          />
+                          {!!match.discount_percent && (
+                            <span className="absolute top-2 left-2 rounded-full bg-ink/90 px-2 py-0.5 text-nano font-medium uppercase tracking-label-wide text-surface">
+                              -{match.discount_percent}%
+                            </span>
+                          )}
+                        </>
+                      }
                     >
-                      <div className="relative aspect-3/4 bg-atelier-ivory/60 overflow-hidden">
-                        <ImageWithFallback
-                          src={match.image_url}
-                          alt={match.title}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                          fallback={
-                            <div className="h-full w-full flex items-center justify-center text-stone">
-                              <ImageOff className="size-5" strokeWidth={1.5} />
-                            </div>
-                          }
-                        />
-                        {!!match.discount_percent && (
-                          <span className="absolute top-2 left-2 rounded-full bg-ink/90 px-2 py-0.5 text-nano font-medium uppercase tracking-label-wide text-surface">
-                            -{match.discount_percent}%
-                          </span>
-                        )}
-                      </div>
-                      <div className="p-3 space-y-1">
+                      <div className="space-y-1">
                         <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
                           {match.title}
                         </p>
@@ -214,7 +212,7 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                             : "Link not yet verified"}
                         </p>
                       </div>
-                    </a>
+                    </ProductCard>
                   ))}
                 </div>
               </TabsContent>

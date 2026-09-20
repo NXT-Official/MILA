@@ -2,15 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { Images, ImageOff, Sparkles, Trash2, Loader2 } from "lucide-react";
+import { Images, ImageOff, Sparkles, Trash2, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadErrorPanel } from "@/components/ui/error-state";
 import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detail";
+import { LookSection } from "@/components/dashboard/look-section";
 import { useConcierge } from "@/hooks/use-concierge";
 import { cn } from "@/lib/utils";
+import { downloadImage } from "@/lib/download-image";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
@@ -211,29 +213,20 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
           frameClassName="atelier-media-frame max-w-128"
         />
         {verdict ? (
-          <div className="rounded-card border border-border bg-card p-6 shadow-paper">
-            <p className="mb-3 text-micro uppercase tracking-label-wide text-muted-foreground">
-              Stylist's Verdict
-            </p>
+          <LookSection kicker="Stylist's Verdict">
             <p className="font-serif text-xl leading-relaxed">{verdict}</p>
-          </div>
+          </LookSection>
         ) : null}
         <div className="grid gap-4 md:grid-cols-2">
           {color_match ? (
-            <div className="rounded-card border border-border bg-card p-6 shadow-paper">
-              <p className="mb-2 text-micro uppercase tracking-label-wide text-muted-foreground">
-                Color Match
-              </p>
+            <LookSection kicker="Color Match">
               <p className="text-sm leading-relaxed">{color_match}</p>
-            </div>
+            </LookSection>
           ) : null}
           {silhouette ? (
-            <div className="rounded-card border border-border bg-card p-6 shadow-paper">
-              <p className="mb-2 text-micro uppercase tracking-label-wide text-muted-foreground">
-                Silhouette
-              </p>
+            <LookSection kicker="Silhouette">
               <p className="text-sm leading-relaxed">{silhouette}</p>
-            </div>
+            </LookSection>
           ) : null}
         </div>
       </div>
@@ -310,7 +303,7 @@ function History() {
   const selectedAnalysis = selected ? normalizeAnalysisResult(selected.analysis_result) : null;
 
   return (
-    <div className="atelier-page max-w-6xl">
+    <div className="atelier-page">
       <PageHeader
         className="mb-8 sm:mb-12"
         kicker="History"
@@ -381,6 +374,19 @@ function History() {
                   <Trash2 className="size-4 mr-2" aria-hidden="true" />
                 )}
                 Delete
+              </Button>
+              <Button
+                variant="outline"
+                size="pill"
+                onClick={() =>
+                  downloadImage(
+                    selected.image_url,
+                    `mila-look-${(selectedAnalysis ? historyItemTitle(selectedAnalysis) : "look").toLowerCase().replace(/\s+/g, "-")}.jpg`,
+                  )
+                }
+              >
+                <Download className="size-4 mr-2" aria-hidden="true" />
+                Download
               </Button>
               {selectedAnalysis ? (
                 <Button

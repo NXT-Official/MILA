@@ -51,6 +51,7 @@
   --color-stone: var(--muted-foreground);
   --color-porcelain: var(--card);
   --color-rose: var(--rose);
+  --color-body-foreground: var(--body-foreground);
   --shadow-atelier-soft: var(--shadow-paper-value);
   --shadow-atelier-float: var(--shadow-raised-value);
   --shadow-paper: var(--shadow-paper-value);
@@ -249,6 +250,10 @@
     @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-14;
   }
 
+  .atelier-page-narrow {
+    @apply mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10;
+  }
+
   .atelier-card {
     @apply rounded-card border border-line bg-surface shadow-paper;
   }
@@ -280,6 +285,10 @@
   .atelier-focus-ring {
     @apply outline-none focus-visible:ring-2 focus-visible:ring-accent
       focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  }
+
+  .landing-hero-heading {
+    @apply text-[clamp(3rem,8vw,5rem)] leading-[0.95] text-balance;
   }
 }
 

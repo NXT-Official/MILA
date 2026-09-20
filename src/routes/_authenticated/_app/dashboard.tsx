@@ -2,25 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Sparkles,
-  Loader2,
-  CheckCircle2,
-  Wand2,
-  Bookmark,
-  RotateCcw,
-  ImageOff,
-} from "lucide-react";
-import { ClimateWidget, ClimateGlyph } from "@/components/dashboard/climate-widget";
+import { ClimateWidget } from "@/components/dashboard/climate-widget";
 import type { ClimateState } from "@/constants/climate";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import {
   generateDailyLook,
@@ -28,10 +11,8 @@ import {
   type GeneratedLook,
 } from "@/lib/generate-outfit.functions";
 import { saveOutfitToHistory } from "@/lib/save-outfit.functions";
-import { OutfitVisual } from "@/components/dashboard/outfit-visual";
-import { OutfitResultSkeleton } from "@/components/dashboard/outfit-result-skeleton";
-import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detail";
-import { ShopThisLookGrid } from "@/components/dashboard/shop-look-grid";
+import { HeroGeneratorForm, type Vibe } from "@/components/dashboard/hero-generator-form";
+import { HeroResultPanel } from "@/components/dashboard/hero-result-panel";
 import { generatePhotoPreview } from "@/lib/photo-preview.functions";
 import { generateStyleSheetPreview } from "@/lib/style-sheet.functions";
 import { SelfiePhotoWidget } from "@/components/dashboard/selfie-photo-widget";
@@ -46,27 +27,11 @@ import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerat
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { errorMessage, isStaleBundleError } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 
 function reloadForNewVersion() {
   toast.error("Mila just updated — reloading to grab the latest version. Try again after reload.");
   window.location.reload();
 }
-
-const VIBES = [
-  "Everyday Casual",
-  "Work or School",
-  "Business Casual",
-  "Business Attire",
-  "Brunch",
-  "Date Night",
-  "Dinner",
-  "Party",
-  "Formal Event",
-  "Travel",
-  "Active Day",
-] as const;
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -97,8 +62,6 @@ const itemVariants = (reduce: boolean, offset: number, duration: number): Varian
 export const Route = createFileRoute("/_authenticated/_app/dashboard")({
   component: Dashboard,
 });
-
-type Vibe = (typeof VIBES)[number];
 
 function Dashboard() {
   const { user } = useAuth();
@@ -331,14 +294,19 @@ function Dashboard() {
       ? "Still finding today’s weather. Choose a city in the weather panel to continue."
       : null;
 
-  const saveBlockedReason =
-    look && !styleSheetImageDataUri && !look.imageDataUri && !savingLook && !lookSaved
-      ? "Your look needs its visual before it can be saved."
-      : null;
+  function handleAskConcierge() {
+    if (!savedLook || !look) return;
+    openConcierge({
+      lookId: savedLook.id,
+      imageUrl: savedLook.imageUrl,
+      title: look.outfit.headline,
+      source: "Today's look",
+    });
+  }
 
   return (
     <motion.div
-      className="atelier-page max-w-5xl"
+      className="atelier-page"
       variants={cardContainerVariants}
       initial="hidden"
       animate="visible"
@@ -381,346 +349,43 @@ function Dashboard() {
               <ClimateWidget value={climate} onChange={setClimate} />
             </div>
 
-            <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-3">
-              <div className="w-full sm:max-w-xs">
-                <span
-                  id="vibe-label"
-                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
-                >
-                  Today's Mood
-                </span>
-                <Select value={vibe} onValueChange={(v) => setVibe(v as Vibe)}>
-                  <SelectTrigger
-                    aria-labelledby="vibe-label"
-                    className="h-11 rounded-full border-border bg-card text-sm"
-                  >
-                    <SelectValue placeholder="Select an occasion" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VIBES.map((v) => (
-                      <SelectItem key={v} value={v} className="text-sm">
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="w-full sm:max-w-2xs">
-                <label
-                  htmlFor="agenda-input"
-                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
-                >
-                  Today's plan (optional)
-                </label>
-                <Input
-                  id="agenda-input"
-                  value={agenda}
-                  onChange={(e) => setAgenda(e.target.value)}
-                  placeholder="e.g. Client dinner at 7pm"
-                  maxLength={200}
-                  className="h-11 rounded-full border-border bg-card text-sm"
-                />
-              </div>
-              <div className="w-full sm:max-w-3xs">
-                <label
-                  htmlFor="dress-code-input"
-                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
-                >
-                  Dress code (optional)
-                </label>
-                <Input
-                  id="dress-code-input"
-                  value={dressCode}
-                  onChange={(e) => setDressCode(e.target.value)}
-                  placeholder="e.g. Smart casual"
-                  maxLength={80}
-                  className="h-11 rounded-full border-border bg-card text-sm"
-                />
-              </div>
-              <div className="w-full sm:max-w-3xs">
-                <span
-                  id="setting-label"
-                  className="mb-2 block text-xs font-medium uppercase tracking-label text-muted-foreground"
-                >
-                  Setting (optional)
-                </span>
-                <Select
-                  value={indoorOutdoor || undefined}
-                  onValueChange={(v) => setIndoorOutdoor(v as "Indoor" | "Outdoor" | "Mixed")}
-                >
-                  <SelectTrigger
-                    aria-labelledby="setting-label"
-                    className="h-11 rounded-full border-border bg-card text-sm"
-                  >
-                    <SelectValue placeholder="Indoor, outdoor, or mixed" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Indoor" className="text-sm">
-                      Indoor
-                    </SelectItem>
-                    <SelectItem value="Outdoor" className="text-sm">
-                      Outdoor
-                    </SelectItem>
-                    <SelectItem value="Mixed" className="text-sm">
-                      Mixed
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                onClick={generateLook}
-                disabled={generating || !profileComplete || !climate}
-                aria-describedby={blockedReason ? "generate-blocked" : undefined}
-                size="pill"
-                className="w-full sm:w-auto whitespace-normal text-center leading-snug"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="animate-spin" aria-hidden="true" /> Composing…
-                  </>
-                ) : climate ? (
-                  <>
-                    <Wand2 className="text-accent" aria-hidden="true" /> Create my look —{" "}
-                    {climate.tempC}°C {climate.condition}
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="text-accent" aria-hidden="true" /> Create my look
-                  </>
-                )}
-              </Button>
-              {blockedReason && (
-                <span id="generate-blocked" className="text-sm text-muted-foreground text-pretty">
-                  {blockedReason}
-                </span>
-              )}
-            </div>
+            <HeroGeneratorForm
+              vibe={vibe}
+              onVibeChange={setVibe}
+              agenda={agenda}
+              onAgendaChange={setAgenda}
+              dressCode={dressCode}
+              onDressCodeChange={setDressCode}
+              indoorOutdoor={indoorOutdoor}
+              onIndoorOutdoorChange={setIndoorOutdoor}
+              climate={climate}
+              generating={generating}
+              profileComplete={profileComplete}
+              blockedReason={blockedReason}
+              onGenerate={generateLook}
+            />
 
             <div className="mt-8">
-              {generating ? (
-                <OutfitResultSkeleton />
-              ) : look ? (
-                <motion.div
-                  className="space-y-6"
-                  variants={resultContainerVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
-                  <p role="status" aria-live="polite" className="sr-only">
-                    Your look is ready: {look.outfit.headline}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label text-muted-foreground">
-                      {vibe}
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium uppercase tracking-label tabular-nums">
-                      Vibe fit {look.vibe_alignment_score}/10
-                    </span>
-                    {climate && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label tabular-nums text-muted-foreground">
-                        <ClimateGlyph icon={climate.icon} className="size-3" />
-                        {climate.label}
-                      </span>
-                    )}
-                  </div>
-
-                  <motion.div variants={resultItemVariants}>
-                    <GeneratedLookDetail
-                      outfit={look.outfit}
-                      hair={look.hair}
-                      makeup={look.makeup}
-                      media={
-                        <div className="space-y-4">
-                          {!profile?.photo_consent_at ? (
-                            <div className="atelier-media-frame max-w-lg">
-                              <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-                                <ImageOff
-                                  className="size-6 text-muted-foreground"
-                                  aria-hidden="true"
-                                />
-                                <p className="text-sm text-muted-foreground">
-                                  Add a consented photo above to generate your style sheet.
-                                </p>
-                              </div>
-                            </div>
-                          ) : styleSheetLoading ? (
-                            <div
-                              className="atelier-media-frame aspect-video max-w-2xl"
-                              role="status"
-                            >
-                              <Skeleton className="absolute inset-0 bg-accent-soft/50" />
-                              <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-                                <Loader2
-                                  className="size-5 animate-spin text-ink"
-                                  aria-hidden="true"
-                                />
-                                <p className="font-serif text-lg text-foreground">
-                                  Building your style sheet…
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Rendering your identity-locked 5-view turnaround.
-                                </p>
-                              </div>
-                            </div>
-                          ) : styleSheetImageDataUri ? (
-                            <div className="max-w-2xl">
-                              <img
-                                src={styleSheetImageDataUri}
-                                alt={`Identity-locked 5-view style sheet of ${look.outfit.headline}`}
-                                className="w-full rounded-lg border"
-                              />
-                              <p className="mt-2 text-micro uppercase tracking-label-xwide text-muted-foreground">
-                                Identity-locked style sheet
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="atelier-media-frame max-w-2xl">
-                              <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-                                <ImageOff
-                                  className="size-6 text-muted-foreground"
-                                  aria-hidden="true"
-                                />
-                                <p className="text-sm text-muted-foreground">
-                                  The outfit is ready, but the style sheet couldn't be generated.
-                                </p>
-                                <Button
-                                  variant="outline"
-                                  size="pill"
-                                  onClick={previewStyleSheet}
-                                  disabled={generating}
-                                >
-                                  <RotateCcw aria-hidden="true" />
-                                  Retry visual
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-
-                          {profile?.photo_consent_at ? (
-                            <div className="flex max-w-lg items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                loading={photoPreviewLoading}
-                                disabled={generating}
-                                onClick={previewOnMyPhoto}
-                              >
-                                {look.imageDataUri
-                                  ? "Regenerate portrait preview"
-                                  : "Generate portrait preview"}
-                              </Button>
-                            </div>
-                          ) : null}
-                          {profile?.photo_consent_at &&
-                          (look.imageDataUri ||
-                            photoPreviewLoading ||
-                            look.imageGenerationError) ? (
-                            <OutfitVisual
-                              imageDataUri={look.imageDataUri}
-                              imageGenerationError={look.imageGenerationError}
-                              loading={photoPreviewLoading}
-                              headline={look.outfit.headline}
-                              onRetry={previewOnMyPhoto}
-                              retryDisabled={generating || photoPreviewLoading}
-                              label="AI-edited preview of your photo"
-                            />
-                          ) : null}
-                        </div>
-                      }
-                    />
-                  </motion.div>
-
-                  {look.shoppable_picks && (
-                    <motion.div variants={resultItemVariants}>
-                      <ShopThisLookGrid items={look.shoppable_picks} />
-                    </motion.div>
-                  )}
-
-                  <motion.div variants={resultItemVariants} className="border-t border-border pt-6">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={saveLookToHistory}
-                        disabled={
-                          savingLook || lookSaved || !(styleSheetImageDataUri || look.imageDataUri)
-                        }
-                        aria-describedby={saveBlockedReason ? "save-blocked" : undefined}
-                        size="pill"
-                      >
-                        {lookSaved ? (
-                          <>
-                            <CheckCircle2 aria-hidden="true" /> Saved
-                          </>
-                        ) : savingLook ? (
-                          <>
-                            <Loader2 className="animate-spin" aria-hidden="true" /> Saving…
-                          </>
-                        ) : (
-                          <>
-                            <Bookmark aria-hidden="true" /> Save to history
-                          </>
-                        )}
-                      </Button>
-                      {profile?.photo_consent_at ? (
-                        <Button
-                          variant="ghost"
-                          onClick={previewStyleSheet}
-                          disabled={styleSheetLoading || generating}
-                          size="pill"
-                        >
-                          {styleSheetLoading ? (
-                            <>
-                              <Loader2 className="animate-spin" aria-hidden="true" /> Drawing…
-                            </>
-                          ) : (
-                            <>
-                              <RotateCcw aria-hidden="true" /> New visual
-                            </>
-                          )}
-                        </Button>
-                      ) : null}
-                      <Button variant="ghost" onClick={generateLook} size="pill">
-                        <Sparkles aria-hidden="true" /> Try another look
-                      </Button>
-                      {savedLook && (
-                        <Button
-                          variant="outline"
-                          onClick={() =>
-                            openConcierge({
-                              lookId: savedLook.id,
-                              imageUrl: savedLook.imageUrl,
-                              title: look.outfit.headline,
-                              source: "Today's look",
-                            })
-                          }
-                          size="pill"
-                        >
-                          <Sparkles aria-hidden="true" /> Ask Mila about this look
-                        </Button>
-                      )}
-                    </div>
-                    {saveBlockedReason && (
-                      <p id="save-blocked" className="sr-only">
-                        {saveBlockedReason}
-                      </p>
-                    )}
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Each new look or visual uses one credit.
-                    </p>
-                  </motion.div>
-                </motion.div>
-              ) : (
-                <div className="py-10 text-center">
-                  <h2 className="font-serif text-2xl md:text-3xl font-semibold tracking-tight leading-snug text-balance">
-                    Set the mood. Mila will compose the rest.
-                  </h2>
-                  <p className="text-base text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
-                    Each look is composed from first principles - tuned to your palette, body
-                    architecture, and the weather outside.
-                  </p>
-                </div>
-              )}
+              <HeroResultPanel
+                generating={generating}
+                look={look}
+                vibe={vibe}
+                climate={climate}
+                profile={profile}
+                styleSheetLoading={styleSheetLoading}
+                styleSheetImageDataUri={styleSheetImageDataUri}
+                photoPreviewLoading={photoPreviewLoading}
+                savingLook={savingLook}
+                lookSaved={lookSaved}
+                savedLook={savedLook}
+                resultContainerVariants={resultContainerVariants}
+                resultItemVariants={resultItemVariants}
+                onPreviewStyleSheet={previewStyleSheet}
+                onPreviewOnMyPhoto={previewOnMyPhoto}
+                onSaveLook={saveLookToHistory}
+                onGenerateAnother={generateLook}
+                onAskConcierge={handleAskConcierge}
+              />
             </div>
           </div>
         </motion.section>

@@ -7,20 +7,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
-import { Camera, Loader2, Check } from "lucide-react";
+import { Camera } from "lucide-react";
 import { ColorDossierSection } from "@/components/studio/style-profile";
 import {
   FACE_SHAPES as HOLISTIC_FACE_SHAPES,
   HAIR_TYPES as HOLISTIC_HAIR_TYPES,
 } from "@/constants/style-profile";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
 import {
   Accordion,
   AccordionItem,
@@ -44,8 +37,6 @@ import {
   FACE_FULL_TO_SHORT,
   CONTRAST_SHORT_TO_FULL,
   CONTRAST_FULL_TO_SHORT,
-  BODY_OPTIONS,
-  MANUAL_SEASON_GROUPS,
   KNOWN_SEASON_GROUPS,
 } from "@/constants/style-profile";
 import {
@@ -62,8 +53,10 @@ import {
   DossierAccordion,
   PillRow,
   BeautyPillTray,
-  CardMatrix,
 } from "@/components/style-profile/shared";
+import { KnownSeasonPicker } from "@/components/style-profile/known-season-picker";
+import { ManualOverridePicker } from "@/components/style-profile/manual-override-picker";
+import { SeasonCalibrationSheet } from "@/components/style-profile/season-calibration-sheet";
 import { ColorQuiz } from "@/components/style-profile/color-quiz";
 import { BodyTypeQuiz } from "@/components/style-profile/body-type-quiz";
 import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-diagnostic-viewfinder";
@@ -430,7 +423,7 @@ export function StyleProfile() {
   }
 
   return (
-    <div className="bg-[#F5F5F0] text-[#6B6259] dark:bg-background dark:text-muted-foreground min-h-screen">
+    <div className="bg-background text-body-foreground min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-12 py-10 md:py-20">
         <header className="mb-12 pb-8 border-b-[0.5px] border-border">
           <div className="flex items-start justify-between gap-6">
@@ -586,97 +579,24 @@ export function StyleProfile() {
               </AnimatePresence>
             </div>
             <div className="mb-10">
-              <div className="bg-card rounded-card border border-border shadow-paper p-6 sm:p-8">
-                <div className="text-center">
-                  <p className="atelier-kicker">Path 01 · Know Your Season</p>
-                  <h2 className="font-serif text-2xl sm:text-3xl tracking-tight mt-2">
-                    Select Your Known Color Profile
-                  </h2>
-                  <p className="text-xs text-muted-foreground leading-relaxed mt-2 max-w-md mx-auto">
-                    Already know your seasonal palette? Tap your look below and confirm — your
-                    palette loads instantly, no camera needed.
-                  </p>
-                </div>
-                <div className="mt-8 space-y-7">
-                  {KNOWN_SEASON_GROUPS.map((group) => (
-                    <div key={group.season}>
-                      <div className="flex items-center gap-3">
-                        <span className="h-px w-6 bg-foreground/30" />
-                        <p className="text-micro uppercase tracking-label-max text-foreground/70">
-                          {group.season}
-                        </p>
-                        <span className="h-px flex-1 bg-foreground/10" />
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {group.tiles.map((tile) => {
-                          const active = knownTileId === tile.id;
-                          const groupTint: Record<string, string> = {
-                            Spring: "#FFF5F0",
-                            Summer: "#F5F0FF",
-                            Autumn: "#FFF8F0",
-                            Winter: "#F0F5FF",
-                          };
-                          return (
-                            <button
-                              key={tile.id}
-                              type="button"
-                              onClick={() => setKnownTileId(tile.id)}
-                              style={
-                                active ? undefined : { backgroundColor: groupTint[group.season] }
-                              }
-                              className={`group text-left border rounded-xl px-3 py-3 transition-all min-h-17 ${
-                                active
-                                  ? "border-foreground bg-foreground/4 -translate-y-px ring-1 ring-foreground"
-                                  : "border-border hover:border-foreground/40"
-                              }`}
-                            >
-                              <p className="text-label uppercase tracking-label-wide flex items-center justify-between gap-2">
-                                <span>{tile.label}</span>
-                                {active && <Check className="size-3" />}
-                              </p>
-                              <p className="mt-1 text-micro text-muted-foreground leading-relaxed">
-                                {SEASONS_MASTER_DATA[tile.key].subSeason}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-8 flex flex-col items-center">
-                  <Button
-                    disabled={!knownTileId || confirmingKnown}
-                    size="md"
-                    className="w-full sm:w-auto px-8"
-                    onClick={async () => {
-                      if (!knownTileId) return;
-                      const tile = KNOWN_SEASON_GROUPS.flatMap((g) => g.tiles).find(
-                        (t) => t.id === knownTileId,
-                      );
-                      if (!tile) return;
-                      setConfirmingKnown(true);
-                      try {
-                        await applyDashboardCalibration(tile.key, tile.label);
-                      } finally {
-                        setConfirmingKnown(false);
-                      }
-                    }}
-                  >
-                    {confirmingKnown ? (
-                      <Loader2 className="animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Check aria-hidden="true" />
-                    )}
-                    Confirm Selection
-                  </Button>
-                  <p className="mt-3 text-micro uppercase tracking-label-xwide text-accent text-center">
-                    {knownTileId
-                      ? "Loads from our atelier library · Saved to your profile"
-                      : "Select a season above to confirm."}
-                  </p>
-                </div>
-              </div>
+              <KnownSeasonPicker
+                knownTileId={knownTileId}
+                onSelectTile={setKnownTileId}
+                confirming={confirmingKnown}
+                onConfirm={async () => {
+                  if (!knownTileId) return;
+                  const tile = KNOWN_SEASON_GROUPS.flatMap((g) => g.tiles).find(
+                    (t) => t.id === knownTileId,
+                  );
+                  if (!tile) return;
+                  setConfirmingKnown(true);
+                  try {
+                    await applyDashboardCalibration(tile.key, tile.label);
+                  } finally {
+                    setConfirmingKnown(false);
+                  }
+                }}
+              />
 
               <div className="mt-8">
                 <Accordion
@@ -714,135 +634,14 @@ export function StyleProfile() {
                         </button>
                       </div>
                       {manualOpen && (
-                        <div className="mt-6 space-y-8 px-1 sm:px-2">
-                          <div className="bg-card p-8 rounded-card border border-border shadow-paper max-w-2xl mx-auto space-y-8">
-                            <div className="text-center space-y-2">
-                              <span className="text-[0.18em] uppercase tracking-label-xwide text-stone text-xs block">
-                                Private Consultation
-                              </span>
-                              <h3 className="font-serif text-2xl text-ink tracking-wide">
-                                Determine Your Seasonal Palette
-                              </h3>
-                              <p className="text-sm text-stone max-w-md mx-auto">
-                                Aligning the natural undertones of your skin, hair, and eyes with
-                                curated textile seasons.
-                              </p>
-                            </div>
-                            <div className="space-y-6">
-                              <div
-                                className="space-y-3"
-                                role="group"
-                                aria-labelledby="season-group-label"
-                              >
-                                <span
-                                  id="season-group-label"
-                                  className="text-xs uppercase tracking-label text-ink font-medium block"
-                                >
-                                  Your Prevailing Season
-                                </span>
-                                <div className="grid grid-cols-2 gap-3">
-                                  {[
-                                    {
-                                      id: "Spring",
-                                      title: "The Spring Awakening",
-                                      desc: "Warm, luminous, clear, vivid gold undertones",
-                                    },
-                                    {
-                                      id: "Summer",
-                                      title: "The Muted Summer",
-                                      desc: "Cool, soft, ethereal, delicate slate and rose hues",
-                                    },
-                                    {
-                                      id: "Autumn",
-                                      title: "The Rich Autumn",
-                                      desc: "Deep, warm, earthy, sun-drenched ochre tones",
-                                    },
-                                    {
-                                      id: "Winter",
-                                      title: "The Vivid Winter",
-                                      desc: "Sharp, cool, striking contrast, clear jewel profiles",
-                                    },
-                                  ].map((season) => {
-                                    const active = manualSeason === season.id;
-                                    return (
-                                      <button
-                                        key={season.id}
-                                        type="button"
-                                        onClick={() => pickSeason(season.id)}
-                                        className={`p-4 text-left rounded-xl border transition-all duration-300 group ${active ? "bg-surface dark:bg-secondary border-stone/40 shadow-atelier-soft" : "border-stone/10 bg-porcelain/30 hover:bg-surface dark:hover:bg-secondary hover:border-stone/30 hover:shadow-atelier-soft"}`}
-                                      >
-                                        <span className="font-serif text-base text-ink block group-hover:text-rose transition-colors">
-                                          {season.title}
-                                        </span>
-                                        <span className="text-xs text-stone mt-1 block leading-relaxed">
-                                          {season.desc}
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                              <div
-                                className="space-y-3 pt-4 border-t border-porcelain/30"
-                                role="group"
-                                aria-labelledby="contrast-group-label"
-                              >
-                                <span
-                                  id="contrast-group-label"
-                                  className="text-xs uppercase tracking-label text-ink font-medium block"
-                                >
-                                  The Depth of Contrast
-                                </span>
-                                <p className="text-xs text-stone mb-2">
-                                  The relationship between the intensity of your features and
-                                  textiles.
-                                </p>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {[
-                                    {
-                                      id: "Low Contrast",
-                                      name: "Soft & Blended",
-                                      sub: "Subtle transitions",
-                                    },
-                                    {
-                                      id: "Medium Contrast",
-                                      name: "Balanced Depth",
-                                      sub: "Classic equilibrium",
-                                    },
-                                    {
-                                      id: "High Contrast",
-                                      name: "Striking Contrast",
-                                      sub: "High-drama definition",
-                                    },
-                                  ].map((contrast) => {
-                                    const active = manualContrast === contrast.id;
-                                    return (
-                                      <button
-                                        key={contrast.id}
-                                        type="button"
-                                        onClick={() => pickContrast(contrast.id)}
-                                        className={`p-3 text-center rounded-lg border transition-all duration-300 ${active ? "bg-surface dark:bg-secondary border-stone/40 shadow-atelier-soft" : "border-stone/10 bg-porcelain/20 hover:bg-surface dark:hover:bg-secondary"}`}
-                                      >
-                                        <span className="text-xs uppercase tracking-wider font-semibold text-ink block">
-                                          {contrast.name}
-                                        </span>
-                                        <span className="text-micro text-stone mt-0.5 block">
-                                          {contrast.sub}
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <CardMatrix
-                            label="Your silhouette"
-                            value={form.body_type}
-                            onPick={pickBody}
-                            options={BODY_OPTIONS}
-                          />
-                        </div>
+                        <ManualOverridePicker
+                          manualSeason={manualSeason}
+                          manualContrast={manualContrast}
+                          bodyType={form.body_type}
+                          onPickSeason={pickSeason}
+                          onPickContrast={pickContrast}
+                          onPickBody={pickBody}
+                        />
                       )}
                     </AccordionContent>
                   </AccordionItem>
@@ -935,65 +734,13 @@ export function StyleProfile() {
                 <span className="h-px w-10 bg-foreground/20" />
               </div>
             )}
-            <Sheet open={dashCalibrateOpen} onOpenChange={setDashCalibrateOpen}>
-              <SheetContent
-                side="bottom"
-                className="bg-ink text-surface border-t border-surface/10 rounded-t-2xl max-h-[85vh] overflow-y-auto"
-              >
-                <SheetHeader className="text-left">
-                  <p className="text-nano uppercase tracking-label-max text-surface/50">
-                    Seoul Atelier
-                  </p>
-                  <SheetTitle className="font-serif text-2xl tracking-tight text-surface">
-                    Already know your seasonal palette? Choose your look below.
-                  </SheetTitle>
-                  <SheetDescription className="text-label text-surface/60 leading-relaxed">
-                    Cameras can read light and shadow differently than the eye. Tap your true
-                    sub-season — your palette, beauty notes, and colors to avoid will update from
-                    the atelier library, and your confidence chip will lock to 100% Studio Tuned.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="mt-6 space-y-7 pb-6">
-                  {MANUAL_SEASON_GROUPS.map((group) => (
-                    <div key={group.season}>
-                      <div className="flex items-center gap-3">
-                        <span className="h-px w-6 bg-surface/30" />
-                        <p className="text-micro uppercase tracking-label-max text-surface/70">
-                          {group.season}
-                        </p>
-                      </div>
-                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        {group.keys.map((k) => {
-                          const active =
-                            dossier.season === group.season &&
-                            SEASONS_MASTER_DATA[k.key].subSeason === dossier.subSeason;
-                          return (
-                            <button
-                              key={k.key}
-                              type="button"
-                              onClick={() => void applyDashboardCalibration(k.key, k.label)}
-                              className={`group text-left border px-4 py-3 transition-colors ${
-                                active
-                                  ? "border-surface bg-surface/10"
-                                  : "border-surface/15 hover:border-surface/60 bg-surface/2 hover:bg-surface/6"
-                              }`}
-                            >
-                              <p className="text-label uppercase tracking-label-wide text-surface flex items-center justify-between gap-2">
-                                {k.label}
-                                {active && <Check className="size-3 text-surface/80" />}
-                              </p>
-                              <p className="mt-1 text-micro text-surface/55 leading-relaxed line-clamp-2">
-                                {SEASONS_MASTER_DATA[k.key].subSeason}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SheetContent>
-            </Sheet>
+            <SeasonCalibrationSheet
+              open={dashCalibrateOpen}
+              onOpenChange={setDashCalibrateOpen}
+              activeSeason={dossier.season}
+              activeSubSeason={dossier.subSeason}
+              onApply={(key, label) => void applyDashboardCalibration(key, label)}
+            />
           </>
         )}
       </div>

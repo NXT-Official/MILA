@@ -116,7 +116,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
         {swatches.map((s, i) => (
           <div
             key={s.label}
-            className="flex flex-col items-center justify-center rounded-xl border border-border/40 p-3 text-center backdrop-blur-md transition-all hover:shadow-md"
+            className="flex flex-col items-center justify-center rounded-control border border-border/40 p-3 text-center backdrop-blur-md transition-all hover:shadow-paper"
             style={{ backgroundColor: hexToRgba(s.hex, 0.08) }}
           >
             <motion.div
@@ -128,7 +128,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
                 ease: [0.22, 1, 0.36, 1],
                 delay: reduce ? 0 : i * 0.06,
               }}
-              className="size-10 rounded-full border-2 border-white shadow-sm"
+              className="size-10 rounded-full border-2 border-card shadow-sm"
               style={{ backgroundColor: s.hex }}
             />
             <div className="mt-2.5 space-y-0.5">
@@ -141,7 +141,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
         ))}
       </div>
 
-      <div className="rounded-xl border border-accent/60 bg-accent-soft p-3">
+      <div className="rounded-control border border-accent/60 bg-accent-soft p-3">
         <div className="flex items-start gap-2">
           <Sparkles className="size-4 text-ink mt-0.5 shrink-0" aria-hidden="true" />
           <p className="text-[13px] text-muted-foreground leading-snug">

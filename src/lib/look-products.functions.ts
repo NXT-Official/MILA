@@ -8,6 +8,9 @@ const Input = z.object({
   tempF: z.number().min(-60).max(140).optional(),
   /** ISO 3166-1 alpha-2 country code. Empty/omitted = unknown, don't region-filter. */
   region: z.string().length(2).optional(),
+  /** "Male" | "Female" | omitted. Omitted (unknown/Non-binary/prefer-not-to-say)
+   * means don't gender-filter — show the full catalog rather than guess. */
+  gender: z.string().optional(),
 });
 export type LookProductsInput = z.infer<typeof Input>;
 
@@ -23,6 +26,13 @@ export type LookProduct = {
   verification_status: string;
   last_verified_at: string | null;
 };
+
+/** A product matches when it's Unisex, matches the requested gender exactly,
+ * or when no gender was requested (show everything rather than guess). */
+export function isGenderMatch(productGender: string, requestedGender?: string): boolean {
+  if (!requestedGender) return true;
+  return productGender === "Unisex" || productGender === requestedGender;
+}
 
 const HOT_WEATHER_F = 75;
 
@@ -58,7 +68,7 @@ export function isAvailableInRegion(
  */
 export async function matchLookProducts(
   supabase: SupabaseClient<Database>,
-  { colorSeason, bodyType, tempF, region }: LookProductsInput,
+  { colorSeason, bodyType, tempF, region, gender }: LookProductsInput,
 ): Promise<LookProduct[]> {
   const { data: categoryRows, error: categoryError } = await supabase
     .from("products")
@@ -79,7 +89,7 @@ export async function matchLookProducts(
     const { data: candidates, error } = await supabase
       .from("products")
       .select(
-        "id,title,brand_id,category,price,currency,image_url,affiliate_link,seasonal_palettes,body_shapes,available_regions,verification_status,last_verified_at,in_stock",
+        "id,title,brand_id,category,price,currency,image_url,affiliate_link,seasonal_palettes,body_shapes,available_regions,verification_status,last_verified_at,in_stock,gender",
       )
       .eq("category", category)
       .neq("verification_status", "broken")
@@ -92,6 +102,7 @@ export async function matchLookProducts(
 
     const best = (candidates ?? [])
       .filter((product) => isAvailableInRegion(product, region))
+      .filter((product) => isGenderMatch(product.gender, gender))
       .map((product) => ({ product, score: scoreProduct(product, colorSeason, bodyType) }))
       .filter((r) => r.score > 0)
       .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.product.price - b.product.price))
@@ -103,6 +114,7 @@ export async function matchLookProducts(
         body_shapes: _bodyShapes,
         available_regions: _availableRegions,
         in_stock: _inStock,
+        gender: _gender,
         ...product
       } = best.product;
       results.push(product);

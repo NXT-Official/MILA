@@ -24,7 +24,9 @@ const buttonVariants = cva(
         lg: "h-12 px-7 text-base",
         icon: "size-11 p-0",
         pill: "h-11 rounded-full px-5",
+        "pill-lg": "h-12 rounded-full px-8 text-xs uppercase tracking-label",
         chip: "h-9 gap-1.5 rounded-full px-3 text-micro uppercase tracking-label-wide",
+        row: "h-12 w-full justify-between px-4 text-sm",
       },
     },
     defaultVariants: {

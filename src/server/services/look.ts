@@ -114,11 +114,17 @@ export async function generateLookForUser(
     // Real, in-stock, non-broken catalog rows — the only things deepseek is
     // allowed to recommend as shoppable picks (see RawShoppablePickSchema's
     // enum constraint below). Never invented by the model.
+    // Non-binary/unknown gender: don't filter the catalog by gender at all
+    // (show everything) rather than guess — same rule the styling prompt
+    // below already follows for silhouette choices.
+    const productGenderFilter =
+      genderValue === "Male" || genderValue === "Female" ? genderValue : undefined;
     const candidateProducts = await matchLookProducts(supabase, {
       colorSeason: colorSeasonValue,
       bodyType: data.bodyType,
       tempF,
       region: data.region,
+      gender: productGenderFilter,
     });
 
     const profileLines = [

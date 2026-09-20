@@ -107,7 +107,11 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
                 <InfoDot text="The specific color families that naturally complement your skin undertone, bringing out a healthy, radiant glow." />
               </h3>
               <div
-                className={`grid grid-cols-1 sm:grid-cols-2 ${primaryBlocks.length >= 4 ? "md:grid-cols-4" : `md:grid-cols-${primaryBlocks.length}`} gap-3`}
+                className={`grid grid-cols-1 sm:grid-cols-2 ${
+                  { 1: "md:grid-cols-1", 2: "md:grid-cols-2", 3: "md:grid-cols-3" }[
+                    Math.min(primaryBlocks.length, 4)
+                  ] ?? "md:grid-cols-4"
+                } gap-3`}
               >
                 {primaryBlocks.map((block, i) => {
                   const ink = readableInk(block.hex);

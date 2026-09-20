@@ -120,8 +120,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       value={{ openConcierge, look: conciergeLook, clearLook: () => setConciergeLook(null) }}
     >
       <div className="min-h-screen flex flex-col w-full">
+        {/* z-index scale: header z-40 < mobile tab bar z-50 (mobile-tab-bar.tsx) < Sheet/Dialog overlays z-[60] (ui/sheet.tsx, ui/dialog.tsx). */}
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-porcelain/30">
-          <div className="max-w-7xl mx-auto h-16 px-5 md:px-8 flex items-center justify-between gap-6 relative">
+          <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-6 relative">
             <Link
               to="/dashboard"
               className="inline-flex items-center gap-2 font-serif text-xl md:text-2xl uppercase tracking-label-xwide text-ink"

@@ -15,6 +15,7 @@ import {
 } from "@/constants/climate";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchDefaultHubId, localDefaultHubId } from "@/lib/default-hub";
+import { cn } from "@/lib/utils";
 
 async function fetchClimate(
   lat: number,
@@ -138,7 +139,12 @@ export function ClimateWidget({
   return (
     <div className="flex w-full flex-col gap-2 rounded-control border border-border bg-card px-4 py-3 sm:w-auto sm:min-w-55">
       <div className="flex items-center gap-3">
-        <span className="grid place-items-center size-8 rounded-full border border-border bg-foreground/4 text-foreground">
+        <span
+          className={cn(
+            "grid place-items-center size-8 rounded-full border border-border bg-foreground/4 text-foreground",
+            loading && "animate-pulse",
+          )}
+        >
           <ClimateGlyph icon={value?.icon ?? "cloud"} className="size-4" />
         </span>
         <div className="leading-tight">

@@ -42,15 +42,24 @@ export function Eyebrow({
   );
 }
 
-export function IconTile({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
+export function IconTile({
+  icon: Icon,
+  size = "md",
+  className,
+}: {
+  icon: LucideIcon;
+  size?: "sm" | "md";
+  className?: string;
+}) {
   return (
     <span
       className={cn(
-        "inline-flex size-11 shrink-0 items-center justify-center rounded-panel border border-border bg-accent-soft/50 text-ink",
+        "inline-flex shrink-0 items-center justify-center rounded-panel border border-border bg-accent-soft/50 text-ink",
+        size === "sm" ? "size-9" : "size-11",
         className,
       )}
     >
-      <Icon className="size-5" strokeWidth={1.75} aria-hidden="true" />
+      <Icon className={size === "sm" ? "size-4" : "size-5"} strokeWidth={1.75} aria-hidden="true" />
     </span>
   );
 }
