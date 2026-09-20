@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { generateLookForUser, renderLookImageForUser } from "@/server/services/look";
+import { generateLookForUser } from "@/server/services/look";
 import type { LookProduct } from "@/lib/look-products.functions";
 
 // Named 2026 haircut trends, sourced from current hairstylist/salon
@@ -300,18 +300,4 @@ export const generateDailyLook = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }): Promise<DailyLook> =>
     generateLookForUser(context.supabase, context.userId, data),
-  );
-
-export const regenerateOutfitImage = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => {
-    const parsed = DailyLookSchema.safeParse(input);
-    if (!parsed.success) {
-      console.error("[regenerateOutfitImage] invalid input", parsed.error.flatten());
-      throw new Error("Mila couldn't prepare that outfit for a new visual. Please try again.");
-    }
-    return parsed.data;
-  })
-  .handler(async ({ data, context }) =>
-    renderLookImageForUser(context.supabase, context.userId, data),
   );

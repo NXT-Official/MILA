@@ -2,7 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Loader2, CheckCircle2, Wand2, Bookmark, RotateCcw } from "lucide-react";
+import {
+  Sparkles,
+  Loader2,
+  CheckCircle2,
+  Wand2,
+  Bookmark,
+  RotateCcw,
+  ImageOff,
+} from "lucide-react";
 import { ClimateWidget, ClimateGlyph } from "@/components/dashboard/climate-widget";
 import type { ClimateState } from "@/constants/climate";
 import { Button } from "@/components/ui/button";
@@ -16,7 +24,6 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import {
   generateDailyLook,
-  regenerateOutfitImage,
   type DailyLook,
   type GeneratedLook,
 } from "@/lib/generate-outfit.functions";
@@ -41,6 +48,7 @@ import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { errorMessage } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const VIBES = [
   "Everyday Casual",
@@ -108,7 +116,6 @@ function Dashboard() {
   const [generating, setGenerating] = useState(false);
   const [look, setLook] = useState<GeneratedLook | null>(null);
   const [shopItems, setShopItems] = useState<LookProduct[] | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
   const [savingLook, setSavingLook] = useState(false);
   const [savedLook, setSavedLook] = useState<{ id: string; imageUrl: string } | null>(null);
   const lookSaved = !!savedLook;
@@ -118,14 +125,11 @@ function Dashboard() {
   const [indoorOutdoor, setIndoorOutdoor] = useState<"Indoor" | "Outdoor" | "Mixed" | "">("");
   const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
   const [climate, setClimate] = useState<ClimateState | null>(null);
-  const [previewMode, setPreviewMode] = useState<"inspiration" | "photo_edit">("inspiration");
   const [photoPreviewLoading, setPhotoPreviewLoading] = useState(false);
-  const [inspirationImageDataUri, setInspirationImageDataUri] = useState<string | null>(null);
   const [styleSheetLoading, setStyleSheetLoading] = useState(false);
   const [styleSheetImageDataUri, setStyleSheetImageDataUri] = useState<string | null>(null);
 
   const generate = useServerFn(generateDailyLook);
-  const regenerateImage = useServerFn(regenerateOutfitImage);
   const saveOutfit = useServerFn(saveOutfitToHistory);
   const fetchLookProducts = useServerFn(findLookProducts);
   const generatePhotoPreviewFn = useServerFn(generatePhotoPreview);
@@ -150,36 +154,40 @@ function Dashboard() {
     }
   }
 
-  async function fetchImage(outfit: DailyLook) {
-    setImageLoading(true);
+  /** Shared by the auto-generation in generateLook() and the manual retry button. */
+  async function generateStyleSheetVisual(outfitForSheet: {
+    outfit: DailyLook["outfit"];
+    hair: DailyLook["hair"];
+    makeup: DailyLook["makeup"];
+    vibe_alignment_score: DailyLook["vibe_alignment_score"];
+    shoppable_picks: DailyLook["shoppable_picks"];
+    forecastRetrievedAt: DailyLook["forecastRetrievedAt"];
+  }) {
+    setStyleSheetLoading(true);
     try {
-      const res = await regenerateImage({ data: outfit });
-      setLook((prev) => (prev ? { ...prev, imageGenerationError: undefined, ...res } : prev));
-      setSavedLook(null);
-      setPreviewMode("inspiration");
-      if (res.imageDataUri) setInspirationImageDataUri(res.imageDataUri);
-      return res;
+      const res = await generateStyleSheetFn({ data: { outfit: outfitForSheet } });
+      if (res.mode === "style_sheet") {
+        setStyleSheetImageDataUri(res.imageDataUri);
+        setSavedLook(null);
+        return true;
+      }
+      toast.error(res.reason);
+      return false;
     } catch (e) {
       if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
-        setLook((prev) =>
-          prev ? { ...prev, imageDataUri: null, imageGenerationError: undefined } : prev,
-        );
-        return { imageDataUri: null, imageGenerationError: undefined };
+      } else {
+        toast.error(errorMessage(e, "Couldn't create your style sheet. Please try again."));
       }
-      const message = errorMessage(e, "Your look is ready, but Mila couldn’t create the visual.");
-      setLook((prev) =>
-        prev ? { ...prev, imageDataUri: null, imageGenerationError: message } : prev,
-      );
-      return { imageDataUri: null, imageGenerationError: message };
+      return false;
     } finally {
-      setImageLoading(false);
+      setStyleSheetLoading(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
 
   async function generateLook() {
-    if (generating || imageLoading) return;
+    if (generating) return;
     if (!user || !profile?.body_type || !profile?.color_season) {
       toast.error("Complete your Style Profile first.");
       return;
@@ -192,8 +200,6 @@ function Dashboard() {
     setLook(null);
     setShopItems(null);
     setSavedLook(null);
-    setPreviewMode("inspiration");
-    setInspirationImageDataUri(null);
     setStyleSheetImageDataUri(null);
     let outfit: DailyLook;
     try {
@@ -229,118 +235,47 @@ function Dashboard() {
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
 
-    const hasConsentedPhoto = !!profile.photo_consent_at;
-    if (!hasConsentedPhoto) {
-      void fetchShopItems(
-        profile.color_season,
-        profile.body_type,
-        climate.tempF,
-        profile.delivery_country || climate.country,
-      );
-      await fetchImage(outfit);
-      return;
-    }
-
-    // Consented users get the face-on-photo version by default.
     void fetchShopItems(
       profile.color_season,
       profile.body_type,
       climate.tempF,
       profile.delivery_country || climate.country,
     );
-    await fetchImage(outfit);
 
-    setPhotoPreviewLoading(true);
-    try {
-      const { outfit: outfitBody, hair, makeup, vibe_alignment_score } = outfit;
-      const res = await runPhotoPreview({ outfit: outfitBody, hair, makeup, vibe_alignment_score });
-      if (res.mode === "photo_edit") {
-        setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
-        setPreviewMode("photo_edit");
-      } else {
-        // Inspiration image (already generated above) stays as the shown
-        // result — never a hard failure, since it's already a usable look.
-        toast.info(res.reason);
-      }
-    } catch (e) {
-      if (!isInsufficientCreditsError(e)) {
-        console.error("[dashboard] automatic photo preview failed", e);
-      }
-      // Silent fallback to the inspiration image — the user didn't click
-      // anything for this attempt, so don't interrupt with a paywall here.
-    } finally {
-      setPhotoPreviewLoading(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
-    }
+    // No stock-model fallback anymore — a visual requires a consented
+    // photo, since the style sheet is now the only auto-generated image.
+    if (!profile.photo_consent_at) return;
 
-    // Style sheet rides along with the same "Create my look" click for
-    // consented users, rather than requiring a second manual "Generate style
-    // sheet" click — the manual button still works afterward, for a retry.
-    setStyleSheetLoading(true);
-    try {
-      const { outfit: outfitBody, hair, makeup, vibe_alignment_score, shoppable_picks, forecastRetrievedAt } =
-        outfit;
-      const res = await generateStyleSheetFn({
-        data: {
-          outfit: {
-            outfit: outfitBody,
-            hair,
-            makeup,
-            vibe_alignment_score,
-            shoppable_picks,
-            forecastRetrievedAt,
-          },
-        },
-      });
-      if (res.mode === "style_sheet") {
-        setStyleSheetImageDataUri(res.imageDataUri);
-      } else {
-        // Same non-blocking fallback as the photo preview above — the
-        // portrait visual is already a usable result on its own.
-        toast.info(res.reason);
-      }
-    } catch (e) {
-      if (!isInsufficientCreditsError(e)) {
-        console.error("[dashboard] automatic style sheet failed", e);
-      }
-    } finally {
-      setStyleSheetLoading(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
-    }
-  }
-
-  async function retryImage() {
-    if (!look || imageLoading || generating) return;
-    const { outfit, hair, makeup, vibe_alignment_score } = look;
-    const res = await fetchImage({ outfit, hair, makeup, vibe_alignment_score });
-    if (res.imageDataUri) {
-      toast.success("Visual ready.");
-    } else if (res.imageGenerationError) {
-      toast.error(res.imageGenerationError);
-    }
-  }
-
-  /** Shared with the automatic post-generation attempt in generateLook(). */
-  async function runPhotoPreview(outfitForEdit: {
-    outfit: DailyLook["outfit"];
-    hair: DailyLook["hair"];
-    makeup: DailyLook["makeup"];
-    vibe_alignment_score: DailyLook["vibe_alignment_score"];
-  }) {
-    return generatePhotoPreviewFn({ data: { outfit: outfitForEdit } });
+    const {
+      outfit: outfitBody,
+      hair,
+      makeup,
+      vibe_alignment_score,
+      shoppable_picks,
+      forecastRetrievedAt,
+    } = outfit;
+    await generateStyleSheetVisual({
+      outfit: outfitBody,
+      hair,
+      makeup,
+      vibe_alignment_score,
+      shoppable_picks,
+      forecastRetrievedAt,
+    });
   }
 
   async function previewOnMyPhoto() {
-    if (!look || photoPreviewLoading || imageLoading || generating) return;
+    if (!look || photoPreviewLoading || generating) return;
     setPhotoPreviewLoading(true);
     try {
       const { outfit, hair, makeup, vibe_alignment_score } = look;
-      const res = await runPhotoPreview({ outfit, hair, makeup, vibe_alignment_score });
+      const res = await generatePhotoPreviewFn({
+        data: { outfit: { outfit, hair, makeup, vibe_alignment_score } },
+      });
       if (res.mode === "photo_edit") {
         setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
-        setPreviewMode("photo_edit");
         setSavedLook(null);
-        toast.success("Photo preview ready.");
+        toast.success("Portrait preview ready.");
       } else {
         toast.error(res.reason);
       }
@@ -357,54 +292,18 @@ function Dashboard() {
   }
 
   async function previewStyleSheet() {
-    if (!look || styleSheetLoading || imageLoading || generating) return;
-    setStyleSheetLoading(true);
-    try {
-      const { outfit, hair, makeup, vibe_alignment_score, shoppable_picks, forecastRetrievedAt } =
-        look;
-      const res = await generateStyleSheetFn({
-        data: {
-          outfit: {
-            outfit,
-            hair,
-            makeup,
-            vibe_alignment_score,
-            shoppable_picks,
-            forecastRetrievedAt,
-          },
-        },
-      });
-      if (res.mode === "style_sheet") {
-        setStyleSheetImageDataUri(res.imageDataUri);
-        toast.success("Style sheet ready.");
-      } else {
-        toast.error(res.reason);
-      }
-    } catch (e) {
-      if (isInsufficientCreditsError(e)) {
-        setCreditPaywallOpen(true);
-      } else {
-        toast.error(errorMessage(e, "Couldn't create a style sheet. Please try again."));
-      }
-    } finally {
-      setStyleSheetLoading(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
-    }
-  }
-
-  function backToInspirationImage() {
-    if (!look) return;
-    setSavedLook(null);
-    if (inspirationImageDataUri) {
-      setLook((prev) =>
-        prev
-          ? { ...prev, imageDataUri: inspirationImageDataUri, imageGenerationError: undefined }
-          : prev,
-      );
-      setPreviewMode("inspiration");
-      return;
-    }
-    void retryImage();
+    if (!look || styleSheetLoading || generating) return;
+    const { outfit, hair, makeup, vibe_alignment_score, shoppable_picks, forecastRetrievedAt } =
+      look;
+    const ok = await generateStyleSheetVisual({
+      outfit,
+      hair,
+      makeup,
+      vibe_alignment_score,
+      shoppable_picks,
+      forecastRetrievedAt,
+    });
+    if (ok) toast.success("Style sheet ready.");
   }
 
   async function saveLookToHistory() {
@@ -429,7 +328,7 @@ function Dashboard() {
           vibe_alignment_score: look.vibe_alignment_score,
           forecastRetrievedAt: look.forecastRetrievedAt ?? null,
           productIds: (shopItems ?? []).map((item) => item.id),
-          previewMode: styleSheetImageDataUri ? "style_sheet" : previewMode,
+          previewMode: styleSheetImageDataUri ? "style_sheet" : "photo_edit",
         },
       });
       setSavedLook({ id: row.id, imageUrl: row.image_url });
@@ -585,7 +484,7 @@ function Dashboard() {
               </div>
               <Button
                 onClick={generateLook}
-                disabled={generating || !profileComplete || !climate || imageLoading}
+                disabled={generating || !profileComplete || !climate}
                 aria-describedby={blockedReason ? "generate-blocked" : undefined}
                 size="pill"
                 className="w-full sm:w-auto whitespace-normal text-center leading-snug"
@@ -647,74 +546,100 @@ function Dashboard() {
                       hair={look.hair}
                       makeup={look.makeup}
                       media={
-                        <div>
-                          <OutfitVisual
-                            imageDataUri={look.imageDataUri}
-                            imageGenerationError={look.imageGenerationError}
-                            loading={imageLoading || photoPreviewLoading}
-                            headline={look.outfit.headline}
-                            onRetry={retryImage}
-                            retryDisabled={imageLoading || generating || photoPreviewLoading}
-                            label={
-                              previewMode === "photo_edit"
-                                ? "AI-edited preview of your photo"
-                                : "AI-generated outfit inspiration"
-                            }
-                          />
-                          {profile?.photo_consent_at && photoPreviewLoading ? (
-                            <p className="mt-3 text-xs text-muted-foreground">
-                              Personalizing to your photo…
-                            </p>
-                          ) : null}
-                          {profile?.photo_consent_at &&
-                          !photoPreviewLoading &&
-                          styleSheetLoading &&
-                          !styleSheetImageDataUri ? (
-                            <p className="mt-3 text-xs text-muted-foreground">
-                              Building your style sheet…
-                            </p>
-                          ) : null}
-                          {profile?.photo_consent_at && !imageLoading && !photoPreviewLoading ? (
-                            <div className="mt-3 flex max-w-lg items-center gap-2">
-                              {previewMode === "inspiration" ? (
+                        <div className="space-y-4">
+                          {!profile?.photo_consent_at ? (
+                            <div className="atelier-media-frame max-w-lg">
+                              <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+                                <ImageOff
+                                  className="size-6 text-muted-foreground"
+                                  aria-hidden="true"
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                  Add a consented photo above to generate your style sheet.
+                                </p>
+                              </div>
+                            </div>
+                          ) : styleSheetLoading ? (
+                            <div
+                              className="atelier-media-frame aspect-video max-w-2xl"
+                              role="status"
+                            >
+                              <Skeleton className="absolute inset-0 bg-accent-soft/50" />
+                              <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+                                <Loader2
+                                  className="size-5 animate-spin text-ink"
+                                  aria-hidden="true"
+                                />
+                                <p className="font-serif text-lg text-foreground">
+                                  Building your style sheet…
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Rendering your identity-locked 5-view turnaround.
+                                </p>
+                              </div>
+                            </div>
+                          ) : styleSheetImageDataUri ? (
+                            <div className="max-w-2xl">
+                              <img
+                                src={styleSheetImageDataUri}
+                                alt={`Identity-locked 5-view style sheet of ${look.outfit.headline}`}
+                                className="w-full rounded-lg border"
+                              />
+                              <p className="mt-2 text-micro uppercase tracking-label-xwide text-muted-foreground">
+                                Identity-locked style sheet
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="atelier-media-frame max-w-2xl">
+                              <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+                                <ImageOff
+                                  className="size-6 text-muted-foreground"
+                                  aria-hidden="true"
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                  The outfit is ready, but the style sheet couldn't be generated.
+                                </p>
                                 <Button
                                   variant="outline"
-                                  size="sm"
-                                  loading={photoPreviewLoading}
+                                  size="pill"
+                                  onClick={previewStyleSheet}
                                   disabled={generating}
-                                  onClick={previewOnMyPhoto}
                                 >
-                                  Regenerate photo preview
+                                  <RotateCcw aria-hidden="true" />
+                                  Retry visual
                                 </Button>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={photoPreviewLoading || generating}
-                                  onClick={backToInspirationImage}
-                                >
-                                  Back to inspiration image
-                                </Button>
-                              )}
+                              </div>
+                            </div>
+                          )}
+
+                          {profile?.photo_consent_at ? (
+                            <div className="flex max-w-lg items-center gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                loading={styleSheetLoading}
-                                disabled={imageLoading || generating || photoPreviewLoading}
-                                onClick={previewStyleSheet}
+                                loading={photoPreviewLoading}
+                                disabled={generating}
+                                onClick={previewOnMyPhoto}
                               >
-                                Generate style sheet
+                                {look.imageDataUri
+                                  ? "Regenerate portrait preview"
+                                  : "Generate portrait preview"}
                               </Button>
                             </div>
                           ) : null}
-                          {styleSheetImageDataUri ? (
-                            <div className="mt-3">
-                              <img
-                                src={styleSheetImageDataUri}
-                                alt="Identity-locked 5-view style sheet of today's recommended look"
-                                className="w-full rounded-lg border"
-                              />
-                            </div>
+                          {profile?.photo_consent_at &&
+                          (look.imageDataUri ||
+                            photoPreviewLoading ||
+                            look.imageGenerationError) ? (
+                            <OutfitVisual
+                              imageDataUri={look.imageDataUri}
+                              imageGenerationError={look.imageGenerationError}
+                              loading={photoPreviewLoading}
+                              headline={look.outfit.headline}
+                              onRetry={previewOnMyPhoto}
+                              retryDisabled={generating || photoPreviewLoading}
+                              label="AI-edited preview of your photo"
+                            />
                           ) : null}
                         </div>
                       }
@@ -752,28 +677,25 @@ function Dashboard() {
                           </>
                         )}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={retryImage}
-                        disabled={imageLoading || generating}
-                        size="pill"
-                      >
-                        {imageLoading ? (
-                          <>
-                            <Loader2 className="animate-spin" aria-hidden="true" /> Drawing…
-                          </>
-                        ) : (
-                          <>
-                            <RotateCcw aria-hidden="true" /> New visual
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={generateLook}
-                        disabled={imageLoading}
-                        size="pill"
-                      >
+                      {profile?.photo_consent_at ? (
+                        <Button
+                          variant="ghost"
+                          onClick={previewStyleSheet}
+                          disabled={styleSheetLoading || generating}
+                          size="pill"
+                        >
+                          {styleSheetLoading ? (
+                            <>
+                              <Loader2 className="animate-spin" aria-hidden="true" /> Drawing…
+                            </>
+                          ) : (
+                            <>
+                              <RotateCcw aria-hidden="true" /> New visual
+                            </>
+                          )}
+                        </Button>
+                      ) : null}
+                      <Button variant="ghost" onClick={generateLook} size="pill">
                         <Sparkles aria-hidden="true" /> Try another look
                       </Button>
                       {savedLook && (
