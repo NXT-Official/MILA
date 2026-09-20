@@ -127,7 +127,7 @@ export async function generateLookForUser(
         : null,
       `- Body type: ${data.bodyType}`,
       heightCm != null || weightKg != null
-        ? `- Build: ${[heightCm != null ? `${heightCm}cm` : null, weightKg != null ? `${weightKg}kg` : null].filter(Boolean).join(", ")} (use this only to inform proportion/scale language — e.g. petite framing, elongating lines, tailored volume — never restate these numbers back in the output)`
+        ? `- Build: ${[heightCm != null ? `${heightCm}cm` : null, weightKg != null ? `${weightKg}kg` : null].filter(Boolean).join(", ")} (AUTHORITATIVE for proportion — derive concrete silhouette math from this exact height, e.g. rise height, hem/break length, jacket length vs. torso, layering scale, waist placement; taller framing can carry longer coats and lower rise, shorter framing needs higher rise, cropped hems, and vertical lines to elongate; never restate these numbers back in the output, only the resulting silhouette choices)`
         : null,
       `- 16-season color profile: ${colorSeasonValue} (AUTHORITATIVE — every color reference in outfit/hair/makeup MUST be drawn from this exact season; do NOT substitute a different season name)`,
       data.skinUndertone ? `- Skin undertone: ${data.skinUndertone}` : null,
@@ -201,7 +201,9 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
 }
 
 RULES:
-- OUTFIT: write a vivid 'headline', a 2-4 sentence 'description' that names main garments (fabrics, colors, silhouettes harmonized with the ${colorSeasonValue} palette and flattering a ${data.bodyType} figure), and short 'styling_notes' (cuffs, tucking, layering tweaks). Where they fit the requested vibe, draw from current 2026 trending pieces: ${OUTFIT_TREND_PIECES_2026.join("; ")}. Don't force a fit if none of these suit the "${data.vibe}" vibe.
+- OUTFIT (MANDATORY 2026 TREND SOURCING): every look, including plain "Everyday Casual" moods, MUST incorporate at least one named piece or detail from the current 2026 trend list below, picked for the vibe: ${OUTFIT_TREND_PIECES_2026.join("; ")}. Match the trend's listed aesthetic to the "${data.vibe}" mood; if none list that exact aesthetic, pick the closest-reading one and adapt it down to an everyday-wearable version rather than skipping trend sourcing entirely. Never default to a generic, dated, or trend-blind outfit.
+- OUTFIT PROPORTION: every garment length, rise, and layering choice must be derived from the client's Build line above — state silhouette choices (e.g. cropped vs. long hem, high rise vs. mid rise, structured vs. relaxed shoulder) that are proportionally correct for that height, even for the most casual mood.
+- OUTFIT COLOR: every color named in 'description' must be chosen for BOTH the ${colorSeasonValue} 16-season palette AND how it reads against the client's actual skin (skin depth ${skinDepthValue ?? "n/a"}${data.skinUndertone ? `, ${data.skinUndertone} undertone` : ""}) — favor the specific shades within the ${colorSeasonValue} family that maximize contrast/harmony for that skin depth and undertone, not just any color inside the season. Write the 'description' (fabrics, colors, silhouettes flattering a ${data.bodyType} figure) and short 'styling_notes' (cuffs, tucking, layering tweaks) accordingly, plus a vivid 'headline'.
 ${hairRule}
 ${
   makeupEnabled
