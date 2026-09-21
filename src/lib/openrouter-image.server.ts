@@ -22,10 +22,19 @@ const SKIN_DEPTH_DESCRIPTORS: Record<string, string> = {
   Deep: "deep-toned",
 };
 
+function formatHeightLine(heightCm?: number | null): string | null {
+  if (heightCm == null) return null;
+  const totalInches = heightCm / 2.54;
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches % 12);
+  return `exactly ${heightCm}cm tall (${feet}'${inches}") — render the model's real-world height and proportions to this exact figure, not an idealized/elongated fashion-model height`;
+}
+
 function buildOutfitImagePrompt(
   outfit: DailyLook,
   gender?: string | null,
   skinDepth?: string | null,
+  heightCm?: number | null,
 ): string {
   const outfitLine = [
     outfit.outfit.headline,
@@ -40,7 +49,10 @@ function buildOutfitImagePrompt(
       ? `presenting as ${gender.toLowerCase()}`
       : null;
   const skinLine = skinDepth ? `with ${SKIN_DEPTH_DESCRIPTORS[skinDepth] ?? skinDepth} skin` : null;
-  const modelLine = `one adult model ${[genderLine, skinLine].filter(Boolean).join(" ")}`.trim();
+  const heightLine = formatHeightLine(heightCm);
+  const modelLine =
+    `one adult model ${[genderLine, skinLine].filter(Boolean).join(" ")}`.trim() +
+    (heightLine ? `, ${heightLine}` : "");
   const makeupBlock = outfit.makeup ? `\n\nMakeup:\n${outfit.makeup.palette}` : "";
 
   return `Create a realistic full-body luxury fashion editorial photograph.
@@ -72,7 +84,7 @@ export interface OutfitImageResult {
 
 export async function generateOutfitImage(
   outfit: DailyLook,
-  deps: { gender?: string | null; skinDepth?: string | null } = {},
+  deps: { gender?: string | null; skinDepth?: string | null; heightCm?: number | null } = {},
 ): Promise<OutfitImageResult> {
   const { OPENROUTER_API_KEY } = requireEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
@@ -88,7 +100,7 @@ export async function generateOutfitImage(
       },
       body: JSON.stringify({
         model: IMAGE_MODEL,
-        prompt: buildOutfitImagePrompt(outfit, deps.gender, deps.skinDepth),
+        prompt: buildOutfitImagePrompt(outfit, deps.gender, deps.skinDepth, deps.heightCm),
         output_format: "jpeg",
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),

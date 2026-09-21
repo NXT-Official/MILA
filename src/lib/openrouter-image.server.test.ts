@@ -52,6 +52,28 @@ describe("OpenRouter outfit image generation", () => {
     });
   });
 
+  test("includes exact height in cm and feet/inches when provided", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(init?.body as string);
+      expect(body.prompt).toContain("exactly 175cm tall (5'9\")");
+      return Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+
+    await generateOutfitImage(outfit, { heightCm: 175 });
+  });
+
+  test("omits height line when heightCm is not provided", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(init?.body as string);
+      expect(body.prompt).not.toContain("tall (");
+      return Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+
+    await generateOutfitImage(outfit);
+  });
+
   test("returns null cost and token counts when OpenRouter omits usage", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     globalThis.fetch = mock(async () =>

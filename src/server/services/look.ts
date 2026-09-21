@@ -285,13 +285,14 @@ export async function renderLookImageForUser(
     try {
       const { data: profileRow } = await supabase
         .from("profiles")
-        .select("gender,skin_depth")
+        .select("gender,skin_depth,height_cm")
         .eq("id", userId)
         .maybeSingle();
       const { imageUrl, costUsd, promptTokens, completionTokens, totalTokens } =
         await generateOutfitImage(data, {
           gender: profileRow?.gender,
           skinDepth: profileRow?.skin_depth,
+          heightCm: profileRow?.height_cm,
         });
       await logAiSpend(supabase, userId, {
         provider: IMAGE_PROVIDER,
