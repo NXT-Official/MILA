@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Images, ImageOff, Sparkles, Trash2, Loader2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadErrorPanel } from "@/components/ui/error-state";
@@ -249,11 +250,11 @@ function History() {
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState<OutfitRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   async function deleteOutfit(item: OutfitRow) {
     if (!user) return;
-    if (!window.confirm("Delete this look from your archive? This can't be undone.")) return;
     setDeleting(true);
     const { error } = await supabase
       .from("outfits")
@@ -365,7 +366,7 @@ function History() {
                 variant="outline"
                 size="pill"
                 disabled={deleting}
-                onClick={() => deleteOutfit(selected)}
+                onClick={() => setConfirmingDelete(true)}
                 className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
               >
                 {deleting ? (
@@ -410,6 +411,18 @@ function History() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title="Delete this look from your archive?"
+        description="This can't be undone."
+        busy={deleting}
+        onConfirm={() => {
+          setConfirmingDelete(false);
+          if (selected) deleteOutfit(selected);
+        }}
+      />
     </div>
   );
 }

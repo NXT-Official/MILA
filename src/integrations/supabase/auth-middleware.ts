@@ -94,11 +94,20 @@ export async function verifyBearerAuth(request: Request): Promise<VerifiedAuth> 
     throw new UnauthorizedError("Unauthorized: No user ID found in token");
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("suspended")
     .eq("id", data.claims.sub)
     .maybeSingle();
+  // Fail closed on a genuine query error — don't let a transient Supabase
+  // fault fall through the suspension check unnoticed. A row that legitimately
+  // doesn't exist (no error, profile null) isn't blocked here: the signup
+  // trigger creates it, so a null row without an error is a different,
+  // separately-handled anomaly, not a suspension-check bypass.
+  if (profileError) {
+    console.error("[requireSupabaseAuth] suspension check failed", profileError);
+    throw new Error("Couldn't verify account status. Please try again.");
+  }
   if (profile?.suspended) {
     throw new SuspendedError("Forbidden: Account suspended");
   }

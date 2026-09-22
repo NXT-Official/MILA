@@ -121,6 +121,12 @@ export function ConciergeChat({
   const [attachment, setAttachment] = useState<{ file: File; preview: string } | null>(null);
   const attachRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    return () => {
+      if (attachment) URL.revokeObjectURL(attachment.preview);
+    };
+  }, [attachment]);
+
   function toggleDictation() {
     if (listening) {
       recognitionRef.current?.stop();

@@ -73,7 +73,7 @@ export const supabaseDeleteAccountDeps: DeleteAccountDeps = {
 
   purgeStorage: async (userId) => {
     const supabaseAdmin = await admin();
-    for (const bucket of ["outfits", "posts"] as const) {
+    for (const bucket of ["outfits", "posts", "profile-photos"] as const) {
       const { data: files, error } = await supabaseAdmin.storage
         .from(bucket)
         .list(userId, { limit: 1000 });

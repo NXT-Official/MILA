@@ -1,4 +1,4 @@
-import { Check, Sparkles } from "lucide-react";
+import { Check, Loader2, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +15,14 @@ export function PricingCard({
   plan,
   onChoosePlan,
   disabled,
+  loading,
 }: {
   plan: PublicSubscriptionPlan;
   onChoosePlan?: () => void;
   disabled?: boolean;
+  /** True while checkout is still initializing (e.g. Paddle.js loading) —
+   * shows a spinner so a disabled button doesn't read as broken. */
+  loading?: boolean;
 }) {
   const price = formatPlanPrice(plan.price_amount, plan.currency);
   const interval = BILLING_INTERVAL_SUFFIX[plan.billing_interval];
@@ -76,7 +80,14 @@ export function PricingCard({
             variant={plan.is_featured ? "primary" : "secondary"}
             className="w-full"
           >
-            Choose Plan
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                Preparing checkout…
+              </span>
+            ) : (
+              "Choose Plan"
+            )}
           </Button>
           <p className="mt-3 text-center text-micro leading-relaxed text-muted">
             By subscribing you agree to our{" "}

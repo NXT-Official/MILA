@@ -61,8 +61,8 @@ export function SignupForm({
     passedChecks <= 2
       ? { label: "Weak", bar: "bg-destructive", text: "text-destructive" }
       : passedChecks < passwordChecks.length
-        ? { label: "Medium", bar: "bg-amber-500", text: "text-amber-600" }
-        : { label: "Strong", bar: "bg-emerald-500", text: "text-emerald-600" };
+        ? { label: "Medium", bar: "bg-warning", text: "text-warning" }
+        : { label: "Strong", bar: "bg-success", text: "text-success" };
 
   const onSubmit = async (data: SignupFormValues) => {
     if (!captcha.token) {
@@ -103,9 +103,15 @@ export function SignupForm({
           id="signup-username"
           placeholder="atelier_handle"
           className="h-10"
+          aria-invalid={errors.username ? true : undefined}
+          aria-describedby={errors.username ? "signup-username-error" : undefined}
           {...register("username")}
         />
-        {errors.username && <p className="text-xs text-destructive">{errors.username.message}</p>}
+        {errors.username && (
+          <p id="signup-username-error" className="text-xs text-destructive">
+            {errors.username.message}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -117,13 +123,19 @@ export function SignupForm({
           type="email"
           placeholder="name@studio.com"
           className="h-10"
+          aria-invalid={errors.email ? true : undefined}
+          aria-describedby={errors.email ? "signup-email-error" : undefined}
           {...emailField}
           onChange={(e) => {
             emailField.onChange(e);
             onEmailChange(e.target.value);
           }}
         />
-        {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+        {errors.email && (
+          <p id="signup-email-error" className="text-xs text-destructive">
+            {errors.email.message}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -136,11 +148,17 @@ export function SignupForm({
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             className="h-10 pr-10"
+            aria-invalid={errors.password ? true : undefined}
+            aria-describedby={errors.password ? "signup-password-error" : undefined}
             {...register("password")}
           />
           <PasswordVisibilityButton visible={showPassword} onToggle={onToggleShowPassword} />
         </div>
-        {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+        {errors.password && (
+          <p id="signup-password-error" className="text-xs text-destructive">
+            {errors.password.message}
+          </p>
+        )}
       </div>
 
       {password && (
@@ -163,7 +181,7 @@ export function SignupForm({
                 <li
                   key={c.label}
                   className={`flex items-center gap-1.5 text-label ${
-                    ok ? "text-emerald-600" : "text-muted-foreground"
+                    ok ? "text-success" : "text-muted-foreground"
                   }`}
                 >
                   {ok ? <Check className="size-3" /> : <X className="size-3" />}

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ConciergeChat } from "@/components/concierge/concierge-chat";
 import { AnchoredLookCard } from "@/components/concierge/anchored-look-card";
 import { useAuth } from "@/hooks/use-auth";
@@ -38,6 +39,7 @@ function ConciergePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const { data: recents } = useQuery({
     queryKey: queryKeys.conciergeConversations(user?.id),
@@ -72,7 +74,6 @@ function ConciergePage() {
 
   async function deleteConversation(id: string) {
     if (!user) return;
-    if (!window.confirm("Delete this conversation? This can't be undone.")) return;
     const { error } = await supabase
       .from("concierge_conversations")
       .delete()
@@ -194,7 +195,7 @@ function ConciergePage() {
               </button>
               <button
                 type="button"
-                onClick={() => deleteConversation(c.id)}
+                onClick={() => setDeleteTargetId(c.id)}
                 aria-label={`Delete conversation “${c.title}”`}
                 className="shrink-0 p-2 mr-1 rounded-full text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
               >
@@ -282,6 +283,17 @@ function ConciergePage() {
           }}
         />
       </div>
+
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => !open && setDeleteTargetId(null)}
+        title="Delete this conversation?"
+        description="This can't be undone."
+        onConfirm={() => {
+          if (deleteTargetId) deleteConversation(deleteTargetId);
+          setDeleteTargetId(null);
+        }}
+      />
     </div>
   );
 }

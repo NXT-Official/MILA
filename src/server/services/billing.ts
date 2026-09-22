@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { requireEnv } from "@/lib/env";
+import { getPaddleApiBase, getPaddleApiKey } from "@/lib/paddle-env.server";
 import {
   cancelSubscriptionForUser,
   cancelViaPaddleApi,
@@ -11,8 +11,6 @@ import {
 import { DomainValidationError, UpstreamUnavailableError } from "@/server/http/api-errors";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
-
-const PADDLE_API = "https://sandbox-api.paddle.com";
 
 export type CheckoutUrlInputData = { planId: string };
 
@@ -42,14 +40,12 @@ export async function getCheckoutUrlForUser(
     throw new DomainValidationError("That plan isn't available for checkout.");
   }
 
-  const { PADDLE_SANDBOX_API_KEY } = requireEnv({
-    PADDLE_SANDBOX_API_KEY: process.env.PADDLE_SANDBOX_API_KEY,
-  });
+  const paddleApiKey = getPaddleApiKey();
 
-  const res = await fetch(`${PADDLE_API}/transactions`, {
+  const res = await fetch(`${getPaddleApiBase()}/transactions`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${PADDLE_SANDBOX_API_KEY}`,
+      Authorization: `Bearer ${paddleApiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -84,16 +80,13 @@ export async function syncPurchaseForUser(
   userId: string,
   transactionId: string,
 ): Promise<{ synced: boolean }> {
-  const { PADDLE_SANDBOX_API_KEY } = requireEnv({
-    PADDLE_SANDBOX_API_KEY: process.env.PADDLE_SANDBOX_API_KEY,
-  });
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { syncPaddleTransactionForUser, paddleApi } = await import("@/lib/paddle-sync.server");
   return syncPaddleTransactionForUser(
     supabaseAdmin,
     userId,
     transactionId,
-    paddleApi(PADDLE_SANDBOX_API_KEY),
+    paddleApi(getPaddleApiKey()),
   );
 }
 

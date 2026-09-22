@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { RefreshCw, Sparkles, Bookmark } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { generateDailyPalette } from "@/lib/color-analysis/paletteGenerator";
@@ -60,10 +60,19 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
     day: "numeric",
   });
 
+  const shuffleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (shuffleTimeoutRef.current) clearTimeout(shuffleTimeoutRef.current);
+    };
+  }, []);
+
   const handleShuffle = useCallback(() => {
+    if (shuffleTimeoutRef.current) clearTimeout(shuffleTimeoutRef.current);
     setIsRotating(true);
     setMixCount((c) => c + 1);
-    setTimeout(() => {
+    shuffleTimeoutRef.current = setTimeout(() => {
       const next = generateDailyPalette(normalizedSeason);
       setLook(next);
       setIsRotating(false);

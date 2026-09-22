@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Camera, Loader2, RotateCcw, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, errorMessage } from "@/lib/utils";
@@ -49,6 +49,21 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
   }
 
   useEffect(() => stopStream, []);
+
+  const backUrl = useMemo(() => (back ? URL.createObjectURL(back) : null), [back]);
+  const frontUrl = useMemo(() => (front ? URL.createObjectURL(front) : null), [front]);
+
+  useEffect(() => {
+    return () => {
+      if (backUrl) URL.revokeObjectURL(backUrl);
+    };
+  }, [backUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (frontUrl) URL.revokeObjectURL(frontUrl);
+    };
+  }, [frontUrl]);
 
   async function startCamera(facing: "environment" | "user") {
     setError(null);
@@ -103,13 +118,13 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
       <div className="space-y-5">
         <div className="relative w-full aspect-3/4 rounded-2xl overflow-hidden border border-porcelain/60 bg-atelier-ivory/60 shadow-atelier-soft">
           <img
-            src={URL.createObjectURL(back)}
+            src={backUrl ?? undefined}
             alt="The fit"
             className="absolute inset-0 h-full w-full object-cover"
           />
           <div className="absolute top-4 left-4 size-20 rounded-full overflow-hidden border-2 border-atelier-ivory shadow-atelier-float">
             <img
-              src={URL.createObjectURL(front)}
+              src={frontUrl ?? undefined}
               alt="Face & hair"
               className="h-full w-full object-cover"
             />

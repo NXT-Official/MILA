@@ -5,13 +5,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/constants/query-keys";
 import { STEWARD_EMAIL } from "@/constants/app";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /** Blocks a suspended account from every authenticated tree, members and staff alike. */
 export function SuspendedGate({ children }: { children: ReactNode }) {
   const { session, signOut } = useAuth();
   const userId = session?.user.id;
 
-  const { data: suspended } = useQuery({
+  const { data: suspended, isLoading } = useQuery({
     queryKey: queryKeys.suspended(userId),
     enabled: !!userId,
     queryFn: async () => {
@@ -23,6 +24,17 @@ export function SuspendedGate({ children }: { children: ReactNode }) {
       return !!data?.suspended;
     },
   });
+
+  // Don't render the authenticated app (or the suspended-block screen) until
+  // we actually know the suspension status — otherwise a suspended member
+  // briefly sees the real dashboard on every cold load before this resolves.
+  if (userId && isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-6">
+        <Skeleton className="h-8 w-48" />
+      </div>
+    );
+  }
 
   if (!suspended) return <>{children}</>;
 

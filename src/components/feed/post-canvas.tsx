@@ -75,10 +75,15 @@ export function PostCanvas({ post }: { post: FeedPost }) {
                 left: `${(item.bbox.x + item.bbox.w / 2) * 100}%`,
                 top: `${(item.bbox.y + item.bbox.h / 2) * 100}%`,
               }}
-              className="atelier-focus-ring absolute -translate-x-1/2 -translate-y-1/2 size-6 rounded-full border-2 border-atelier-ivory bg-ink/40 backdrop-blur-sm shadow-atelier-float transition-transform hover:scale-110"
+              // Hit area is 44px (min recommended touch target); the visible
+              // pin stays a smaller size-6 dot centered inside it so the
+              // photo isn't cluttered with oversized markers.
+              className="atelier-focus-ring absolute -translate-x-1/2 -translate-y-1/2 size-11 rounded-full flex items-center justify-center group"
               aria-label={`Find pieces similar to ${item.label}`}
             >
-              <span className="absolute inset-1 rounded-full bg-atelier-ivory/90" />
+              <span className="relative size-6 rounded-full border-2 border-atelier-ivory bg-ink/40 backdrop-blur-sm shadow-atelier-float transition-transform group-hover:scale-110">
+                <span className="absolute inset-1 rounded-full bg-atelier-ivory/90" />
+              </span>
             </button>
           ))}
       </div>

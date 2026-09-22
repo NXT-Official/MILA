@@ -9,6 +9,9 @@ import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LoadErrorPanel } from "@/components/ui/error-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { queryKeys } from "@/constants/query-keys";
 import { deletePost, getMemberProfile, updatePostCaption } from "@/lib/posts.functions";
 import { errorMessage } from "@/lib/utils";
@@ -28,7 +31,8 @@ function MemberProfilePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const { data, isLoading, isError } = useQuery({
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: queryKeys.memberProfile(userId),
     queryFn: () => fetchProfile({ data: { user_id: userId } }),
   });
@@ -54,7 +58,6 @@ function MemberProfilePage() {
   }
 
   async function handleDelete(postId: string) {
-    if (!window.confirm("Delete this post? This can't be undone.")) return;
     setBusy(true);
     try {
       await removePost({ data: { post_id: postId } });
@@ -64,12 +67,22 @@ function MemberProfilePage() {
       toast.error(errorMessage(e, "Couldn't delete the post."));
     } finally {
       setBusy(false);
+      setDeleteTargetId(null);
     }
   }
 
-  if (isLoading)
-    return <div className="py-20 text-center text-sm text-stone">Loading profile…</div>;
-  if (isError || !data) {
+  if (isLoading) {
+    return (
+      <section className="mx-auto max-w-2xl space-y-7 px-4 py-10 md:px-6 md:py-14">
+        <Skeleton className="h-32 w-full rounded-3xl" />
+        <Skeleton className="h-72 w-full rounded-2xl" />
+      </section>
+    );
+  }
+  if (isError) {
+    return <LoadErrorPanel title="Couldn't load this profile" onRetry={() => refetch()} />;
+  }
+  if (!data) {
     return <div className="py-20 text-center font-serif text-xl text-ink">Profile not found.</div>;
   }
 
@@ -189,7 +202,7 @@ function MemberProfilePage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(post.id)}
+                      onClick={() => setDeleteTargetId(post.id)}
                       disabled={busy}
                       className="inline-flex items-center gap-1.5 text-destructive transition-colors hover:text-destructive/80 disabled:opacity-50"
                     >
@@ -206,6 +219,15 @@ function MemberProfilePage() {
           {tab === "hidden" ? "No hidden posts." : "No visible posts yet."}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => !open && setDeleteTargetId(null)}
+        title="Delete this post?"
+        description="This can't be undone."
+        onConfirm={() => deleteTargetId && handleDelete(deleteTargetId)}
+        busy={busy}
+      />
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { sortMatches } from "./post-item-drawer";
+import { sortMatches } from "@/lib/sort-matches";
 import type { DupeMatch } from "@/lib/dupe-hunter.functions";
 
 function match(overrides: Partial<DupeMatch>): DupeMatch {

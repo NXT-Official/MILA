@@ -10,9 +10,7 @@ const VALID_LOOK = {
   vibe_alignment_score: 8,
 };
 
-function fakeDeps(
-  overrides: Partial<HandleLookPhotoPreviewDeps> = {},
-): HandleLookPhotoPreviewDeps {
+function fakeDeps(overrides: Partial<HandleLookPhotoPreviewDeps> = {}): HandleLookPhotoPreviewDeps {
   return {
     verifyBearerAuth: mock(async () => ({
       supabase: {} as never,

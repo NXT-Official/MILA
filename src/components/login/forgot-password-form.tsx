@@ -76,9 +76,15 @@ export function ForgotPasswordForm() {
           type="email"
           placeholder="name@studio.com"
           className="h-10"
+          aria-invalid={errors.email ? true : undefined}
+          aria-describedby={errors.email ? "forgot-password-email-error" : undefined}
           {...register("email")}
         />
-        {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+        {errors.email && (
+          <p id="forgot-password-email-error" className="text-xs text-destructive">
+            {errors.email.message}
+          </p>
+        )}
       </div>
 
       {captcha.field}

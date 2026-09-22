@@ -72,7 +72,7 @@ function Dashboard() {
   const resultContainerVariants = containerVariants(reduce, 0.1);
   const resultItemVariants = itemVariants(reduce, 16, 0.4);
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     ...profileQueryOptions(user?.id),
     enabled: !!user?.id,
   });
@@ -288,11 +288,13 @@ function Dashboard() {
     }
   }
 
-  const blockedReason = !profileComplete
-    ? "Complete your Style Profile first."
-    : !climate
-      ? "Still finding today’s weather. Choose a city in the weather panel to continue."
-      : null;
+  const blockedReason = profileLoading
+    ? "Loading your Style Profile…"
+    : !profileComplete
+      ? "Complete your Style Profile first."
+      : !climate
+        ? "Still finding today’s weather. Choose a city in the weather panel to continue."
+        : null;
 
   function handleAskConcierge() {
     if (!savedLook || !look) return;

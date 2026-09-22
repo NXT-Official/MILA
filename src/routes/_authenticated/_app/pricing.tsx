@@ -47,6 +47,7 @@ function PricingPage() {
               key={plan.id}
               plan={plan}
               disabled={!ready}
+              loading={!ready}
               onChoosePlan={
                 user ? () => openCheckout(plan, { id: user.id, email: user.email }) : undefined
               }

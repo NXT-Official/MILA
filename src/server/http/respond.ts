@@ -100,12 +100,20 @@ export async function parseJsonBody(request: Request): Promise<unknown> {
  * `support/message` today). File-route handlers get a plain `Request`, not
  * the H3 event `getRequestIP()` reads from — the platform still sets these
  * proxy headers, so this is the direct equivalent.
+ *
+ * `x-forwarded-for` is a comma-separated hop chain (`client, proxy1, proxy2`)
+ * where each proxy appends the address it observed. The leftmost entry is
+ * whatever the original caller sent — trivially spoofable, since a client can
+ * set `X-Forwarded-For` to anything before the request ever reaches our one
+ * trusted proxy (Vercel's edge). The rightmost entry is the one *our* trusted
+ * proxy appended, so that's the only hop safe to rate-limit on.
  */
 export function getClientIp(request: Request): string | null {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    const [first] = forwarded.split(",");
-    return first?.trim() || null;
+    const hops = forwarded.split(",");
+    const last = hops[hops.length - 1];
+    return last?.trim() || null;
   }
   return request.headers.get("x-real-ip");
 }

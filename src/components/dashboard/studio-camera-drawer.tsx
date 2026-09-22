@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { profileQueryOptions } from "@/lib/queries/profile";
@@ -67,6 +67,13 @@ export function StudioCameraDrawer({
   const [postingOpen, setPostingOpen] = useState(false);
   const [postingSubmitting, setPostingSubmitting] = useState(false);
   const dupeFileRef = useRef<HTMLInputElement>(null);
+  const inspirationPreviewRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (inspirationPreviewRef.current) URL.revokeObjectURL(inspirationPreviewRef.current);
+    };
+  }, []);
   const runDupes = useServerFn(findDupes);
   const { data: profile } = useQuery({
     ...profileQueryOptions(userId ?? undefined),
@@ -77,6 +84,10 @@ export function StudioCameraDrawer({
   const copy = COPY[mode];
 
   function resetDupeState() {
+    if (inspirationPreviewRef.current) {
+      URL.revokeObjectURL(inspirationPreviewRef.current);
+      inspirationPreviewRef.current = null;
+    }
     setDupeResult(null);
     setInspirationPreview(null);
     setDupeLoading(false);
@@ -89,7 +100,9 @@ export function StudioCameraDrawer({
     }
     setDupeResult(null);
     setDupeLoading(true);
+    if (inspirationPreviewRef.current) URL.revokeObjectURL(inspirationPreviewRef.current);
     const localPreview = URL.createObjectURL(file);
+    inspirationPreviewRef.current = localPreview;
     setInspirationPreview(localPreview);
     try {
       const ext = (file.name.split(".").pop() || "jpg").toLowerCase();

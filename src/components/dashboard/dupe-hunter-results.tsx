@@ -21,7 +21,11 @@ export function DupeHunterResults({
 }) {
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
+      <div
+        className="flex flex-col items-center justify-center gap-4 py-12"
+        role="status"
+        aria-label="Scanning for luxury attributes"
+      >
         <div className="relative size-16">
           <span className="absolute inset-0 rounded-full border border-accent/40 animate-ping" />
           <span className="absolute inset-2 rounded-full border border-accent/60 animate-pulse" />

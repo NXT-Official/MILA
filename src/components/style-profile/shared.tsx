@@ -173,7 +173,7 @@ export function PillRow({
               "text-label uppercase tracking-label-wide rounded-full",
               active
                 ? "bg-accent-soft border-accent text-ink"
-                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-[#C9A96E]/40",
+                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-accent/40",
             ].join(" ")}
           >
             <span>{o}</span>
@@ -211,7 +211,7 @@ export function DisruptiveToneCard({ name, height = 56 }: { name: string; height
   const hex = hexForTone(name);
   return (
     <div
-      className="w-full rounded-xl overflow-hidden flex items-stretch border border-destructive/20 bg-[#FFF0F0] dark:bg-destructive/10"
+      className="w-full rounded-xl overflow-hidden flex items-stretch border border-destructive/20 bg-destructive/10"
       style={{ minHeight: height }}
     >
       <div className="w-1/4 shrink-0" style={{ backgroundColor: hex }} />
@@ -248,7 +248,7 @@ export function BeautyPillTray({
               "text-label uppercase tracking-label-wide",
               isActive
                 ? "bg-accent-soft border-accent text-ink"
-                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-[#C9A96E]/40",
+                : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-accent/40",
             ].join(" ")}
           >
             <span>{tag}</span>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireEnv } from "@/lib/env";
+import { getPaddleWebhookSecret } from "@/lib/paddle-env.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   applyPaddleSubscriptionEvent,
@@ -17,13 +17,11 @@ export const Route = createFileRoute("/api/webhooks/paddle")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { PADDLE_SANDBOX_WEBHOOK_SECRET } = requireEnv({
-          PADDLE_SANDBOX_WEBHOOK_SECRET: process.env.PADDLE_SANDBOX_WEBHOOK_SECRET,
-        });
+        const webhookSecret = getPaddleWebhookSecret();
 
         const rawBody = await request.text();
         const signature = request.headers.get("Paddle-Signature");
-        if (!verifyPaddleSignature(rawBody, signature, PADDLE_SANDBOX_WEBHOOK_SECRET)) {
+        if (!verifyPaddleSignature(rawBody, signature, webhookSecret)) {
           return new Response("Invalid signature", { status: 401 });
         }
 

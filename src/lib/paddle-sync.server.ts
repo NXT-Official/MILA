@@ -4,10 +4,9 @@ import {
   applyPaddleSubscriptionEvent,
   type PaddleSubscriptionWebhookEvent,
 } from "@/lib/paddle-webhook.server";
+import { getPaddleApiBase } from "@/lib/paddle-env.server";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
-
-const PADDLE_API = "https://sandbox-api.paddle.com";
 
 export type PaddleApi = { get: (path: string) => Promise<Record<string, unknown>> };
 
@@ -45,7 +44,7 @@ export async function syncPaddleTransactionForUser(
 export function paddleApi(apiKey: string): PaddleApi {
   return {
     get: async (path) => {
-      const res = await fetch(`${PADDLE_API}${path}`, {
+      const res = await fetch(`${getPaddleApiBase()}${path}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       const json = await res.json();

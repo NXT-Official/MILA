@@ -156,11 +156,20 @@ export async function payForLookImage<T extends { imageDataUri: string | null }>
   const free = await deps.claim(userId);
   if (!free) await consumeAiCredit(supabase, userId, deps.consume);
 
-  const result = await produce();
+  const refund = () =>
+    (free ? deps.mark(userId) : grantAiCredits(supabase, userId, 1, deps.grant)).catch((err) =>
+      console.error("[payForLookImage] refund failed", err),
+    );
 
-  if (!result.imageDataUri) {
-    if (free) await deps.mark(userId);
-    else await grantAiCredits(supabase, userId, 1, deps.grant);
+  let result: T;
+  try {
+    result = await produce();
+  } catch (err) {
+    captureServerException(err);
+    await refund();
+    throw err;
   }
+
+  if (!result.imageDataUri) await refund();
   return result;
 }

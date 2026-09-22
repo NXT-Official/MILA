@@ -1,5 +1,10 @@
 import { requireEnv } from "@/lib/env";
 import {
+  consumeRateLimit,
+  RateLimitExceededError,
+  type RateLimitStore,
+} from "@/lib/rate-limit.server";
+import {
   ImageProviderRateLimitError,
   IMAGE_MODEL,
   OPENROUTER_IMAGES_URL,
@@ -10,6 +15,18 @@ import type { DailyLook, ShoppablePick } from "./generate-outfit.functions";
 const TIMEOUT_MS = 75_000;
 const MAX_PROMPT_LENGTH = 4096;
 const MAX_REFERENCE_IMAGES = 3;
+
+// Unlike the single-photo edit path (30/day, cheaper 2K single image), the
+// style sheet renders 5 panels at up to 4K resolution per attempt and can
+// retry up to 3x on failed QA (renderStyleSheetForUser) — meaningfully more
+// expensive per call. Capped lower for the same reason the edit path is
+// capped at all: bound worst-case sitewide spend from repeated QA failures.
+const SITE_DAILY_LIMIT = 20;
+const SITE_WINDOW_SECONDS = 86_400;
+
+function utcDateKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 // Same model as the other two muse-image paths (text-to-image inspiration,
 // single-photo outfit edit) — imported rather than redefined so all three
@@ -129,20 +146,38 @@ async function requestStyleSheet(
  * contamination, same reasoning as photo-preview.functions.ts's decision to
  * skip product reference images for the single-photo edit).
  */
-export async function generateStyleSheet({
-  userPhoto,
-  outfit,
-  shoppablePicks,
-  gender,
-}: {
-  userPhoto: { bytes: Uint8Array; contentType: string };
-  outfit: DailyLook;
-  shoppablePicks: ShoppablePick[];
-  gender: string | null;
-}): Promise<StyleSheetResult> {
+export async function generateStyleSheet(
+  {
+    userPhoto,
+    outfit,
+    shoppablePicks,
+    gender,
+  }: {
+    userPhoto: { bytes: Uint8Array; contentType: string };
+    outfit: DailyLook;
+    shoppablePicks: ShoppablePick[];
+    gender: string | null;
+  },
+  deps: { rateLimitStore?: RateLimitStore } = {},
+): Promise<StyleSheetResult> {
   const { OPENROUTER_API_KEY } = requireEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   });
+
+  try {
+    await consumeRateLimit(
+      `openrouter_style_sheet_daily:${utcDateKey()}`,
+      { limit: SITE_DAILY_LIMIT, windowSeconds: SITE_WINDOW_SECONDS },
+      deps.rateLimitStore,
+    );
+  } catch (err) {
+    if (err instanceof RateLimitExceededError) {
+      throw new ImageProviderRateLimitError(
+        "Mila's daily free style-sheet quota is used up. Please try again tomorrow.",
+      );
+    }
+    throw err;
+  }
 
   const prompt = buildStyleSheetPrompt({ outfit, shoppablePicks, gender });
   const inputReferences = [{ type: "image_url", image_url: { url: toDataUri(userPhoto) } }].slice(

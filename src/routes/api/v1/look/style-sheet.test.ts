@@ -54,10 +54,7 @@ describe("POST /api/v1/look/style-sheet", () => {
   test("happy path -> 200 with the style sheet", async () => {
     const deps = fakeDeps();
 
-    const res = await handleLookStyleSheet(
-      postRequest({ outfit: VALID_LOOK }, "good-token"),
-      deps,
-    );
+    const res = await handleLookStyleSheet(postRequest({ outfit: VALID_LOOK }, "good-token"), deps);
     const json = await res.json();
 
     expect(res.status).toBe(200);
@@ -79,10 +76,7 @@ describe("POST /api/v1/look/style-sheet", () => {
       })),
     });
 
-    const res = await handleLookStyleSheet(
-      postRequest({ outfit: VALID_LOOK }, "good-token"),
-      deps,
-    );
+    const res = await handleLookStyleSheet(postRequest({ outfit: VALID_LOOK }, "good-token"), deps);
     const json = await res.json();
 
     expect(res.status).toBe(200);
@@ -98,10 +92,7 @@ describe("POST /api/v1/look/style-sheet", () => {
       }),
     });
 
-    const res = await handleLookStyleSheet(
-      postRequest({ outfit: VALID_LOOK }, "good-token"),
-      deps,
-    );
+    const res = await handleLookStyleSheet(postRequest({ outfit: VALID_LOOK }, "good-token"), deps);
     const json = await res.json();
 
     expect(res.status).toBe(402);

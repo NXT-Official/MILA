@@ -92,6 +92,11 @@ export type FaceMatchResult = {
   isMatch: boolean;
   distance: number | null;
   reason: string;
+  // True only when no face could be detected in the *reference* photo, so
+  // the mathematical check couldn't run at all and this result reflects the
+  // "don't permanently block the user" fallback, not a verified match.
+  // Callers should log/surface this distinctly from a real pass.
+  skipped?: boolean;
 };
 
 /**
@@ -112,6 +117,7 @@ export async function verifyFaceMatch(
       isMatch: true,
       distance: null,
       reason: "No face detected in the reference photo — face-match check skipped.",
+      skipped: true,
     };
   }
 

@@ -21,21 +21,14 @@ import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { ProductCard } from "@/components/ui/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { queryKeys } from "@/constants/query-keys";
-import { findSimilarItems, type DupeMatch } from "@/lib/dupe-hunter.functions";
+import { findSimilarItems } from "@/lib/dupe-hunter.functions";
 import { sourceUrlHost, type PostItem } from "@/lib/outfit-items";
 import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { profileQueryOptions } from "@/lib/queries/profile";
+import { sortMatches, type ShopSort } from "@/lib/sort-matches";
 
 const MATCH_CACHE_MS = 24 * 60 * 60 * 1000;
-
-export type ShopSort = "best_match" | "price_low" | "price_high";
-
-export function sortMatches(matches: DupeMatch[], sort: ShopSort): DupeMatch[] {
-  if (sort === "price_low") return [...matches].sort((a, b) => a.price - b.price);
-  if (sort === "price_high") return [...matches].sort((a, b) => b.price - a.price);
-  return matches;
-}
 
 export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClose: () => void }) {
   const fetchSimilar = useServerFn(findSimilarItems);

@@ -75,10 +75,13 @@ function buildEditPrompt({
       ? `Makeup may be added: ${outfit.makeup.palette}.`
       : "Do not add or change makeup.";
 
-  return `${garmentLine} ${protectedLine} ${hairLine} ${makeupLine}${framingLine}${negativeLine}`.slice(
-    0,
-    MAX_PROMPT_LENGTH,
-  );
+  // framingLine + negativeLine are safety/consistency-critical and must never
+  // be truncated off. Truncate only the variable (model-generated) portion
+  // that precedes them, then append the safety suffix intact.
+  const safetySuffix = `${framingLine}${negativeLine}`;
+  const variablePrefix = `${garmentLine} ${protectedLine} ${hairLine} ${makeupLine}`;
+  const maxVariableLength = Math.max(0, MAX_PROMPT_LENGTH - safetySuffix.length);
+  return `${variablePrefix.slice(0, maxVariableLength)}${safetySuffix}`;
 }
 
 export interface PhotoEditResult {

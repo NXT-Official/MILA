@@ -215,18 +215,18 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
 
 export const DailyLookSchema = z.object({
   outfit: z.object({
-    headline: z.string().min(1),
-    description: z.string().min(1),
-    styling_notes: z.string().min(1),
+    headline: z.string().min(1).max(200),
+    description: z.string().min(1).max(1000),
+    styling_notes: z.string().min(1).max(1000),
   }),
   hair: z.object({
-    style: z.string().min(1),
-    execution_tip: z.string().min(1),
+    style: z.string().min(1).max(300),
+    execution_tip: z.string().min(1).max(500),
   }),
   makeup: z
     .object({
-      palette: z.string().min(1),
-      details: z.string().min(1),
+      palette: z.string().min(1).max(300),
+      details: z.string().min(1).max(500),
     })
     .nullable(),
   vibe_alignment_score: z.number().int().min(1).max(10),
@@ -236,17 +236,17 @@ export const DailyLookSchema = z.object({
   shoppable_picks: z
     .array(
       z.object({
-        id: z.string(),
-        title: z.string(),
-        brand_id: z.string(),
-        category: z.string(),
+        id: z.string().max(200),
+        title: z.string().max(200),
+        brand_id: z.string().max(200),
+        category: z.string().max(100),
         price: z.number(),
-        currency: z.string(),
-        image_url: z.string().nullable(),
-        affiliate_link: z.string(),
-        verification_status: z.string(),
-        last_verified_at: z.string().nullable(),
-        rationale: z.string().min(1),
+        currency: z.string().max(10),
+        image_url: z.string().max(2048).nullable(),
+        affiliate_link: z.string().max(2048),
+        verification_status: z.string().max(50),
+        last_verified_at: z.string().max(50).nullable(),
+        rationale: z.string().min(1).max(500),
       }),
     )
     .optional(),

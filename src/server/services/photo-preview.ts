@@ -179,6 +179,17 @@ export async function renderPhotoPreviewForUser(
           // vs. "is this face structurally intact?").
           const faceMatch = await verifyFaceMatch(userPhotoBytes, jpegDataUriToBytes(imageUrl));
           if (faceMatch.isMatch) {
+            if (faceMatch.skipped) {
+              // Not a verified match — no face was detectable in the
+              // reference photo, so this attempt is relying solely on the
+              // AI-opinion structural check above. Surfaced distinctly so
+              // this doesn't get silently conflated with a real pass.
+              console.warn(
+                `[renderPhotoPreviewForUser] face-match check SKIPPED, not verified (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+                faceMatch.reason,
+              );
+              return { imageDataUri: imageUrl, mode: "photo_edit" };
+            }
             // Logged on every attempt (pass or fail) so drift in the
             // image-gen provider — a model update, a prompt regression —
             // shows up in distance trends before it starts failing outright.

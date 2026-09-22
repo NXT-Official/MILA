@@ -54,14 +54,21 @@ function buildOutfitImagePrompt(
     `one adult model ${[genderLine, skinLine].filter(Boolean).join(" ")}`.trim() +
     (heightLine ? `, ${heightLine}` : "");
   const makeupBlock = outfit.makeup ? `\n\nMakeup:\n${outfit.makeup.palette}` : "";
+  const hairAndMakeup = `${outfit.hair.style}${makeupBlock}`;
 
-  return `Create a realistic full-body luxury fashion editorial photograph.
+  // The "Presentation" block (including height/gender/skin, which are
+  // server-derived, not model text) and the trailing anti-artifact line are
+  // safety/accuracy-critical and must never be truncated off. Only the
+  // model-generated Outfit/Hair/Makeup text is variable-length, so truncate
+  // that to fit the remaining budget instead of slicing the whole prompt.
+  const buildPrompt = (outfitText: string, hairText: string): string =>
+    `Create a realistic full-body luxury fashion editorial photograph.
 
 Outfit:
-${outfitLine}
+${outfitText}
 
 Hair:
-${outfit.hair.style}${makeupBlock}
+${hairText}
 
 Presentation:
 Show ${modelLine} from head to toe.
@@ -71,7 +78,14 @@ Accurate fabric textures and garment colors.
 Elegant neutral studio background.
 Soft professional editorial lighting.
 Single subject, centered composition.
-No collage, no text, no captions, no logos, no watermark.`.slice(0, MAX_PROMPT_LENGTH);
+No collage, no text, no captions, no logos, no watermark.`;
+
+  const fixedLength = buildPrompt("", "").length;
+  const variableBudget = Math.max(0, MAX_PROMPT_LENGTH - fixedLength);
+  const outfitBudget = Math.min(outfitLine.length, Math.ceil(variableBudget * 0.7));
+  const hairBudget = Math.max(0, variableBudget - outfitBudget);
+
+  return buildPrompt(outfitLine.slice(0, outfitBudget), hairAndMakeup.slice(0, hairBudget));
 }
 
 export interface OutfitImageResult {

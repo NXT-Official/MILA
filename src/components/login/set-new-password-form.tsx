@@ -48,8 +48,8 @@ export function SetNewPasswordForm() {
     passedChecks <= 2
       ? { label: "Weak", bar: "bg-destructive", text: "text-destructive" }
       : passedChecks < passwordChecks.length
-        ? { label: "Medium", bar: "bg-amber-500", text: "text-amber-600" }
-        : { label: "Strong", bar: "bg-emerald-500", text: "text-emerald-600" };
+        ? { label: "Medium", bar: "bg-warning", text: "text-warning" }
+        : { label: "Strong", bar: "bg-success", text: "text-success" };
 
   const onSubmit = async (data: SetNewPasswordFormValues) => {
     if (!passwordOk) {
@@ -92,6 +92,8 @@ export function SetNewPasswordForm() {
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             className="h-10 pr-10"
+            aria-invalid={errors.password ? true : undefined}
+            aria-describedby={errors.password ? "new-password-error" : undefined}
             {...register("password")}
           />
           <PasswordVisibilityButton
@@ -99,7 +101,11 @@ export function SetNewPasswordForm() {
             onToggle={() => setShowPassword((v) => !v)}
           />
         </div>
-        {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+        {errors.password && (
+          <p id="new-password-error" className="text-xs text-destructive">
+            {errors.password.message}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -112,6 +118,8 @@ export function SetNewPasswordForm() {
             type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             className="h-10 pr-10"
+            aria-invalid={errors.confirmPassword ? true : undefined}
+            aria-describedby={errors.confirmPassword ? "confirm-new-password-error" : undefined}
             {...register("confirmPassword")}
           />
           <PasswordVisibilityButton
@@ -120,7 +128,9 @@ export function SetNewPasswordForm() {
           />
         </div>
         {errors.confirmPassword && (
-          <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
+          <p id="confirm-new-password-error" className="text-xs text-destructive">
+            {errors.confirmPassword.message}
+          </p>
         )}
       </div>
 
@@ -144,7 +154,7 @@ export function SetNewPasswordForm() {
                 <li
                   key={c.label}
                   className={`flex items-center gap-1.5 text-label ${
-                    ok ? "text-emerald-600" : "text-muted-foreground"
+                    ok ? "text-success" : "text-muted-foreground"
                   }`}
                 >
                   {ok ? <Check className="size-3" /> : <X className="size-3" />}
