@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getPaddleWebhookSecret } from "@/lib/paddle-env.server";
+import { getPaddleWebhookSecret } from "@/lib/paddle-env";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   applyPaddleSubscriptionEvent,

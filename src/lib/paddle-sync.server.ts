@@ -4,7 +4,7 @@ import {
   applyPaddleSubscriptionEvent,
   type PaddleSubscriptionWebhookEvent,
 } from "@/lib/paddle-webhook.server";
-import { getPaddleApiBase } from "@/lib/paddle-env.server";
+import { getPaddleApiBase } from "@/lib/paddle-env";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 

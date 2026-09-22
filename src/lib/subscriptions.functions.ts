@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
-import { getPaddleApiBase, getPaddleApiKey } from "@/lib/paddle-env.server";
+import { getPaddleApiBase, getPaddleApiKey } from "@/lib/paddle-env";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
