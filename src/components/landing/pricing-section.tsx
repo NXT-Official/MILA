@@ -7,9 +7,9 @@ import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-
 
 export function PricingSection() {
   const navigate = useNavigate();
-  const { data, isLoading } = useQuery(publicSubscriptionPlansQueryOptions());
+  const { data, isLoading, isError } = useQuery(publicSubscriptionPlansQueryOptions());
 
-  if (!isLoading && !data?.length) return null;
+  if (!isLoading && (isError || !data?.length)) return null;
 
   return (
     <Section id="pricing">
