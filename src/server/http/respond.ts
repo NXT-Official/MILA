@@ -2,6 +2,7 @@ import { ZodError } from "zod";
 import { InsufficientCreditsError } from "@/lib/credits";
 import { RateLimitExceededError } from "@/lib/rate-limit.server";
 import { UnauthorizedError, SuspendedError } from "@/integrations/supabase/auth-middleware";
+import { captureServerException } from "@/lib/sentry.server";
 import {
   AiUnavailableError,
   DomainValidationError,
@@ -77,6 +78,7 @@ export function respondWithError(routeName: string, error: unknown): Response {
   if (error instanceof UpstreamUnavailableError) return apiError("AI_UNAVAILABLE", error.message);
 
   console.error(`[api/v1/${routeName}] unhandled error`, error);
+  captureServerException(error);
   return apiError("INTERNAL", GENERIC_INTERNAL_MESSAGE);
 }
 

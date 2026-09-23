@@ -39,6 +39,8 @@ import { MeasurementsStep } from "./steps/measurements-step";
 import { LocationStep } from "./steps/location-step";
 import { ReviewStep } from "./steps/review-step";
 import { errorMessage } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/track-event";
 
 const MAKEUP_ELIGIBLE_NEXT = "makeup-preference" as const;
 const MAKEUP_SKIP_NEXT = "beauty-preferences" as const;
@@ -214,6 +216,7 @@ export function StyleProfileOnboarding({
         goTo(firstIncomplete === "welcome" ? "color-path" : firstIncomplete);
         return;
       }
+      trackEvent(supabase, user.id, "onboarding_completed");
       navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       setCompletionError(errorMessage(err, "We couldn't confirm your profile. Please try again."));

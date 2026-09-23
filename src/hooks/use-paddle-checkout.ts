@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
 import { syncPaddlePurchase } from "@/lib/paddle-sync.functions";
 import type { PublicSubscriptionPlan } from "@/lib/subscription-plans";
+import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/track-event";
 
 type CheckoutOpenOptions = Parameters<Paddle["Checkout"]["open"]>[0];
 type PaddleEvent = { name?: string; data?: { transaction_id?: string } };
@@ -94,6 +96,7 @@ export function usePaddleCheckout(userId: string | undefined) {
       user: { id: string; email?: string },
     ) => {
       if (!paddle || !plan.paddle_price_id) return;
+      trackEvent(supabase, user.id, "purchase_started");
       paddle.Checkout.open(buildCheckoutOptions(plan, user));
     },
     [paddle],

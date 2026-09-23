@@ -27,6 +27,8 @@ import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerat
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { errorMessage, isStaleBundleError } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/track-event";
 
 function reloadForNewVersion() {
   toast.error("Mila just updated — reloading to grab the latest version. Try again after reload.");
@@ -170,6 +172,7 @@ function Dashboard() {
 
       outfit = await generate({ data: payload });
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
+      trackEvent(supabase, user.id, "look_generated", { vibe });
     } catch (e) {
       setGenerating(false);
       if (isStaleBundleError(e)) {

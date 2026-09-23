@@ -14,6 +14,7 @@ import { useCaptcha } from "@/components/login/use-captcha";
 import { passwordChecks } from "@/constants/password";
 import { signUpWithPassword } from "@/lib/auth.functions";
 import { errorMessage } from "@/lib/utils";
+import { trackEvent } from "@/lib/track-event";
 
 const signupSchema = z.object({
   username: z
@@ -83,7 +84,10 @@ export function SignupForm({
           captchaToken: captcha.token,
         },
       });
-      if (session) await supabase.auth.setSession(session);
+      if (session) {
+        await supabase.auth.setSession(session);
+        trackEvent(supabase, session.user.id, "signup_completed");
+      }
       toast.success("Studio profile created. Check your inbox to confirm.");
     } catch (err) {
       toast.error(errorMessage(err, "Authentication failed"));
