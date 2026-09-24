@@ -99,6 +99,37 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
     expect(result).toEqual({ imageUrl: "data:image/jpeg;base64,edited123", costUsd: 0.01 });
   });
 
+  test("keeps the identity/gender lock intact even when the garment description is near the field max", async () => {
+    // Confirmed live in production: with the identity-lock line placed in the
+    // truncatable portion of the prompt, a long AI-composed description could
+    // push it past the 2048-char cutoff entirely, and the model would
+    // generate a person of the wrong apparent gender with no instruction
+    // telling it not to. This proves the fix: the lock line must survive
+    // regardless of how long the variable content is.
+    process.env.OPENROUTER_API_KEY = "test-key";
+    const longOutfit: DailyLook = {
+      ...outfit,
+      outfit: {
+        ...outfit.outfit,
+        description:
+          "A structured linen blazer over a silk camisole with wide-leg trousers. ".repeat(15),
+      },
+    };
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(init?.body as string);
+      expect(body.prompt.length).toBeLessThanOrEqual(2048);
+      expect(body.prompt).toContain("female-presenting");
+      expect(body.prompt).toContain("never shift apparent gender");
+      expect(body.prompt).toContain("Avoid:");
+      return Response.json({
+        data: [{ b64_json: "edited123", media_type: "image/jpeg" }],
+        usage: { cost: 0.01 },
+      });
+    }) as unknown as typeof fetch;
+
+    await editOutfitPhoto({ ...editArgs(), outfit: longOutfit }, { rateLimitStore: allowStore });
+  });
+
   test("caps reference images at 3 even when more are given", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     let capturedReferences: Array<Record<string, unknown>> | undefined;

@@ -75,11 +75,16 @@ function buildEditPrompt({
       ? `Makeup may be added: ${outfit.makeup.palette}.`
       : "Do not add or change makeup.";
 
-  // framingLine + negativeLine are safety/consistency-critical and must never
-  // be truncated off. Truncate only the variable (model-generated) portion
-  // that precedes them, then append the safety suffix intact.
-  const safetySuffix = `${framingLine}${negativeLine}`;
-  const variablePrefix = `${garmentLine} ${protectedLine} ${hairLine} ${makeupLine}`;
+  // protectedLine (identity/gender lock) + framingLine + negativeLine are
+  // safety/consistency-critical and must never be truncated off — confirmed
+  // live: with protectedLine previously in the truncatable portion, a long
+  // AI-composed garment description could push it past the cutoff entirely,
+  // and the model would generate a person of the wrong apparent gender with
+  // nothing telling it not to (repeated "male-presenting" QA rejections
+  // against a female reference photo). Only garmentLine/hairLine/makeupLine
+  // (the model-generated, genuinely variable content) get truncated.
+  const safetySuffix = ` ${protectedLine}${framingLine}${negativeLine}`;
+  const variablePrefix = `${garmentLine} ${hairLine} ${makeupLine}`;
   const maxVariableLength = Math.max(0, MAX_PROMPT_LENGTH - safetySuffix.length);
   return `${variablePrefix.slice(0, maxVariableLength)}${safetySuffix}`;
 }
