@@ -25,7 +25,7 @@ import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/c
 import { useConcierge } from "@/hooks/use-concierge";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { errorMessage, isStaleBundleError } from "@/lib/utils";
+import { errorMessage, isStaleBundleError, TimeoutError, withTimeout } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/track-event";
@@ -34,6 +34,15 @@ function reloadForNewVersion() {
   toast.error("Mila just updated — reloading to grab the latest version. Try again after reload.");
   window.location.reload();
 }
+
+// A stuck generation call has no legitimate reason to run past this — the
+// server side's own retry budget (3 attempts x 75s for image calls) tops
+// out well under these ceilings. Set generously above that so a real
+// in-progress generation is never cut off early, only a genuinely hung one.
+const LOOK_TIMEOUT_MS = 100_000;
+const VISUAL_TIMEOUT_MS = 240_000;
+
+const TIMEOUT_MESSAGE = "This is taking longer than expected. Please refresh and try again.";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -113,7 +122,10 @@ function Dashboard() {
   }) {
     setStyleSheetLoading(true);
     try {
-      const res = await generateStyleSheetFn({ data: { outfit: outfitForSheet } });
+      const res = await withTimeout(
+        generateStyleSheetFn({ data: { outfit: outfitForSheet } }),
+        VISUAL_TIMEOUT_MS,
+      );
       if (res.mode === "style_sheet") {
         setStyleSheetImageDataUri(res.imageDataUri);
         setSavedLook(null);
@@ -122,7 +134,9 @@ function Dashboard() {
       toast.error(res.reason);
       return false;
     } catch (e) {
-      if (isStaleBundleError(e)) {
+      if (e instanceof TimeoutError) {
+        toast.error(TIMEOUT_MESSAGE);
+      } else if (isStaleBundleError(e)) {
         reloadForNewVersion();
       } else if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
@@ -170,12 +184,14 @@ function Dashboard() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
-      outfit = await generate({ data: payload });
+      outfit = await withTimeout(generate({ data: payload }), LOOK_TIMEOUT_MS);
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
       trackEvent(supabase, user.id, "look_generated", { vibe });
     } catch (e) {
       setGenerating(false);
-      if (isStaleBundleError(e)) {
+      if (e instanceof TimeoutError) {
+        toast.error(TIMEOUT_MESSAGE);
+      } else if (isStaleBundleError(e)) {
         reloadForNewVersion();
       } else if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
@@ -214,9 +230,12 @@ function Dashboard() {
     setPhotoPreviewLoading(true);
     try {
       const { outfit, hair, makeup, vibe_alignment_score } = look;
-      const res = await generatePhotoPreviewFn({
-        data: { outfit: { outfit, hair, makeup, vibe_alignment_score } },
-      });
+      const res = await withTimeout(
+        generatePhotoPreviewFn({
+          data: { outfit: { outfit, hair, makeup, vibe_alignment_score } },
+        }),
+        VISUAL_TIMEOUT_MS,
+      );
       if (res.mode === "photo_edit") {
         setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
         setSavedLook(null);
@@ -225,7 +244,9 @@ function Dashboard() {
         toast.error(res.reason);
       }
     } catch (e) {
-      if (isStaleBundleError(e)) {
+      if (e instanceof TimeoutError) {
+        toast.error(TIMEOUT_MESSAGE);
+      } else if (isStaleBundleError(e)) {
         reloadForNewVersion();
       } else if (isInsufficientCreditsError(e)) {
         setCreditPaywallOpen(true);
