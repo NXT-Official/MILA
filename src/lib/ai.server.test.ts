@@ -107,6 +107,19 @@ describe("OpenRouter chat gateway", () => {
     expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
   });
 
+  test("surfaces a stuck/failed provider request as 504 instead of hanging or throwing", async () => {
+    // Confirmed live: this was the one OpenRouter call site with no timeout
+    // at all — unlike every image-generation call, which bounds its fetch
+    // with AbortSignal.timeout. A slow/unresponsive provider left the
+    // server function running indefinitely with no user-visible feedback.
+    process.env.OPENROUTER_API_KEY = "test-key";
+    globalThis.fetch = mock(async () => {
+      throw new DOMException("The operation was aborted.", "TimeoutError");
+    }) as unknown as typeof fetch;
+
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 504 });
+  });
+
   test("throws when OPENROUTER_API_KEY is missing", async () => {
     delete process.env.OPENROUTER_API_KEY;
     await expect(aiChatCompletion([], tool, fakeCaller)).rejects.toThrow(

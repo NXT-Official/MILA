@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAiSpend } from "./ai-spend.server";
+import { errorMessage } from "./utils";
 
 export interface AiCallerContext {
   supabase: SupabaseClient;
@@ -11,6 +12,14 @@ export type AiTool = { function: { name: string; parameters: Record<string, unkn
 export type AiResult = { ok: true; args: unknown } | { ok: false; status: number };
 
 const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
+// Every image-generation call in this codebase bounds its OpenRouter fetch
+// with this same timeout — this was the one call site missing it. Confirmed
+// live: with no timeout, a slow/stuck OpenRouter response left the look-
+// generation server function running indefinitely with no user-visible
+// feedback beyond the client's own generic timeout toast, and the server
+// call kept consuming function time (and, if it eventually succeeded, a
+// credit) after the client had already given up.
+const TIMEOUT_MS = 75_000;
 
 // The one permanent text/vision brain — multimodal, handles every
 // aiChatCompletion caller (text-only look composition and image-bearing
@@ -44,19 +53,26 @@ export async function aiChatCompletion(
     throw new Error("AI provider not configured — set OPENROUTER_API_KEY");
   }
 
-  const response = await fetch(OPENROUTER_CHAT_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: TEXT_MODEL,
-      messages,
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: tool.function.name, schema: tool.function.parameters, strict: true },
-      },
-      usage: { include: true },
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(OPENROUTER_CHAT_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: TEXT_MODEL,
+        messages,
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: tool.function.name, schema: tool.function.parameters, strict: true },
+        },
+        usage: { include: true },
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (err) {
+    console.error("[ai] provider request failed or timed out", errorMessage(err, "unknown"));
+    return { ok: false, status: 504 };
+  }
   if (!response.ok) {
     console.error("[ai] provider error", response.status, await response.text());
     return { ok: false, status: response.status };
