@@ -12,7 +12,12 @@ import {
 import { buildIdentityLockLine } from "./identity-lock.server";
 import type { DailyLook, ShoppablePick } from "./generate-outfit.functions";
 
-const TIMEOUT_MS = 75_000;
+// Confirmed live: renderStyleSheetForUser was aborting mid-request with "The
+// operation was aborted due to timeout" — this call renders 5 panels at up
+// to 4K resolution in one request, a much heavier generation than the
+// single-image edit/inspiration paths that share this same 75s budget.
+// Raised to give it room to actually finish instead of racing it.
+const TIMEOUT_MS = 150_000;
 const MAX_PROMPT_LENGTH = 4096;
 const MAX_REFERENCE_IMAGES = 3;
 

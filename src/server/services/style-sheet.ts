@@ -128,37 +128,68 @@ export async function renderStyleSheetForUser(
       // (no fixed seed) — same retry-before-giving-up approach as
       // renderPhotoPreview. Never skip verification on a retry.
       const MAX_ATTEMPTS = 3;
+      // Confirmed live: a single slow/aborted generateStyleSheet or
+      // verifyStyleSheet call threw straight out of this loop into the
+      // outer catch below, ending the whole function on attempt 1 and
+      // wasting the other 2 attempts this retry loop exists for. Vercel's
+      // function budget is 300s; one attempt (up to 150s image + 75s
+      // verify) can eat most of that, so an inner try/catch treats a
+      // thrown error as a failed attempt (retry) instead of a fatal one,
+      // and the elapsed-time check stops before starting an attempt that
+      // can't finish inside the remaining budget — returning our own clean
+      // "unavailable" message instead of letting the platform hard-kill
+      // the request.
+      const startedAt = Date.now();
+      const FUNCTION_BUDGET_MS = 280_000;
+      const ATTEMPT_ESTIMATE_MS = 150_000 + 75_000;
       let lastReason = "Your style sheet couldn't be verified safe this time.";
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const { imageUrl, costUsd } = await generateStyleSheet({
-          userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
-          outfit: data.outfit,
-          shoppablePicks,
-          gender: profileRow.gender,
-        });
-
-        const verification = await verifyStyleSheet(originalDataUri, imageUrl, outfitDescription, {
-          supabase,
-          userId,
-        });
-
-        await logAiSpend(supabase, userId, {
-          provider: STYLE_SHEET_PROVIDER,
-          model: STYLE_SHEET_MODEL,
-          costUsd,
-          promptTokens: null,
-          completionTokens: null,
-          totalTokens: null,
-        });
-
-        if (verification.passes) {
-          return { imageDataUri: imageUrl, mode: "style_sheet" };
+        if (Date.now() - startedAt + ATTEMPT_ESTIMATE_MS > FUNCTION_BUDGET_MS) {
+          console.warn(
+            `[renderStyleSheetForUser] stopping before attempt ${attempt}/${MAX_ATTEMPTS} — not enough time left in the function budget`,
+          );
+          break;
         }
-        console.warn(
-          `[renderStyleSheetForUser] QA check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
-          verification.reason,
-        );
-        lastReason = "Your style sheet couldn't be verified safe this time.";
+        try {
+          const { imageUrl, costUsd } = await generateStyleSheet({
+            userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
+            outfit: data.outfit,
+            shoppablePicks,
+            gender: profileRow.gender,
+          });
+
+          const verification = await verifyStyleSheet(
+            originalDataUri,
+            imageUrl,
+            outfitDescription,
+            { supabase, userId },
+          );
+
+          await logAiSpend(supabase, userId, {
+            provider: STYLE_SHEET_PROVIDER,
+            model: STYLE_SHEET_MODEL,
+            costUsd,
+            promptTokens: null,
+            completionTokens: null,
+            totalTokens: null,
+          });
+
+          if (verification.passes) {
+            return { imageDataUri: imageUrl, mode: "style_sheet" };
+          }
+          console.warn(
+            `[renderStyleSheetForUser] QA check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+            verification.reason,
+          );
+          lastReason = "Your style sheet couldn't be verified safe this time.";
+        } catch (attemptError) {
+          if (attemptError instanceof ImageProviderRateLimitError) throw attemptError;
+          console.warn(
+            `[renderStyleSheetForUser] attempt ${attempt}/${MAX_ATTEMPTS} threw:`,
+            errorMessage(attemptError, "Unknown error"),
+          );
+          lastReason = "Your style sheet couldn't be generated this time.";
+        }
       }
 
       return { imageDataUri: null, mode: "unavailable", reason: lastReason };

@@ -147,74 +147,88 @@ export async function renderPhotoPreviewForUser(
       // Never skip verification just because a retry was needed — a
       // bad result should still fall back.
       const MAX_ATTEMPTS = 3;
+      // Same fix as renderStyleSheetForUser: a thrown error (timeout,
+      // network hiccup) used to escape this loop and end the whole
+      // function on the first bad attempt, wasting the other retries.
+      // Caught per-attempt instead so it's treated like a failed
+      // verification and the loop moves on.
       let lastReason = "Your photo preview couldn't be verified safe this time.";
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const { imageUrl, costUsd } = await editOutfitPhoto({
-          userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
-          referenceImages: [],
-          outfit: data.outfit,
-          makeupEnabled,
-          hairLength: profileRow.hair_length,
-          gender: profileRow.gender,
-        });
+        try {
+          const { imageUrl, costUsd } = await editOutfitPhoto({
+            userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
+            referenceImages: [],
+            outfit: data.outfit,
+            makeupEnabled,
+            hairLength: profileRow.hair_length,
+            gender: profileRow.gender,
+          });
 
-        const verification = await verifyProtectedRegions(originalDataUri, imageUrl, {
-          supabase,
-          userId,
-        });
+          const verification = await verifyProtectedRegions(originalDataUri, imageUrl, {
+            supabase,
+            userId,
+          });
 
-        await logAiSpend(supabase, userId, {
-          provider: PHOTO_EDIT_PROVIDER,
-          model: PHOTO_EDIT_MODEL,
-          costUsd,
-          promptTokens: null,
-          completionTokens: null,
-          totalTokens: null,
-        });
+          await logAiSpend(supabase, userId, {
+            provider: PHOTO_EDIT_PROVIDER,
+            model: PHOTO_EDIT_MODEL,
+            costUsd,
+            promptTokens: null,
+            completionTokens: null,
+            totalTokens: null,
+          });
 
-        if (verification.passes) {
-          // A real, mathematical identity check — not another model's
-          // opinion. Runs only after the structural check passes, since
-          // it answers a different question ("is this the same face?"
-          // vs. "is this face structurally intact?").
-          const faceMatch = await verifyFaceMatch(userPhotoBytes, jpegDataUriToBytes(imageUrl));
-          if (faceMatch.isMatch) {
-            if (faceMatch.skipped) {
-              // Not a verified match — no face was detectable in the
-              // reference photo, so this attempt is relying solely on the
-              // AI-opinion structural check above. Surfaced distinctly so
-              // this doesn't get silently conflated with a real pass.
-              console.warn(
-                `[renderPhotoPreviewForUser] face-match check SKIPPED, not verified (attempt ${attempt}/${MAX_ATTEMPTS}):`,
-                faceMatch.reason,
+          if (verification.passes) {
+            // A real, mathematical identity check — not another model's
+            // opinion. Runs only after the structural check passes, since
+            // it answers a different question ("is this the same face?"
+            // vs. "is this face structurally intact?").
+            const faceMatch = await verifyFaceMatch(userPhotoBytes, jpegDataUriToBytes(imageUrl));
+            if (faceMatch.isMatch) {
+              if (faceMatch.skipped) {
+                // Not a verified match — no face was detectable in the
+                // reference photo, so this attempt is relying solely on the
+                // AI-opinion structural check above. Surfaced distinctly so
+                // this doesn't get silently conflated with a real pass.
+                console.warn(
+                  `[renderPhotoPreviewForUser] face-match check SKIPPED, not verified (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+                  faceMatch.reason,
+                );
+                return { imageDataUri: imageUrl, mode: "photo_edit" };
+              }
+              // Logged on every attempt (pass or fail) so drift in the
+              // image-gen provider — a model update, a prompt regression —
+              // shows up in distance trends before it starts failing outright.
+              console.log(
+                `[renderPhotoPreviewForUser] face-match check passed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+                { distance: faceMatch.distance },
               );
+              // Not persisted here — same as the text-to-image inspiration
+              // path, this is a preview; saveOutfitToHistory uploads it
+              // only if/when the user explicitly saves the look.
               return { imageDataUri: imageUrl, mode: "photo_edit" };
             }
-            // Logged on every attempt (pass or fail) so drift in the
-            // image-gen provider — a model update, a prompt regression —
-            // shows up in distance trends before it starts failing outright.
-            console.log(
-              `[renderPhotoPreviewForUser] face-match check passed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+            console.warn(
+              `[renderPhotoPreviewForUser] face-match check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+              faceMatch.reason,
               { distance: faceMatch.distance },
             );
-            // Not persisted here — same as the text-to-image inspiration
-            // path, this is a preview; saveOutfitToHistory uploads it
-            // only if/when the user explicitly saves the look.
-            return { imageDataUri: imageUrl, mode: "photo_edit" };
+            lastReason = "Your photo preview couldn't be verified safe this time.";
+            continue;
           }
           console.warn(
-            `[renderPhotoPreviewForUser] face-match check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
-            faceMatch.reason,
-            { distance: faceMatch.distance },
+            `[renderPhotoPreviewForUser] protected-region check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
+            verification.reason,
           );
           lastReason = "Your photo preview couldn't be verified safe this time.";
-          continue;
+        } catch (attemptError) {
+          if (attemptError instanceof ImageProviderRateLimitError) throw attemptError;
+          console.warn(
+            `[renderPhotoPreviewForUser] attempt ${attempt}/${MAX_ATTEMPTS} threw:`,
+            errorMessage(attemptError, "Unknown error"),
+          );
+          lastReason = "Your photo preview couldn't be generated this time.";
         }
-        console.warn(
-          `[renderPhotoPreviewForUser] protected-region check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
-          verification.reason,
-        );
-        lastReason = "Your photo preview couldn't be verified safe this time.";
       }
 
       return { imageDataUri: null, mode: "unavailable", reason: lastReason };

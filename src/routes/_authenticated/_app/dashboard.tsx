@@ -36,11 +36,13 @@ function reloadForNewVersion() {
 }
 
 // A stuck generation call has no legitimate reason to run past this — the
-// server side's own retry budget (3 attempts x 75s for image calls) tops
-// out well under these ceilings. Set generously above that so a real
-// in-progress generation is never cut off early, only a genuinely hung one.
+// server side's own retry budget tops out well under these ceilings (see
+// FUNCTION_BUDGET_MS in style-sheet.ts, 280s). Set generously above that so
+// a real in-progress generation is never cut off before the server's own
+// graceful deadline can return its own "unavailable" message — only a
+// genuinely hung request should ever hit this client-side timeout.
 const LOOK_TIMEOUT_MS = 100_000;
-const VISUAL_TIMEOUT_MS = 240_000;
+const VISUAL_TIMEOUT_MS = 290_000;
 
 const TIMEOUT_MESSAGE = "This is taking longer than expected. Please refresh and try again.";
 
