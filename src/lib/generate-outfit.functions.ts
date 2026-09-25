@@ -228,13 +228,11 @@ export const DailyLookSchema = z.object({
     styling_notes: z.string().min(1).max(3000),
   }),
   hair: z.object({
-    style: z.string().min(1).max(600),
-    // Confirmed live (second round): the first raise to 1000 still wasn't
-    // enough — execution_tip and makeup.details get the same justification-
-    // heavy prose treatment as description/styling_notes (the prompt asks
-    // for base finish texture + placement + wear, cross-referenced against
-    // beauty preferences). Matching the same 3000 cap rather than guessing
-    // another intermediate number.
+    // Confirmed live (third round): style got the same justification-heavy
+    // prose treatment (cross-referenced against face shape + hair type) that
+    // already forced description/styling_notes/execution_tip/details to
+    // 3000. Matching that same cap instead of another guessed number.
+    style: z.string().min(1).max(3000),
     execution_tip: z.string().min(1).max(3000),
   }),
   makeup: z
@@ -260,7 +258,10 @@ export const DailyLookSchema = z.object({
         affiliate_link: z.string().max(2048),
         verification_status: z.string().max(50),
         last_verified_at: z.string().max(50).nullable(),
-        rationale: z.string().min(1).max(500),
+        // Same justification-heavy prose treatment as the other fields
+        // above (names concretely why the pick suits face shape + skin
+        // tone/undertone) — matching their 3000 cap.
+        rationale: z.string().min(1).max(3000),
       }),
     )
     .optional(),

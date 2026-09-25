@@ -185,10 +185,15 @@ function Dashboard() {
       };
 
       outfit = await withTimeout(generate({ data: payload }), LOOK_TIMEOUT_MS);
-      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
       trackEvent(supabase, user.id, "look_generated", { vibe });
     } catch (e) {
       setGenerating(false);
+      // The server refunds the credit on any thrown error (see
+      // withAiCredit), but this path never re-fetched the credits query —
+      // so the header kept showing the pre-refund count, reading as a
+      // charge for a failed generation. Match the other handlers below,
+      // which all refresh credits after every attempt, success or not.
+      queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
       if (e instanceof TimeoutError) {
         toast.error(TIMEOUT_MESSAGE);
       } else if (isStaleBundleError(e)) {
@@ -200,6 +205,7 @@ function Dashboard() {
       }
       return;
     }
+    queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
 
