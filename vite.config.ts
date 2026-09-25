@@ -93,6 +93,18 @@ export default defineConfig(({ command, mode }) => {
         ? [
             nitro({
               noExternals: true,
+              // Without this, Vercel's Build Output API gets no maxDuration
+              // and falls back to the plan's un-configured default — which
+              // can be far below the 300s the style-sheet/photo-preview
+              // in-code timeout budgets (openrouter-style-sheet.server.ts,
+              // photo-preview.ts, dashboard.tsx) already assume. Confirmed
+              // live: "Create my look" kept hard-aborting mid-request no
+              // matter how the in-code timeouts were tuned, because the
+              // platform was killing the function before those budgets ever
+              // got a chance to run. "max" always tracks the team's actual
+              // plan ceiling instead of hardcoding a number that could fall
+              // out of sync with it.
+              vercel: { functions: { maxDuration: "max" } },
               routeRules: {
                 "/**": { headers: { ...securityHeaders, "Cache-Control": "no-store" } },
                 "/assets/**": {
