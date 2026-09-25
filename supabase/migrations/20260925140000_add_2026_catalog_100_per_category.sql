@@ -6,8 +6,12 @@
 -- homepage / search / login / account path) before insertion. Brand-supplied copy is
 -- used for titles and descriptions; nothing is invented. Sources: Uniqlo US product
 -- API, Nike US product walls, COS UAE product pages (JSON-LD), and the Shopify
--- product feeds of Everlane, Muji, Missoma, Gorjana, Cuyana, Miansai, Vitaly and
--- Tom Wood. Prices are as displayed by the source (USD, AED and GBP).
+-- product feeds of Everlane, Muji, Missoma, Gorjana, Cuyana, Vitaly and Tom Wood.
+-- Prices are as displayed by the source (USD, AED, GBP and EUR).
+--
+-- One source was dropped rather than guessed: Miansai's product pages block
+-- server-side fetches, so none of its items could be link-verified and all were
+-- left out of this catalogue.
 --
 -- Body-shape tags are intentionally left empty: they are a styling judgement, not a
 -- fact the source states, and a wrong tag corrupts matching. seasonal_palettes only
