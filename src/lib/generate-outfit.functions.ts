@@ -229,12 +229,18 @@ export const DailyLookSchema = z.object({
   }),
   hair: z.object({
     style: z.string().min(1).max(600),
-    execution_tip: z.string().min(1).max(1000),
+    // Confirmed live (second round): the first raise to 1000 still wasn't
+    // enough — execution_tip and makeup.details get the same justification-
+    // heavy prose treatment as description/styling_notes (the prompt asks
+    // for base finish texture + placement + wear, cross-referenced against
+    // beauty preferences). Matching the same 3000 cap rather than guessing
+    // another intermediate number.
+    execution_tip: z.string().min(1).max(3000),
   }),
   makeup: z
     .object({
       palette: z.string().min(1).max(600),
-      details: z.string().min(1).max(1000),
+      details: z.string().min(1).max(3000),
     })
     .nullable(),
   vibe_alignment_score: z.number().int().min(1).max(10),
