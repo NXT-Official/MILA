@@ -259,7 +259,18 @@ Always call the report_daily_look tool.`;
       forecastRetrievedAt,
     };
     const look = DailyLookSchema.safeParse(argsWithMakeup);
-    if (!look.success) throw new AiUnavailableError(failure);
+    if (!look.success) {
+      // Confirmed live: this threw the same generic message for both a real
+      // provider failure and a valid-but-schema-rejected model output (e.g.
+      // a field exceeding its max length), with zero way to tell them apart
+      // after the fact. Log the actual zod issues so a future rejection is
+      // diagnosable instead of a silent "couldn't compose a look."
+      console.error(
+        "[generateLookForUser] DailyLookSchema rejected model output",
+        JSON.stringify(look.error.issues),
+      );
+      throw new AiUnavailableError(failure);
+    }
     // The credit charged above covers this look's first visual, rendered by the
     // separate renderLookImageForUser call the client makes next.
     await markLookImagePending(userId);

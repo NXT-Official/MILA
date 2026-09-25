@@ -215,18 +215,26 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
 
 export const DailyLookSchema = z.object({
   outfit: z.object({
-    headline: z.string().min(1).max(200),
-    description: z.string().min(1).max(1000),
-    styling_notes: z.string().min(1).max(1000),
+    headline: z.string().min(1).max(300),
+    // Confirmed live: deepseek's real output for description/styling_notes
+    // routinely exceeds 1000 chars once it's justifying color choices against
+    // skin depth/undertone and season family — the prompt asks for that
+    // reasoning inline, not just a garment list. The original 1000-char cap
+    // (added to bound the DailyLook trust boundary) was silently rejecting
+    // valid model output with no logging, breaking every generation. Raised
+    // with real headroom; still bounded, just not razor-tight against actual
+    // prose length.
+    description: z.string().min(1).max(3000),
+    styling_notes: z.string().min(1).max(3000),
   }),
   hair: z.object({
-    style: z.string().min(1).max(300),
-    execution_tip: z.string().min(1).max(500),
+    style: z.string().min(1).max(600),
+    execution_tip: z.string().min(1).max(1000),
   }),
   makeup: z
     .object({
-      palette: z.string().min(1).max(300),
-      details: z.string().min(1).max(500),
+      palette: z.string().min(1).max(600),
+      details: z.string().min(1).max(1000),
     })
     .nullable(),
   vibe_alignment_score: z.number().int().min(1).max(10),
