@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.mila.app",
+      "sha256_cert_fingerprints": [
+        "F4:E6:37:10:F7:F9:56:A4:BD:01:0E:36:EC:03:C0:6F:5C:45:BC:2B:8E:06:76:9C:7B:F4:56:59:B3:DE:94:AB"
+      ]
+    }
+  }
+]
