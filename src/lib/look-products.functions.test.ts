@@ -80,9 +80,38 @@ const PRODUCTS: ProductRow[] = [
   },
 ];
 
+/** Untagged rows — the shape most of the live catalog has (no palette/body tags). */
+function untagged(id: string, category: string, overrides: Partial<ProductRow> = {}): ProductRow {
+  return {
+    id,
+    title: `Untagged ${id}`,
+    brand_id: "b3",
+    category,
+    price: 60,
+    currency: "USD",
+    image_url: null,
+    affiliate_link: `https://shop.example.com/${id}`,
+    seasonal_palettes: [],
+    body_shapes: [],
+    available_regions: [],
+    verification_status: "verified",
+    last_verified_at: "2026-01-01T00:00:00.000Z",
+    in_stock: true,
+    gender: "Unisex",
+    ...overrides,
+  };
+}
+
+/**
+ * Minimal stand-in for the PostgREST chain the function uses: a category
+ * discovery query (select + range) and a per-category product query
+ * (select + eq/neq/limit).
+ */
 function fakeSupabase(rows: ProductRow[]): SupabaseClient<Database> {
   const from = () => {
     let filterCategory: string | null = null;
+    let rangeFrom: number | null = null;
+    let rangeTo: number | null = null;
     const chain = {
       select: () => chain,
       eq: (column: string, value: string | boolean) => {
@@ -91,11 +120,22 @@ function fakeSupabase(rows: ProductRow[]): SupabaseClient<Database> {
       },
       neq: () => chain,
       limit: () => chain,
+      range: (from: number, to: number) => {
+        rangeFrom = from;
+        rangeTo = to;
+        return chain;
+      },
       then: (resolve: (v: { data: ProductRow[]; error: null }) => void) => {
-        const filtered = rows.filter((r) => r.verification_status !== "broken" && r.in_stock);
-        const data = filterCategory
-          ? filtered.filter((r) => r.category === filterCategory)
-          : filtered;
+        // Category discovery: unpaginated read of every row, honouring range.
+        if (!filterCategory) {
+          const data =
+            rangeFrom != null && rangeTo != null ? rows.slice(rangeFrom, rangeTo + 1) : rows;
+          resolve({ data, error: null });
+          return;
+        }
+        const data = rows.filter(
+          (r) => r.category === filterCategory && r.verification_status !== "broken" && r.in_stock,
+        );
         resolve({ data, error: null });
       },
     };
@@ -131,15 +171,66 @@ describe("isAvailableInRegion", () => {
 });
 
 describe("matchLookProducts", () => {
-  test("returns the top-scoring product per category, dropping non-matches", async () => {
-    const supabase = fakeSupabase(PRODUCTS);
+  test("ranks a palette/body-shape match first, then fills from the same category", async () => {
+    const supabase = fakeSupabase([
+      ...PRODUCTS,
+      untagged("top-untagged", "Tops"),
+      untagged("outerwear-untagged", "Outerwear"),
+    ]);
     const results = await matchLookProducts(supabase, {
       colorSeason: "Warm Autumn",
       bodyType: "Hourglass",
     });
-    expect(results).toHaveLength(2);
+
+    // The tag match leads its category — it is never crowded out by untagged rows.
+    expect(results[0].id).toBe("top-match");
     expect(results.find((r) => r.category === "Tops")?.id).toBe("top-match");
     expect(results.find((r) => r.category === "Outerwear")?.id).toBe("outerwear-match");
+    // Untagged rows are still offered, so the whole catalog is reachable.
+    expect(results.some((r) => r.id === "top-untagged")).toBe(true);
+    expect(results.some((r) => r.id === "outerwear-untagged")).toBe(true);
+  });
+
+  test("offers untagged products when nothing matches the palette/body shape", async () => {
+    const supabase = fakeSupabase(PRODUCTS);
+    const results = await matchLookProducts(supabase, {
+      colorSeason: "Cool Summer",
+      bodyType: "Rectangle",
+    });
+    // Previously dropped entirely; the untagged/no-match rows are now candidates.
+    expect(results).toHaveLength(3);
+    expect(results.map((r) => r.id).sort()).toEqual([
+      "outerwear-match",
+      "top-match",
+      "top-no-match",
+    ]);
+  });
+
+  test("caps candidates per category", async () => {
+    const rows = [
+      ...Array.from({ length: 10 }, (_, i) => untagged(`top-${i}`, "Tops")),
+      ...Array.from({ length: 10 }, (_, i) => untagged(`bag-${i}`, "Bags")),
+    ];
+    const supabase = fakeSupabase(rows);
+    const results = await matchLookProducts(supabase, {
+      colorSeason: "Cool Summer",
+      bodyType: "Rectangle",
+    });
+    expect(results.filter((r) => r.category === "Tops")).toHaveLength(4);
+    expect(results.filter((r) => r.category === "Bags")).toHaveLength(4);
+  });
+
+  test("discovers categories beyond the first page of rows", async () => {
+    const rows: ProductRow[] = [
+      ...Array.from({ length: 1000 }, (_, i) => untagged(`top-${i}`, "Tops")),
+      untagged("shoe-beyond-page-one", "Shoes"),
+    ];
+    const supabase = fakeSupabase(rows);
+    const results = await matchLookProducts(supabase, {
+      colorSeason: "Cool Summer",
+      bodyType: "Rectangle",
+    });
+    expect(results.some((r) => r.category === "Shoes")).toBe(true);
   });
 
   test("excludes Outerwear entirely above 75°F, even if it would have matched", async () => {
@@ -151,15 +242,6 @@ describe("matchLookProducts", () => {
     });
     expect(results.some((r) => r.category === "Outerwear")).toBe(false);
     expect(results.find((r) => r.category === "Tops")?.id).toBe("top-match");
-  });
-
-  test("skips a category entirely when nothing scores above zero", async () => {
-    const supabase = fakeSupabase(PRODUCTS);
-    const results = await matchLookProducts(supabase, {
-      colorSeason: "Cool Summer",
-      bodyType: "Rectangle",
-    });
-    expect(results).toHaveLength(0);
   });
 
   test("excludes a product not shipping to the user's region", async () => {
@@ -195,7 +277,7 @@ describe("matchLookProducts", () => {
     expect(results.find((r) => r.category === "Tops")).toBeUndefined();
   });
 
-  test("excludes opposite-gender products, keeps Unisex ones, when a gender is requested", async () => {
+  test("excludes opposite-gender products and keeps Unisex ones when a gender is requested", async () => {
     const rows: ProductRow[] = [
       { ...PRODUCTS[0], id: "womens-top", gender: "Female" },
       { ...PRODUCTS[0], id: "unisex-top", gender: "Unisex", price: 10 },
@@ -206,9 +288,9 @@ describe("matchLookProducts", () => {
       bodyType: "Hourglass",
       gender: "Male",
     });
-    // Both score equally; unisex-top wins on the price tiebreak, but the
-    // real assertion is that womens-top was never a candidate at all.
-    expect(results.find((r) => r.category === "Tops")?.id).toBe("unisex-top");
+    const topIds = results.filter((r) => r.category === "Tops").map((r) => r.id);
+    expect(topIds).toContain("unisex-top");
+    expect(topIds).not.toContain("womens-top");
   });
 
   test("doesn't gender-filter when no gender is requested", async () => {

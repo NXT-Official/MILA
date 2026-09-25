@@ -63,23 +63,59 @@ export function isAvailableInRegion(
 }
 
 /**
- * One top-scoring product per category present in the catalog. Catalog-only —
- * no AI call, no credit charge, same as findSimilarItems in dupe-hunter.functions.ts.
+ * How many candidates per category the model gets to choose from. The whole
+ * catalog is eligible (see below); handing over more than one per category
+ * gives the stylist a real choice, and rotating which ones within a score band
+ * means the catalog is used across generations instead of the same few rows.
+ */
+const MAX_CANDIDATES_PER_CATEGORY = 4;
+
+/** Products fetched per category before scoring in memory. */
+const CATEGORY_FETCH_LIMIT = 500;
+
+/** Rows per page while discovering which categories exist. */
+const CATEGORY_PAGE_SIZE = 1000;
+
+/** Safety bound on category discovery pages (10k products). */
+const CATEGORY_PAGE_LIMIT = 10;
+
+async function loadCategories(supabase: SupabaseClient<Database>): Promise<string[]> {
+  const categories = new Set<string>();
+  for (let page = 0; page < CATEGORY_PAGE_LIMIT; page += 1) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("category")
+      .range(page * CATEGORY_PAGE_SIZE, (page + 1) * CATEGORY_PAGE_SIZE - 1);
+    if (error) {
+      console.error("[findLookProducts] category query failed", error);
+      throw new Error("Couldn't load the shoppable catalog.");
+    }
+    const rows = data ?? [];
+    for (const row of rows) {
+      if (row.category) categories.add(row.category);
+    }
+    if (rows.length < CATEGORY_PAGE_SIZE) break;
+  }
+  return [...categories];
+}
+
+/**
+ * Shoppable candidates for a Daily Look — catalog-only, no AI call, no credit
+ * charge (same family as findSimilarItems in dupe-hunter.functions.ts).
+ *
+ * Every in-stock, non-broken product that matches the user's gender/region is
+ * eligible, whether or not it carries palette/body-shape tags: a tag match
+ * ranks a product first (+50 palette, +30 body shape), but an untagged product
+ * is still offerable rather than invisible. Selection is per category, capped
+ * at MAX_CANDIDATES_PER_CATEGORY, rotated randomly within each score band so
+ * the full catalog is reachable over successive generations.
  */
 export async function matchLookProducts(
   supabase: SupabaseClient<Database>,
   { colorSeason, bodyType, tempF, region, gender }: LookProductsInput,
 ): Promise<LookProduct[]> {
-  const { data: categoryRows, error: categoryError } = await supabase
-    .from("products")
-    .select("category")
-    .limit(500);
-  if (categoryError) {
-    console.error("[findLookProducts] category query failed", categoryError);
-    throw new Error("Couldn't load the shoppable catalog.");
-  }
-
-  let categories = [...new Set((categoryRows ?? []).map((row) => row.category))];
+  let categories = await loadCategories(supabase);
+  if (categories.length === 0) return [];
   if (tempF != null && tempF > HOT_WEATHER_F) {
     categories = categories.filter((category) => category !== "Outerwear");
   }
@@ -94,30 +130,33 @@ export async function matchLookProducts(
       .eq("category", category)
       .neq("verification_status", "broken")
       .eq("in_stock", true)
-      .limit(200);
+      .limit(CATEGORY_FETCH_LIMIT);
     if (error) {
       console.error("[findLookProducts] product query failed", error);
       throw new Error("Couldn't load the shoppable catalog.");
     }
 
-    const best = (candidates ?? [])
+    const ranked = (candidates ?? [])
       .filter((product) => isAvailableInRegion(product, region))
       .filter((product) => isGenderMatch(product.gender, gender))
-      .map((product) => ({ product, score: scoreProduct(product, colorSeason, bodyType) }))
-      .filter((r) => r.score > 0)
-      .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.product.price - b.product.price))
-      .at(0);
+      .map((product) => ({
+        product,
+        score: scoreProduct(product, colorSeason, bodyType),
+        tiebreak: Math.random(),
+      }))
+      .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.tiebreak - b.tiebreak))
+      .slice(0, MAX_CANDIDATES_PER_CATEGORY);
 
-    if (best) {
+    for (const { product } of ranked) {
       const {
         seasonal_palettes: _seasonalPalettes,
         body_shapes: _bodyShapes,
         available_regions: _availableRegions,
         in_stock: _inStock,
         gender: _gender,
-        ...product
-      } = best.product;
-      results.push(product);
+        ...rest
+      } = product;
+      results.push(rest);
     }
   }
 
