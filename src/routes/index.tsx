@@ -47,17 +47,9 @@ function LandingPage() {
     return <AtelierSplash />;
   }
 
-  const sections = [
-    { id: "how-it-works", label: content.howItWorks.kicker },
-    { id: "dossier", label: content.dossier.kicker },
-    { id: "dupe-hunter", label: content.dupeHunter.kicker },
-    { id: "community", label: content.community.kicker },
-    { id: "pricing", label: "Pricing" },
-  ];
-
   return (
     <div className="min-h-screen">
-      <SiteHeader sections={sections} />
+      <SiteHeader />
       <main className="overflow-x-clip">
         <HeroSection content={content.hero} />
         <HowItWorksSection content={content.howItWorks} />
