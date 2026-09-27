@@ -30,9 +30,7 @@ export function MarketingSubpage({
         {children}
 
         <div className="atelier-container border-t border-border py-20 text-center sm:py-24">
-          <h2 className="text-[clamp(2rem,4vw,3rem)] leading-[1.05]">
-            Ready for your first look?
-          </h2>
+          <h2 className="text-[clamp(2rem,4vw,3rem)] leading-[1.05]">Ready for your first look?</h2>
           <div className="mt-8 flex justify-center">
             <CtaButton />
           </div>
