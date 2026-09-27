@@ -10,7 +10,7 @@ export const Route = createFileRoute("/terms")({
 
 function TermsPage() {
   return (
-    <LegalPage kicker="Legal" title="Terms of Service">
+    <LegalPage title="Terms of Service">
       <p className="font-medium text-muted-foreground">
         [TERMS OF SERVICE COPY — PENDING LEGAL REVIEW]
       </p>

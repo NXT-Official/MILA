@@ -2,22 +2,9 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
-export function LegalPage({
-  kicker,
-  title,
-  children,
-}: {
-  kicker: string;
-  title: string;
-  children: ReactNode;
-}) {
+export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 -left-24 h-105 w-105 rounded-full bg-atelier-champagne/25 blur-3xl" />
-        <div className="absolute -bottom-32 -right-24 h-105 w-105 rounded-full bg-atelier-rose/20 blur-3xl" />
-      </div>
-
+    <div className="relative min-h-screen bg-background">
       <div className="relative atelier-page max-w-3xl">
         <div className="mb-10 flex flex-col items-center text-center">
           <Link
@@ -27,7 +14,6 @@ export function LegalPage({
             <img src="/favicon.svg" alt="" className="size-7" />
             MILA
           </Link>
-          <p className="atelier-kicker mt-3">{kicker}</p>
           <h1 className="atelier-title mt-4">{title}</h1>
         </div>
 

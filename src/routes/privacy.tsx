@@ -10,7 +10,7 @@ export const Route = createFileRoute("/privacy")({
 
 function PrivacyPage() {
   return (
-    <LegalPage kicker="Legal" title="Privacy Policy">
+    <LegalPage title="Privacy Policy">
       <p className="font-medium text-muted-foreground">
         [PRIVACY POLICY COPY — PENDING LEGAL REVIEW]
       </p>
