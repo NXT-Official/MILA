@@ -5,9 +5,17 @@ const OPENROUTER_IMAGES_URL = "https://openrouter.ai/api/v1/images";
 const IMAGE_MODEL = "meta/muse-image";
 const CONCURRENCY = 3;
 
-const IMAGES: Array<{ file: string; prompt: string }> = [
+// Aspect ratio hint, as "WxH", for images whose display box is not a square
+// and whose critical content (e.g. a full-body model) would be cropped by
+// the default (very tall, ~1:2) size the API returns when no size is given.
+// The three "full body, head to toe" prompts below render inside a 4:5
+// (aspect-4/5) box with object-cover, so we request a matching 4:5 source.
+const FULL_BODY_SIZE = "1024x1280";
+
+const IMAGES: Array<{ file: string; prompt: string; size?: string }> = [
   {
     file: "dossier-example.jpg",
+    size: FULL_BODY_SIZE,
     prompt: `Create a realistic full-body luxury fashion editorial photograph.
 
 Outfit: A "True Summer" cool, muted color palette outfit — soft blue-grey trousers, a dusty rose blouse, and cool taupe accessories. Elegant, understated silhouette.
@@ -32,10 +40,12 @@ No collage, no text, no captions, no logos, no watermark.`,
   },
   {
     file: "dupe-inspiration.jpg",
+    size: FULL_BODY_SIZE,
     prompt: `Create a realistic full-body luxury fashion editorial photograph of one adult model wearing a camel-colored wool-blend maxi coat, floor length, cinched waist, over a simple black outfit. Elegant neutral studio background. Soft professional editorial lighting. Single subject, centered composition. No collage, no text, no captions, no logos, no watermark.`,
   },
   {
     file: "dupe-match.jpg",
+    size: FULL_BODY_SIZE,
     prompt: `Create a realistic full-body luxury fashion editorial photograph of one adult model wearing a camel-colored wool-blend maxi coat, floor length, cinched waist, nearly identical silhouette and color to a designer original, over a simple black outfit. Elegant neutral studio background. Soft professional editorial lighting. Single subject, centered composition. No collage, no text, no captions, no logos, no watermark.`,
   },
   {
@@ -60,7 +70,7 @@ No collage, no text, no captions, no logos, no watermark.`,
   },
 ];
 
-async function generateImage(prompt: string): Promise<Buffer> {
+async function generateImage(prompt: string, size?: string): Promise<Buffer> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY not configured");
 
@@ -70,7 +80,12 @@ async function generateImage(prompt: string): Promise<Buffer> {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model: IMAGE_MODEL, prompt, output_format: "jpeg" }),
+    body: JSON.stringify({
+      model: IMAGE_MODEL,
+      prompt,
+      output_format: "jpeg",
+      ...(size ? { size } : {}),
+    }),
     signal: AbortSignal.timeout(90_000),
   });
 
@@ -103,9 +118,9 @@ async function main() {
   const outDir = join(process.cwd(), "public", "landing");
   mkdirSync(outDir, { recursive: true });
 
-  await runWithConcurrency(IMAGES, CONCURRENCY, async ({ file, prompt }) => {
+  await runWithConcurrency(IMAGES, CONCURRENCY, async ({ file, prompt, size }) => {
     console.log(`Generating ${file}...`);
-    const buffer = await generateImage(prompt);
+    const buffer = await generateImage(prompt, size);
     writeFileSync(join(outDir, file), buffer);
     console.log(`Saved ${file} (${buffer.length} bytes)`);
   });
