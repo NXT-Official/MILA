@@ -3,7 +3,17 @@ import { Section, SectionHeading, Eyebrow } from "@/components/landing/section";
 import { cn } from "@/lib/utils";
 import type { DupeCard, DupeHunterContent } from "@/lib/landing-content";
 
-function DupeColumn({ card, isMatch }: { card: DupeCard; isMatch?: boolean }) {
+function DupeColumn({
+  card,
+  image,
+  alt,
+  isMatch,
+}: {
+  card: DupeCard;
+  image: string;
+  alt: string;
+  isMatch?: boolean;
+}) {
   return (
     <div
       className={cn(
@@ -11,6 +21,14 @@ function DupeColumn({ card, isMatch }: { card: DupeCard; isMatch?: boolean }) {
         isMatch && "bg-accent-soft/50",
       )}
     >
+      <img
+        src={image}
+        alt={alt}
+        width={480}
+        height={600}
+        loading="lazy"
+        className="aspect-4/5 w-full rounded-panel border border-border object-cover"
+      />
       <Eyebrow icon={isMatch ? BadgeCheck : Camera} className={isMatch ? "text-ink" : undefined}>
         {card.label}
       </Eyebrow>
@@ -31,9 +49,18 @@ export function DupeHunterSection({ content }: { content: DupeHunterContent }) {
   return (
     <Section id="dupe-hunter">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
-        <div className="order-last flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-surface shadow-paper sm:flex-row sm:divide-x sm:divide-y-0 lg:order-first">
-          <DupeColumn card={content.inspiration} />
-          <DupeColumn card={content.milaMatch} isMatch />
+        <div className="order-last flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-surface shadow-paper transition-shadow duration-200 ease-editorial hover:shadow-raised sm:flex-row sm:divide-x sm:divide-y-0 lg:order-first">
+          <DupeColumn
+            card={content.inspiration}
+            image="/landing/dupe-inspiration.jpg"
+            alt="The inspiration piece — a camel wool-blend maxi coat"
+          />
+          <DupeColumn
+            card={content.milaMatch}
+            image="/landing/dupe-match.jpg"
+            alt="Mila's match — a near-identical camel maxi coat"
+            isMatch
+          />
         </div>
 
         <SectionHeading heading={content.heading} body={content.body} />
