@@ -7,7 +7,17 @@ export function DossierSection({ content }: { content: DossierContent }) {
   return (
     <Section id="dossier">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
-        <SectionHeading heading={content.heading} body={content.body} />
+        <div>
+          <SectionHeading heading={content.heading} body={content.body} />
+          <img
+            src="/landing/dossier-example.jpg"
+            alt="Editorial photograph of a True Summer palette outfit — soft blue-grey and dusty rose"
+            width={640}
+            height={800}
+            loading="lazy"
+            className="mt-8 aspect-4/5 w-full max-w-sm rounded-card border border-border object-cover shadow-paper transition-shadow duration-200 ease-editorial hover:shadow-raised"
+          />
+        </div>
 
         <div className="overflow-hidden rounded-card border border-border bg-card shadow-paper">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-7 py-6">
