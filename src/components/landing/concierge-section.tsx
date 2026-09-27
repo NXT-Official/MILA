@@ -19,19 +19,29 @@ export function ConciergeSection() {
           heading="Ask Mila anything, anytime."
           body="Not sure about a pairing? Stuck between two looks? Mila remembers your dossier and every look you've saved — just ask."
         />
-        <div className="space-y-3">
-          {EXCHANGE.map((m, i) => (
-            <div
-              key={i}
-              className={
-                m.role === "user"
-                  ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-ink px-4 py-3 text-sm text-surface"
-                  : "mr-auto max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-card px-4 py-3 text-sm text-foreground"
-              }
-            >
-              {m.text}
-            </div>
-          ))}
+        <div className="space-y-6">
+          <img
+            src="/landing/concierge-garment.jpg"
+            alt="Close-up of a black wool coat and gold hoop earrings — the items Mila is discussing"
+            width={640}
+            height={480}
+            loading="lazy"
+            className="w-full rounded-card border border-border object-cover shadow-paper transition-shadow duration-200 ease-editorial hover:shadow-raised"
+          />
+          <div className="space-y-3">
+            {EXCHANGE.map((m, i) => (
+              <div
+                key={i}
+                className={
+                  m.role === "user"
+                    ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-ink px-4 py-3 text-sm text-surface"
+                    : "mr-auto max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-card px-4 py-3 text-sm text-foreground"
+                }
+              >
+                {m.text}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </Section>
