@@ -12,7 +12,10 @@ test.describe("main nav", () => {
   for (const { label, path } of NAV_DESTINATIONS) {
     test(`"${label}" nav link navigates to ${path}`, async ({ page }) => {
       await page.goto("/");
-      await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: label }).click();
+      await page
+        .getByRole("navigation", { name: "Main" })
+        .getByRole("link", { name: label })
+        .click();
       await expect(page).toHaveURL(new RegExp(`${path}$`));
       await expect(page.locator("h1, h2").first()).toBeVisible();
     });
