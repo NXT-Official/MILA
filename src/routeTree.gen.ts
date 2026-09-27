@@ -10,8 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as StyleDossierRouteImport } from './routes/style-dossier'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as MembershipRouteImport } from './routes/membership'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as DupeHunterRouteImport } from './routes/dupe-hunter'
+import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
@@ -54,14 +59,39 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StyleDossierRoute = StyleDossierRouteImport.update({
+  id: '/style-dossier',
+  path: '/style-dossier',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MembershipRoute = MembershipRouteImport.update({
+  id: '/membership',
+  path: '/membership',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DupeHunterRoute = DupeHunterRouteImport.update({
+  id: '/dupe-hunter',
+  path: '/dupe-hunter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -251,8 +281,13 @@ const AuthenticatedAppProfileUserIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/community': typeof CommunityRoute
+  '/dupe-hunter': typeof DupeHunterRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRouteWithChildren
+  '/membership': typeof MembershipRoute
   '/privacy': typeof PrivacyRoute
+  '/style-dossier': typeof StyleDossierRoute
   '/terms': typeof TermsRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -290,7 +325,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/community': typeof CommunityRoute
+  '/dupe-hunter': typeof DupeHunterRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/membership': typeof MembershipRoute
   '/privacy': typeof PrivacyRoute
+  '/style-dossier': typeof StyleDossierRoute
   '/terms': typeof TermsRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -330,8 +370,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/community': typeof CommunityRoute
+  '/dupe-hunter': typeof DupeHunterRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/login': typeof LoginRouteWithChildren
+  '/membership': typeof MembershipRoute
   '/privacy': typeof PrivacyRoute
+  '/style-dossier': typeof StyleDossierRoute
   '/terms': typeof TermsRoute
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
@@ -372,8 +417,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/community'
+    | '/dupe-hunter'
+    | '/how-it-works'
     | '/login'
+    | '/membership'
     | '/privacy'
+    | '/style-dossier'
     | '/terms'
     | '/onboarding'
     | '/auth/callback'
@@ -411,7 +461,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/community'
+    | '/dupe-hunter'
+    | '/how-it-works'
+    | '/membership'
     | '/privacy'
+    | '/style-dossier'
     | '/terms'
     | '/onboarding'
     | '/auth/callback'
@@ -450,8 +505,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/community'
+    | '/dupe-hunter'
+    | '/how-it-works'
     | '/login'
+    | '/membership'
     | '/privacy'
+    | '/style-dossier'
     | '/terms'
     | '/_authenticated/_app'
     | '/_authenticated/onboarding'
@@ -492,8 +552,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  CommunityRoute: typeof CommunityRoute
+  DupeHunterRoute: typeof DupeHunterRoute
+  HowItWorksRoute: typeof HowItWorksRoute
   LoginRoute: typeof LoginRouteWithChildren
+  MembershipRoute: typeof MembershipRoute
   PrivacyRoute: typeof PrivacyRoute
+  StyleDossierRoute: typeof StyleDossierRoute
   TermsRoute: typeof TermsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
@@ -527,6 +592,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/style-dossier': {
+      id: '/style-dossier'
+      path: '/style-dossier'
+      fullPath: '/style-dossier'
+      preLoaderRoute: typeof StyleDossierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -534,11 +606,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/membership': {
+      id: '/membership'
+      path: '/membership'
+      fullPath: '/membership'
+      preLoaderRoute: typeof MembershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dupe-hunter': {
+      id: '/dupe-hunter'
+      path: '/dupe-hunter'
+      fullPath: '/dupe-hunter'
+      preLoaderRoute: typeof DupeHunterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -865,8 +965,13 @@ const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  CommunityRoute: CommunityRoute,
+  DupeHunterRoute: DupeHunterRoute,
+  HowItWorksRoute: HowItWorksRoute,
   LoginRoute: LoginRouteWithChildren,
+  MembershipRoute: MembershipRoute,
   PrivacyRoute: PrivacyRoute,
+  StyleDossierRoute: StyleDossierRoute,
   TermsRoute: TermsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
