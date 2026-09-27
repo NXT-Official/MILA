@@ -6,15 +6,22 @@ export function Section({
   id,
   className,
   children,
+  stagger,
   "aria-label": ariaLabel,
 }: {
   id?: string;
   className?: string;
   children: React.ReactNode;
+  stagger?: boolean;
   "aria-label"?: string;
 }) {
   return (
-    <Reveal id={id} aria-label={ariaLabel} className="scroll-mt-16 border-t border-border">
+    <Reveal
+      id={id}
+      aria-label={ariaLabel}
+      stagger={stagger}
+      className="scroll-mt-16 border-t border-border"
+    >
       <div className={cn("atelier-container py-20 sm:py-24", className)}>{children}</div>
     </Reveal>
   );
