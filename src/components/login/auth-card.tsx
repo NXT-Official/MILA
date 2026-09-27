@@ -102,7 +102,7 @@ export function AuthCard() {
       </CardContent>
 
       <div className="px-6 pb-5 -mt-1">
-        <div className="flex items-center gap-1.5 text-micro text-muted-foreground/80 justify-center">
+        <div className="flex items-center gap-1.5 text-micro text-muted-foreground justify-center">
           <ShieldCheck className="size-3" />
           Your sign-in is encrypted and secure.
         </div>
