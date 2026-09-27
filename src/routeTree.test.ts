@@ -17,3 +17,11 @@ test("the generated route tree has no admin, moderator, or staff routes", () => 
   expect(routeTree).not.toContain("routes/moderator/");
   expect(routeTree).not.toContain("routes/staff");
 });
+
+test("the generated route tree includes all five nav-destination routes", () => {
+  expect(routeTree).toMatch(/fullPath: '\/how-it-works'/);
+  expect(routeTree).toMatch(/fullPath: '\/style-dossier'/);
+  expect(routeTree).toMatch(/fullPath: '\/dupe-hunter'/);
+  expect(routeTree).toMatch(/fullPath: '\/community'/);
+  expect(routeTree).toMatch(/fullPath: '\/membership'/);
+});
