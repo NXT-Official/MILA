@@ -6,7 +6,6 @@ export function FeedSection() {
     <Section id="feed">
       <SectionHeading
         align="center"
-        kicker="The Atelier Feed"
         heading="Post today's fit. See everyone else's."
         body="One photo, tagged automatically — every piece becomes shoppable for the whole community."
       />

@@ -15,7 +15,6 @@ export function PricingSection() {
     <Section id="pricing">
       <SectionHeading
         align="center"
-        kicker="Membership"
         heading="Choose your Atelier access."
         body="Every plan includes daily styling credits, credit packs to top up any day, and a verified badge on your profile."
       />

@@ -7,7 +7,7 @@ const STEP_ICONS = [UserRound, WandSparkles, Users];
 export function HowItWorksSection({ content }: { content: HowItWorksContent }) {
   return (
     <Section id="how-it-works">
-      <SectionHeading align="center" kicker={content.kicker} heading={content.heading} />
+      <SectionHeading align="center" heading={content.heading} />
 
       <ol className="mt-14 divide-y divide-border border-t border-border sm:mt-16 md:grid md:grid-cols-3 md:divide-y-0 md:divide-x md:border-b">
         {content.steps.map((step, i) => (

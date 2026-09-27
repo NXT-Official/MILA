@@ -7,7 +7,7 @@ export function DossierSection({ content }: { content: DossierContent }) {
   return (
     <Section id="dossier">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
-        <SectionHeading kicker={content.kicker} heading={content.heading} body={content.body} />
+        <SectionHeading heading={content.heading} body={content.body} />
 
         <div className="overflow-hidden rounded-card border border-border bg-card shadow-paper">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-7 py-6">

@@ -36,7 +36,7 @@ export function DupeHunterSection({ content }: { content: DupeHunterContent }) {
           <DupeColumn card={content.milaMatch} isMatch />
         </div>
 
-        <SectionHeading kicker={content.kicker} heading={content.heading} body={content.body} />
+        <SectionHeading heading={content.heading} body={content.body} />
       </div>
     </Section>
   );

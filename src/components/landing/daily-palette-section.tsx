@@ -11,7 +11,6 @@ export function DailyPaletteSection() {
     <Section id="palette">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
         <SectionHeading
-          kicker="Daily Palette"
           heading="A new color mix, every morning."
           body="Three colors pulled fresh from your season each day — base, statement, and accent — so you never second-guess what goes together."
         />

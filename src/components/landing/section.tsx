@@ -65,13 +65,11 @@ export function IconTile({
 }
 
 export function SectionHeading({
-  kicker,
   heading,
   body,
   align = "left",
   className,
 }: {
-  kicker?: string;
   heading: string;
   body?: string;
   align?: "left" | "center";
@@ -80,10 +78,7 @@ export function SectionHeading({
   const centered = align === "center";
   return (
     <div className={cn("max-w-xl", centered && "mx-auto text-center", className)}>
-      {kicker ? (
-        <Eyebrow className={centered ? "justify-center" : undefined}>{kicker}</Eyebrow>
-      ) : null}
-      <h2 className="mt-4 text-[clamp(2rem,4vw,3rem)] leading-[1.05]">{heading}</h2>
+      <h2 className="text-[clamp(2rem,4vw,3rem)] leading-[1.05]">{heading}</h2>
       {body ? (
         <p className="mt-6 text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
           {body}

@@ -16,7 +16,6 @@ export function ConciergeSection() {
     <Section id="concierge">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
         <SectionHeading
-          kicker="AI Styling Concierge"
           heading="Ask Mila anything, anytime."
           body="Not sure about a pairing? Stuck between two looks? Mila remembers your dossier and every look you've saved — just ask."
         />

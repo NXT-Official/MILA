@@ -11,12 +11,7 @@ export function CommunitySection({
 }) {
   return (
     <Section id="community">
-      <SectionHeading
-        align="center"
-        kicker={content.kicker}
-        heading={content.heading}
-        body={content.body}
-      />
+      <SectionHeading align="center" heading={content.heading} body={content.body} />
 
       <ul className="mt-10 flex flex-wrap justify-center gap-2.5">
         {content.seasonChips.map((season) => (
