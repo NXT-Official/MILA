@@ -47,6 +47,7 @@ function buildOutfitImagePrompt(
   gender?: string | null,
   skinDepth?: string | null,
   heightCm?: number | null,
+  fallbackGenderDirection?: "Male" | "Female" | null,
 ): string {
   const outfitLine = [
     outfit.outfit.headline,
@@ -56,10 +57,18 @@ function buildOutfitImagePrompt(
     .filter(Boolean)
     .join(" ");
 
-  const genderLine =
+  const explicitGenderLine =
     gender && gender !== "Prefer not to say" && gender !== "Non-binary"
       ? `presenting as ${gender.toLowerCase()}`
       : null;
+  // No explicit Male/Female profile: fall back to the once-per-look
+  // direction the shopped picks actually used (see loadLookInventory's
+  // fallbackDirection), so the rendered visual doesn't contradict the
+  // items in the shop-the-look grid. Absent for a pure-Unisex look, which
+  // renders neutrally same as before.
+  const genderLine =
+    explicitGenderLine ??
+    (fallbackGenderDirection ? `presenting as ${fallbackGenderDirection.toLowerCase()}` : null);
   const skinLine = skinDepth ? `with ${SKIN_DEPTH_DESCRIPTORS[skinDepth] ?? skinDepth} skin` : null;
   const heightLine = formatHeightLine(heightCm);
   const modelLine =
@@ -119,7 +128,12 @@ export interface OutfitImageResult {
 
 export async function generateOutfitImage(
   outfit: DailyLook,
-  deps: { gender?: string | null; skinDepth?: string | null; heightCm?: number | null } = {},
+  deps: {
+    gender?: string | null;
+    skinDepth?: string | null;
+    heightCm?: number | null;
+    fallbackGenderDirection?: "Male" | "Female" | null;
+  } = {},
 ): Promise<OutfitImageResult> {
   const { OPENROUTER_API_KEY } = requireEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
@@ -135,7 +149,13 @@ export async function generateOutfitImage(
       },
       body: JSON.stringify({
         model: IMAGE_MODEL,
-        prompt: buildOutfitImagePrompt(outfit, deps.gender, deps.skinDepth, deps.heightCm),
+        prompt: buildOutfitImagePrompt(
+          outfit,
+          deps.gender,
+          deps.skinDepth,
+          deps.heightCm,
+          deps.fallbackGenderDirection,
+        ),
         output_format: "jpeg",
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),

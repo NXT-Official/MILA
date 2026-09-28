@@ -159,6 +159,43 @@ describe("OpenRouter outfit image generation", () => {
     expect(capturedPrompt).not.toContain("Dia Bag");
   });
 
+  test("uses fallbackGenderDirection for the presentation line when gender is absent", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    let capturedPrompt = "";
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedPrompt = JSON.parse(init?.body as string).prompt;
+      return Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+
+    await generateOutfitImage(outfit, { fallbackGenderDirection: "Male" });
+    expect(capturedPrompt).toContain("presenting as male");
+  });
+
+  test("an explicit gender takes priority over fallbackGenderDirection", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    let capturedPrompt = "";
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedPrompt = JSON.parse(init?.body as string).prompt;
+      return Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+
+    await generateOutfitImage(outfit, { gender: "Female", fallbackGenderDirection: "Male" });
+    expect(capturedPrompt).toContain("presenting as female");
+    expect(capturedPrompt).not.toContain("presenting as male");
+  });
+
+  test("renders neutrally when neither gender nor fallbackGenderDirection is set", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    let capturedPrompt = "";
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedPrompt = JSON.parse(init?.body as string).prompt;
+      return Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+
+    await generateOutfitImage(outfit);
+    expect(capturedPrompt).not.toContain("presenting as");
+  });
+
   test("omits the key pieces line when the look carries no planned picks", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     let capturedPrompt = "";

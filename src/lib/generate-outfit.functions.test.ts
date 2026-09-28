@@ -119,6 +119,29 @@ describe("hydrateShoppablePicks", () => {
   });
 });
 
+describe("DailyLookSchema fallback_gender_direction", () => {
+  test("accepts Male, Female, null, or a missing value", () => {
+    for (const value of ["Male", "Female", null, undefined] as const) {
+      const result = DailyLookSchema.safeParse({
+        ...baseArgs,
+        makeup: null,
+        ...(value !== undefined ? { fallback_gender_direction: value } : {}),
+      });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.fallback_gender_direction).toBe(value);
+    }
+  });
+
+  test("rejects an unknown direction", () => {
+    const result = DailyLookSchema.safeParse({
+      ...baseArgs,
+      makeup: null,
+      fallback_gender_direction: "Non-binary",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("buildInventoryReviewTool", () => {
   test("constrains item to integer indexes within the inventory range", () => {
     const tool = buildInventoryReviewTool(851);

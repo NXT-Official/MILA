@@ -217,6 +217,15 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
 }
 
 /**
+ * Hard cap on the review stage's shortlist (schema `maxItems` + prompt copy).
+ * Step one is the pipeline's slowest call, and an uncapped run measured 8.3k
+ * completion tokens on a 36k-token prompt — close enough to the 75s provider
+ * timeout that a slow moment aborted the whole generation. Capping keeps the
+ * call comfortably inside its budget and cuts cost with it.
+ */
+export const MAX_REVIEW_SHORTLIST = 24;
+
+/**
  * Step-one tool (the inventory review): the model answers with indexes into
  * the numbered inventory block from formatInventoryForPrompt — never product
  * ids, titles, or prices. look.ts maps indexes back through resolveShortlist
@@ -233,6 +242,7 @@ export function buildInventoryReviewTool(maxIndex: number) {
         properties: {
           shortlist: {
             type: "array",
+            maxItems: MAX_REVIEW_SHORTLIST,
             items: {
               type: "object",
               properties: {
@@ -245,7 +255,7 @@ export function buildInventoryReviewTool(maxIndex: number) {
                 reason: {
                   type: "string",
                   description:
-                    "One clause naming why this row suits the client's style profile and today's occasion.",
+                    "One short clause (max 15 words) naming why this row suits the client's style profile and today's occasion.",
                 },
               },
               required: ["item", "reason"],
@@ -308,7 +318,7 @@ OCCASION VIBE: ${vibe}${agendaBlock ? `\n\n${agendaBlock}` : ""}
 HOW TO REVIEW:
 - Judge EVERY row against the profile (seasonal palette, body shape, build proportions, gender presentation), today's occasion, and the climate rules below. Most rows carry no [P]/[S] tag — read the row description and judge it yourself; a tag is a hint, not a requirement.
 - Shortlist pieces that can be styled together into ONE cohesive head-to-toe look — colors/tones that harmonize with each other inside the palette and proportions that work as a single outfit, not just good rows in isolation.
-- Coverage (aim, not a quota): 4–5 tops; 4–5 bottoms and/or 4–5 dresses (both when layering suits the weather); 3–4 pairs of shoes; 3–4 outerwear pieces ONLY when the weather calls for layering; 2–3 bags; 2–3 jewelry; 2–3 accessories. Order each category best-first. At most 40 rows in total. Skip a slot only when nothing in the inventory genuinely suits it.
+- Coverage (aim, not a quota): 3–4 tops; 3–4 bottoms or dresses (both when layering suits the weather); 2–3 pairs of shoes; 2–3 outerwear pieces ONLY when the weather calls for layering; 2 bags; 2 jewelry; 2 accessories. Order each category best-first. At most ${MAX_REVIEW_SHORTLIST} rows in total, each reason a single short clause (max 15 words) — brevity keeps this stage fast. Skip a slot only when nothing in the inventory genuinely suits it.
 
 HARD CLIMATE RULES (non-negotiable):
 ${CLIMATE_RULES}
@@ -449,6 +459,14 @@ export const DailyLookSchema = z.object({
   // the weather came from a client-supplied label instead. Not part of what
   // the AI composes — filled in server-side after the tool call.
   forecastRetrievedAt: z.string().nullable().optional(),
+  // The single Male/Female direction chosen once, server-side, for an
+  // ambiguous-gender profile's Bottoms/Shoes-style catalog gaps (see
+  // loadLookInventory's fallbackDirection) — never model-authored, filled in
+  // server-side after the tool call like forecastRetrievedAt above. Read back
+  // by renderLookImageForUser so the rendered visual matches the direction the
+  // shopped picks actually used. Null for an explicit Male/Female profile or a
+  // look composed entirely from Unisex pieces.
+  fallback_gender_direction: z.enum(["Male", "Female"]).nullable().optional(),
 });
 export type DailyLook = z.infer<typeof DailyLookSchema>;
 export type ShoppablePick = NonNullable<DailyLook["shoppable_picks"]>[number];

@@ -133,18 +133,30 @@ export async function generateLookForUser(
     const failure = "Mila couldn't compose a look this time. Please try again.";
 
     // Step 1 — the whole eligible catalog: real, in-stock, non-broken rows
-    // that ship to the client's region and fit their gender (unknown/
-    // Non-binary gender: don't filter at all rather than guess). This is what
-    // the review stage checks, and the source for the "similar" additions
-    // beside the final picks. Never invented by the model.
+    // that ship to the client's region and fit their gender. An ambiguous
+    // profile (unknown/Non-binary/Prefer-not-to-say) still gets one Male or
+    // Female fallbackGenderDirection, decided once here before the catalog
+    // even loads — Unisex items are always eligible regardless, but a
+    // category with no Unisex option (Bottoms, Shoes) now surfaces real
+    // candidates from a single consistent direction instead of either an
+    // empty slot or a menswear/womenswear mix. Because this runs before the
+    // review/plan AI calls and pickSimilarAdditions below, all three stay
+    // gender-consistent for free — nothing downstream needs to know this
+    // happened. Never invented by the model.
     const productGenderFilter =
       genderValue === "Male" || genderValue === "Female" ? genderValue : undefined;
+    const fallbackGenderDirection: "Male" | "Female" | null = productGenderFilter
+      ? null
+      : Math.random() < 0.5
+        ? "Male"
+        : "Female";
     const inventory = await loadLookInventory(supabase, {
       colorSeason: colorSeasonValue,
       bodyType: data.bodyType,
       tempF,
       region: data.region,
       gender: productGenderFilter,
+      fallbackDirection: fallbackGenderDirection ?? undefined,
     });
 
     const profileLines = [
@@ -325,6 +337,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       makeup: makeupEnabled ? (rawArgs.makeup ?? null) : null,
       shoppable_picks: picksWithSimilar,
       forecastRetrievedAt,
+      fallback_gender_direction: fallbackGenderDirection,
     };
     const look = DailyLookSchema.safeParse(argsWithMakeup);
     if (!look.success) {
@@ -372,6 +385,7 @@ export async function renderLookImageForUser(
           gender: profileRow?.gender,
           skinDepth: profileRow?.skin_depth,
           heightCm: profileRow?.height_cm,
+          fallbackGenderDirection: data.fallback_gender_direction ?? null,
         });
       await logAiSpend(supabase, userId, {
         provider: IMAGE_PROVIDER,

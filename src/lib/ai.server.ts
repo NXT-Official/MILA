@@ -78,7 +78,14 @@ export async function aiChatCompletion(
     return { ok: false, status: response.status };
   }
 
-  const json = (await response.json()) as {
+  // The body read is where a provider that overruns TIMEOUT_MS actually
+  // fails: fetch() resolves once the response headers arrive, so the abort
+  // (or a dropped/truncated connection) fires while response.json() is in
+  // flight — past the fetch try/catch above. Confirmed live: the raw
+  // AbortError escaped every caller's error mapping, so a timed-out review
+  // call answered the member with INTERNAL/500 instead of the retryable
+  // AI_UNAVAILABLE the mobile taxonomy expects.
+  let json: {
     choices?: Array<{ message?: { content?: string } }>;
     usage?: {
       cost?: number;
@@ -87,6 +94,22 @@ export async function aiChatCompletion(
       total_tokens?: number;
     };
   };
+  try {
+    json = (await response.json()) as typeof json;
+  } catch (err) {
+    // Abort rejections may be DOMException (often not `instanceof Error`) —
+    // classify by name, not prototype.
+    const name =
+      typeof (err as { name?: unknown } | null)?.name === "string"
+        ? (err as { name: string }).name
+        : "";
+    const timedOut = name === "TimeoutError" || name === "AbortError";
+    console.error(
+      "[ai] provider response body failed",
+      timedOut ? "timed out mid-body" : errorMessage(err, "unknown"),
+    );
+    return { ok: false, status: timedOut ? 504 : 502 };
+  }
   const text = json.choices?.[0]?.message?.content;
   if (!text) {
     console.error("[ai] provider returned no text", JSON.stringify(json).slice(0, 500));
