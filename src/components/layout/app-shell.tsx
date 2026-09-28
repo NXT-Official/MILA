@@ -15,6 +15,8 @@ import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { StudioCameraDrawer } from "@/components/dashboard/studio-camera-drawer";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 import { ConciergeContext, type ConciergeLook } from "@/hooks/use-concierge";
+import { CurrentLookContext, type CurrentLookSavedRef } from "@/hooks/use-current-look";
+import type { GeneratedLook } from "@/lib/generate-outfit.functions";
 import { analyzeOutfit } from "@/lib/analyze-outfit.functions";
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { profileQueryOptions } from "@/lib/queries/profile";
@@ -28,6 +30,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isLensOpen, setIsLensOpen] = useState(false);
   const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
   const [conciergeLook, setConciergeLook] = useState<ConciergeLook | null>(null);
+  const [currentLook, setCurrentLook] = useState<GeneratedLook | null>(null);
+  const [styleSheetImageDataUri, setStyleSheetImageDataUri] = useState<string | null>(null);
+  const [currentSavedLook, setCurrentSavedLook] = useState<CurrentLookSavedRef | null>(null);
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyze = useServerFn(analyzeOutfit);
@@ -119,110 +124,125 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <ConciergeContext.Provider
       value={{ openConcierge, look: conciergeLook, clearLook: () => setConciergeLook(null) }}
     >
-      <div className="min-h-screen flex flex-col w-full">
-        {/* z-index scale: header z-40 < mobile tab bar z-50 (mobile-tab-bar.tsx) < Sheet/Dialog overlays z-[60] (ui/sheet.tsx, ui/dialog.tsx). */}
-        <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-porcelain/30">
-          <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-6 relative">
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 font-serif text-xl md:text-2xl uppercase tracking-label-xwide text-ink"
-            >
-              <img src="/favicon.svg" alt="" className="size-6 md:h-7 md:w-7" />
-              Mila
-            </Link>
+      <CurrentLookContext.Provider
+        value={{
+          look: currentLook,
+          setLook: setCurrentLook,
+          styleSheetImageDataUri,
+          setStyleSheetImageDataUri,
+          savedLook: currentSavedLook,
+          setSavedLook: setCurrentSavedLook,
+        }}
+      >
+        <div className="min-h-screen flex flex-col w-full">
+          {/* z-index scale: header z-40 < mobile tab bar z-50 (mobile-tab-bar.tsx) < Sheet/Dialog overlays z-[60] (ui/sheet.tsx, ui/dialog.tsx). */}
+          <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-porcelain/30">
+            <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-6 relative">
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 font-serif text-xl md:text-2xl uppercase tracking-label-xwide text-ink"
+              >
+                <img src="/favicon.svg" alt="" className="size-6 md:h-7 md:w-7" />
+                Mila
+              </Link>
 
-            <DesktopNav
-              path={path}
-              onOpenLens={() => setIsLensOpen(true)}
-              onOpenConcierge={() => openConcierge()}
-            />
+              <DesktopNav
+                path={path}
+                onOpenLens={() => setIsLensOpen(true)}
+                onOpenConcierge={() => openConcierge()}
+              />
 
-            <div className="flex items-center gap-2">
-              {credits != null && (
-                <Button asChild variant="glass" size="chip">
-                  <Link
-                    to="/pricing"
-                    aria-label={`${credits} AI credits — view membership plans and credits`}
-                  >
-                    <Coins className="size-3.5 text-accent" strokeWidth={1.75} aria-hidden="true" />
-                    {credits}
-                  </Link>
+              <div className="flex items-center gap-2">
+                {credits != null && (
+                  <Button asChild variant="glass" size="chip">
+                    <Link
+                      to="/pricing"
+                      aria-label={`${credits} AI credits — view membership plans and credits`}
+                    >
+                      <Coins
+                        className="size-3.5 text-accent"
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                      />
+                      {credits}
+                    </Link>
+                  </Button>
+                )}
+                <ThemeToggle />
+                <Button
+                  type="button"
+                  variant="glass"
+                  size="chip"
+                  className="md:hidden"
+                  onClick={() => setIsLensOpen(true)}
+                  aria-label="Open the Studio Lens"
+                >
+                  <Camera className="size-3.5" strokeWidth={1.75} />
+                  Lens
                 </Button>
-              )}
-              <ThemeToggle />
-              <Button
-                type="button"
-                variant="glass"
-                size="chip"
-                className="md:hidden"
-                onClick={() => setIsLensOpen(true)}
-                aria-label="Open the Studio Lens"
-              >
-                <Camera className="size-3.5" strokeWidth={1.75} />
-                Lens
-              </Button>
-              <button
-                onClick={() => setIsMembershipOpen(true)}
-                aria-label="Open membership"
-                className="rounded-full"
-              >
-                <AvatarInitial
-                  name={displayName}
-                  className="size-10 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
-                />
-              </button>
+                <button
+                  onClick={() => setIsMembershipOpen(true)}
+                  aria-label="Open membership"
+                  className="rounded-full"
+                >
+                  <AvatarInitial
+                    name={displayName}
+                    className="size-10 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
+                  />
+                </button>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <main className="flex-1 min-w-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
-          {children}
-        </main>
+          <main className="flex-1 min-w-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
+            {children}
+          </main>
 
-        <MobileTabBar
-          path={path}
-          onOpenLens={() => setIsLensOpen(true)}
-          onOpenConcierge={() => openConcierge()}
-        />
+          <MobileTabBar
+            path={path}
+            onOpenLens={() => setIsLensOpen(true)}
+            onOpenConcierge={() => openConcierge()}
+          />
 
-        <StudioMembershipDrawer
-          isOpen={isMembershipOpen}
-          onClose={() => setIsMembershipOpen(false)}
-          credits={credits ?? null}
-          user={{
-            fullName: displayName,
-            username,
-            season: profile?.color_season ?? null,
-            faceShape: profile?.face_shape ?? null,
-            hairType: profile?.hair_type ?? null,
-          }}
-        />
+          <StudioMembershipDrawer
+            isOpen={isMembershipOpen}
+            onClose={() => setIsMembershipOpen(false)}
+            credits={credits ?? null}
+            user={{
+              fullName: displayName,
+              username,
+              season: profile?.color_season ?? null,
+              faceShape: profile?.face_shape ?? null,
+              hairType: profile?.hair_type ?? null,
+            }}
+          />
 
-        <StudioCameraDrawer
-          isOpen={isLensOpen}
-          onClose={() => setIsLensOpen(false)}
-          userId={user?.id ?? null}
-          onLookCapture={runLensCapture}
-          onPickGallery={() => fileInputRef.current?.click()}
-          onInsufficientCredits={() => setCreditPaywallOpen(true)}
-        />
+          <StudioCameraDrawer
+            isOpen={isLensOpen}
+            onClose={() => setIsLensOpen(false)}
+            userId={user?.id ?? null}
+            onLookCapture={runLensCapture}
+            onPickGallery={() => fileInputRef.current?.click()}
+            onInsufficientCredits={() => setCreditPaywallOpen(true)}
+          />
 
-        <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
+          <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) {
-              runLensCapture(f);
-              e.target.value = "";
-            }
-          }}
-        />
-      </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) {
+                runLensCapture(f);
+                e.target.value = "";
+              }
+            }}
+          />
+        </div>
+      </CurrentLookContext.Provider>
     </ConciergeContext.Provider>
   );
 }

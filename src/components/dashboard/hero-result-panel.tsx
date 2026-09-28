@@ -1,4 +1,13 @@
-import { Bookmark, CheckCircle2, Download, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import {
+  Bookmark,
+  CheckCircle2,
+  Download,
+  Images,
+  Loader2,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { motion, type Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -66,6 +75,13 @@ export function HeroResultPanel({
           Each look is composed from the live shop inventory - tuned to your palette, body
           architecture, and the weather outside.
         </p>
+        <Link
+          to="/history"
+          className="mt-4 inline-flex items-center gap-1.5 text-xs uppercase tracking-label text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          <Images className="size-3.5" aria-hidden="true" />
+          Browse your generated styles
+        </Link>
       </div>
     );
   }
@@ -253,6 +269,11 @@ export function HeroResultPanel({
               <Sparkles aria-hidden="true" /> Ask Mila about this look
             </Button>
           )}
+          <Button asChild variant="ghost" size="pill">
+            <Link to="/history">
+              <Images aria-hidden="true" /> All your styles
+            </Link>
+          </Button>
         </div>
         {saveBlockedReason && (
           <p id="save-blocked" className="sr-only">

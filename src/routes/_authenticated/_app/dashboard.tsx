@@ -5,11 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClimateWidget } from "@/components/dashboard/climate-widget";
 import type { ClimateState } from "@/constants/climate";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  generateDailyLook,
-  type DailyLook,
-  type GeneratedLook,
-} from "@/lib/generate-outfit.functions";
+import { generateDailyLook, type DailyLook } from "@/lib/generate-outfit.functions";
 import { saveOutfitToHistory } from "@/lib/save-outfit.functions";
 import { HeroGeneratorForm, type Vibe } from "@/components/dashboard/hero-generator-form";
 import { HeroResultPanel } from "@/components/dashboard/hero-result-panel";
@@ -23,6 +19,7 @@ import { profileQueryOptions } from "@/lib/queries/profile";
 import { queryKeys } from "@/constants/query-keys";
 import { isStyleProfileComplete, toStyleProfileRow } from "@/lib/style-profile/completion";
 import { useConcierge } from "@/hooks/use-concierge";
+import { useCurrentLook } from "@/hooks/use-current-look";
 import { DailyPaletteGenerator } from "@/components/wardrobe/DailyPaletteGenerator";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { errorMessage, isStaleBundleError, TimeoutError, withTimeout } from "@/lib/utils";
@@ -96,10 +93,16 @@ function Dashboard() {
   const profileComplete = isStyleProfileComplete(toStyleProfileRow(profile));
 
   const { openConcierge } = useConcierge();
+  const {
+    look,
+    setLook,
+    styleSheetImageDataUri,
+    setStyleSheetImageDataUri,
+    savedLook,
+    setSavedLook,
+  } = useCurrentLook();
   const [generating, setGenerating] = useState(false);
-  const [look, setLook] = useState<GeneratedLook | null>(null);
   const [savingLook, setSavingLook] = useState(false);
-  const [savedLook, setSavedLook] = useState<{ id: string; imageUrl: string } | null>(null);
   const lookSaved = !!savedLook;
   const [vibe, setVibe] = useState<Vibe>("Everyday Casual");
   const [agenda, setAgenda] = useState("");
@@ -109,7 +112,6 @@ function Dashboard() {
   const [climate, setClimate] = useState<ClimateState | null>(null);
   const [photoPreviewLoading, setPhotoPreviewLoading] = useState(false);
   const [styleSheetLoading, setStyleSheetLoading] = useState(false);
-  const [styleSheetImageDataUri, setStyleSheetImageDataUri] = useState<string | null>(null);
 
   const generate = useServerFn(generateDailyLook);
   const saveOutfit = useServerFn(saveOutfitToHistory);

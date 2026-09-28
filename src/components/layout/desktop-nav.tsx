@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 const topNavItems: { to: string; label: string }[] = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/feed", label: "Feed" },
+  { to: "/history", label: "History" },
 ];
 
 export function DesktopNav({
