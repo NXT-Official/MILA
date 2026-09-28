@@ -315,7 +315,7 @@ describe("matchLookProducts", () => {
 });
 
 describe("isGenderMatch", () => {
-  test("matches when no gender was requested — show everything rather than guess", () => {
+  test("matches everything when neither a gender nor a fallback direction was requested", () => {
     expect(isGenderMatch("Male", undefined)).toBe(true);
     expect(isGenderMatch("Female", undefined)).toBe(true);
     expect(isGenderMatch("Unisex", undefined)).toBe(true);
@@ -331,6 +331,17 @@ describe("isGenderMatch", () => {
     expect(isGenderMatch("Male", "Female")).toBe(false);
     expect(isGenderMatch("Female", "Female")).toBe(true);
     expect(isGenderMatch("Female", "Male")).toBe(false);
+  });
+
+  test("an explicit requestedGender takes priority over fallbackDirection", () => {
+    expect(isGenderMatch("Male", "Male", "Female")).toBe(true);
+    expect(isGenderMatch("Female", "Male", "Female")).toBe(false);
+  });
+
+  test("with no requestedGender, falls back to matching the fallback direction (or Unisex)", () => {
+    expect(isGenderMatch("Unisex", undefined, "Male")).toBe(true);
+    expect(isGenderMatch("Male", undefined, "Male")).toBe(true);
+    expect(isGenderMatch("Female", undefined, "Male")).toBe(false);
   });
 });
 
@@ -403,6 +414,28 @@ describe("loadLookInventory", () => {
     expect(forMale.some((r) => r.id === "womens-top")).toBe(false);
     expect(forMale.some((r) => r.category === "Outerwear")).toBe(false);
     expect(forMale.some((r) => r.id === "us-only")).toBe(false);
+  });
+
+  test("with no requestedGender, prefers Unisex but falls back to the chosen direction per category", async () => {
+    const rows: ProductRow[] = [
+      { ...PRODUCTS[0], id: "unisex-top", category: "Tops", gender: "Unisex" },
+      { ...PRODUCTS[0], id: "mens-top", category: "Tops", gender: "Male" },
+      { ...PRODUCTS[0], id: "womens-top", category: "Tops", gender: "Female" },
+      // Bottoms has no Unisex option at all — only the fallback direction should surface.
+      { ...PRODUCTS[0], id: "mens-bottom", category: "Bottoms", gender: "Male" },
+      { ...PRODUCTS[0], id: "womens-bottom", category: "Bottoms", gender: "Female" },
+    ];
+    const results = await loadLookInventory(fakeSupabase(rows), {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+      fallbackDirection: "Male",
+    });
+    const topIds = results.filter((r) => r.category === "Tops").map((r) => r.id);
+    const bottomIds = results.filter((r) => r.category === "Bottoms").map((r) => r.id);
+    expect(topIds).toContain("unisex-top");
+    expect(topIds).toContain("mens-top");
+    expect(topIds).not.toContain("womens-top");
+    expect(bottomIds).toEqual(["mens-bottom"]);
   });
 
   test("caps a category at INVENTORY_MAX_PER_CATEGORY rows", async () => {

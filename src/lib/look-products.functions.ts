@@ -11,6 +11,11 @@ const Input = z.object({
   /** "Male" | "Female" | omitted. Omitted (unknown/Non-binary/prefer-not-to-say)
    * means don't gender-filter — show the full catalog rather than guess. */
   gender: z.string().optional(),
+  /** Decided once per look, server-side, when `gender` is omitted — never
+   * both directions at once. Lets a category with no Unisex option (e.g.
+   * Bottoms, Shoes) still surface real candidates without ever mixing
+   * menswear and womenswear inside one look. See isGenderMatch. */
+  fallbackDirection: z.enum(["Male", "Female"]).optional(),
 });
 export type LookProductsInput = z.infer<typeof Input>;
 
@@ -40,10 +45,19 @@ export type LookInventoryItem = LookProduct & {
 };
 
 /** A product matches when it's Unisex, matches the requested gender exactly,
- * or when no gender was requested (show everything rather than guess). */
-export function isGenderMatch(productGender: string, requestedGender?: string): boolean {
-  if (!requestedGender) return true;
-  return productGender === "Unisex" || productGender === requestedGender;
+ * or — with no requested gender — matches the once-per-look
+ * `fallbackDirection` chosen server-side before the catalog loads (see
+ * generateLookForUser). With neither supplied, matches everything (show the
+ * full catalog rather than guess) — `matchLookProducts`'s callers never pass
+ * `fallbackDirection`, so their behavior is unchanged. */
+export function isGenderMatch(
+  productGender: string,
+  requestedGender?: string,
+  fallbackDirection?: string,
+): boolean {
+  if (requestedGender) return productGender === "Unisex" || productGender === requestedGender;
+  if (fallbackDirection) return productGender === "Unisex" || productGender === fallbackDirection;
+  return true;
 }
 
 const HOT_WEATHER_F = 75;
@@ -160,7 +174,7 @@ async function loadCategories(supabase: SupabaseClient<Database>): Promise<strin
 async function fetchRankedCategory(
   supabase: SupabaseClient<Database>,
   category: string,
-  { colorSeason, bodyType, region, gender }: LookProductsInput,
+  { colorSeason, bodyType, region, gender, fallbackDirection }: LookProductsInput,
 ): Promise<Array<{ product: RawProductRow; score: number; tiebreak: number }>> {
   const { data: candidates, error } = await supabase
     .from("products")
@@ -178,7 +192,7 @@ async function fetchRankedCategory(
 
   return ((candidates ?? []) as unknown as RawProductRow[])
     .filter((product) => isAvailableInRegion(product, region))
-    .filter((product) => isGenderMatch(product.gender, gender))
+    .filter((product) => isGenderMatch(product.gender, gender, fallbackDirection))
     .map((product) => ({
       product,
       score: scoreProduct(product, colorSeason, bodyType),
@@ -246,7 +260,7 @@ export async function matchLookProducts(
  */
 export async function loadLookInventory(
   supabase: SupabaseClient<Database>,
-  { colorSeason, bodyType, tempF, region, gender }: LookProductsInput,
+  { colorSeason, bodyType, tempF, region, gender, fallbackDirection }: LookProductsInput,
 ): Promise<LookInventoryItem[]> {
   let categories = await loadCategories(supabase);
   if (categories.length === 0) return [];
@@ -254,7 +268,7 @@ export async function loadLookInventory(
     categories = categories.filter((category) => category !== "Outerwear");
   }
 
-  const input: LookProductsInput = { colorSeason, bodyType, tempF, region, gender };
+  const input: LookProductsInput = { colorSeason, bodyType, tempF, region, gender, fallbackDirection };
   const results: LookInventoryItem[] = [];
   for (const category of categories) {
     const ranked = (await fetchRankedCategory(supabase, category, input)).slice(
