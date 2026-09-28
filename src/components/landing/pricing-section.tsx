@@ -4,6 +4,7 @@ import { Section, SectionHeading } from "@/components/landing/section";
 import { PricingCard } from "@/components/pricing/pricing-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
+import { cn } from "@/lib/utils";
 
 export function PricingSection() {
   const navigate = useNavigate();
@@ -25,7 +26,12 @@ export function PricingSection() {
           ))}
         </div>
       ) : (
-        <ul className="mt-14 grid gap-6 sm:mt-16 sm:grid-cols-2 md:grid-cols-3">
+        <ul
+          className={cn(
+            "mt-14 grid gap-6 sm:mt-16 sm:grid-cols-2",
+            data!.length >= 3 ? "md:grid-cols-3" : "mx-auto max-w-2xl",
+          )}
+        >
           {data!.map((plan) => (
             <PricingCard
               key={plan.id}
