@@ -57,8 +57,7 @@ import {
 import { KnownSeasonPicker } from "@/components/style-profile/known-season-picker";
 import { ManualOverridePicker } from "@/components/style-profile/manual-override-picker";
 import { SeasonCalibrationSheet } from "@/components/style-profile/season-calibration-sheet";
-import { ColorQuiz } from "@/components/style-profile/color-quiz";
-import { BodyTypeQuiz } from "@/components/style-profile/body-type-quiz";
+import { RestartStyleAnalysisAction } from "@/components/style-profile/restart-style-analysis-action";
 import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-diagnostic-viewfinder";
 import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio-view";
 import { studioToDossier, normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
@@ -84,8 +83,6 @@ export function StyleProfile() {
   const [holistic, setHolistic] = useState<{ face_shape: string | null; hair_type: string | null }>(
     { face_shape: null, hair_type: null },
   );
-  const [quizOpen, setQuizOpen] = useState(false);
-  const [bodyQuizOpen, setBodyQuizOpen] = useState(false);
   const [diagOpen, setDiagOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualContrast, setManualContrast] = useState<string>("");
@@ -350,8 +347,6 @@ export function StyleProfile() {
 
     setDiagOpen(false);
     setManualOpen(false);
-    setQuizOpen(false);
-    setBodyQuizOpen(false);
     setSyncStatus("syncing");
 
     const { error } = await supabase
@@ -437,7 +432,10 @@ export function StyleProfile() {
                 A living portrait — kept in sync, automatically.
               </p>
             </div>
-            <SyncBadge status={syncStatus} />
+            <div className="flex items-center gap-3">
+              <RestartStyleAnalysisAction />
+              <SyncBadge status={syncStatus} />
+            </div>
           </div>
         </header>
         {loading ? (
@@ -648,27 +646,6 @@ export function StyleProfile() {
                 </Accordion>
               </div>
             </div>
-            {quizOpen && (
-              <ColorQuiz
-                onClose={() => setQuizOpen(false)}
-                onComplete={({ season, undertone, profile }) =>
-                  setForm((f) => ({
-                    ...f,
-                    skin_undertone: undertone,
-                    color_season: season,
-                    selected_aesthetic: profile.selectedAesthetic || f.selected_aesthetic,
-                  }))
-                }
-                userId={user?.id}
-              />
-            )}
-            {bodyQuizOpen && (
-              <BodyTypeQuiz
-                onClose={() => setBodyQuizOpen(false)}
-                onComplete={(bodyType) => setForm((f) => ({ ...f, body_type: bodyType }))}
-                userId={user?.id}
-              />
-            )}
             {diagOpen && (
               <VisualDiagnosticViewfinder
                 onClose={() => setDiagOpen(false)}
