@@ -125,7 +125,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
         {swatches.map((s, i) => (
           <div
             key={s.label}
-            className="flex flex-col items-center justify-center rounded-control border border-border/40 p-3 text-center backdrop-blur-md transition-all hover:shadow-paper"
+            className="flex flex-col items-center justify-center rounded-control border border-border/40 p-3 text-center backdrop-blur-md"
             style={{ backgroundColor: hexToRgba(s.hex, 0.08) }}
           >
             <motion.div
