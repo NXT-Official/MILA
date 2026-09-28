@@ -1,0 +1,83 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { errorMessage } from "@/lib/utils";
+
+/** The `torch` capability is a real, shipping MediaStream extension (Chrome/
+ * Android WebView) that lib.dom.d.ts doesn't type yet — narrow, local
+ * extensions instead of reaching for `any`. */
+interface TorchCapabilities extends MediaTrackCapabilities {
+  torch?: boolean;
+}
+interface TorchConstraintSet extends MediaTrackConstraintSet {
+  torch?: boolean;
+}
+
+/**
+ * Shared getUserMedia lifecycle for CameraCapture and DualCapture: start/stop
+ * the stream, track loading/error state, and detect + toggle flash (torch)
+ * when the active device supports it. Torch support varies by device/browser
+ * (most front cameras and desktop webcams don't have one), so `torchSupported`
+ * must be checked before showing a flash control at all.
+ */
+export function useCameraStream(videoRef: React.RefObject<HTMLVideoElement | null>) {
+  const streamRef = useRef<MediaStream | null>(null);
+  const [active, setActive] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
+
+  const stop = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setActive(false);
+    setTorchOn(false);
+    setTorchSupported(false);
+  }, [videoRef]);
+
+  useEffect(() => stop, [stop]);
+
+  const start = useCallback(
+    async (constraints: MediaTrackConstraints) => {
+      setError(null);
+      setStarting(true);
+      stop();
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: constraints,
+          audio: false,
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
+        }
+        const [track] = stream.getVideoTracks();
+        const capabilities = track?.getCapabilities?.() as TorchCapabilities | undefined;
+        setTorchSupported(!!capabilities?.torch);
+        setActive(true);
+      } catch (e) {
+        setError(errorMessage(e, "Camera unavailable. Allow camera permissions or use gallery."));
+      } finally {
+        setStarting(false);
+      }
+    },
+    [stop, videoRef],
+  );
+
+  const toggleTorch = useCallback(async () => {
+    const [track] = streamRef.current?.getVideoTracks() ?? [];
+    if (!track) return;
+    const next = !torchOn;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: next } as TorchConstraintSet] });
+      setTorchOn(next);
+    } catch {
+      // Device claimed torch support in getCapabilities but rejected the
+      // constraint at apply time — leave torchOn as-is rather than lying
+      // about the flash state.
+    }
+  }, [torchOn]);
+
+  return { streamRef, active, starting, error, torchOn, torchSupported, start, stop, toggleTorch };
+}

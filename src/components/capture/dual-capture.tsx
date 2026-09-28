@@ -1,8 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Camera, Loader2, RotateCcw, X, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Camera, Loader2, RotateCcw, X, Check, Zap, ZapOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn, errorMessage } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { captureVideoFrame } from "@/lib/capture-frame";
+import { useCameraStream } from "@/hooks/use-camera-stream";
 
 type Step = "back" | "front" | "review";
 
@@ -36,19 +38,9 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
   const [back, setBack] = useState<File | null>(null);
   const [front, setFront] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [active, setActive] = useState(false);
-  const [starting, setStarting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  function stopStream() {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-  }
-
-  useEffect(() => stopStream, []);
+  const { active, starting, error, torchOn, torchSupported, start, stop, toggleTorch } =
+    useCameraStream(videoRef);
 
   const backUrl = useMemo(() => (back ? URL.createObjectURL(back) : null), [back]);
   const frontUrl = useMemo(() => (front ? URL.createObjectURL(front) : null), [front]);
@@ -65,33 +57,18 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
     };
   }, [frontUrl]);
 
-  async function startCamera(facing: "environment" | "user") {
-    setError(null);
-    setStarting(true);
-    stopStream();
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facing }, width: { ideal: 1440 }, height: { ideal: 1920 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
-      }
-      setActive(true);
-    } catch (e) {
-      setError(errorMessage(e, "Camera unavailable. Allow camera access."));
-    } finally {
-      setStarting(false);
-    }
+  function startCamera(facing: "environment" | "user") {
+    void start({
+      facingMode: { ideal: facing },
+      width: { ideal: 1440 },
+      height: { ideal: 1920 },
+    });
   }
 
   async function snap(label: Step) {
     const file = await captureVideoFrame(videoRef.current, `${label}-${Date.now()}.jpg`);
     if (!file) return;
-    stopStream();
-    setActive(false);
+    stop();
     if (label === "back") {
       setBack(file);
       setStep("front");
@@ -109,8 +86,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
       setFront(null);
       setStep("front");
     }
-    setActive(false);
-    stopStream();
+    stop();
   }
 
   if (step === "review" && back && front) {
@@ -213,7 +189,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
         <p className="text-xs text-muted-foreground max-w-sm mx-auto">{copy.hint}</p>
       </div>
 
-      {!active ? (
+      {!active && (
         <button
           type="button"
           onClick={() => startCamera(copy.facing)}
@@ -238,47 +214,74 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
             {error && <p className="mt-4 text-xs text-destructive max-w-sm">{error}</p>}
           </div>
         </button>
-      ) : (
-        <div className="relative aspect-3/4 overflow-hidden rounded-2xl border border-porcelain/60 bg-black">
-          <video
-            ref={videoRef}
-            playsInline
-            muted
-            className={cn(
-              "absolute inset-0 w-full h-full object-cover",
-              copy.facing === "user" && "scale-x-[-1]",
-            )}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              stopStream();
-              setActive(false);
-            }}
-            className="absolute top-3 right-3 size-9 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center hover:bg-black/70"
-            aria-label="Close camera"
-          >
-            <X className="size-4" />
-          </button>
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-6 p-6 bg-linear-to-t from-black/70 to-transparent">
-            <button
-              type="button"
-              onClick={() => startCamera(copy.facing)}
-              className="size-10 rounded-full bg-black/40 backdrop-blur text-white flex items-center justify-center hover:bg-black/60"
-              aria-label="Restart camera"
-            >
-              <RotateCcw className="size-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => snap(step)}
-              className="size-16 rounded-full bg-white ring-4 ring-white/30 hover:ring-white/50 transition-shadow"
-              aria-label="Capture"
-            />
-            <span className="w-10" />
-          </div>
-        </div>
       )}
+
+      {/* Fullscreen takeover while the camera is active — same as
+          CameraCapture, so both capture flows feel consistent. */}
+      <AnimatePresence>
+        {active && (
+          <motion.div
+            className="fixed inset-0 z-50 bg-black"
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover",
+                copy.facing === "user" && "scale-x-[-1]",
+              )}
+            />
+            <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+              {torchSupported ? (
+                <button
+                  type="button"
+                  onClick={() => void toggleTorch()}
+                  className={cn(
+                    "size-9 rounded-full backdrop-blur text-white flex items-center justify-center transition-colors",
+                    torchOn ? "bg-white/90 text-black" : "bg-black/50 hover:bg-black/70",
+                  )}
+                  aria-label={torchOn ? "Turn off flash" : "Turn on flash"}
+                  aria-pressed={torchOn}
+                >
+                  {torchOn ? <Zap className="size-4" /> : <ZapOff className="size-4" />}
+                </button>
+              ) : (
+                <span />
+              )}
+              <button
+                type="button"
+                onClick={stop}
+                className="size-9 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center hover:bg-black/70"
+                aria-label="Close camera"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-6 p-6 bg-linear-to-t from-black/70 to-transparent">
+              <button
+                type="button"
+                onClick={() => startCamera(copy.facing)}
+                className="size-10 rounded-full bg-black/40 backdrop-blur text-white flex items-center justify-center hover:bg-black/60"
+                aria-label="Restart camera"
+              >
+                <RotateCcw className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => snap(step)}
+                className="size-16 rounded-full bg-white ring-4 ring-white/30 hover:ring-white/50 transition-shadow"
+                aria-label="Capture"
+              />
+              <span className="w-10" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex items-center justify-center gap-1.5 pt-1">
         <span
