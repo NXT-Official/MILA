@@ -30,6 +30,18 @@ function formatHeightLine(heightCm?: number | null): string | null {
   return `exactly ${heightCm}cm tall (${feet}'${inches}") — render the model's real-world height and proportions to this exact figure, not an idealized/elongated fashion-model height`;
 }
 
+/**
+ * The outfit's actual shoppable pieces (never the "similar" shelf options)
+ * as a compact line — grounded in real DB titles, so the render shows what
+ * the shop-the-look grid sells. Returns null when the look carries no
+ * planned picks.
+ */
+function buildPiecesLine(outfit: DailyLook): string | null {
+  const planned = (outfit.shoppable_picks ?? []).filter((pick) => pick.source !== "similar");
+  if (planned.length === 0) return null;
+  return `Key pieces: ${planned.map((pick) => `${pick.category}: ${pick.title}`).join("; ")}.`;
+}
+
 function buildOutfitImagePrompt(
   outfit: DailyLook,
   gender?: string | null,
@@ -55,17 +67,20 @@ function buildOutfitImagePrompt(
     (heightLine ? `, ${heightLine}` : "");
   const makeupBlock = outfit.makeup ? `\n\nMakeup:\n${outfit.makeup.palette}` : "";
   const hairAndMakeup = `${outfit.hair.style}${makeupBlock}`;
+  const piecesLine = buildPiecesLine(outfit);
 
   // The "Presentation" block (including height/gender/skin, which are
   // server-derived, not model text) and the trailing anti-artifact line are
   // safety/accuracy-critical and must never be truncated off. Only the
-  // model-generated Outfit/Hair/Makeup text is variable-length, so truncate
-  // that to fit the remaining budget instead of slicing the whole prompt.
-  const buildPrompt = (outfitText: string, hairText: string): string =>
+  // model-generated Outfit/Hair/Makeup text and the DB-derived Key pieces
+  // line are variable-length, so truncate those to fit the remaining budget
+  // instead of slicing the whole prompt (outfit takes priority over the
+  // pieces list, which takes priority over hair).
+  const buildPrompt = (outfitText: string, piecesText: string, hairText: string): string =>
     `Create a realistic full-body luxury fashion editorial photograph.
 
 Outfit:
-${outfitText}
+${outfitText}${piecesText ? `\n${piecesText}` : ""}
 
 Hair:
 ${hairText}
@@ -80,12 +95,18 @@ Soft professional editorial lighting.
 Single subject, centered composition.
 No collage, no text, no captions, no logos, no watermark.`;
 
-  const fixedLength = buildPrompt("", "").length;
+  const fixedLength = buildPrompt("", "", "").length;
   const variableBudget = Math.max(0, MAX_PROMPT_LENGTH - fixedLength);
-  const outfitBudget = Math.min(outfitLine.length, Math.ceil(variableBudget * 0.7));
-  const hairBudget = Math.max(0, variableBudget - outfitBudget);
+  const piecesText = piecesLine ?? "";
+  const outfitBudget = Math.min(outfitLine.length, Math.ceil(variableBudget * 0.55));
+  const piecesBudget = Math.min(piecesText.length, Math.ceil(variableBudget * 0.25));
+  const hairBudget = Math.max(0, variableBudget - outfitBudget - piecesBudget);
 
-  return buildPrompt(outfitLine.slice(0, outfitBudget), hairAndMakeup.slice(0, hairBudget));
+  return buildPrompt(
+    outfitLine.slice(0, outfitBudget),
+    piecesText.slice(0, piecesBudget),
+    hairAndMakeup.slice(0, hairBudget),
+  );
 }
 
 export interface OutfitImageResult {

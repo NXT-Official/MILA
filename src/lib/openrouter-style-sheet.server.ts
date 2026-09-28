@@ -48,7 +48,11 @@ const FALLBACK_RESOLUTION = "2K";
 const ASPECT_RATIO = "16:9";
 
 function buildWardrobeLine(outfit: DailyLook, shoppablePicks: ShoppablePick[]): string {
+  // Only the planned pieces: "similar" entries are extra shoppable options
+  // beside the look, not things the person is wearing — listing them here
+  // would tell the image model to wear ten-plus garments at once.
   const pickLines = shoppablePicks
+    .filter((pick) => pick.source !== "similar")
     .map((pick) => `${pick.title} (${pick.category}, ${pick.price} ${pick.currency})`)
     .join("; ");
   return pickLines

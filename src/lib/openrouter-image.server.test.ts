@@ -110,4 +110,64 @@ describe("OpenRouter outfit image generation", () => {
     globalThis.fetch = mock(async () => Response.json({ data: [] })) as unknown as typeof fetch;
     await expect(generateOutfitImage(outfit)).rejects.toThrow("did not return an image");
   });
+
+  test("includes the planned key pieces in the prompt and excludes the similar shelf", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    const lookWithPicks: DailyLook = {
+      ...outfit,
+      shoppable_picks: [
+        {
+          id: "prod-1",
+          title: "Adina Top",
+          brand_id: "b1",
+          category: "Tops",
+          price: 148,
+          currency: "USD",
+          image_url: null,
+          affiliate_link: "https://shop.example.com/prod-1",
+          verification_status: "verified",
+          last_verified_at: null,
+          rationale: "Neckline balances a heart face shape.",
+          source: "planned",
+        },
+        {
+          id: "prod-2",
+          title: "Dia Bag",
+          brand_id: "b1",
+          category: "Bags",
+          price: 96,
+          currency: "USD",
+          image_url: null,
+          affiliate_link: "https://shop.example.com/prod-2",
+          verification_status: "verified",
+          last_verified_at: null,
+          rationale: "Similar to the bag in today's look.",
+          source: "similar",
+        },
+      ],
+    };
+
+    let capturedPrompt = "";
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedPrompt = JSON.parse(init?.body as string).prompt;
+      return Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+
+    await generateOutfitImage(lookWithPicks);
+    expect(capturedPrompt).toContain("Key pieces:");
+    expect(capturedPrompt).toContain("Adina Top");
+    expect(capturedPrompt).not.toContain("Dia Bag");
+  });
+
+  test("omits the key pieces line when the look carries no planned picks", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    let capturedPrompt = "";
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedPrompt = JSON.parse(init?.body as string).prompt;
+      return Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+
+    await generateOutfitImage(outfit);
+    expect(capturedPrompt).not.toContain("Key pieces:");
+  });
 });

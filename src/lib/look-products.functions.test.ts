@@ -1,9 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import {
+  formatInventoryForPrompt,
+  INVENTORY_MAX_PER_CATEGORY,
   isAvailableInRegion,
   isGenderMatch,
+  loadLookInventory,
   matchLookProducts,
+  MAX_SHORTLIST_ITEMS,
+  MAX_SIMILAR_PER_CATEGORY,
+  MAX_SIMILAR_TOTAL,
+  pickSimilarAdditions,
+  resolveShortlist,
   scoreProduct,
+  type LookInventoryItem,
 } from "./look-products.functions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -17,6 +26,7 @@ type ProductRow = {
   currency: string;
   image_url: string | null;
   affiliate_link: string;
+  description?: string | null;
   seasonal_palettes: string[];
   body_shapes: string[];
   available_regions: string[];
@@ -321,5 +331,217 @@ describe("isGenderMatch", () => {
     expect(isGenderMatch("Male", "Female")).toBe(false);
     expect(isGenderMatch("Female", "Female")).toBe(true);
     expect(isGenderMatch("Female", "Male")).toBe(false);
+  });
+});
+
+/** A full inventory row (the stripped LookProduct shape + server-only columns). */
+function inventoryItem(id: string, overrides: Partial<LookInventoryItem> = {}): LookInventoryItem {
+  return {
+    id,
+    title: `Item ${id}`,
+    brand_id: "b1",
+    category: "Tops",
+    price: 100,
+    currency: "USD",
+    image_url: null,
+    affiliate_link: `https://shop.example.com/${id}`,
+    verification_status: "verified",
+    last_verified_at: null,
+    description: null,
+    seasonal_palettes: [],
+    body_shapes: [],
+    ...overrides,
+  };
+}
+
+describe("loadLookInventory", () => {
+  test("returns every eligible row in a category, not just a handful", async () => {
+    const rows = Array.from({ length: 10 }, (_, i) => untagged(`top-${i}`, "Tops"));
+    const results = await loadLookInventory(fakeSupabase(rows), {
+      colorSeason: "Cool Summer",
+      bodyType: "Rectangle",
+    });
+    expect(results.filter((r) => r.category === "Tops")).toHaveLength(10);
+  });
+
+  test("keeps descriptions and palette/body tags; strips stock/region/gender bookkeeping", async () => {
+    const rows = [
+      untagged("top-tagged", "Tops", {
+        seasonal_palettes: ["Warm Autumn"],
+        body_shapes: ["Hourglass"],
+        description: "Short-sleeved cream ditsy-floral top.",
+      }),
+    ];
+    const [item] = await loadLookInventory(fakeSupabase(rows), {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+    });
+    expect(item).toMatchObject({
+      id: "top-tagged",
+      description: "Short-sleeved cream ditsy-floral top.",
+      seasonal_palettes: ["Warm Autumn"],
+      body_shapes: ["Hourglass"],
+    });
+    expect(item).not.toHaveProperty("in_stock");
+    expect(item).not.toHaveProperty("gender");
+    expect(item).not.toHaveProperty("available_regions");
+  });
+
+  test("applies the same eligibility rules as the candidate matcher", async () => {
+    const rows: ProductRow[] = [
+      { ...PRODUCTS[0], id: "womens-top", gender: "Female", category: "Tops" },
+      { ...PRODUCTS[0], id: "outerwear", category: "Outerwear" },
+      { ...PRODUCTS[0], id: "us-only", category: "Tops", available_regions: ["US"] },
+    ];
+    const forMale = await loadLookInventory(fakeSupabase(rows), {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+      gender: "Male",
+      tempF: 82,
+      region: "JP",
+    });
+    expect(forMale.some((r) => r.id === "womens-top")).toBe(false);
+    expect(forMale.some((r) => r.category === "Outerwear")).toBe(false);
+    expect(forMale.some((r) => r.id === "us-only")).toBe(false);
+  });
+
+  test("caps a category at INVENTORY_MAX_PER_CATEGORY rows", async () => {
+    const rows = Array.from({ length: INVENTORY_MAX_PER_CATEGORY + 10 }, (_, i) =>
+      untagged(`top-${i}`, "Tops"),
+    );
+    const results = await loadLookInventory(fakeSupabase(rows), {
+      colorSeason: "Cool Summer",
+      bodyType: "Rectangle",
+    });
+    expect(results).toHaveLength(INVENTORY_MAX_PER_CATEGORY);
+  });
+});
+
+describe("formatInventoryForPrompt", () => {
+  test("numbers rows by position, groups by category, and marks tagged rows", () => {
+    const inventory = [
+      inventoryItem("prod-1", {
+        title: "Adina Top",
+        price: 148,
+        description: "Short-sleeved cream ditsy-floral top with curved neckline.",
+        seasonal_palettes: ["Warm Autumn"],
+        body_shapes: ["Hourglass"],
+      }),
+      inventoryItem("prod-2", {
+        title: "Jeane Skirt",
+        category: "Bottoms",
+        price: 132,
+      }),
+    ];
+
+    const block = formatInventoryForPrompt(inventory, {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+    });
+    expect(block).toBe(
+      [
+        "### Tops",
+        "0 | Adina Top | 148 USD | [P][S] | Short-sleeved cream ditsy-floral top with curved neckline.",
+        "### Bottoms",
+        "1 | Jeane Skirt | 132 USD",
+      ].join("\n"),
+    );
+  });
+
+  test("clips a long description at a word boundary with an ellipsis", () => {
+    const description = `${"agua fresca linen ".repeat(20)}end`;
+    const block = formatInventoryForPrompt([inventoryItem("prod-1", { description })], {
+      colorSeason: "Cool Summer",
+      bodyType: "Rectangle",
+    });
+    const descriptionPart = block.split("\n")[1].split(" | ")[3];
+    expect(descriptionPart.endsWith("…")).toBe(true);
+    expect(descriptionPart.length).toBeLessThanOrEqual(121);
+    expect(description).toContain(descriptionPart.slice(0, -1));
+  });
+});
+
+describe("resolveShortlist", () => {
+  const inventory = ["a", "b", "c", "d"].map((id) => inventoryItem(id));
+
+  test("maps indexes to rows in first-seen order", () => {
+    const resolved = resolveShortlist(
+      [
+        { item: 2, reason: "best bottom" },
+        { item: 0, reason: "best top" },
+      ],
+      inventory,
+    );
+    expect(resolved.map((r) => r.id)).toEqual(["c", "a"]);
+  });
+
+  test("drops out-of-range, non-integer, and duplicate indexes", () => {
+    const resolved = resolveShortlist(
+      [{ item: 4 }, { item: -1 }, { item: 1.5 }, { item: 1 }, { item: 1 }],
+      inventory,
+    );
+    expect(resolved.map((r) => r.id)).toEqual(["b"]);
+  });
+
+  test("caps the shortlist and tolerates malformed input", () => {
+    const manyItems = Array.from({ length: MAX_SHORTLIST_ITEMS + 20 }, (_, i) =>
+      inventoryItem(`item-${i}`),
+    );
+    const many = manyItems.map((_, i) => ({ item: i, reason: "r" }));
+    expect(resolveShortlist(many, manyItems)).toHaveLength(MAX_SHORTLIST_ITEMS);
+    expect(resolveShortlist("nope", inventory)).toEqual([]);
+    expect(resolveShortlist(undefined, inventory)).toEqual([]);
+  });
+});
+
+describe("pickSimilarAdditions", () => {
+  const picks = [
+    { id: "top-1", category: "Tops" },
+    { id: "shoe-1", category: "Shoes" },
+  ];
+
+  test("only adds rows from categories the look uses, never the picks themselves", () => {
+    const inventory = [
+      inventoryItem("top-1"),
+      inventoryItem("top-2", { title: "Second Top" }),
+      inventoryItem("bag-1", { category: "Bags" }),
+    ];
+    const additions = pickSimilarAdditions(picks, inventory, {
+      colorSeason: "Cool Summer",
+      bodyType: "Rectangle",
+    });
+    expect(additions.map((a) => a.product.id)).toEqual(["top-2"]);
+  });
+
+  test("caps at MAX_SIMILAR_PER_CATEGORY per category and MAX_SIMILAR_TOTAL overall", () => {
+    const categories = ["Tops", "Shoes", "Bags", "Jewelry", "Dresses"];
+    const inventory = categories.flatMap((category) =>
+      Array.from({ length: 5 }, (_, i) => inventoryItem(`${category}-${i}`, { category })),
+    );
+    const additions = pickSimilarAdditions(
+      categories.map((category) => ({ id: `${category}-pick`, category })),
+      inventory,
+      { colorSeason: "Cool Summer", bodyType: "Rectangle" },
+    );
+    expect(additions).toHaveLength(MAX_SIMILAR_TOTAL);
+    expect(additions.filter((a) => a.product.category === "Tops")).toHaveLength(
+      MAX_SIMILAR_PER_CATEGORY,
+    );
+  });
+
+  test("prefers tagged matches and strips server-only columns from the additions", () => {
+    const inventory = [
+      inventoryItem("plain", { category: "Tops" }),
+      inventoryItem("tagged", { category: "Tops", seasonal_palettes: ["Warm Autumn"] }),
+    ];
+    const additions = pickSimilarAdditions([{ id: "top-pick", category: "Tops" }], inventory, {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+    });
+    expect(additions[0].product.id).toBe("tagged");
+    expect(additions[0].rationale).toContain("Warm Autumn");
+    expect(additions[0].product).not.toHaveProperty("description");
+    expect(additions[0].product).not.toHaveProperty("seasonal_palettes");
+    expect(additions[0].product).not.toHaveProperty("body_shapes");
   });
 });

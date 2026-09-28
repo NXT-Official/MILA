@@ -126,7 +126,7 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
         description: {
           type: "string",
           description:
-            "Compelling 2-4 sentence breakdown of the main garments composed from first principles — name fabrics, colors, silhouettes.",
+            "Compelling 2-4 sentence breakdown of the main garments — name the real fabrics, colors, and silhouettes of the shortlisted inventory pieces you chose.",
         },
         styling_notes: {
           type: "string",
@@ -182,12 +182,15 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
   }
 
   // The enum is the hallucination guard: the model can only name a product_id
-  // that's actually a live row from the AVAILABLE INVENTORY prompt block —
-  // it can't emit a title, price, or link, so those always come from the
-  // server-side DB hydration in look.ts, never from model text.
+  // that's actually a live row from the SHORTLIST prompt block (itself
+  // pre-screened from the whole catalog by the review stage) — it can't emit
+  // a title, price, or link, so those always come from the server-side DB
+  // hydration in look.ts, never from model text.
   if (candidateProductIds.length > 0) {
     properties.shoppable_picks = {
       type: "array",
+      description:
+        "Every garment and pair of shoes named in the outfit description must appear here (real ids from the shortlist), plus any bag/jewelry/accessories styled into the look.",
       items: {
         type: "object",
         properties: {
@@ -211,6 +214,177 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
       parameters: { type: "object", properties, required, additionalProperties: false },
     },
   };
+}
+
+/**
+ * Step-one tool (the inventory review): the model answers with indexes into
+ * the numbered inventory block from formatInventoryForPrompt — never product
+ * ids, titles, or prices. look.ts maps indexes back through resolveShortlist
+ * (which drops anything out of range), so the same "the model can only choose
+ * rows that actually exist" guard the pick enum provides still holds — and
+ * the payload doesn't have to carry hundreds of uuids twice.
+ */
+export function buildInventoryReviewTool(maxIndex: number) {
+  return {
+    function: {
+      name: "report_inventory_shortlist",
+      parameters: {
+        type: "object",
+        properties: {
+          shortlist: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                item: {
+                  type: "integer",
+                  minimum: 0,
+                  maximum: maxIndex,
+                  description: "Index of a row in the numbered inventory list.",
+                },
+                reason: {
+                  type: "string",
+                  description:
+                    "One clause naming why this row suits the client's style profile and today's occasion.",
+                },
+              },
+              required: ["item", "reason"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["shortlist"],
+        additionalProperties: false,
+      },
+    },
+  };
+}
+
+/**
+ * The climate rules both AI stages share verbatim — the reviewer uses them to
+ * shortlist weather-appropriate pieces, the stylist applies them when
+ * composing. One constant so the two stages can never disagree.
+ */
+export const CLIMATE_RULES = `- Under 55°F (≈13°C): prescribe structural outerwear and layering — coats, blazers, overshirts, mid- or heavy-weight knits, scarves.
+- Over 75°F (≈24°C): omit heavy layers entirely. Prefer lightweight breathable fabrics, short sleeves, airy silhouettes.
+- Between 55–75°F: light layering is welcome.
+- Rain: water-resistant outerwear, darker bottoms, closed footwear; skip suede.
+- Snow: insulated outerwear and boots only.
+- Windy: structured wind-breaking layer; avoid voluminous silhouettes.
+- Sunny + warm: lighter colors and breathable weaves.`;
+
+export type InventoryReviewPromptInput = {
+  profileLines: string;
+  weatherBlock: string;
+  agendaBlock: string;
+  vibe: string;
+  inventoryCount: number;
+  /** The numbered inventory block from formatInventoryForPrompt. */
+  inventoryBlock: string;
+};
+
+/**
+ * Step-one prompt (the inventory review): the model checks the WHOLE numbered
+ * catalog against the profile and answers with a shortlist of row indexes.
+ * Pure so the exact production copy is unit-testable and smoke-testable.
+ */
+export function buildInventoryReviewPrompt({
+  profileLines,
+  weatherBlock,
+  agendaBlock,
+  vibe,
+  inventoryCount,
+  inventoryBlock,
+}: InventoryReviewPromptInput): string {
+  return `You are Mila's inventory reviewer — step one of today's look. Check the ENTIRE live shop inventory below against this client's style profile and today's occasion, then shortlist the pieces today's outfit should be built from. Never invent a product: choose only numbered rows from the list.
+
+CLIENT PROFILE:
+${profileLines}
+
+${weatherBlock}
+
+OCCASION VIBE: ${vibe}${agendaBlock ? `\n\n${agendaBlock}` : ""}
+
+HOW TO REVIEW:
+- Judge EVERY row against the profile (seasonal palette, body shape, build proportions, gender presentation), today's occasion, and the climate rules below. Most rows carry no [P]/[S] tag — read the row description and judge it yourself; a tag is a hint, not a requirement.
+- Shortlist pieces that can be styled together into ONE cohesive head-to-toe look — colors/tones that harmonize with each other inside the palette and proportions that work as a single outfit, not just good rows in isolation.
+- Coverage (aim, not a quota): 4–5 tops; 4–5 bottoms and/or 4–5 dresses (both when layering suits the weather); 3–4 pairs of shoes; 3–4 outerwear pieces ONLY when the weather calls for layering; 2–3 bags; 2–3 jewelry; 2–3 accessories. Order each category best-first. At most 40 rows in total. Skip a slot only when nothing in the inventory genuinely suits it.
+
+HARD CLIMATE RULES (non-negotiable):
+${CLIMATE_RULES}
+
+THE LIVE SHOP INVENTORY (${inventoryCount} numbered rows — answer with these numbers; [P] = tagged for this client's palette, [S] = tagged for the client's body shape):
+${inventoryBlock}`;
+}
+
+export type OutfitPlanPromptInput = {
+  profileLines: string;
+  weatherBlock: string;
+  agendaBlock: string;
+  vibe: string;
+  colorSeason: string;
+  bodyType: string;
+  skinDepth: string | null;
+  skinUndertone: string | null | undefined;
+  faceShape: string | null;
+  makeupEnabled: boolean;
+  beautyPrefsLine: string;
+  /** The HAIR bullet, already assembled by look.ts from the hair rules. */
+  hairRule: string;
+  /** The shortlist with REAL ids + full descriptions; "(none available...)" fallback otherwise. */
+  shortlistBlock: string;
+};
+
+/**
+ * Step-two prompt (the outfit plan): the outfit must be composed ONLY from
+ * the pre-screened shortlist; hair and makeup come from the profile. Pure so
+ * the exact production copy is unit-testable and smoke-testable.
+ */
+export function buildOutfitPlanPrompt({
+  profileLines,
+  weatherBlock,
+  agendaBlock,
+  vibe,
+  colorSeason,
+  bodyType,
+  skinDepth,
+  skinUndertone,
+  faceShape,
+  makeupEnabled,
+  beautyPrefsLine,
+  hairRule,
+  shortlistBlock,
+}: OutfitPlanPromptInput): string {
+  return `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup. The outfit MUST be composed from the client's live shop shortlist below; hair and makeup are composed from the profile. Never invent a garment, color, price, id, or link.
+
+CLIENT PROFILE:
+${profileLines}
+
+${weatherBlock}
+
+HARD CLIMATE RULES (non-negotiable):
+${CLIMATE_RULES}
+
+OCCASION VIBE: ${vibe}${agendaBlock ? `\n\n${agendaBlock}` : ""}
+
+RULES:
+- OUTFIT (COMPOSE FROM THE SHORTLIST — MANDATORY 2026 TREND SOURCING): build the entire outfit from the shortlisted pieces below — every garment and the shoes must be one of those items, and every color/fabric you name must be that item's actual description. Prefer shortlisted pieces that echo a current 2026 trend, and apply remaining trend details as styling (tucking, cuffing, layering, accessory placement); every look, including plain "Everyday Casual" moods, MUST incorporate at least one named piece or detail from the current 2026 trend list below, picked for the vibe: ${OUTFIT_TREND_PIECES_2026.join("; ")}. Match the trend's listed aesthetic to the "${vibe}" mood. Never default to a generic, dated, or corporate-casual outfit (plain crewneck + tapered creased trouser + minimal sneaker reads as dated office-casual, not styled — do not default to it for a casual mood).
+- OUTFIT PROPORTION: choose shortlisted pieces whose garment lengths, rises, and layering scale work for the client's Build line above, but "proportionally correct" does NOT mean uniformly fitted or tailored. For casual/street-reading moods, actively prefer deliberate proportion CONTRAST — one boxy/oversized piece (e.g. a cropped boxy shirt, wide-leg or baggy denim) paired with one fitted piece, scaled to the client's exact height so the oversized piece doesn't swallow the frame. State the silhouette choice explicitly (e.g. cropped boxy top vs. long relaxed hem, wide-leg vs. tapered), and pick footwear as a deliberate style statement (e.g. loafers, boots, chunky trainers) rather than defaulting to plain minimal sneakers.
+- OUTFIT COLOR: every color named in 'description' must be the ACTUAL color of a chosen shortlist piece (as its row describes it), and the combination must work for BOTH the ${colorSeason} 16-season palette AND how it reads against the client's actual skin (skin depth ${skinDepth ?? "n/a"}${skinUndertone ? `, ${skinUndertone} undertone` : ""}) — favor the specific shades within the ${colorSeason} family that maximize contrast/harmony for that skin depth and undertone. Write the 'description' (fabrics, colors, silhouettes flattering a ${bodyType} figure) and short 'styling_notes' (cuffs, tucking, layering tweaks) accordingly, plus a vivid 'headline'.
+${hairRule}
+${
+  makeupEnabled
+    ? `- MAKEUP (PALETTE LOCKED TO 16-SEASON PROFILE): the 'palette' MUST anchor strictly inside the ${colorSeason} season family and the palette sentence MUST contain the literal string "${colorSeason}". Do NOT name any other season (no "Muted Summer" if the user is "${colorSeason}", etc.). Do not borrow tones from the opposing axis. The 'details' must specify (1) base finish texture, (2) precise placement, and (3) finish/wear. Cross-reference beauty preferences (${beautyPrefsLine}) when choosing finish.`
+    : "- MAKEUP: do not include makeup guidance — this client has makeup disabled."
+}
+- Be specific, shoppable, executable. Do NOT reference any owned wardrobe.
+- Tone: read like a luxury fashion editorial — confident, precise, never generic.
+
+SHOPPABLE PICKS — THE PRE-SCREENED SHORTLIST (real inventory rows, chosen from the client's full live catalog; the outfit is composed ONLY from these pieces — never invent a garment, price, id, or link):
+${shortlistBlock}
+Every garment and pair of shoes named in 'description' MUST appear in shoppable_picks with its real id from the list above, plus any bag/jewelry/accessories you styled into the look — never list an item you did not name. For each pick, the 'rationale' must name concretely why it suits face shape ${faceShape ?? "the client's face shape"} and skin tone/undertone (${skinDepth ?? "n/a"}${skinUndertone ? `, ${skinUndertone} undertone` : ""}) — e.g. necklines/collars that balance the face shape, colors that harmonize with skin depth/undertone. Only choose product_id values from the list above, verbatim. If the shortlist has nothing workable for a slot (e.g. no shoes), style around it with the pieces that are there — never reach outside the list.
+
+Always call the report_daily_look tool.`;
 }
 
 export const DailyLookSchema = z.object({
@@ -262,6 +436,12 @@ export const DailyLookSchema = z.object({
         // above (names concretely why the pick suits face shape + skin
         // tone/undertone) — matching their 3000 cap.
         rationale: z.string().min(1).max(3000),
+        // Which shelf this pick belongs on: "planned" = a piece of the
+        // composed outfit (and what the style-sheet render actually wears);
+        // "similar" = an extra shoppable option beside the look. Optional so
+        // a look saved or echoed back by an older client still validates —
+        // consumers treat a missing value as "planned".
+        source: z.enum(["planned", "similar"]).optional(),
       }),
     )
     .optional(),
@@ -283,11 +463,14 @@ export const RawShoppablePickSchema = z.object({
 
 /**
  * Joins the model's raw product_id/rationale picks back to real, live DB
- * rows (candidateProducts — already fetched by the caller from
- * matchLookProducts). Any product_id that doesn't match a real candidate is
- * dropped rather than trusted — defense in depth on top of the tool
- * schema's enum constraint, since the final price/link/title the client
- * sees must always come from here, never from model text.
+ * rows (candidateProducts — the shortlist already resolved by the caller
+ * from loadLookInventory). Any product_id that doesn't match a real
+ * candidate is dropped rather than trusted — defense in depth on top of the
+ * tool schema's enum constraint, since the final price/link/title the
+ * client sees must always come from here, never from model text.
+ *
+ * Every hydrated pick is tagged source "planned" — these are the composed
+ * outfit's actual pieces; look.ts appends the "similar" shelf options after.
  */
 export function hydrateShoppablePicks(
   rawShoppablePicks: unknown,
@@ -298,7 +481,7 @@ export function hydrateShoppablePicks(
   return rawPicks
     .map((pick): ShoppablePick | null => {
       const product = candidateProducts.find((p) => p.id === pick.product_id);
-      return product ? { ...product, rationale: pick.rationale } : null;
+      return product ? { ...product, rationale: pick.rationale, source: "planned" as const } : null;
     })
     .filter((pick): pick is ShoppablePick => pick !== null);
 }

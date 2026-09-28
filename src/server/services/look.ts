@@ -17,16 +17,25 @@ import {
 import { errorMessage } from "@/lib/utils";
 import {
   buildDailyLookTool,
+  buildInventoryReviewPrompt,
+  buildInventoryReviewTool,
+  buildOutfitPlanPrompt,
   computeMakeupEligibility,
   DailyLookSchema,
   HAIRSTYLE_TRENDS_2026,
   UNISEX_HAIRSTYLE_TRENDS_2026,
-  OUTFIT_TREND_PIECES_2026,
   hydrateShoppablePicks,
   type DailyLook,
   type GenerateLookInputData,
+  type ShoppablePick,
 } from "@/lib/generate-outfit.functions";
-import { matchLookProducts } from "@/lib/look-products.functions";
+import {
+  formatInventoryForPrompt,
+  loadLookInventory,
+  pickSimilarAdditions,
+  resolveShortlist,
+  type LookInventoryItem,
+} from "@/lib/look-products.functions";
 import { AiUnavailableError, DomainValidationError } from "@/server/http/api-errors";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
@@ -41,6 +50,16 @@ export type LookImageResult = {
  * credit. Shared verbatim by the web `generateDailyLook` server function and
  * the mobile `POST /api/v1/look/generate` route — this is the entire body
  * that used to live inside `generateDailyLook`'s handler.
+ *
+ * The pipeline is four steps, all in this one request:
+ *   1. loadLookInventory — the whole eligible shop catalog for this client.
+ *   2. Inventory review (deepseek v4.1 flash) — checks every row against the
+ *      style profile + occasion and reports a shortlist by row index.
+ *   3. Outfit plan (deepseek v4.1 flash) — composes the look from the
+ *      shortlist, naming real pieces; shoppable_picks = the outfit's pieces.
+ *   4. Shop-the-look — pickSimilarAdditions adds more live pieces similar to
+ *      the planned ones, tagged source "similar" (no extra AI call). The
+ *      client's next call renders the plan's visual with muse-image.
  */
 export async function generateLookForUser(
   supabase: MilaSupabaseClient,
@@ -111,15 +130,16 @@ export async function generateLookForUser(
       );
     }
 
-    // Real, in-stock, non-broken catalog rows — the only things deepseek is
-    // allowed to recommend as shoppable picks (see RawShoppablePickSchema's
-    // enum constraint below). Never invented by the model.
-    // Non-binary/unknown gender: don't filter the catalog by gender at all
-    // (show everything) rather than guess — same rule the styling prompt
-    // below already follows for silhouette choices.
+    const failure = "Mila couldn't compose a look this time. Please try again.";
+
+    // Step 1 — the whole eligible catalog: real, in-stock, non-broken rows
+    // that ship to the client's region and fit their gender (unknown/
+    // Non-binary gender: don't filter at all rather than guess). This is what
+    // the review stage checks, and the source for the "similar" additions
+    // beside the final picks. Never invented by the model.
     const productGenderFilter =
       genderValue === "Male" || genderValue === "Female" ? genderValue : undefined;
-    const candidateProducts = await matchLookProducts(supabase, {
+    const inventory = await loadLookInventory(supabase, {
       colorSeason: colorSeasonValue,
       bodyType: data.bodyType,
       tempF,
@@ -152,6 +172,62 @@ export async function generateLookForUser(
       .filter(Boolean)
       .join("\n");
 
+    const weatherBlock = `LOCAL WEATHER (authoritative — do not override):
+- Location: ${locationLine}
+- Temperature: ${tempLine}
+- Condition: ${conditionLine}
+- Verbal summary: ${data.weather}`;
+
+    const agendaBlock =
+      data.agenda || data.dressCode || data.indoorOutdoor
+        ? `TODAY'S AGENDA (when present, this is more specific than the vibe above and takes priority for occasion-appropriateness — do not contradict it):
+${data.agenda ? `- Plan: ${data.agenda}` : ""}
+${data.dressCode ? `- Dress code: ${data.dressCode}` : ""}
+${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
+        : "";
+
+    // Step 2 — inventory review: one deepseek pass over the WHOLE numbered
+    // catalog, answering with row indexes only (buildInventoryReviewTool).
+    // resolveShortlist maps them back to real rows and drops anything that
+    // isn't a live row from the same list, so the plan stage below can only
+    // ever choose pieces that actually exist in the shop.
+    let shortlistProducts: LookInventoryItem[] = [];
+    if (inventory.length > 0) {
+      const reviewPrompt = buildInventoryReviewPrompt({
+        profileLines,
+        weatherBlock,
+        agendaBlock,
+        vibe: data.vibe,
+        inventoryCount: inventory.length,
+        inventoryBlock: formatInventoryForPrompt(inventory, {
+          colorSeason: colorSeasonValue,
+          bodyType: data.bodyType,
+        }),
+      });
+
+      const reviewed = await aiChatCompletion(
+        [
+          { role: "system", content: reviewPrompt },
+          { role: "user", content: "Check the full inventory and report the shortlist." },
+        ],
+        buildInventoryReviewTool(inventory.length - 1),
+        { supabase, userId },
+      );
+      if (!reviewed.ok) throw new AiUnavailableError(failure);
+
+      shortlistProducts = resolveShortlist(
+        (reviewed.args as Record<string, unknown> | null)?.shortlist,
+        inventory,
+      );
+      if (shortlistProducts.length === 0) {
+        // Diagnosable: an empty shortlist silently degrades the look to
+        // "no shoppable picks", so leave a trace of the review that caused it.
+        console.warn(
+          `[generateLookForUser] inventory review returned an empty shortlist (${inventory.length} rows reviewed)`,
+        );
+      }
+    }
+
     const hairLengthRule = hairLengthValue
       ? hairLengthValue === "Bald/Shaved"
         ? " The client is bald/shaved — do not prescribe any hairstyle; keep 'style' and 'execution_tip' focused on scalp care or a grooming note instead."
@@ -175,79 +251,71 @@ export async function generateLookForUser(
       trendLine +
       hairLengthRule;
 
-    const systemPrompt = `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup — from first principles. NOT from any inventory.
+    // Step 3 — outfit plan: the shortlist, with full descriptions, is the
+    // only material the outfit may be composed from. Only shortlist ids are
+    // in the tool enum (hallucination guard), and the full rows are what
+    // hydrateShoppablePicks joins back to.
+    const shortlistBlock =
+      shortlistProducts.length > 0
+        ? shortlistProducts
+            .map((p) =>
+              [`id="${p.id}"`, p.category, p.title, `${p.price} ${p.currency}`, p.description]
+                .filter((part): part is string => part != null && part !== "")
+                .join(" | "),
+            )
+            .join("\n")
+        : "(none available right now — compose the outfit without inventory pieces and omit shoppable_picks entirely)";
 
-CLIENT PROFILE:
-${profileLines}
+    const systemPrompt = buildOutfitPlanPrompt({
+      profileLines,
+      weatherBlock,
+      agendaBlock,
+      vibe: data.vibe,
+      colorSeason: colorSeasonValue,
+      bodyType: data.bodyType,
+      skinDepth: skinDepthValue,
+      skinUndertone: data.skinUndertone,
+      faceShape: faceShapeValue,
+      makeupEnabled,
+      beautyPrefsLine,
+      hairRule,
+      shortlistBlock,
+    });
 
-LOCAL WEATHER (authoritative — do not override):
-- Location: ${locationLine}
-- Temperature: ${tempLine}
-- Condition: ${conditionLine}
-- Verbal summary: ${data.weather}
-
-HARD CLIMATE RULES (non-negotiable):
-- Under 55°F (≈13°C): prescribe structural outerwear and layering — coats, blazers, overshirts, mid- or heavy-weight knits, scarves.
-- Over 75°F (≈24°C): omit heavy layers entirely. Prefer lightweight breathable fabrics, short sleeves, airy silhouettes.
-- Between 55–75°F: light layering is welcome.
-- Rain: water-resistant outerwear, darker bottoms, closed footwear; skip suede.
-- Snow: insulated outerwear and boots only.
-- Windy: structured wind-breaking layer; avoid voluminous silhouettes.
-- Sunny + warm: lighter colors and breathable weaves.
-
-OCCASION VIBE: ${data.vibe}
-${
-  data.agenda || data.dressCode || data.indoorOutdoor
-    ? `
-TODAY'S AGENDA (when present, this is more specific than the vibe above and takes priority for occasion-appropriateness — do not contradict it):
-${data.agenda ? `- Plan: ${data.agenda}` : ""}
-${data.dressCode ? `- Dress code: ${data.dressCode}` : ""}
-${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
-    : ""
-}
-
-RULES:
-- OUTFIT (MANDATORY 2026 TREND SOURCING): every look, including plain "Everyday Casual" moods, MUST incorporate at least one named piece or detail from the current 2026 trend list below, picked for the vibe: ${OUTFIT_TREND_PIECES_2026.join("; ")}. Match the trend's listed aesthetic to the "${data.vibe}" mood. Never default to a generic, dated, or corporate-casual outfit (plain crewneck + tapered creased trouser + minimal sneaker reads as dated office-casual, not styled — do not default to it for a casual mood).
-- OUTFIT PROPORTION: derive every garment length, rise, and layering choice from the client's Build line above, but "proportionally correct" does NOT mean uniformly fitted or tailored. For casual/street-reading moods, actively prefer deliberate proportion CONTRAST — one boxy/oversized piece (e.g. a cropped boxy shirt, wide-leg or baggy denim) paired with one fitted piece, scaled to the client's exact height so the oversized piece doesn't swallow the frame. State the silhouette choice explicitly (e.g. cropped boxy top vs. long relaxed hem, wide-leg vs. tapered), and pick footwear as a deliberate style statement (e.g. loafers, boots, chunky trainers) rather than defaulting to plain minimal sneakers.
-- OUTFIT COLOR: every color named in 'description' must be chosen for BOTH the ${colorSeasonValue} 16-season palette AND how it reads against the client's actual skin (skin depth ${skinDepthValue ?? "n/a"}${data.skinUndertone ? `, ${data.skinUndertone} undertone` : ""}) — favor the specific shades within the ${colorSeasonValue} family that maximize contrast/harmony for that skin depth and undertone, not just any color inside the season. Write the 'description' (fabrics, colors, silhouettes flattering a ${data.bodyType} figure) and short 'styling_notes' (cuffs, tucking, layering tweaks) accordingly, plus a vivid 'headline'.
-${hairRule}
-${
-  makeupEnabled
-    ? `- MAKEUP (PALETTE LOCKED TO 16-SEASON PROFILE): the 'palette' MUST anchor strictly inside the ${colorSeasonValue} season family and the palette sentence MUST contain the literal string "${colorSeasonValue}". Do NOT name any other season (no "Muted Summer" if the user is "${colorSeasonValue}", etc.). Do not borrow tones from the opposing axis. The 'details' must specify (1) base finish texture, (2) precise placement, and (3) finish/wear. Cross-reference beauty preferences (${beautyPrefsLine}) when choosing finish.`
-    : "- MAKEUP: do not include makeup guidance — this client has makeup disabled."
-}
-- Be specific, shoppable, executable. Do NOT reference any owned wardrobe.
-- Tone: read like a luxury fashion editorial — confident, precise, never generic.
-
-SHOPPABLE PICKS (REAL INVENTORY — the only products that exist; never invent a title, price, id, or link):
-${
-  candidateProducts.length > 0
-    ? candidateProducts
-        .map((p) => `- id="${p.id}" | ${p.category} | ${p.title} | ${p.price} ${p.currency}`)
-        .join("\n")
-    : "(none available right now — omit shoppable_picks entirely)"
-}
-For each pick you choose, the 'rationale' must name concretely why it suits face shape ${faceShapeValue ?? "the client's face shape"} and skin tone/undertone (${skinDepthValue ?? "n/a"}${data.skinUndertone ? `, ${data.skinUndertone} undertone` : ""}) — e.g. necklines/collars that balance the face shape, colors that harmonize with skin depth/undertone. Only choose product_id values from the list above, verbatim. Skip a category entirely if nothing in the list suits the look — never force a pick.
-
-Always call the report_daily_look tool.`;
-
-    const candidateProductIds = candidateProducts.map((p) => p.id);
+    const shortlistIds = shortlistProducts.map((p) => p.id);
     const composed = await aiChatCompletion(
       [
         { role: "system", content: systemPrompt },
         { role: "user", content: "Compose today's complete look." },
       ],
-      buildDailyLookTool(makeupEnabled, candidateProductIds),
+      buildDailyLookTool(makeupEnabled, shortlistIds),
       { supabase, userId },
     );
-    const failure = "Mila couldn't compose a look this time. Please try again.";
     if (!composed.ok) throw new AiUnavailableError(failure);
 
     // Hydrate the model's product_id/rationale picks into full, real product
     // rows — price/link/title the client sees always come from here, never
     // from model text (see hydrateShoppablePicks for the drop-unknown-id logic).
     const rawArgs = composed.args as Record<string, unknown>;
-    const hydratedPicks = hydrateShoppablePicks(rawArgs.shoppable_picks, candidateProducts);
+    const hydratedPicks = hydrateShoppablePicks(rawArgs.shoppable_picks, shortlistProducts);
+
+    // Step 4 — the shop-the-look shelf: beside the composed outfit's pieces,
+    // add more live rows similar to them (same category, ranked like the
+    // catalog matcher, no AI, no extra DB read). Tagged source "similar" so
+    // the outfit's actual pieces stay distinguishable — the style-sheet
+    // prompt only ever wears the planned ones.
+    const similarAdditions = pickSimilarAdditions(hydratedPicks, inventory, {
+      colorSeason: colorSeasonValue,
+      bodyType: data.bodyType,
+    });
+    const picksWithSimilar: ShoppablePick[] = [
+      ...hydratedPicks,
+      ...similarAdditions.map(({ product, rationale }) => ({
+        ...product,
+        rationale,
+        source: "similar" as const,
+      })),
+    ];
 
     // Force makeup to null when disabled regardless of what the model
     // returned — the tool schema already omits it, but this is the hard
@@ -255,7 +323,7 @@ Always call the report_daily_look tool.`;
     const argsWithMakeup = {
       ...rawArgs,
       makeup: makeupEnabled ? (rawArgs.makeup ?? null) : null,
-      shoppable_picks: hydratedPicks,
+      shoppable_picks: picksWithSimilar,
       forecastRetrievedAt,
     };
     const look = DailyLookSchema.safeParse(argsWithMakeup);

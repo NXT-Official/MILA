@@ -8,7 +8,10 @@ const SaveOutfitInput = DailyLookSchema.extend({
   imageDataUri: z.string().min(1),
   weather: z.string().min(1).max(160),
   vibe: z.string().min(1).max(64),
-  productIds: z.array(z.string().uuid()).max(20).optional(),
+  // Planned outfit pieces + the "similar" shelf options beside them (capped
+  // at MAX_SIMILAR_TOTAL = 8 in look-products.functions.ts); 40 leaves room
+  // for a maximal planned look without ever rejecting a save.
+  productIds: z.array(z.string().uuid()).max(40).optional(),
   previewMode: z.enum(["inspiration", "photo_edit", "style_sheet"]).optional(),
 });
 

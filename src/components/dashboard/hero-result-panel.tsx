@@ -63,8 +63,8 @@ export function HeroResultPanel({
           Set the mood. Mila will compose the rest.
         </h2>
         <p className="text-base text-muted-foreground mt-2 max-w-md mx-auto text-pretty">
-          Each look is composed from first principles - tuned to your palette, body architecture,
-          and the weather outside.
+          Each look is composed from the live shop inventory - tuned to your palette, body
+          architecture, and the weather outside.
         </p>
       </div>
     );

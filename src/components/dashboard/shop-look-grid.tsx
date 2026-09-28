@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ui/product-card";
 import { LookSection } from "@/components/dashboard/look-section";
 import { formatPrice } from "@/lib/utils";
-import type { LookProduct } from "@/lib/look-products.functions";
+import type { ShoppablePick } from "@/lib/generate-outfit.functions";
 
-export function ShopThisLookGrid({ items }: { items: LookProduct[] | null }) {
+export function ShopThisLookGrid({ items }: { items: ShoppablePick[] | null }) {
   if (!items) return null;
 
   if (items.length === 0) {
@@ -42,7 +42,7 @@ export function ShopThisLookGrid({ items }: { items: LookProduct[] | null }) {
           >
             <div className="flex-1">
               <p className="text-micro uppercase tracking-label text-muted-foreground">
-                {item.category}
+                {item.source === "similar" ? `Similar · ${item.category}` : item.category}
               </p>
               <p className="font-serif text-sm leading-snug text-ink line-clamp-2">{item.title}</p>
               <p className="mt-1 atelier-label">{formatPrice(item.price, item.currency)}</p>
