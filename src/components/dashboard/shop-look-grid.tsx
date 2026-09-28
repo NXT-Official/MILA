@@ -1,5 +1,5 @@
 import { ExternalLink, ImageOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { ProductCard } from "@/components/ui/product-card";
 import { LookSection } from "@/components/dashboard/look-section";
 import { formatPrice } from "@/lib/utils";
@@ -22,6 +22,8 @@ export function ShopThisLookGrid({ items }: { items: ShoppablePick[] | null }) {
         {items.map((item) => (
           <ProductCard
             key={item.id}
+            as="a"
+            href={item.affiliate_link}
             image={
               item.image_url ? (
                 <img
@@ -52,12 +54,12 @@ export function ShopThisLookGrid({ items }: { items: ShoppablePick[] | null }) {
                   : "Link not yet verified"}
               </p>
             </div>
-            <Button asChild size="pill">
-              <a href={item.affiliate_link} target="_blank" rel="noopener noreferrer sponsored">
-                Shop
-                <ExternalLink aria-hidden="true" strokeWidth={1.75} />
-              </a>
-            </Button>
+            {/* Decorative — the whole card above is the real link (ProductCard as="a").
+                A nested <a> here would be invalid HTML inside that anchor. */}
+            <span className={buttonVariants({ size: "pill" })}>
+              Shop
+              <ExternalLink aria-hidden="true" strokeWidth={1.75} />
+            </span>
           </ProductCard>
         ))}
       </div>

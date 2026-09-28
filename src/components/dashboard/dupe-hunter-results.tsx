@@ -1,5 +1,5 @@
 import { ExternalLink, ImageOff, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   ProductCard,
   ProductCardCarouselTrack,
@@ -90,6 +90,8 @@ export function DupeHunterResults({
             <ProductCardCarouselItem key={d.id}>
               <ProductCard
                 className="h-full"
+                as="a"
+                href={d.affiliate_link}
                 image={
                   <>
                     {d.image_url && (
@@ -132,12 +134,12 @@ export function DupeHunterResults({
                     ? `Last checked ${new Date(d.last_verified_at).toLocaleDateString()}`
                     : "Link not yet verified"}
                 </p>
-                <Button asChild size="pill">
-                  <a href={d.affiliate_link} target="_blank" rel="noopener noreferrer sponsored">
-                    Shop the Dupe
-                    <ExternalLink aria-hidden="true" strokeWidth={1.75} />
-                  </a>
-                </Button>
+                {/* Decorative — the whole card above is the real link (ProductCard as="a").
+                    A nested <a> here would be invalid HTML inside that anchor. */}
+                <span className={buttonVariants({ size: "pill" })}>
+                  Shop the Dupe
+                  <ExternalLink aria-hidden="true" strokeWidth={1.75} />
+                </span>
               </ProductCard>
             </ProductCardCarouselItem>
           ))}
