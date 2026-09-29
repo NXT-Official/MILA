@@ -4,11 +4,7 @@ import { aiChatCompletion, isAiConfigured } from "@/lib/ai.server";
 import { logAiSpend } from "@/lib/ai-spend.server";
 import { payForLookImage } from "@/lib/credits.server";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
-import {
-  generateStyleSheet,
-  STYLE_SHEET_PROVIDER,
-  STYLE_SHEET_MODEL,
-} from "@/lib/openrouter-style-sheet.server";
+import { generateStyleSheet, STYLE_SHEET_PROVIDER } from "@/lib/openrouter-style-sheet.server";
 import { ImageProviderRateLimitError } from "@/lib/openrouter-image.server";
 import { errorMessage } from "@/lib/utils";
 
@@ -151,7 +147,11 @@ export async function renderStyleSheetForUser(
           break;
         }
         try {
-          const { imageUrl, costUsd } = await generateStyleSheet({
+          const {
+            imageUrl,
+            model: imageModel,
+            costUsd,
+          } = await generateStyleSheet({
             userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
             outfit: data.outfit,
             shoppablePicks,
@@ -167,7 +167,8 @@ export async function renderStyleSheetForUser(
 
           await logAiSpend(supabase, userId, {
             provider: STYLE_SHEET_PROVIDER,
-            model: STYLE_SHEET_MODEL,
+            // Whatever model the console has active right now — not a constant.
+            model: imageModel,
             costUsd,
             promptTokens: null,
             completionTokens: null,

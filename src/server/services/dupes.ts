@@ -19,6 +19,56 @@ import type {
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
+/** The budget-related subset of SHOPPING_PREFERENCE_TAGS (see
+ * src/constants/style-profile/questions.ts) — collected at onboarding into
+ * profiles.shopping_preferences but never previously read back downstream. */
+export const BUDGET_TAGS = ["Budget-Conscious", "Mid-Range", "Investment Pieces"] as const;
+export type BudgetTag = (typeof BUDGET_TAGS)[number];
+
+/** Pulls the budget tag out of the profile's shopping_preferences tag array,
+ * or null when none is set. Onboarding's tag select is multi-select, not
+ * mutually exclusive, so if more than one budget tag was ever saved this
+ * deterministically takes the first found. */
+export function extractBudgetTag(shoppingPreferences: unknown): BudgetTag | null {
+  if (!Array.isArray(shoppingPreferences)) return null;
+  for (const tag of shoppingPreferences) {
+    if (typeof tag === "string" && (BUDGET_TAGS as readonly string[]).includes(tag)) {
+      return tag as BudgetTag;
+    }
+  }
+  return null;
+}
+
+type PriceTier = "low" | "mid" | "high";
+
+const BUDGET_TARGET_TIER: Record<BudgetTag, PriceTier> = {
+  "Budget-Conscious": "low",
+  "Mid-Range": "mid",
+  "Investment Pieces": "high",
+};
+
+/** Score bonus for a candidate whose price tier matches the user's budget
+ * tag — enough to nudge ranking without ever overriding a real attribute
+ * mismatch, since it's only ever added on top of a candidate that already
+ * scored above 0 on category/silhouette/color/palette match. */
+const BUDGET_TIER_BONUS = 15;
+
+/**
+ * Which price tier `price` falls into, relative to `prices` — THIS search's
+ * candidate set, never a hardcoded cross-currency threshold. Splits into
+ * terciles by sorted position so "budget" always means "cheaper than most
+ * of what's actually on offer for this garment" regardless of category or
+ * currency.
+ */
+export function priceTier(prices: number[], price: number): PriceTier {
+  const sorted = [...prices].sort((a, b) => a - b);
+  const lowMax = sorted[Math.floor((sorted.length - 1) / 3)];
+  const midMax = sorted[Math.floor((2 * (sorted.length - 1)) / 3)];
+  if (price <= lowMax) return "low";
+  if (price <= midMax) return "mid";
+  return "high";
+}
+
 const tool = {
   function: {
     name: "report_clothing_attributes",
@@ -101,12 +151,17 @@ function scoreCandidate(
  * already has the attributes stored on the post item. Shared by
  * `findSimilarItemsForUser` and `findDupesForUser` so the same garment ranks
  * identically whichever path reached it.
+ *
+ * `budgetTag` (from the user's profile, see extractBudgetTag) never widens
+ * or narrows the result set — it only re-ranks among candidates that already
+ * matched the inspiration piece on category/silhouette/color/palette.
  */
 export async function rankDupes(
   supabase: MilaSupabaseClient,
   inspiration: ClothingAttributes,
   maxResults: number,
   region?: string,
+  budgetTag: BudgetTag | null = null,
 ): Promise<DupeMatch[]> {
   const { data: candidates, error } = await supabase
     .from("products")
@@ -123,13 +178,26 @@ export async function rankDupes(
     throw new Error("Couldn't search the dupe catalog.");
   }
 
-  return (candidates ?? [])
+  const relevant = (candidates ?? [])
     .filter((p) => !!p.affiliate_link && isAvailableInRegion(p, region))
     .map((product) => {
       const { score, reasons } = scoreCandidate(inspiration, product);
       return { product, score, reasons };
     })
-    .filter((r) => r.score > 0)
+    .filter((r) => r.score > 0);
+
+  const targetTier = budgetTag ? BUDGET_TARGET_TIER[budgetTag] : null;
+  const prices = relevant.map((r) => r.product.price);
+
+  return relevant
+    .map((r) => {
+      if (!targetTier || priceTier(prices, r.product.price) !== targetTier) return r;
+      return {
+        ...r,
+        score: r.score + BUDGET_TIER_BONUS,
+        reasons: [...r.reasons, `Fits your ${budgetTag} budget`],
+      };
+    })
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       return a.product.price - b.product.price;
@@ -166,9 +234,16 @@ export async function rankDupes(
  */
 export async function findSimilarItemsForUser(
   supabase: MilaSupabaseClient,
+  userId: string,
   data: FindSimilarItemsInputData,
 ): Promise<DupeMatch[]> {
-  return rankDupes(supabase, data.attributes, data.maxResults, data.region);
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("shopping_preferences")
+    .eq("id", userId)
+    .maybeSingle();
+  const budgetTag = extractBudgetTag(profileRow?.shopping_preferences);
+  return rankDupes(supabase, data.attributes, data.maxResults, data.region, budgetTag);
 }
 
 /**
@@ -210,7 +285,13 @@ export async function findDupesForUser(
     if (!result.ok) throw aiFailure(result.status, "Dupe extraction failed.");
 
     const inspiration = ClothingAttributesSchema.parse(result.args);
-    const dupes = await rankDupes(supabase, inspiration, data.maxResults, data.region);
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("shopping_preferences")
+      .eq("id", userId)
+      .maybeSingle();
+    const budgetTag = extractBudgetTag(profileRow?.shopping_preferences);
+    const dupes = await rankDupes(supabase, inspiration, data.maxResults, data.region, budgetTag);
     return { inspiration, dupes };
   });
 }

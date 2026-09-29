@@ -10,15 +10,18 @@ import {
   OPENROUTER_IMAGES_URL,
 } from "./openrouter-image.server";
 import { buildIdentityLockLine } from "./identity-lock.server";
+import { resolveImageModel } from "./platform-settings.server";
 import type { DailyLook } from "./generate-outfit.functions";
 
 const TIMEOUT_MS = 75_000;
 const MAX_REFERENCE_IMAGES = 3;
 const MAX_PROMPT_LENGTH = 2048;
 
-// Image-to-image outfit-on-selfie swap — same meta/muse-image model as the
-// text-to-image inspiration path (openrouter-image.server.ts), imported
-// rather than redefined so the two can never drift apart.
+// Image-to-image outfit-on-selfie swap — same image model as the
+// text-to-image inspiration path (openrouter-image.server.ts): the live
+// choice is read from platform_settings through resolveImageModel, and this
+// constant is only the shipped default, imported rather than redefined so
+// the two can never drift apart.
 export const PHOTO_EDIT_MODEL = IMAGE_MODEL;
 export const PHOTO_EDIT_PROVIDER = "openrouter";
 
@@ -91,6 +94,8 @@ function buildEditPrompt({
 
 export interface PhotoEditResult {
   imageUrl: string;
+  /** The model that actually produced this edit (admin-switchable). */
+  model: string;
   costUsd: number | null;
 }
 
@@ -143,6 +148,7 @@ export async function editOutfitPhoto(
   }
 
   const references = referenceImages.slice(0, MAX_REFERENCE_IMAGES);
+  const model = await resolveImageModel();
   const prompt = buildEditPrompt({
     outfit,
     makeupEnabled,
@@ -169,7 +175,7 @@ export async function editOutfitPhoto(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: PHOTO_EDIT_MODEL,
+        model,
         prompt,
         input_references: inputReferences,
         // face-match.server.ts's jpeg-js decoder and this file's caller
@@ -197,6 +203,7 @@ export async function editOutfitPhoto(
 
   return {
     imageUrl: `data:${image.media_type};base64,${image.b64_json}`,
+    model,
     costUsd: typeof json.usage?.cost === "number" ? json.usage.cost : null,
   };
 }

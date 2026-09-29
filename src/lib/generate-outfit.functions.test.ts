@@ -8,6 +8,7 @@ import {
   buildOutfitPlanPrompt,
   DailyLookSchema,
   hydrateShoppablePicks,
+  MIN_SHOPPABLE_PICKS,
 } from "./generate-outfit.functions";
 import type { LookProduct } from "./look-products.functions";
 
@@ -68,6 +69,23 @@ describe("buildDailyLookTool", () => {
       "prod-2",
     ]);
     expect(params.required).toContain("shoppable_picks");
+  });
+
+  test("requires at least MIN_SHOPPABLE_PICKS unique items when enough candidates exist", () => {
+    const tool = buildDailyLookTool(false, ["prod-1", "prod-2", "prod-3", "prod-4"]);
+    const params = tool.function.parameters as {
+      properties: { shoppable_picks: { minItems: number; uniqueItems: boolean } };
+    };
+    expect(params.properties.shoppable_picks.minItems).toBe(MIN_SHOPPABLE_PICKS);
+    expect(params.properties.shoppable_picks.uniqueItems).toBe(true);
+  });
+
+  test("caps the minItems floor to however many candidates actually exist", () => {
+    const tool = buildDailyLookTool(false, ["prod-1"]);
+    const params = tool.function.parameters as {
+      properties: { shoppable_picks: { minItems: number } };
+    };
+    expect(params.properties.shoppable_picks.minItems).toBe(1);
   });
 });
 

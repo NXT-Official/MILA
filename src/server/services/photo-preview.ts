@@ -6,11 +6,7 @@ import { payForLookImage } from "@/lib/credits.server";
 import { computeMakeupEligibility, type DailyLook } from "@/lib/generate-outfit.functions";
 import { verifyFaceMatch } from "@/lib/face-match.server";
 import { ImageProviderRateLimitError } from "@/lib/openrouter-image.server";
-import {
-  editOutfitPhoto,
-  PHOTO_EDIT_PROVIDER,
-  PHOTO_EDIT_MODEL,
-} from "@/lib/openrouter-photo-edit.server";
+import { editOutfitPhoto, PHOTO_EDIT_PROVIDER } from "@/lib/openrouter-photo-edit.server";
 import { errorMessage } from "@/lib/utils";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
@@ -155,7 +151,11 @@ export async function renderPhotoPreviewForUser(
       let lastReason = "Your photo preview couldn't be verified safe this time.";
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         try {
-          const { imageUrl, costUsd } = await editOutfitPhoto({
+          const {
+            imageUrl,
+            model: imageModel,
+            costUsd,
+          } = await editOutfitPhoto({
             userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
             referenceImages: [],
             outfit: data.outfit,
@@ -171,7 +171,8 @@ export async function renderPhotoPreviewForUser(
 
           await logAiSpend(supabase, userId, {
             provider: PHOTO_EDIT_PROVIDER,
-            model: PHOTO_EDIT_MODEL,
+            // Whatever model the console has active right now — not a constant.
+            model: imageModel,
             costUsd,
             promptTokens: null,
             completionTokens: null,

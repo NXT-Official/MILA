@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { logAiSpend } from "./ai-spend.server";
+import { DEFAULT_AI_TEXT_MODEL, resolveTextModel } from "./platform-settings.server";
 import { errorMessage } from "./utils";
 
 export interface AiCallerContext {
@@ -24,9 +25,12 @@ const TIMEOUT_MS = 75_000;
 // The one permanent text/vision brain — multimodal, handles every
 // aiChatCompletion caller (text-only look composition and image-bearing
 // calls like item detection, personal-color analysis, and photo-edit
-// verification) without a separate vision model. Bump this one line to
-// upgrade; every call site is unaffected.
-export const TEXT_MODEL = "deepseek/deepseek-v4.1-flash";
+// verification) without a separate vision model. Staff can switch it at
+// runtime from the admin console (platform_settings, read through
+// resolveTextModel below); this constant is the shipped default and the
+// fallback, so bumping it here changes what a fresh or unreachable settings
+// row deploys with.
+export const TEXT_MODEL = DEFAULT_AI_TEXT_MODEL;
 export const TEXT_PROVIDER = "openrouter";
 
 export function isAiConfigured(): boolean {
@@ -53,13 +57,15 @@ export async function aiChatCompletion(
     throw new Error("AI provider not configured — set OPENROUTER_API_KEY");
   }
 
+  const model = await resolveTextModel();
+
   let response: Response;
   try {
     response = await fetch(OPENROUTER_CHAT_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: TEXT_MODEL,
+        model,
         messages,
         response_format: {
           type: "json_schema",
@@ -119,7 +125,7 @@ export async function aiChatCompletion(
   const usage = json.usage;
   await logAiSpend(caller.supabase, caller.userId, {
     provider: TEXT_PROVIDER,
-    model: TEXT_MODEL,
+    model,
     costUsd: typeof usage?.cost === "number" ? usage.cost : null,
     promptTokens: typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
     completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,

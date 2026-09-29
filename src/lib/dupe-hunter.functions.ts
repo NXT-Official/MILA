@@ -58,7 +58,7 @@ export const findSimilarItems = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => FindSimilarItemsInput.parse(input))
   .handler(({ data, context }): Promise<DupeMatch[]> =>
-    findSimilarItemsForUser(context.supabase, data),
+    findSimilarItemsForUser(context.supabase, context.userId, data),
   );
 
 /**

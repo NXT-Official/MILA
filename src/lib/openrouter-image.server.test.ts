@@ -45,6 +45,7 @@ describe("OpenRouter outfit image generation", () => {
 
     await expect(generateOutfitImage(outfit)).resolves.toEqual({
       imageUrl: "data:image/jpeg;base64,abc123",
+      model: "meta/muse-image",
       costUsd: 0.0042,
       promptTokens: 120,
       completionTokens: 340,
@@ -82,6 +83,7 @@ describe("OpenRouter outfit image generation", () => {
 
     await expect(generateOutfitImage(outfit)).resolves.toEqual({
       imageUrl: "data:image/jpeg;base64,abc123",
+      model: "meta/muse-image",
       costUsd: null,
       promptTokens: null,
       completionTokens: null,
@@ -154,9 +156,46 @@ describe("OpenRouter outfit image generation", () => {
     }) as unknown as typeof fetch;
 
     await generateOutfitImage(lookWithPicks);
-    expect(capturedPrompt).toContain("Key pieces:");
+    expect(capturedPrompt).toContain("Wear exactly these real pieces");
     expect(capturedPrompt).toContain("Adina Top");
     expect(capturedPrompt).not.toContain("Dia Bag");
+  });
+
+  test("protects the pieces block from truncation even when the outfit description is very long", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    const longOutfit: DailyLook = {
+      ...outfit,
+      outfit: {
+        ...outfit.outfit,
+        description: "structured linen blazer ".repeat(200),
+      },
+      shoppable_picks: [
+        {
+          id: "prod-1",
+          title: "Adina Top",
+          brand_id: "b1",
+          category: "Tops",
+          price: 148,
+          currency: "USD",
+          image_url: null,
+          affiliate_link: "https://shop.example.com/prod-1",
+          verification_status: "verified",
+          last_verified_at: null,
+          rationale: "Neckline balances a heart face shape.",
+          source: "planned",
+        },
+      ],
+    };
+
+    let capturedPrompt = "";
+    globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedPrompt = JSON.parse(init?.body as string).prompt;
+      return Response.json({ data: [{ b64_json: "abc123", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+
+    await generateOutfitImage(longOutfit);
+    expect(capturedPrompt).toContain("Tops: Adina Top");
+    expect(capturedPrompt.length).toBeLessThanOrEqual(2048);
   });
 
   test("uses fallbackGenderDirection for the presentation line when gender is absent", async () => {
@@ -205,6 +244,6 @@ describe("OpenRouter outfit image generation", () => {
     }) as unknown as typeof fetch;
 
     await generateOutfitImage(outfit);
-    expect(capturedPrompt).not.toContain("Key pieces:");
+    expect(capturedPrompt).not.toContain("Wear exactly these real pieces");
   });
 });

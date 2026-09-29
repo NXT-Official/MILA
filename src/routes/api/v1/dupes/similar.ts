@@ -21,11 +21,11 @@ export async function handleDupesSimilar(
   deps: HandleDupesSimilarDeps = defaultDeps,
 ): Promise<Response> {
   try {
-    const { supabase } = await deps.verifyBearerAuth(request);
+    const { supabase, userId } = await deps.verifyBearerAuth(request);
     const body = await parseJsonBody(request);
     const input = FindSimilarItemsInput.parse(body);
 
-    const matches = await deps.findSimilarItemsForUser(supabase, input);
+    const matches = await deps.findSimilarItemsForUser(supabase, userId, input);
     return Response.json(matches);
   } catch (error) {
     return respondWithError("dupes/similar", error);

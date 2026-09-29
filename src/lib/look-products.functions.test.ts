@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  COLD_WEATHER_F,
   formatInventoryForPrompt,
   INVENTORY_MAX_PER_CATEGORY,
   isAvailableInRegion,
@@ -9,7 +10,9 @@ import {
   MAX_SHORTLIST_ITEMS,
   MAX_SIMILAR_PER_CATEGORY,
   MAX_SIMILAR_TOTAL,
+  needsColdWeatherOuterwear,
   pickSimilarAdditions,
+  pickWeatherBackfill,
   resolveShortlist,
   scoreProduct,
   type LookInventoryItem,
@@ -576,5 +579,90 @@ describe("pickSimilarAdditions", () => {
     expect(additions[0].product).not.toHaveProperty("description");
     expect(additions[0].product).not.toHaveProperty("seasonal_palettes");
     expect(additions[0].product).not.toHaveProperty("body_shapes");
+  });
+});
+
+describe("needsColdWeatherOuterwear", () => {
+  test("false when temperature is unknown or at/above COLD_WEATHER_F", () => {
+    expect(needsColdWeatherOuterwear([], undefined)).toBe(false);
+    expect(needsColdWeatherOuterwear([], COLD_WEATHER_F)).toBe(false);
+    expect(needsColdWeatherOuterwear([], COLD_WEATHER_F + 10)).toBe(false);
+  });
+
+  test("false below COLD_WEATHER_F when an Outerwear pick already exists", () => {
+    expect(needsColdWeatherOuterwear([{ category: "Tops" }, { category: "Outerwear" }], 40)).toBe(
+      false,
+    );
+  });
+
+  test("true below COLD_WEATHER_F with no Outerwear pick", () => {
+    expect(needsColdWeatherOuterwear([{ category: "Tops" }, { category: "Shoes" }], 40)).toBe(true);
+  });
+});
+
+describe("pickWeatherBackfill", () => {
+  const picks = [{ id: "top-1", category: "Tops" }];
+
+  test("returns null when the weather doesn't call for outerwear", () => {
+    const inventory = [inventoryItem("coat-1", { category: "Outerwear" })];
+    expect(
+      pickWeatherBackfill(picks, inventory, {
+        tempF: COLD_WEATHER_F,
+        colorSeason: "Cool Summer",
+        bodyType: "Rectangle",
+      }),
+    ).toBeNull();
+  });
+
+  test("returns null when the picks already include Outerwear", () => {
+    const inventory = [inventoryItem("coat-1", { category: "Outerwear" })];
+    expect(
+      pickWeatherBackfill([...picks, { id: "coat-1", category: "Outerwear" }], inventory, {
+        tempF: 40,
+        colorSeason: "Cool Summer",
+        bodyType: "Rectangle",
+      }),
+    ).toBeNull();
+  });
+
+  test("adds the best-scoring available Outerwear row when cold and missing one", () => {
+    const inventory = [
+      inventoryItem("coat-plain", { category: "Outerwear" }),
+      inventoryItem("coat-tagged", {
+        category: "Outerwear",
+        seasonal_palettes: ["Warm Autumn"],
+        body_shapes: ["Hourglass"],
+      }),
+    ];
+    const result = pickWeatherBackfill(picks, inventory, {
+      tempF: 40,
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+    });
+    expect(result?.product.id).toBe("coat-tagged");
+    expect(result?.rationale).toContain("temperature");
+    expect(result?.product).not.toHaveProperty("description");
+    expect(result?.product).not.toHaveProperty("seasonal_palettes");
+  });
+
+  test("never re-adds a piece already in picks", () => {
+    const inventory = [inventoryItem("top-1", { category: "Tops" })];
+    const result = pickWeatherBackfill(picks, inventory, {
+      tempF: 40,
+      colorSeason: "Cool Summer",
+      bodyType: "Rectangle",
+    });
+    expect(result).toBeNull();
+  });
+
+  test("returns null when cold and missing outerwear but none exists in inventory", () => {
+    const inventory = [inventoryItem("top-1", { category: "Tops" })];
+    expect(
+      pickWeatherBackfill(picks, inventory, {
+        tempF: 40,
+        colorSeason: "Cool Summer",
+        bodyType: "Rectangle",
+      }),
+    ).toBeNull();
   });
 });

@@ -114,6 +114,10 @@ export function computeMakeupEligibility(profile: {
   );
 }
 
+/** Hard floor on shoppable_picks (capped to however many real candidates
+ * exist) — see buildDailyLookTool. */
+export const MIN_SHOPPABLE_PICKS = 3;
+
 export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: string[] = []) {
   const properties: Record<string, unknown> = {
     outfit: {
@@ -189,6 +193,15 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
   if (candidateProductIds.length > 0) {
     properties.shoppable_picks = {
       type: "array",
+      // Confirmed live: the prompt's "every garment must appear here" rule is
+      // text-only compliance — deepseek would sometimes under-report,
+      // shipping a Shop This Look grid with fewer items than the outfit
+      // actually named. minItems is a hard schema-level floor the model
+      // can't skip; uniqueItems stops it padding the count with repeats of
+      // the same id. Capped to the candidate count so this never demands
+      // more distinct ids than actually exist to choose from.
+      minItems: Math.min(MIN_SHOPPABLE_PICKS, candidateProductIds.length),
+      uniqueItems: true,
       description:
         "Every garment and pair of shoes named in the outfit description must appear here (real ids from the shortlist), plus any bag/jewelry/accessories styled into the look.",
       items: {

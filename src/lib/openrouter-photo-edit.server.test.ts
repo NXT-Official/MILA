@@ -96,7 +96,11 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
       { rateLimitStore: allowStore },
     );
 
-    expect(result).toEqual({ imageUrl: "data:image/jpeg;base64,edited123", costUsd: 0.01 });
+    expect(result).toEqual({
+      imageUrl: "data:image/jpeg;base64,edited123",
+      model: "meta/muse-image",
+      costUsd: 0.01,
+    });
   });
 
   test("keeps the identity/gender lock intact even when the garment description is near the field max", async () => {
@@ -163,6 +167,7 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
 
     await expect(editOutfitPhoto(editArgs(), { rateLimitStore: allowStore })).resolves.toEqual({
       imageUrl: "data:image/jpeg;base64,x",
+      model: "meta/muse-image",
       costUsd: null,
     });
   });

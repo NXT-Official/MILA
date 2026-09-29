@@ -241,6 +241,39 @@ export type Database = {
           },
         ];
       };
+      platform_settings: {
+        Row: {
+          ai_image_model: string;
+          ai_text_model: string;
+          created_at: string;
+          id: boolean;
+          tax_deduction_kind: string;
+          tax_deduction_value: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          ai_image_model?: string;
+          ai_text_model?: string;
+          created_at?: string;
+          id?: boolean;
+          tax_deduction_kind?: string;
+          tax_deduction_value?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          ai_image_model?: string;
+          ai_text_model?: string;
+          created_at?: string;
+          id?: boolean;
+          tax_deduction_kind?: string;
+          tax_deduction_value?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       post_items: {
         Row: {
           attributes: Json;

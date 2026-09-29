@@ -62,6 +62,11 @@ export function isGenderMatch(
 
 const HOT_WEATHER_F = 75;
 
+/** Below this, CLIMATE_RULES (generate-outfit.functions.ts) require
+ * structural outerwear/layering. Mirrors that same threshold so this hard
+ * backfill and the prompt's guidance can't drift apart. */
+export const COLD_WEATHER_F = 55;
+
 /** +50 for an exact seasonal-palette match, +30 for an exact body-shape match. */
 export function scoreProduct(
   product: { seasonal_palettes: string[]; body_shapes: string[] },
@@ -268,7 +273,14 @@ export async function loadLookInventory(
     categories = categories.filter((category) => category !== "Outerwear");
   }
 
-  const input: LookProductsInput = { colorSeason, bodyType, tempF, region, gender, fallbackDirection };
+  const input: LookProductsInput = {
+    colorSeason,
+    bodyType,
+    tempF,
+    region,
+    gender,
+    fallbackDirection,
+  };
   const results: LookInventoryItem[] = [];
   for (const category of categories) {
     const ranked = (await fetchRankedCategory(supabase, category, input)).slice(
@@ -429,4 +441,59 @@ export function pickSimilarAdditions(
   }
 
   return additions;
+}
+
+/** True when the weather calls for outerwear and none of the given picks
+ * carry it — the gap pickWeatherBackfill exists to close. */
+export function needsColdWeatherOuterwear(
+  picks: Array<{ category: string }>,
+  tempF: number | null | undefined,
+): boolean {
+  if (tempF == null || tempF >= COLD_WEATHER_F) return false;
+  return !picks.some((pick) => pick.category === "Outerwear");
+}
+
+/**
+ * A deterministic, code-level backstop for CLIMATE_RULES: deepseek is asked
+ * (in prompt text) to include outerwear below COLD_WEATHER_F, but prompt
+ * compliance isn't guaranteed. When the planned picks are missing Outerwear
+ * in cold weather, add the best-scoring available Outerwear row from the
+ * inventory already fetched for this look — no extra DB read, no AI call.
+ * Returns null when backfill isn't needed, or when it's needed but the
+ * inventory has no Outerwear at all (caller logs that case).
+ */
+export function pickWeatherBackfill(
+  picks: Array<{ id: string; category: string }>,
+  inventory: LookInventoryItem[],
+  {
+    tempF,
+    colorSeason,
+    bodyType,
+  }: { tempF: number | null | undefined; colorSeason: string; bodyType: string },
+): { product: LookProduct; rationale: string } | null {
+  if (!needsColdWeatherOuterwear(picks, tempF)) return null;
+
+  const pickedIds = new Set(picks.map((pick) => pick.id));
+  const ranked = inventory
+    .filter((item) => item.category === "Outerwear" && !pickedIds.has(item.id))
+    .map((item) => ({
+      item,
+      score: scoreProduct(item, colorSeason, bodyType),
+      tiebreak: Math.random(),
+    }))
+    .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.tiebreak - b.tiebreak));
+
+  const best = ranked[0]?.item;
+  if (!best) return null;
+
+  const {
+    description: _description,
+    seasonal_palettes: _seasonalPalettes,
+    body_shapes: _bodyShapes,
+    ...product
+  } = best;
+  return {
+    product,
+    rationale: "Added for today's temperature — structural outerwear the look was missing.",
+  };
 }

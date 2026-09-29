@@ -10,6 +10,7 @@ import {
   OPENROUTER_IMAGES_URL,
 } from "./openrouter-image.server";
 import { buildIdentityLockLine } from "./identity-lock.server";
+import { resolveImageModel } from "./platform-settings.server";
 import type { DailyLook, ShoppablePick } from "./generate-outfit.functions";
 
 // Confirmed live: renderStyleSheetForUser was aborting mid-request with "The
@@ -33,9 +34,10 @@ function utcDateKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Same model as the other two muse-image paths (text-to-image inspiration,
-// single-photo outfit edit) — imported rather than redefined so all three
-// can never drift apart.
+// Same image model as the other two image paths (text-to-image inspiration,
+// single-photo outfit edit): the live choice is read from platform_settings
+// through resolveImageModel; this constant is only the shipped default,
+// imported rather than redefined so all three can never drift apart.
 export const STYLE_SHEET_MODEL = IMAGE_MODEL;
 export const STYLE_SHEET_PROVIDER = "openrouter";
 
@@ -114,6 +116,8 @@ One complete professional 5-view character turnaround sheet showing today's reco
 
 export interface StyleSheetResult {
   imageUrl: string;
+  /** The model that actually rendered this sheet (admin-switchable). */
+  model: string;
   costUsd: number | null;
 }
 
@@ -122,6 +126,7 @@ function toDataUri(image: { bytes: Uint8Array; contentType: string }): string {
 }
 
 async function requestStyleSheet(
+  model: string,
   apiKey: string,
   prompt: string,
   inputReferences: Array<{ type: string; image_url: { url: string } }>,
@@ -134,7 +139,7 @@ async function requestStyleSheet(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: STYLE_SHEET_MODEL,
+      model,
       prompt,
       input_references: inputReferences,
       resolution,
@@ -189,6 +194,7 @@ export async function generateStyleSheet(
   }
 
   const prompt = buildStyleSheetPrompt({ outfit, shoppablePicks, gender });
+  const model = await resolveImageModel();
   const inputReferences = [{ type: "image_url", image_url: { url: toDataUri(userPhoto) } }].slice(
     0,
     MAX_REFERENCE_IMAGES,
@@ -196,11 +202,18 @@ export async function generateStyleSheet(
 
   let res: Response;
   try {
-    res = await requestStyleSheet(OPENROUTER_API_KEY, prompt, inputReferences, PRIMARY_RESOLUTION);
+    res = await requestStyleSheet(
+      model,
+      OPENROUTER_API_KEY,
+      prompt,
+      inputReferences,
+      PRIMARY_RESOLUTION,
+    );
     if (!res.ok && res.status !== 429) {
       const body = await res.text();
       if (/resolution|size/i.test(body)) {
         res = await requestStyleSheet(
+          model,
           OPENROUTER_API_KEY,
           prompt,
           inputReferences,
@@ -231,6 +244,7 @@ export async function generateStyleSheet(
 
   return {
     imageUrl: `data:${image.media_type};base64,${image.b64_json}`,
+    model,
     costUsd: typeof json.usage?.cost === "number" ? json.usage.cost : null,
   };
 }

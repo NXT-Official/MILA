@@ -1,4 +1,5 @@
 import { requireEnv } from "@/lib/env";
+import { DEFAULT_AI_IMAGE_MODEL, resolveImageModel } from "./platform-settings.server";
 import type { DailyLook } from "./generate-outfit.functions";
 
 const TIMEOUT_MS = 75_000;
@@ -10,7 +11,9 @@ const MAX_PROMPT_LENGTH = 2048;
 // /api/v1/images endpoint instead."
 export const OPENROUTER_IMAGES_URL = "https://openrouter.ai/api/v1/images";
 export const IMAGE_PROVIDER = "openrouter";
-export const IMAGE_MODEL = "meta/muse-image";
+// Shipped default and fallback — staff can switch the live model from the
+// admin console (platform_settings, read through resolveImageModel).
+export const IMAGE_MODEL = DEFAULT_AI_IMAGE_MODEL;
 
 export class ImageProviderRateLimitError extends Error {}
 
@@ -32,14 +35,15 @@ function formatHeightLine(heightCm?: number | null): string | null {
 
 /**
  * The outfit's actual shoppable pieces (never the "similar" shelf options)
- * as a compact line — grounded in real DB titles, so the render shows what
+ * as a compact list — grounded in real DB titles, so the render shows what
  * the shop-the-look grid sells. Returns null when the look carries no
- * planned picks.
+ * planned picks. Bare list, no heading — buildOutfitImagePrompt supplies the
+ * heading so it can decide where this block sits.
  */
 function buildPiecesLine(outfit: DailyLook): string | null {
   const planned = (outfit.shoppable_picks ?? []).filter((pick) => pick.source !== "similar");
   if (planned.length === 0) return null;
-  return `Key pieces: ${planned.map((pick) => `${pick.category}: ${pick.title}`).join("; ")}.`;
+  return planned.map((pick) => `${pick.category}: ${pick.title}`).join("; ");
 }
 
 function buildOutfitImagePrompt(
@@ -80,16 +84,22 @@ function buildOutfitImagePrompt(
 
   // The "Presentation" block (including height/gender/skin, which are
   // server-derived, not model text) and the trailing anti-artifact line are
-  // safety/accuracy-critical and must never be truncated off. Only the
-  // model-generated Outfit/Hair/Makeup text and the DB-derived Key pieces
-  // line are variable-length, so truncate those to fit the remaining budget
-  // instead of slicing the whole prompt (outfit takes priority over the
-  // pieces list, which takes priority over hair).
+  // safety/accuracy-critical and must never be truncated off. The pieces
+  // block is real DB titles/categories, not model prose — it's the ground
+  // truth for what the render must show, so it's protected next: never
+  // truncated except in the (rare) case it alone exceeds the whole variable
+  // budget. Hair is short and rarely needs cutting. The freeform Outfit
+  // description is paraphrased model prose, most tolerant of being trimmed,
+  // so it absorbs whatever's left of the budget and is truncated first when
+  // the budget is tight.
+  const PIECES_HEADING =
+    "Wear exactly these real pieces (ground truth — do not substitute or invent alternate items):\n";
+
   const buildPrompt = (outfitText: string, piecesText: string, hairText: string): string =>
     `Create a realistic full-body luxury fashion editorial photograph.
 
-Outfit:
-${outfitText}${piecesText ? `\n${piecesText}` : ""}
+${piecesText ? `${PIECES_HEADING}${piecesText}\n\n` : ""}Outfit:
+${outfitText}
 
 Hair:
 ${hairText}
@@ -107,9 +117,14 @@ No collage, no text, no captions, no logos, no watermark.`;
   const fixedLength = buildPrompt("", "", "").length;
   const variableBudget = Math.max(0, MAX_PROMPT_LENGTH - fixedLength);
   const piecesText = piecesLine ?? "";
-  const outfitBudget = Math.min(outfitLine.length, Math.ceil(variableBudget * 0.55));
-  const piecesBudget = Math.min(piecesText.length, Math.ceil(variableBudget * 0.25));
-  const hairBudget = Math.max(0, variableBudget - outfitBudget - piecesBudget);
+  // The heading only renders (and only costs budget) when there's a pieces
+  // block at all — the "\n\n" is the template's own separator after it.
+  const piecesOverhead = piecesText ? PIECES_HEADING.length + 2 : 0;
+  const piecesAvailable = Math.max(0, variableBudget - piecesOverhead);
+  const piecesBudget = Math.min(piecesText.length, piecesAvailable);
+  const remainingAfterPieces = Math.max(0, variableBudget - piecesOverhead - piecesBudget);
+  const hairBudget = Math.min(hairAndMakeup.length, remainingAfterPieces);
+  const outfitBudget = Math.max(0, remainingAfterPieces - hairBudget);
 
   return buildPrompt(
     outfitLine.slice(0, outfitBudget),
@@ -120,6 +135,8 @@ No collage, no text, no captions, no logos, no watermark.`;
 
 export interface OutfitImageResult {
   imageUrl: string;
+  /** The model that actually rendered this image (admin-switchable). */
+  model: string;
   costUsd: number | null;
   promptTokens: number | null;
   completionTokens: number | null;
@@ -139,6 +156,8 @@ export async function generateOutfitImage(
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   });
 
+  const model = await resolveImageModel();
+
   let res: Response;
   try {
     res = await fetch(OPENROUTER_IMAGES_URL, {
@@ -148,7 +167,7 @@ export async function generateOutfitImage(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: IMAGE_MODEL,
+        model,
         prompt: buildOutfitImagePrompt(
           outfit,
           deps.gender,
@@ -183,6 +202,7 @@ export async function generateOutfitImage(
   const usage = json.usage;
   return {
     imageUrl: `data:${image.media_type};base64,${image.b64_json}`,
+    model,
     costUsd: typeof usage?.cost === "number" ? usage.cost : null,
     promptTokens: typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : null,
     completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : null,

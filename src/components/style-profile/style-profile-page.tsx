@@ -58,6 +58,7 @@ import { KnownSeasonPicker } from "@/components/style-profile/known-season-picke
 import { ManualOverridePicker } from "@/components/style-profile/manual-override-picker";
 import { SeasonCalibrationSheet } from "@/components/style-profile/season-calibration-sheet";
 import { RestartStyleAnalysisAction } from "@/components/style-profile/restart-style-analysis-action";
+import { StyleAnalysisNudge } from "@/components/style-profile/style-analysis-nudge";
 import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-diagnostic-viewfinder";
 import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio-view";
 import { studioToDossier, normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
@@ -444,6 +445,7 @@ export function StyleProfile() {
           </div>
         ) : (
           <>
+            {user && <StyleAnalysisNudge userId={user.id} />}
             <div className="mb-10">
               <PerspectiveSwitcher value={viewMode} onChange={setViewMode} />
             </div>

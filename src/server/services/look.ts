@@ -12,7 +12,6 @@ import {
   ImageProviderRateLimitError,
   generateOutfitImage,
   IMAGE_PROVIDER,
-  IMAGE_MODEL,
 } from "@/lib/openrouter-image.server";
 import { errorMessage } from "@/lib/utils";
 import {
@@ -32,7 +31,9 @@ import {
 import {
   formatInventoryForPrompt,
   loadLookInventory,
+  needsColdWeatherOuterwear,
   pickSimilarAdditions,
+  pickWeatherBackfill,
   resolveShortlist,
   type LookInventoryItem,
 } from "@/lib/look-products.functions";
@@ -311,17 +312,44 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     const rawArgs = composed.args as Record<string, unknown>;
     const hydratedPicks = hydrateShoppablePicks(rawArgs.shoppable_picks, shortlistProducts);
 
+    // Climate backstop: CLIMATE_RULES asks deepseek (in prompt text) to
+    // include outerwear below COLD_WEATHER_F, but prompt compliance isn't
+    // guaranteed. Deterministically add the best-scoring available Outerwear
+    // row when the plan came back without one — no extra DB read, no AI call.
+    const weatherBackfill = pickWeatherBackfill(hydratedPicks, inventory, {
+      tempF,
+      colorSeason: colorSeasonValue,
+      bodyType: data.bodyType,
+    });
+    if (!weatherBackfill && needsColdWeatherOuterwear(hydratedPicks, tempF)) {
+      // Diagnosable: nothing to backfill with, so this look ships without
+      // outerwear despite the cold — leave a trace of why.
+      console.warn(
+        `[generateLookForUser] cold-weather outfit missing Outerwear and none available in inventory (tempF=${tempF})`,
+      );
+    }
+    const picksWithWeatherBackfill: ShoppablePick[] = weatherBackfill
+      ? [
+          ...hydratedPicks,
+          {
+            ...weatherBackfill.product,
+            rationale: weatherBackfill.rationale,
+            source: "planned" as const,
+          },
+        ]
+      : hydratedPicks;
+
     // Step 4 — the shop-the-look shelf: beside the composed outfit's pieces,
     // add more live rows similar to them (same category, ranked like the
     // catalog matcher, no AI, no extra DB read). Tagged source "similar" so
     // the outfit's actual pieces stay distinguishable — the style-sheet
     // prompt only ever wears the planned ones.
-    const similarAdditions = pickSimilarAdditions(hydratedPicks, inventory, {
+    const similarAdditions = pickSimilarAdditions(picksWithWeatherBackfill, inventory, {
       colorSeason: colorSeasonValue,
       bodyType: data.bodyType,
     });
     const picksWithSimilar: ShoppablePick[] = [
-      ...hydratedPicks,
+      ...picksWithWeatherBackfill,
       ...similarAdditions.map(({ product, rationale }) => ({
         ...product,
         rationale,
@@ -380,16 +408,25 @@ export async function renderLookImageForUser(
         .select("gender,skin_depth,height_cm")
         .eq("id", userId)
         .maybeSingle();
-      const { imageUrl, costUsd, promptTokens, completionTokens, totalTokens } =
-        await generateOutfitImage(data, {
-          gender: profileRow?.gender,
-          skinDepth: profileRow?.skin_depth,
-          heightCm: profileRow?.height_cm,
-          fallbackGenderDirection: data.fallback_gender_direction ?? null,
-        });
+      const {
+        imageUrl,
+        model: imageModel,
+        costUsd,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+      } = await generateOutfitImage(data, {
+        gender: profileRow?.gender,
+        skinDepth: profileRow?.skin_depth,
+        heightCm: profileRow?.height_cm,
+        fallbackGenderDirection: data.fallback_gender_direction ?? null,
+      });
       await logAiSpend(supabase, userId, {
         provider: IMAGE_PROVIDER,
-        model: IMAGE_MODEL,
+        // The model that actually rendered it — staff can switch the image
+        // model from the admin console, so a constant here would misattribute
+        // spend from the moment it changes.
+        model: imageModel,
         costUsd,
         promptTokens,
         completionTokens,
