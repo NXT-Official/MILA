@@ -26,6 +26,22 @@ import { errorMessage, isStaleBundleError, TimeoutError, withTimeout } from "@/l
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/track-event";
+import { notifyIfBackgrounded, requestNotificationPermission } from "@/lib/background-notify";
+import {
+  Coins,
+  Sparkles,
+  Flame,
+  Images,
+  MessageCircle,
+  History as HistoryIcon,
+} from "lucide-react";
+import { creditsQueryOptions } from "@/lib/queries/credits";
+import {
+  dashboardLookStatsQueryOptions,
+  styleProfileCompletionPercent,
+} from "@/lib/queries/dashboard-stats";
+import { StatTile } from "@/components/dashboard/stat-tile";
+import { RecentLooksStrip } from "@/components/dashboard/recent-looks-strip";
 
 function reloadForNewVersion() {
   toast.error("Mila just updated — reloading to grab the latest version. Try again after reload.");
@@ -91,6 +107,18 @@ function Dashboard() {
   });
 
   const profileComplete = isStyleProfileComplete(toStyleProfileRow(profile));
+  const profileCompletionPercent = styleProfileCompletionPercent(toStyleProfileRow(profile));
+
+  const {
+    data: credits,
+    isLoading: creditsLoading,
+    isError: creditsError,
+  } = useQuery(creditsQueryOptions(user?.id));
+  const {
+    data: lookStats,
+    isLoading: lookStatsLoading,
+    isError: lookStatsError,
+  } = useQuery(dashboardLookStatsQueryOptions(user?.id));
 
   const { openConcierge } = useConcierge();
   const {
@@ -128,6 +156,7 @@ function Dashboard() {
     forecastRetrievedAt: DailyLook["forecastRetrievedAt"];
   }) {
     setStyleSheetLoading(true);
+    requestNotificationPermission();
     try {
       const res = await withTimeout(
         generateStyleSheetFn({ data: { outfit: outfitForSheet } }),
@@ -136,6 +165,10 @@ function Dashboard() {
       if (res.mode === "style_sheet") {
         setStyleSheetImageDataUri(res.imageDataUri);
         setSavedLook(null);
+        // The user may have tabbed away during the render — a toast alone
+        // (shown by the callers below) would go unseen. This covers the
+        // background case; the foregrounded case keeps its existing toast.
+        notifyIfBackgrounded("Your look is ready", "Mila finished rendering your style sheet.");
         return true;
       }
       toast.error(res.reason);
@@ -241,6 +274,7 @@ function Dashboard() {
   async function previewOnMyPhoto() {
     if (!look || photoPreviewLoading || generating) return;
     setPhotoPreviewLoading(true);
+    requestNotificationPermission();
     try {
       const { outfit, hair, makeup, vibe_alignment_score } = look;
       const res = await withTimeout(
@@ -253,6 +287,10 @@ function Dashboard() {
         setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
         setSavedLook(null);
         toast.success("Portrait preview ready.");
+        notifyIfBackgrounded(
+          "Your portrait preview is ready",
+          "Mila finished rendering your photo preview.",
+        );
       } else {
         toast.error(res.reason);
       }
@@ -350,6 +388,39 @@ function Dashboard() {
       initial="hidden"
       animate="visible"
     >
+      <motion.section
+        variants={cardItemVariants}
+        className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4"
+      >
+        <StatTile
+          label="AI Credits"
+          value={String(credits ?? 0)}
+          icon={Coins}
+          loading={creditsLoading}
+          error={creditsError}
+        />
+        <StatTile
+          label="Style Profile"
+          value={`${profileCompletionPercent}%`}
+          icon={Sparkles}
+          loading={profileLoading}
+        />
+        <StatTile
+          label="Looks this month"
+          value={String(lookStats?.looksThisMonth ?? 0)}
+          icon={Images}
+          loading={lookStatsLoading}
+          error={lookStatsError}
+        />
+        <StatTile
+          label="Day streak"
+          value={String(lookStats?.streakDays ?? 0)}
+          icon={Flame}
+          loading={lookStatsLoading}
+          error={lookStatsError}
+        />
+      </motion.section>
+
       <Card asChild className="relative mb-10 sm:mb-14 overflow-hidden atelier-hero-card">
         <motion.section variants={cardItemVariants}>
           <div className="pointer-events-none absolute -top-32 -right-20 h-80 w-80 rounded-full bg-accent/25 blur-3xl" />
@@ -430,11 +501,49 @@ function Dashboard() {
         </motion.section>
       </Card>
 
-      {profile?.color_season && (
-        <motion.section variants={cardItemVariants}>
-          <DailyPaletteGenerator userColorSeason={profile.color_season} />
-        </motion.section>
-      )}
+      <motion.section
+        variants={cardItemVariants}
+        className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr] mt-10"
+      >
+        <RecentLooksStrip looks={lookStats?.recentLooks} loading={lookStatsLoading} />
+
+        {profile?.color_season && <DailyPaletteGenerator userColorSeason={profile.color_season} />}
+      </motion.section>
+
+      <motion.section
+        variants={cardItemVariants}
+        className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4"
+      >
+        <button
+          type="button"
+          onClick={() => openConcierge()}
+          className="atelier-focus-ring flex flex-col items-center gap-2 rounded-card border border-porcelain/40 bg-card p-4 text-center transition-colors hover:bg-accent-soft/40"
+        >
+          <MessageCircle className="size-5 text-accent" strokeWidth={1.75} aria-hidden="true" />
+          <span className="text-xs text-ink">Concierge</span>
+        </button>
+        <Link
+          to="/style-profile"
+          className="atelier-focus-ring flex flex-col items-center gap-2 rounded-card border border-porcelain/40 bg-card p-4 text-center transition-colors hover:bg-accent-soft/40"
+        >
+          <Sparkles className="size-5 text-accent" strokeWidth={1.75} aria-hidden="true" />
+          <span className="text-xs text-ink">Style Profile</span>
+        </Link>
+        <Link
+          to="/feed"
+          className="atelier-focus-ring flex flex-col items-center gap-2 rounded-card border border-porcelain/40 bg-card p-4 text-center transition-colors hover:bg-accent-soft/40"
+        >
+          <Images className="size-5 text-accent" strokeWidth={1.75} aria-hidden="true" />
+          <span className="text-xs text-ink">Feed</span>
+        </Link>
+        <Link
+          to="/history"
+          className="atelier-focus-ring flex flex-col items-center gap-2 rounded-card border border-porcelain/40 bg-card p-4 text-center transition-colors hover:bg-accent-soft/40"
+        >
+          <HistoryIcon className="size-5 text-accent" strokeWidth={1.75} aria-hidden="true" />
+          <span className="text-xs text-ink">History</span>
+        </Link>
+      </motion.section>
 
       <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
     </motion.div>

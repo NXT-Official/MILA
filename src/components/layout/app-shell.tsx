@@ -1,16 +1,15 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Coins } from "lucide-react";
+import { Camera } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { StudioMembershipDrawer } from "@/components/account/studio-membership-drawer";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { DesktopNav } from "@/components/layout/desktop-nav";
+import { Sidebar } from "@/components/layout/sidebar";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { StudioCameraDrawer } from "@/components/dashboard/studio-camera-drawer";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
@@ -20,8 +19,10 @@ import type { GeneratedLook } from "@/lib/generate-outfit.functions";
 import { analyzeOutfit } from "@/lib/analyze-outfit.functions";
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { profileQueryOptions } from "@/lib/queries/profile";
+import { creditsQueryOptions } from "@/lib/queries/credits";
 import { queryKeys } from "@/constants/query-keys";
 import { errorMessage } from "@/lib/utils";
+import { SIDEBAR_EXPANDED_STORAGE_KEY } from "@/constants/app";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -37,26 +38,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyze = useServerFn(analyzeOutfit);
   const queryClient = useQueryClient();
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_EXPANDED_STORAGE_KEY);
+    if (stored === "false") setSidebarExpanded(false);
+  }, []);
+
+  function toggleSidebarExpanded() {
+    setSidebarExpanded((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_EXPANDED_STORAGE_KEY, String(next));
+      return next;
+    });
+  }
 
   const { data: profile } = useQuery({
     ...profileQueryOptions(user?.id),
     enabled: !!user?.id,
   });
 
-  const { data: credits } = useQuery({
-    queryKey: queryKeys.credits(user?.id),
-    queryFn: async () => {
-      if (!user) return null;
-      const { data } = await supabase
-        .from("user_entitlements")
-        .select("ai_credits, purchased_credits")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      return (data?.ai_credits ?? 0) + (data?.purchased_credits ?? 0);
-    },
-    enabled: !!user,
-  });
+  const { data: credits } = useQuery(creditsQueryOptions(user?.id));
 
   async function runLensCapture(file: File) {
     if (!user) return;
@@ -134,69 +136,69 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           setSavedLook: setCurrentSavedLook,
         }}
       >
-        <div className="min-h-screen flex flex-col w-full">
-          {/* z-index scale: header z-40 < mobile tab bar z-50 (mobile-tab-bar.tsx) < Sheet/Dialog overlays z-[60] (ui/sheet.tsx, ui/dialog.tsx). */}
-          <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-porcelain/30">
-            <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-6 relative">
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-2 font-serif text-xl md:text-2xl uppercase tracking-label-xwide text-ink"
-              >
-                <img src="/favicon.svg" alt="" className="size-6 md:h-7 md:w-7" />
-                Mila
-              </Link>
+        <div className="min-h-screen flex w-full">
+          <Sidebar
+            path={path}
+            expanded={sidebarExpanded}
+            onToggleExpanded={toggleSidebarExpanded}
+            onOpenLens={() => setIsLensOpen(true)}
+            onOpenConcierge={() => openConcierge()}
+            onOpenMembership={() => setIsMembershipOpen(true)}
+            credits={credits}
+            displayName={displayName}
+          />
 
-              <DesktopNav
-                path={path}
-                onOpenLens={() => setIsLensOpen(true)}
-                onOpenConcierge={() => openConcierge()}
-              />
+          <div className="flex flex-1 min-w-0 flex-col">
+            {/* Mobile-only bar — the sidebar above covers this role from md up. z-index scale: header z-40 < mobile tab bar z-50 (mobile-tab-bar.tsx) < Sheet/Dialog overlays z-[60] (ui/sheet.tsx, ui/dialog.tsx). */}
+            <header className="md:hidden sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-porcelain/30">
+              <div className="h-16 px-4 sm:px-6 flex items-center justify-between gap-6">
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center gap-2 font-serif text-xl uppercase tracking-label-xwide text-ink"
+                >
+                  <img src="/favicon.svg" alt="" className="size-6" />
+                  Mila
+                </Link>
 
-              <div className="flex items-center gap-2">
-                {credits != null && (
-                  <Button asChild variant="glass" size="chip">
-                    <Link
-                      to="/pricing"
-                      aria-label={`${credits} AI credits — view membership plans and credits`}
-                    >
-                      <Coins
-                        className="size-3.5 text-accent"
-                        strokeWidth={1.75}
-                        aria-hidden="true"
-                      />
-                      {credits}
-                    </Link>
+                <div className="flex items-center gap-2">
+                  {credits != null && (
+                    <Button asChild variant="glass" size="chip">
+                      <Link
+                        to="/pricing"
+                        aria-label={`${credits} AI credits — view membership plans and credits`}
+                      >
+                        {credits}
+                      </Link>
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="glass"
+                    size="chip"
+                    onClick={() => setIsLensOpen(true)}
+                    aria-label="Open the Studio Lens"
+                  >
+                    <Camera className="size-3.5" strokeWidth={1.75} />
+                    Lens
                   </Button>
-                )}
-                <ThemeToggle />
-                <Button
-                  type="button"
-                  variant="glass"
-                  size="chip"
-                  className="md:hidden"
-                  onClick={() => setIsLensOpen(true)}
-                  aria-label="Open the Studio Lens"
-                >
-                  <Camera className="size-3.5" strokeWidth={1.75} />
-                  Lens
-                </Button>
-                <button
-                  onClick={() => setIsMembershipOpen(true)}
-                  aria-label="Open membership"
-                  className="rounded-full"
-                >
-                  <AvatarInitial
-                    name={displayName}
-                    className="size-10 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
-                  />
-                </button>
+                  <button
+                    onClick={() => setIsMembershipOpen(true)}
+                    aria-label="Open membership"
+                    className="rounded-full"
+                  >
+                    <AvatarInitial
+                      name={displayName}
+                      className="size-10 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
-          </header>
+            </header>
 
-          <main className="flex-1 min-w-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
-            {children}
-          </main>
+            <main className="flex-1 min-w-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">
+              {children}
+            </main>
+          </div>
 
           <MobileTabBar
             path={path}
