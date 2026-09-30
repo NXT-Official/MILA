@@ -35,4 +35,10 @@ export const AESTHETIC_MOODS: Array<{ id: string; name: string; desc: string; im
     desc: "Silk, satin, statement accessories, dramatic elegance.",
     img: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=200&h=300&fit=crop",
   },
+  {
+    id: "streetwear",
+    name: "Casual Streetwear",
+    desc: "Oversized layers, wide-leg denim, chunky sneakers, effortless ease.",
+    img: "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=200&h=300&fit=crop",
+  },
 ];

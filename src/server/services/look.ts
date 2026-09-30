@@ -24,10 +24,13 @@ import {
   HAIRSTYLE_TRENDS_2026,
   UNISEX_HAIRSTYLE_TRENDS_2026,
   hydrateShoppablePicks,
+  AESTHETIC_STYLE_GUIDES,
   type DailyLook,
   type GenerateLookInputData,
   type ShoppablePick,
 } from "@/lib/generate-outfit.functions";
+import { deriveColorMetrics } from "@/lib/profile-color";
+import { AESTHETIC_MOODS } from "@/constants/style-profile";
 import {
   formatInventoryForPrompt,
   loadLookInventory,
@@ -71,10 +74,16 @@ export async function generateLookForUser(
     const { data: profileRow } = await supabase
       .from("profiles")
       .select(
-        "beauty_preferences,gender,makeup_preference,hair_length,skin_depth,height_cm,weight_kg",
+        "beauty_preferences,gender,makeup_preference,hair_length,skin_depth,height_cm,weight_kg,color_profile,color_season,skin_undertone",
       )
       .eq("id", userId)
       .maybeSingle();
+
+    const { selectedAesthetic } = deriveColorMetrics(profileRow);
+    const aestheticName = selectedAesthetic
+      ? AESTHETIC_MOODS.find((m) => m.id === selectedAesthetic)?.name
+      : null;
+    const aestheticGuide = selectedAesthetic ? AESTHETIC_STYLE_GUIDES[selectedAesthetic] : null;
 
     const beautyPreferences = normalizeBeautyPreferences(profileRow?.beauty_preferences);
     const makeupEnabled = computeMakeupEligibility({
@@ -181,6 +190,9 @@ export async function generateLookForUser(
         : null,
       hairLengthValue ? `- Current hair length: ${hairLengthValue}` : null,
       `- Beauty preferences: ${beautyPrefsLine}`,
+      aestheticName && aestheticGuide
+        ? `- Personal style identity: ${aestheticName} — ${aestheticGuide} (this is the client's standing aesthetic signature; blend it with today's occasion vibe below rather than defaulting to a generic take on that occasion)`
+        : null,
     ]
       .filter(Boolean)
       .join("\n");

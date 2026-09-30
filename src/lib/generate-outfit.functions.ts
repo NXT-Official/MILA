@@ -77,6 +77,31 @@ export const OUTFIT_TREND_PIECES_2026: string[] = [
   "Poetcore (soft, literary, flowing pieces) — cottagecore, dark academia",
 ];
 
+/**
+ * Garment-level style guides for each AESTHETIC_MOODS id (see
+ * src/constants/style-profile/palettes.ts), keyed to the client's onboarding
+ * `selectedAesthetic`. Injected into profileLines as a standing style
+ * identity — layered with, not replacing, the per-generation OCCASION VIBE
+ * above (vibe = today's occasion, aesthetic = the client's recurring
+ * signature). "streetwear" sourced from a client-provided moodboard
+ * (Korean-minimal streetwear references: oversized/boxy tees and overshirts,
+ * wide-leg denim, chunky retro sneakers, loafer crossover, layered silver
+ * jewelry) — 2026-09-30.
+ */
+export const AESTHETIC_STYLE_GUIDES: Record<string, string> = {
+  streetwear:
+    "Korean-minimal casual streetwear. Deliberate proportion contrast is the whole point: one boxy/oversized piece (plain or graphic oversized tee, boxy camp-collar overshirt, plaid flannel worn open over a tee) against one relaxed-not-skinny bottom (wide-leg or baggy straight denim, mid or light wash, deliberately long break). Footwear is a statement, not an afterthought — chunky retro trainers (Samba/Superstar-style) for the pure-street read, or loafers/derbies for a street-meets-quiet-luxury crossover. Neutral, muted palette (stone, navy, grey, black, white) with at most one accent piece. Minimal branding. Finish with understated layered silver jewelry and, when it fits the vibe, glasses as a styling prop. Never tuck-and-tailor this into business casual — the boxy/relaxed silhouette is the aesthetic, not a fit issue to correct.",
+  minimal:
+    "Quiet minimal. Clean architectural lines, restrained neutral palette, one considered silhouette statement rather than many pieces — no logos, no clutter.",
+  romantic:
+    "Soft romantic. Flowing fabrics (chiffon, soft knits), delicate details (lace trim, gathered seams), a muted floral or blush palette, silhouettes that move.",
+  edgy: "Urban edge. Leather or faux-leather pieces, visible hardware (zips, buckles, studs), monochrome or near-black palette, structured confident silhouettes.",
+  preppy:
+    "Classic preppy. Tailored blazers or structured knitwear, crisp collared shirts, polished loafers, a timeless palette (navy, white, camel) — never sloppy.",
+  boho: "Modern boho. Layered natural textures (suede, crochet, linen), earth-tone palette, relaxed flowing shapes, mixed jewelry — effortless, not costume-y.",
+  glam: "Old Hollywood glam. Silk or satin fabrics, statement jewelry, a dramatic clean silhouette, elevated polish even for casual pieces.",
+};
+
 export const Input = z.object({
   bodyType: z.string().min(1).max(64),
   colorSeason: z.string().min(1).max(64),
