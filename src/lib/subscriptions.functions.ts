@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
+import {
+  IN_FORCE_SUBSCRIPTION_STATUSES,
+  isStaffGrantedSubscription,
+  STAFF_GRANTED_SUBSCRIPTION_NOTICE,
+} from "@/constants/subscriptions";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { getPaddleApiBase, getPaddleApiKey } from "@/lib/paddle-env";
@@ -55,6 +59,9 @@ export async function cancelSubscriptionForUser(
   if (!subscriptionId) {
     return { error: "No active membership to cancel" };
   }
+  if (isStaffGrantedSubscription(subscriptionId)) {
+    return { error: STAFF_GRANTED_SUBSCRIPTION_NOTICE };
+  }
 
   const result = await cancelViaPaddle(subscriptionId);
   if ("error" in result) {
@@ -75,6 +82,9 @@ export async function resumeSubscriptionForUser(
   const subscriptionId = await findInForceSubscriptionId(db, userId);
   if (!subscriptionId) {
     return { error: "No membership to renew" };
+  }
+  if (isStaffGrantedSubscription(subscriptionId)) {
+    return { error: STAFF_GRANTED_SUBSCRIPTION_NOTICE };
   }
 
   const result = await resumeViaPaddle(subscriptionId);

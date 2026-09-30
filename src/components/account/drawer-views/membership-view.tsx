@@ -6,6 +6,7 @@ import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { CreditsUsageMeter } from "@/components/account/credits-usage-meter";
 import { DEFAULT_AI_CREDITS } from "@/lib/credits";
+import { STAFF_GRANTED_SUBSCRIPTION_NOTICE } from "@/constants/subscriptions";
 import type { MySubscription } from "@/lib/queries/subscriptions";
 
 interface MembershipViewProps {
@@ -125,15 +126,25 @@ export function MembershipView({
               <>
                 <div className="flex items-center justify-between text-xs">
                   <span className="uppercase tracking-label text-micro text-stone">
-                    {subscription.cancel_at_period_end ? "Ends" : "Renews"}
+                    {subscription.is_staff_granted
+                      ? "Granted"
+                      : subscription.cancel_at_period_end
+                        ? "Ends"
+                        : "Renews"}
                   </span>
                   <span className="font-semibold text-ink">
-                    {subscription.current_period_end
-                      ? new Date(subscription.current_period_end).toLocaleDateString()
-                      : "—"}
+                    {subscription.is_staff_granted
+                      ? "By the Mila team"
+                      : subscription.current_period_end
+                        ? new Date(subscription.current_period_end).toLocaleDateString()
+                        : "—"}
                   </span>
                 </div>
-                {subscription.cancel_at_period_end ? (
+                {subscription.is_staff_granted ? (
+                  <p className="pt-1 text-xs leading-relaxed text-stone">
+                    {STAFF_GRANTED_SUBSCRIPTION_NOTICE}
+                  </p>
+                ) : subscription.cancel_at_period_end ? (
                   <Button
                     type="button"
                     variant="secondary"

@@ -66,22 +66,22 @@ combination of:
 
 Status reflects what was confirmed by reading the code, not the product's ambitions.
 
-| Area                                                  | Status           | Description                                                                                                                  |
-| ----------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Email/password + Google sign-in                       | Implemented      | Supabase Auth; see [Authentication](#authentication-and-authorization)                                                       |
-| Style profile / colour-season quiz                    | Implemented      | Body type, face shape, hair, beauty preferences, 16-season colour dossier (`/style-profile`)                                 |
-| Daily look generation                                 | Implemented      | Outfit + hair + makeup, weather- and vibe-aware, via `generate-outfit.functions.ts`                                          |
-| Outfit history                                        | Implemented      | Past generated looks, stored in `outfits` (`/history`)                                                                       |
-| Wardrobe/outfit photo analysis                        | Implemented      | `analyze-outfit.functions.ts`, plus per-garment detection in `outfit-items.functions.ts`                                     |
-| Dupe hunter                                           | Implemented      | Photo → AI read → matched against a seeded affiliate `products`/`brands` catalog                                             |
-| Stylist chat                                          | Implemented      | `concierge-chat.functions.ts` — conversational styling chat with optional look/photo context                                 |
-| Community feed                                        | Implemented      | Members post outfit photos (`posts`); moderation-aware visibility                                                            |
-| Admin dashboard, member/moderation/support management | Implemented      | See [Admin System](#admin-system)                                                                                            |
-| Credits / paywall                                     | Implemented      | Daily subscription allowances, purchased-credit balances, atomic consumption/refunds, and the out-of-credit upgrade flow     |
-| Subscriptions and credit packs                        | Implemented      | Paddle sandbox checkout, webhook synchronization, cancellation/resume, one-off credit packs, and idempotent credit grants    |
-| Ad rewards                                            | **Planned only** | `ad_events` table exists in the schema; no ad SDK or event-recording code was found in the application                       |
-| Moderator role                                        | Implemented      | Permission-based access to moderation and support, with admin-only member, role, plan, credit-pack, and dashboard operations |
-| Password reset                                        | **Not found**    | No `resetPasswordForEmail` call or reset-password route exists                                                               |
+| Area                                                  | Status           | Description                                                                                                                                                                                                    |
+| ----------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Email/password + Google sign-in                       | Implemented      | Supabase Auth; see [Authentication](#authentication-and-authorization)                                                                                                                                         |
+| Style profile / colour-season quiz                    | Implemented      | Body type, face shape, hair, beauty preferences, 16-season colour dossier (`/style-profile`)                                                                                                                   |
+| Daily look generation                                 | Implemented      | Outfit + hair + makeup, weather- and vibe-aware, via `generate-outfit.functions.ts`                                                                                                                            |
+| Outfit history                                        | Implemented      | Past generated looks, stored in `outfits` (`/history`)                                                                                                                                                         |
+| Wardrobe/outfit photo analysis                        | Implemented      | `analyze-outfit.functions.ts`, plus per-garment detection in `outfit-items.functions.ts`                                                                                                                       |
+| Dupe hunter                                           | Implemented      | Photo → AI read → matched against a seeded affiliate `products`/`brands` catalog                                                                                                                               |
+| Stylist chat                                          | Implemented      | `concierge-chat.functions.ts` — conversational styling chat with optional look/photo context                                                                                                                   |
+| Community feed                                        | Implemented      | Members post outfit photos (`posts`); moderation-aware visibility                                                                                                                                              |
+| Admin dashboard, member/moderation/support management | Implemented      | See [Admin System](#admin-system)                                                                                                                                                                              |
+| Credits / paywall                                     | Implemented      | Daily subscription allowances, purchased-credit balances, atomic consumption/refunds, and the out-of-credit upgrade flow                                                                                       |
+| Subscriptions and credit packs                        | Implemented      | Paddle sandbox checkout, webhook synchronization, cancellation/resume, one-off credit packs, idempotent credit grants, and plans staff grant by hand from the admin console (`manual:` ids, no Paddle billing) |
+| Ad rewards                                            | **Planned only** | `ad_events` table exists in the schema; no ad SDK or event-recording code was found in the application                                                                                                         |
+| Moderator role                                        | Implemented      | Permission-based access to moderation and support, with admin-only member, role, plan, credit-pack, and dashboard operations                                                                                   |
+| Password reset                                        | **Not found**    | No `resetPasswordForEmail` call or reset-password route exists                                                                                                                                                 |
 
 ## How the System Works
 
@@ -361,22 +361,22 @@ Migrations live in `supabase/migrations/` (2 files, most recent 2026-07-27) and 
 of truth for the schema below — generated TypeScript types are in
 `src/integrations/supabase/types.ts`.
 
-| Table                   | Purpose                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------ |
-| `profiles`              | One row per user: name, username, colour/body/beauty profile, suspension flag                    |
-| `outfits`               | Generated/analyzed looks, stored per user (powers `/history`)                                    |
-| `user_entitlements`     | AI credit balance and `ads_removed` flag, service-role write only                                |
-| `purchases`             | Schema for payment history — **not read or written by any application code found**               |
-| `subscriptions`         | Paddle subscription state, billing period, and scheduled cancellation                            |
-| `subscription_plans`    | Admin-managed membership catalog and Paddle price mapping                                        |
-| `credit_packs`          | Admin-managed one-off credit catalog and Paddle price mapping                                    |
-| `credit_pack_purchases` | Idempotent ledger for completed Paddle credit-pack grants                                        |
-| `ad_events`             | Schema for ad impression/reward tracking — **not read or written by any application code found** |
-| `brands` / `products`   | Seeded affiliate catalog matched against by the dupe hunter                                      |
-| `user_favorites`        | Saved products                                                                                   |
-| `posts`                 | Community feed posts, with `hidden`/`hidden_reason` moderation columns                           |
-| `user_roles`            | `app_role` role grants (`admin` / `moderator` / `user`)                                          |
-| `support_messages`      | Help-desk and feedback submissions (separate migration; admin-only reads)                        |
+| Table                   | Purpose                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `profiles`              | One row per user: name, username, colour/body/beauty profile, suspension flag                                                                                |
+| `outfits`               | Generated/analyzed looks, stored per user (powers `/history`)                                                                                                |
+| `user_entitlements`     | AI credit balance and `ads_removed` flag, service-role write only                                                                                            |
+| `purchases`             | Schema for payment history — **not read or written by any application code found**                                                                           |
+| `subscriptions`         | Paddle subscription state, billing period, and scheduled cancellation; a plan staff granted by hand lives here too, with `manual:` ids and no Paddle billing |
+| `subscription_plans`    | Admin-managed membership catalog and Paddle price mapping                                                                                                    |
+| `credit_packs`          | Admin-managed one-off credit catalog and Paddle price mapping                                                                                                |
+| `credit_pack_purchases` | Idempotent ledger for completed Paddle credit-pack grants                                                                                                    |
+| `ad_events`             | Schema for ad impression/reward tracking — **not read or written by any application code found**                                                             |
+| `brands` / `products`   | Seeded affiliate catalog matched against by the dupe hunter                                                                                                  |
+| `user_favorites`        | Saved products                                                                                                                                               |
+| `posts`                 | Community feed posts, with `hidden`/`hidden_reason` moderation columns                                                                                       |
+| `user_roles`            | `app_role` role grants (`admin` / `moderator` / `user`)                                                                                                      |
+| `support_messages`      | Help-desk and feedback submissions (separate migration; admin-only reads)                                                                                    |
 
 Every table has Row Level Security enabled. Authorization inside policies is centralized in one
 `SECURITY DEFINER` SQL function, `has_role(_user_id, _role)`, rather than repeated per policy.

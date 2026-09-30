@@ -1,5 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
-import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
+import {
+  IN_FORCE_SUBSCRIPTION_STATUSES,
+  isStaffGrantedSubscription,
+} from "@/constants/subscriptions";
 import { queryKeys } from "@/constants/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import type { BillingInterval } from "@/lib/subscription-plans";
@@ -13,6 +16,11 @@ export interface MySubscription {
   price_amount: number;
   currency: string;
   billing_interval: BillingInterval;
+  /**
+   * True when staff granted this plan by hand: it isn't billed through Paddle,
+   * so the drawer shows it as granted instead of offering cancel/resume.
+   */
+  is_staff_granted: boolean;
 }
 
 export function mySubscriptionQueryOptions(userId: string | undefined) {
@@ -23,7 +31,7 @@ export function mySubscriptionQueryOptions(userId: string | undefined) {
 
       const { data: sub, error: subError } = await supabase
         .from("subscriptions")
-        .select("plan_id, status, current_period_end, cancel_at_period_end")
+        .select("plan_id, status, current_period_end, cancel_at_period_end, paddle_subscription_id")
         .eq("user_id", userId)
         .in("status", IN_FORCE_SUBSCRIPTION_STATUSES)
         .order("updated_at", { ascending: false })
@@ -47,6 +55,7 @@ export function mySubscriptionQueryOptions(userId: string | undefined) {
         price_amount: plan.price_amount,
         currency: plan.currency,
         billing_interval: plan.billing_interval as BillingInterval,
+        is_staff_granted: isStaffGrantedSubscription(sub.paddle_subscription_id),
       };
     },
     enabled: !!userId,

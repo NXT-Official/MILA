@@ -1,4 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
+import { STAFF_GRANTED_SUBSCRIPTION_NOTICE } from "@/constants/subscriptions";
 import { cancelSubscriptionForUser, resumeSubscriptionForUser } from "./subscriptions.functions";
 
 function fakeDb(row: { paddle_subscription_id: string } | null) {
@@ -47,6 +48,19 @@ describe("cancelSubscriptionForUser", () => {
     expect(result).toEqual({ error: "Couldn't cancel your membership. Try again in a moment." });
     expect(markFlag).not.toHaveBeenCalled();
   });
+
+  test("a plan staff granted is never canceled through Paddle", async () => {
+    // Granted plans carry a synthetic `manual:` id — Paddle has never heard of it.
+    const db = fakeDb({ paddle_subscription_id: "manual:9c1f5b7e-0f5b-4a1e-9a5f-2c9d3b6a1e42" });
+    const cancelViaPaddle = mock(async () => ({ endsAt: "2026-09-01" }));
+    const markFlag = mock(async () => {});
+
+    const result = await cancelSubscriptionForUser(db, cancelViaPaddle, "user-1", markFlag);
+
+    expect(result).toEqual({ error: STAFF_GRANTED_SUBSCRIPTION_NOTICE });
+    expect(cancelViaPaddle).not.toHaveBeenCalled();
+    expect(markFlag).not.toHaveBeenCalled();
+  });
 });
 
 describe("resumeSubscriptionForUser", () => {
@@ -80,6 +94,18 @@ describe("resumeSubscriptionForUser", () => {
     const result = await resumeSubscriptionForUser(db, resumeViaPaddle, "user-1", markFlag);
 
     expect(result).toEqual({ error: "Couldn't renew your membership. Try again in a moment." });
+    expect(markFlag).not.toHaveBeenCalled();
+  });
+
+  test("a plan staff granted is never renewed through Paddle", async () => {
+    const db = fakeDb({ paddle_subscription_id: "manual:9c1f5b7e-0f5b-4a1e-9a5f-2c9d3b6a1e42" });
+    const resumeViaPaddle = mock(async () => ({ renewsAt: "2026-09-01" }));
+    const markFlag = mock(async () => {});
+
+    const result = await resumeSubscriptionForUser(db, resumeViaPaddle, "user-1", markFlag);
+
+    expect(result).toEqual({ error: STAFF_GRANTED_SUBSCRIPTION_NOTICE });
+    expect(resumeViaPaddle).not.toHaveBeenCalled();
     expect(markFlag).not.toHaveBeenCalled();
   });
 });
