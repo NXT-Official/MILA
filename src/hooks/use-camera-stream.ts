@@ -26,14 +26,18 @@ export function useCameraStream(videoRef: React.RefObject<HTMLVideoElement | nul
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
 
-  const stop = useCallback(() => {
+  const stopTracks = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+  }, []);
+
+  const stop = useCallback(() => {
+    stopTracks();
     if (videoRef.current) videoRef.current.srcObject = null;
     setActive(false);
     setTorchOn(false);
     setTorchSupported(false);
-  }, [videoRef]);
+  }, [videoRef, stopTracks]);
 
   useEffect(() => stop, [stop]);
 
@@ -41,7 +45,12 @@ export function useCameraStream(videoRef: React.RefObject<HTMLVideoElement | nul
     async (constraints: MediaTrackConstraints) => {
       setError(null);
       setStarting(true);
-      stop();
+      // Stop the previous track without resetting `active`/torch state —
+      // switching cameras (front/rear) calls start() again on an already-
+      // active stream, and dropping `active` to false here would unmount
+      // the fullscreen camera view mid-switch, looking like the camera
+      // closed instead of flipped.
+      stopTracks();
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: constraints,
@@ -54,6 +63,7 @@ export function useCameraStream(videoRef: React.RefObject<HTMLVideoElement | nul
         }
         const [track] = stream.getVideoTracks();
         const capabilities = track?.getCapabilities?.() as TorchCapabilities | undefined;
+        setTorchOn(false);
         setTorchSupported(!!capabilities?.torch);
         setActive(true);
       } catch (e) {
@@ -62,7 +72,7 @@ export function useCameraStream(videoRef: React.RefObject<HTMLVideoElement | nul
         setStarting(false);
       }
     },
-    [stop, videoRef],
+    [videoRef, stopTracks],
   );
 
   const toggleTorch = useCallback(async () => {

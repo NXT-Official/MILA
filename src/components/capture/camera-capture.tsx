@@ -1,6 +1,6 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Loader2, RotateCcw, X, ImageIcon, Zap, ZapOff } from "lucide-react";
+import { Camera, Loader2, RotateCcw, X, ImageIcon, Zap, ZapOff, SwitchCamera } from "lucide-react";
 import { captureVideoFrame } from "@/lib/capture-frame";
 import { useCameraStream } from "@/hooks/use-camera-stream";
 
@@ -10,7 +10,7 @@ interface Props {
   disabled?: boolean;
   analyzing?: boolean;
   frozenPreview?: string | null;
-  /** "user" = front/selfie camera, "environment" = back camera (default). */
+  /** "user" = front/selfie camera (default), "environment" = back camera. */
   facingMode?: "user" | "environment";
   title?: string;
   subtitle?: string;
@@ -22,21 +22,28 @@ export function CameraCapture({
   disabled,
   analyzing,
   frozenPreview,
-  facingMode = "environment",
+  facingMode = "user",
   title = "Open Camera & Scan",
   subtitle = "Capture your outfit in real time for instant stylist analysis.",
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [facing, setFacing] = useState<"user" | "environment">(facingMode);
   const { active, starting, error, torchOn, torchSupported, start, stop, toggleTorch } =
     useCameraStream(videoRef);
 
-  function open() {
+  function open(nextFacing: "user" | "environment" = facing) {
     if (disabled) return;
     void start({
-      facingMode: { ideal: facingMode },
+      facingMode: { ideal: nextFacing },
       width: { ideal: 1280 },
       height: { ideal: 1280 },
     });
+  }
+
+  function switchFacing() {
+    const next = facing === "user" ? "environment" : "user";
+    setFacing(next);
+    open(next);
   }
 
   async function snap() {
@@ -70,7 +77,7 @@ export function CameraCapture({
         <div className="space-y-3">
           <button
             type="button"
-            onClick={open}
+            onClick={() => open()}
             disabled={disabled || starting}
             className={`group relative w-full aspect-4/3 rounded-2xl overflow-hidden border border-dashed border-white/25 bg-linear-to-br from-foreground/4 via-accent/5 to-foreground/2 backdrop-blur-xl transition-colors ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-foreground/60 cursor-pointer"}`}
           >
@@ -125,6 +132,7 @@ export function CameraCapture({
               playsInline
               muted
               className="absolute inset-0 w-full h-full object-cover"
+              style={{ transform: facing === "user" ? "scaleX(-1)" : undefined }}
             />
 
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -152,21 +160,34 @@ export function CameraCapture({
                 <span />
               )}
 
-              <button
-                type="button"
-                onClick={stop}
-                className="size-9 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center hover:bg-black/70"
-                aria-label="Close camera"
-              >
-                <X className="size-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={switchFacing}
+                  disabled={starting}
+                  className="size-9 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center hover:bg-black/70 disabled:opacity-50"
+                  aria-label={
+                    facing === "user" ? "Switch to back camera" : "Switch to front camera"
+                  }
+                >
+                  <SwitchCamera className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={stop}
+                  className="size-9 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center hover:bg-black/70"
+                  aria-label="Close camera"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
             </div>
 
             <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-14 bg-linear-to-t from-black/80 via-black/45 to-transparent">
               <div className="grid grid-cols-[1fr_auto_1fr] items-center pb-10">
                 <button
                   type="button"
-                  onClick={open}
+                  onClick={() => open()}
                   className="justify-self-end mr-5 h-11 w-11 rounded-full bg-black/45 backdrop-blur text-white flex items-center justify-center hover:bg-black/65 transition-colors"
                   aria-label="Restart camera"
                 >

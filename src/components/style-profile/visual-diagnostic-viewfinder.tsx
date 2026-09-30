@@ -14,6 +14,7 @@ import {
   Shirt,
   FlaskConical,
   ChevronDown,
+  SwitchCamera,
 } from "lucide-react";
 import {
   Sheet,
@@ -83,6 +84,7 @@ export function VisualDiagnosticViewfinder({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [streamErr, setStreamErr] = useState<string | null>(null);
+  const [facing, setFacing] = useState<"user" | "environment">("user");
   const [analyzing, setAnalyzing] = useState(false);
   const [drapeIdx, setDrapeIdx] = useState(0);
   const [labelIdx, setLabelIdx] = useState(0);
@@ -139,7 +141,7 @@ export function VisualDiagnosticViewfinder({
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
         if (cancelled) {
@@ -174,7 +176,7 @@ export function VisualDiagnosticViewfinder({
       cancelled = true;
       stopCamera();
     };
-  }, [calibrated]);
+  }, [calibrated, facing]);
 
   useEffect(() => {
     if (!analyzing) return;
@@ -448,9 +450,19 @@ export function VisualDiagnosticViewfinder({
         <span className="text-micro uppercase tracking-label-xwide text-white/90">
           Seoul Atelier · Studio Camera
         </span>
-        <button onClick={onClose} aria-label="Close" className="text-white/80 hover:text-white">
-          <XIcon className="size-5" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
+            aria-label={facing === "user" ? "Switch to back camera" : "Switch to front camera"}
+            className="text-white/80 hover:text-white"
+          >
+            <SwitchCamera className="size-5" />
+          </button>
+          <button onClick={onClose} aria-label="Close" className="text-white/80 hover:text-white">
+            <XIcon className="size-5" />
+          </button>
+        </div>
       </div>
 
       <div className="relative flex-1 overflow-hidden">
@@ -460,7 +472,7 @@ export function VisualDiagnosticViewfinder({
           playsInline
           muted
           className="absolute inset-0 h-full w-full object-cover"
-          style={{ transform: "scaleX(-1)" }}
+          style={{ transform: facing === "user" ? "scaleX(-1)" : undefined }}
         />
         <canvas ref={canvasRef} className="hidden" />
 

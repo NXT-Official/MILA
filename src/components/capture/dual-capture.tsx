@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Loader2, RotateCcw, X, Check, Zap, ZapOff } from "lucide-react";
+import { Camera, Loader2, RotateCcw, X, Check, Zap, ZapOff, SwitchCamera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { captureVideoFrame } from "@/lib/capture-frame";
@@ -34,13 +34,22 @@ const STEP_COPY: Record<
 
 export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCaptureProps) {
   const captionId = useId();
-  const [step, setStep] = useState<Step>("back");
+  const [step, setStepRaw] = useState<Step>("back");
+  const [facingOverride, setFacingOverride] = useState<"environment" | "user" | null>(null);
   const [back, setBack] = useState<File | null>(null);
   const [front, setFront] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const { active, starting, error, torchOn, torchSupported, start, stop, toggleTorch } =
     useCameraStream(videoRef);
+
+  // Each step has a default facing (rear for the fit, front for the
+  // portrait) — the override lets someone flip that per step without
+  // sticking once they move to the next step.
+  function setStep(next: Step) {
+    setFacingOverride(null);
+    setStepRaw(next);
+  }
 
   const backUrl = useMemo(() => (back ? URL.createObjectURL(back) : null), [back]);
   const frontUrl = useMemo(() => (front ? URL.createObjectURL(front) : null), [front]);
@@ -178,6 +187,13 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
   }
 
   const copy = STEP_COPY[step as "back" | "front"];
+  const activeFacing = facingOverride ?? copy.facing;
+
+  function switchFacing() {
+    const next = activeFacing === "user" ? "environment" : "user";
+    setFacingOverride(next);
+    startCamera(next);
+  }
 
   return (
     <div className="space-y-4">
@@ -192,7 +208,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
       {!active && (
         <button
           type="button"
-          onClick={() => startCamera(copy.facing)}
+          onClick={() => startCamera(activeFacing)}
           disabled={starting}
           className={cn(
             "group relative w-full aspect-3/4 rounded-2xl overflow-hidden border border-dashed border-porcelain/60 bg-atelier-ivory/40 backdrop-blur-xl transition-colors hover:border-ink/30",
@@ -233,7 +249,7 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
               muted
               className={cn(
                 "absolute inset-0 w-full h-full object-cover",
-                copy.facing === "user" && "scale-x-[-1]",
+                activeFacing === "user" && "scale-x-[-1]",
               )}
             />
             <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
@@ -253,19 +269,32 @@ export function DualCapture({ onSubmit, onCancel, submitting = false }: DualCapt
               ) : (
                 <span />
               )}
-              <button
-                type="button"
-                onClick={stop}
-                className="size-9 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center hover:bg-black/70"
-                aria-label="Close camera"
-              >
-                <X className="size-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={switchFacing}
+                  disabled={starting}
+                  className="size-9 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center hover:bg-black/70 disabled:opacity-50"
+                  aria-label={
+                    activeFacing === "user" ? "Switch to back camera" : "Switch to front camera"
+                  }
+                >
+                  <SwitchCamera className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={stop}
+                  className="size-9 rounded-full bg-black/50 backdrop-blur text-white flex items-center justify-center hover:bg-black/70"
+                  aria-label="Close camera"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
             </div>
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-6 p-6 bg-linear-to-t from-black/70 to-transparent">
               <button
                 type="button"
-                onClick={() => startCamera(copy.facing)}
+                onClick={() => startCamera(activeFacing)}
                 className="size-10 rounded-full bg-black/40 backdrop-blur text-white flex items-center justify-center hover:bg-black/60"
                 aria-label="Restart camera"
               >
