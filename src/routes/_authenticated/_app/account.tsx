@@ -1,60 +1,60 @@
 import * as React from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { cn, errorMessage } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { HUBS } from "@/constants/climate";
 import { passwordChecks } from "@/constants/password";
 import { fetchDefaultHubId, localDefaultHubId, saveDefaultHubId } from "@/lib/default-hub";
 import { queryKeys } from "@/constants/query-keys";
+import { profileQueryOptions } from "@/lib/queries/profile";
+import { creditsQueryOptions } from "@/lib/queries/credits";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.functions";
 import { deleteMyAccount } from "@/lib/account.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
-import { errorMessage } from "@/lib/utils";
 import { MembershipView } from "@/components/account/drawer-views/membership-view";
 import { PreferencesView } from "@/components/account/drawer-views/preferences-view";
 import { LocationView } from "@/components/account/drawer-views/location-view";
 import { SecurityView } from "@/components/account/drawer-views/security-view";
 import { PrivacyView } from "@/components/account/drawer-views/privacy-view";
+import { PageHeader } from "@/components/ui/page-header";
 
-interface StudioMembershipDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  credits: number | null;
-  user: {
-    fullName: string;
-    username: string;
-    season: string | null;
-    faceShape: string | null;
-    hairType: string | null;
-  };
-}
+export const Route = createFileRoute("/_authenticated/_app/account")({
+  component: AccountPage,
+});
 
-type DrawerView = "membership" | "preferences" | "location" | "privacy" | "security";
+type AccountSection = "membership" | "preferences" | "location" | "privacy" | "security";
 
-export function StudioMembershipDrawer({
-  isOpen,
-  onClose,
-  credits,
-  user,
-}: StudioMembershipDrawerProps) {
-  const [view, setView] = useState<DrawerView>("membership");
+const SECTIONS: { id: AccountSection; label: string }[] = [
+  { id: "membership", label: "Membership" },
+  { id: "preferences", label: "Preferences" },
+  { id: "location", label: "Default Location" },
+  { id: "security", label: "Email & Security" },
+  { id: "privacy", label: "Privacy & Data" },
+];
+
+const noop = () => {};
+
+function AccountPage() {
+  const [section, setSection] = useState<AccountSection>("membership");
   const { user: authUser, signOut, signingOut } = useAuth();
   const queryClient = useQueryClient();
+
+  const { data: profile } = useQuery({
+    ...profileQueryOptions(authUser?.id),
+    enabled: !!authUser?.id,
+  });
+  const { data: credits } = useQuery(creditsQueryOptions(authUser?.id));
   const { data: subscription } = useQuery({
     ...mySubscriptionQueryOptions(authUser?.id),
     enabled: !!authUser,
   });
+
   const cancelSubscription = useServerFn(cancelMySubscription);
   const resumeSubscription = useServerFn(resumeMySubscription);
   const deleteAccount = useServerFn(deleteMyAccount);
@@ -80,6 +80,7 @@ export function StudioMembershipDrawer({
       setDeleting(false);
     }
   }
+
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [resuming, setResuming] = useState(false);
@@ -114,10 +115,11 @@ export function StudioMembershipDrawer({
       setCanceling(false);
     }
   }
+
   const [defaultHubId, setDefaultHubId] = useState<string>(() => localDefaultHubId() ?? HUBS[0].id);
 
   useEffect(() => {
-    if (!isOpen || !authUser) return;
+    if (!authUser) return;
     let cancelled = false;
     fetchDefaultHubId(authUser.id).then((id) => {
       if (!cancelled && id) setDefaultHubId(id);
@@ -125,7 +127,8 @@ export function StudioMembershipDrawer({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, authUser]);
+  }, [authUser]);
+
   const [exporting, setExporting] = useState(false);
 
   const [newEmail, setNewEmail] = useState("");
@@ -179,7 +182,7 @@ export function StudioMembershipDrawer({
     if (!authUser || exporting) return;
     setExporting(true);
     try {
-      const [profile, outfits, posts, favorites] = await Promise.all([
+      const [profileRow, outfits, posts, favorites] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", authUser.id).maybeSingle(),
         supabase.from("outfits").select("*").eq("user_id", authUser.id),
         supabase.from("posts").select("*").eq("user_id", authUser.id),
@@ -188,7 +191,7 @@ export function StudioMembershipDrawer({
       const payload = {
         exportedAt: new Date().toISOString(),
         account: { id: authUser.id, email: authUser.email },
-        profile: profile.data,
+        profile: profileRow.data,
         outfits: outfits.data ?? [],
         posts: posts.data ?? [],
         favorites: favorites.data ?? [],
@@ -206,74 +209,72 @@ export function StudioMembershipDrawer({
     }
   }
 
-  const heading = {
-    membership: { title: "Your Atelier", sub: "Client Dossier & Passes" },
-    preferences: { title: "Preferences", sub: "Account Configuration" },
-    location: { title: "Default Location", sub: "Climate Sync Hub" },
-    privacy: { title: "Privacy & Data", sub: "Your Information" },
-    security: { title: "Email & Security", sub: "Login Credentials" },
-  }[view];
+  const displayName = profile?.full_name?.trim() || authUser?.email?.split("@")[0] || "Member";
+  const username = authUser?.email?.split("@")[0] ?? "member";
 
   return (
-    <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-background">
-        <SheetHeader className="px-6 pt-8 pb-5 border-b border-porcelain/30 flex flex-row items-end justify-between space-y-0">
-          <div className="space-y-1 text-left">
-            <SheetTitle className="font-serif text-2xl text-ink tracking-wide">
-              {heading.title}
-            </SheetTitle>
-            <SheetDescription className="atelier-label">{heading.sub}</SheetDescription>
-          </div>
+    <div className="atelier-page">
+      <PageHeader
+        kicker="Account"
+        title="Your account."
+        description="Membership, preferences, and security — all in one place."
+      />
 
-          <button
-            onClick={() =>
-              setView(
-                view === "membership"
-                  ? "preferences"
-                  : view === "preferences"
-                    ? "membership"
-                    : "preferences",
-              )
-            }
-            className="text-micro uppercase tracking-label-tight text-stone hover:text-ink transition-colors underline underline-offset-4 pb-1"
-          >
-            {view === "membership"
-              ? "Settings"
-              : view === "preferences"
-                ? "Back to Profile"
-                : "Back to Preferences"}
-          </button>
-        </SheetHeader>
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-[220px_1fr]">
+        <nav aria-label="Account sections" className="flex gap-1 overflow-x-auto md:flex-col">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setSection(s.id)}
+              aria-current={section === s.id ? "page" : undefined}
+              className={cn(
+                "atelier-focus-ring shrink-0 rounded-control px-4 py-2.5 text-left text-sm transition-colors md:w-full",
+                section === s.id
+                  ? "bg-accent-soft/60 text-accent font-medium"
+                  : "text-muted-foreground hover:bg-accent-soft/30 hover:text-ink",
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </nav>
 
-        <div className="flex-1 overflow-y-auto px-6 pb-8">
-          {view === "membership" ? (
+        <div className="min-w-0">
+          {section === "membership" ? (
             <MembershipView
-              user={user}
+              user={{
+                fullName: displayName,
+                username,
+                season: profile?.color_season ?? null,
+                faceShape: profile?.face_shape ?? null,
+                hairType: profile?.hair_type ?? null,
+              }}
               authUserId={authUser?.id}
               subscription={subscription}
-              credits={credits}
-              onClose={onClose}
+              credits={credits ?? null}
+              onClose={noop}
               resuming={resuming}
               onResume={handleResume}
               onCancelClick={() => setCancelDialogOpen(true)}
             />
-          ) : view === "preferences" ? (
+          ) : section === "preferences" ? (
             <PreferencesView
               defaultHubId={defaultHubId}
-              onNavigate={setView}
+              onNavigate={setSection}
               onSignOut={() => signOut()}
               signingOut={signingOut}
             />
-          ) : view === "location" ? (
+          ) : section === "location" ? (
             <LocationView
               defaultHubId={defaultHubId}
               onSelectHub={(hubId) => {
                 setDefaultHubId(hubId);
                 void saveDefaultHubId(authUser?.id, hubId);
-                setView("preferences");
+                setSection("preferences");
               }}
             />
-          ) : view === "security" ? (
+          ) : section === "security" ? (
             <SecurityView
               authUserEmail={authUser?.email}
               newEmail={newEmail}
@@ -299,11 +300,11 @@ export function StudioMembershipDrawer({
             <PrivacyView
               exporting={exporting}
               onDownloadData={downloadData}
-              onNavigateSecurity={() => setView("security")}
+              onNavigateSecurity={() => setSection("security")}
             />
           )}
         </div>
-      </SheetContent>
+      </div>
 
       {subscription && !subscription.cancel_at_period_end && (
         <CancelMembershipDialog
@@ -314,6 +315,6 @@ export function StudioMembershipDrawer({
           onConfirm={handleConfirmCancel}
         />
       )}
-    </Sheet>
+    </div>
   );
 }

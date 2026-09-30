@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
-import { StudioMembershipDrawer } from "@/components/account/studio-membership-drawer";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { StudioCameraDrawer } from "@/components/dashboard/studio-camera-drawer";
@@ -27,7 +26,6 @@ import { SIDEBAR_EXPANDED_STORAGE_KEY } from "@/constants/app";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useAuth();
-  const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isLensOpen, setIsLensOpen] = useState(false);
   const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
   const [conciergeLook, setConciergeLook] = useState<ConciergeLook | null>(null);
@@ -115,7 +113,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const displayName = profile?.full_name?.trim() || user?.email?.split("@")[0] || "Member";
-  const username = user?.email?.split("@")[0] ?? "member";
 
   function openConcierge(look?: ConciergeLook | null) {
     setConciergeLook(look ?? null);
@@ -143,7 +140,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onToggleExpanded={toggleSidebarExpanded}
             onOpenLens={() => setIsLensOpen(true)}
             onOpenConcierge={() => openConcierge()}
-            onOpenMembership={() => setIsMembershipOpen(true)}
             credits={credits}
             displayName={displayName}
           />
@@ -181,16 +177,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Camera className="size-3.5" strokeWidth={1.75} />
                     Lens
                   </Button>
-                  <button
-                    onClick={() => setIsMembershipOpen(true)}
-                    aria-label="Open membership"
-                    className="rounded-full"
-                  >
+                  <Link to="/account" aria-label="Your account" className="rounded-full">
                     <AvatarInitial
                       name={displayName}
                       className="size-10 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
                     />
-                  </button>
+                  </Link>
                 </div>
               </div>
             </header>
@@ -204,19 +196,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             path={path}
             onOpenLens={() => setIsLensOpen(true)}
             onOpenConcierge={() => openConcierge()}
-          />
-
-          <StudioMembershipDrawer
-            isOpen={isMembershipOpen}
-            onClose={() => setIsMembershipOpen(false)}
-            credits={credits ?? null}
-            user={{
-              fullName: displayName,
-              username,
-              season: profile?.color_season ?? null,
-              faceShape: profile?.face_shape ?? null,
-              hairType: profile?.hair_type ?? null,
-            }}
           />
 
           <StudioCameraDrawer

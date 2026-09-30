@@ -29,7 +29,6 @@ interface SidebarProps {
   onToggleExpanded: () => void;
   onOpenLens: () => void;
   onOpenConcierge: () => void;
-  onOpenMembership: () => void;
   credits: number | null | undefined;
   displayName: string;
 }
@@ -101,7 +100,6 @@ export function Sidebar({
   onToggleExpanded,
   onOpenLens,
   onOpenConcierge,
-  onOpenMembership,
   credits,
   displayName,
 }: SidebarProps) {
@@ -203,17 +201,15 @@ export function Sidebar({
           {expanded && <ThemeToggle />}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenMembership}
-            aria-label="Open membership"
-            className="rounded-full shrink-0"
-          >
-            <AvatarInitial
-              name={displayName}
-              className="size-10 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
-            />
-          </button>
+        <Link
+          to="/account"
+          aria-label="Your account"
+          className="atelier-focus-ring flex items-center gap-2 rounded-control"
+        >
+          <AvatarInitial
+            name={displayName}
+            className="size-10 shrink-0 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
+          />
           <span
             className={cn(
               "overflow-hidden whitespace-nowrap text-sm text-ink transition-[max-width,opacity] duration-200 ease-editorial",
@@ -222,7 +218,7 @@ export function Sidebar({
           >
             {displayName}
           </span>
-        </div>
+        </Link>
 
         <button
           type="button"

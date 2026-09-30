@@ -34,6 +34,7 @@ import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
+import { Route as AuthenticatedAppAccountRouteImport } from './routes/_authenticated/_app/account'
 import { Route as ApiV1SupportMessageRouteImport } from './routes/api/v1/support/message'
 import { Route as ApiV1ProfileMemberRouteImport } from './routes/api/v1/profile/member'
 import { Route as ApiV1PostsFeedRouteImport } from './routes/api/v1/posts/feed'
@@ -182,6 +183,11 @@ const AuthenticatedAppConciergeRoute =
     path: '/concierge',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppAccountRoute = AuthenticatedAppAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const ApiV1SupportMessageRoute = ApiV1SupportMessageRouteImport.update({
   id: '/api/v1/support/message',
   path: '/api/v1/support/message',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/login/forgot-password': typeof LoginForgotPasswordRoute
   '/login/': typeof LoginIndexRoute
+  '/account': typeof AuthenticatedAppAccountRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
@@ -337,6 +344,7 @@ export interface FileRoutesByTo {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/login/forgot-password': typeof LoginForgotPasswordRoute
   '/login': typeof LoginIndexRoute
+  '/account': typeof AuthenticatedAppAccountRoute
   '/concierge': typeof AuthenticatedAppConciergeRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/feed': typeof AuthenticatedAppFeedRoute
@@ -384,6 +392,7 @@ export interface FileRoutesById {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/login/forgot-password': typeof LoginForgotPasswordRoute
   '/login/': typeof LoginIndexRoute
+  '/_authenticated/_app/account': typeof AuthenticatedAppAccountRoute
   '/_authenticated/_app/concierge': typeof AuthenticatedAppConciergeRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/feed': typeof AuthenticatedAppFeedRoute
@@ -430,6 +439,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/login/forgot-password'
     | '/login/'
+    | '/account'
     | '/concierge'
     | '/dashboard'
     | '/feed'
@@ -473,6 +483,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/login/forgot-password'
     | '/login'
+    | '/account'
     | '/concierge'
     | '/dashboard'
     | '/feed'
@@ -519,6 +530,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/login/forgot-password'
     | '/login/'
+    | '/_authenticated/_app/account'
     | '/_authenticated/_app/concierge'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/feed'
@@ -760,6 +772,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppConciergeRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/account': {
+      id: '/_authenticated/_app/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthenticatedAppAccountRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/api/v1/support/message': {
       id: '/api/v1/support/message'
       path: '/api/v1/support/message'
@@ -897,6 +916,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppAccountRoute: typeof AuthenticatedAppAccountRoute
   AuthenticatedAppConciergeRoute: typeof AuthenticatedAppConciergeRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppFeedRoute: typeof AuthenticatedAppFeedRoute
@@ -908,6 +928,7 @@ interface AuthenticatedAppRouteChildren {
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppAccountRoute: AuthenticatedAppAccountRoute,
   AuthenticatedAppConciergeRoute: AuthenticatedAppConciergeRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppFeedRoute: AuthenticatedAppFeedRoute,
