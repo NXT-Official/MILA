@@ -3,6 +3,40 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
 import type { Database } from "@/integrations/supabase/types";
 
+export type WebhookGuard = { ok: true } | { ok: false; status: number; message: string };
+
+/**
+ * The decision a Paddle delivery gets before any event is applied.
+ *
+ * A deployment whose webhook secret is missing or still a placeholder answers
+ * 503 rather than throwing: the route used to crash on `requireEnv`, which
+ * looks like a broken app from the outside and hides the real cause — Paddle
+ * retries a 5xx, but nobody can tell why. 401 is reserved for deliveries that
+ * genuinely fail verification.
+ */
+export function guardPaddleWebhook(input: {
+  rawBody: string;
+  signature: string | null;
+  secret: string | null;
+}): WebhookGuard {
+  // A whitespace-only value is a placeholder, not a secret: production carried
+  // two-character placeholders for every Paddle variable.
+  const secret = (input.secret ?? "").trim();
+  if (!secret) {
+    return {
+      ok: false,
+      status: 503,
+      message: "Paddle webhooks are not configured on this deployment (missing webhook secret).",
+    };
+  }
+  if (!input.signature) {
+    return { ok: false, status: 401, message: "Missing Paddle-Signature header." };
+  }
+  return verifyPaddleSignature(input.rawBody, input.signature, secret)
+    ? { ok: true }
+    : { ok: false, status: 401, message: "Invalid signature." };
+}
+
 export function verifyPaddleSignature(
   rawBody: string,
   header: string | null,

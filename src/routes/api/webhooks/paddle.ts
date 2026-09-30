@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { mailer } from "@/lib/mailer.server";
 import {
   applyPaddleSubscriptionEvent,
-  verifyPaddleSignature,
+  guardPaddleWebhook,
   type PaddleSubscriptionWebhookEvent,
 } from "@/lib/paddle-webhook.server";
 import type { CompletedTransaction } from "@/lib/purchases.server";
@@ -22,12 +22,22 @@ export const Route = createFileRoute("/api/webhooks/paddle")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const webhookSecret = getPaddleWebhookSecret();
-
         const rawBody = await request.text();
         const signature = request.headers.get("Paddle-Signature");
-        if (!verifyPaddleSignature(rawBody, signature, webhookSecret)) {
-          return new Response("Invalid signature", { status: 401 });
+
+        let webhookSecret: string | null = null;
+        try {
+          webhookSecret = getPaddleWebhookSecret();
+        } catch {
+          // Placeholder or missing secret: answer with a reason instead of
+          // letting the route die, and let Paddle retry later.
+          console.error("[paddle-webhook] no webhook secret configured on this deployment");
+        }
+
+        const guard = guardPaddleWebhook({ rawBody, signature, secret: webhookSecret });
+        if (!guard.ok) {
+          if (guard.status >= 500) console.error("[paddle-webhook]", guard.message);
+          return new Response(guard.message, { status: guard.status });
         }
 
         const event = JSON.parse(rawBody) as { event_type: string };

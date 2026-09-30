@@ -2,6 +2,7 @@ import { describe, expect, mock, test } from "bun:test";
 import { createHmac } from "node:crypto";
 import {
   applyPaddleSubscriptionEvent,
+  guardPaddleWebhook,
   verifyPaddleSignature,
   type PaddleSubscriptionWebhookEvent,
 } from "./paddle-webhook.server";
@@ -219,5 +220,50 @@ describe("applyPaddleSubscriptionEvent", () => {
   test("rethrows when the plan lookup itself fails, rather than dropping the event", async () => {
     const { db } = fakeDb({ plan: { data: null, error: { message: "timeout" } } });
     await expect(applyPaddleSubscriptionEvent(db, baseEvent({}))).rejects.toThrow();
+  });
+});
+
+describe("guardPaddleWebhook", () => {
+  const body = JSON.stringify({ event_type: "transaction.completed" });
+  const signature = (secret: string) => {
+    const ts = "1700000000";
+    const h1 = createHmac("sha256", secret).update(`${ts}:${body}`).digest("hex");
+    return `ts=${ts};h1=${h1}`;
+  };
+
+  test("lets a correctly signed delivery through", () => {
+    expect(
+      guardPaddleWebhook({ rawBody: body, signature: signature("secret"), secret: "secret" }),
+    ).toEqual({ ok: true });
+  });
+
+  test("refuses a delivery with no signature", () => {
+    const guard = guardPaddleWebhook({ rawBody: body, signature: null, secret: "secret" });
+    expect(guard.ok).toBe(false);
+    expect(guard).toMatchObject({ status: 401 });
+  });
+
+  test("refuses a delivery signed with the wrong secret", () => {
+    const guard = guardPaddleWebhook({
+      rawBody: body,
+      signature: signature("other"),
+      secret: "secret",
+    });
+    expect(guard).toMatchObject({ ok: false, status: 401 });
+  });
+
+  test("an unconfigured deployment answers 503 with the reason, not a crash", () => {
+    // The route used to throw out of requireEnv here, which reads as a broken
+    // app and hides the cause — and it silently swallowed every purchase event.
+    const guard = guardPaddleWebhook({ rawBody: body, signature: signature("x"), secret: null });
+    expect(guard.ok).toBe(false);
+    expect(guard).toMatchObject({ status: 503 });
+    if (!guard.ok) expect(guard.message).toContain("not configured");
+  });
+
+  test("a secret that is only a placeholder counts as unconfigured", () => {
+    // Production carried two-character placeholder values for the Paddle vars.
+    const guard = guardPaddleWebhook({ rawBody: body, signature: signature(" "), secret: "  " });
+    expect(guard).toMatchObject({ ok: false, status: 503 });
   });
 });
