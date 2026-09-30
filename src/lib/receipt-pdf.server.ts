@@ -42,13 +42,16 @@ export function formatMoney(amountCents: number, currency: string): string {
   return symbol ? `${symbol}${amount}` : `${amount} ${code}`;
 }
 
+/**
+ * "30 Sep 2026", spelled out here rather than through `Intl`: the CI runner's
+ * ICU renders en-GB September as "Sept", so a locale-formatted date makes the
+ * receipt's own text (and its tests) depend on the host's ICU version.
+ */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 export function formatDay(date: Date): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${day} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 /**
