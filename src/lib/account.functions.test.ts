@@ -16,9 +16,11 @@ function fakeDb(subscription: { paddle_subscription_id: string } | null) {
 function fakeDeps(overrides: Partial<DeleteAccountDeps> = {}) {
   return {
     getEmail: mock(async () => "member@example.com"),
+    getProfileName: mock(async () => "Nadia Haddad"),
     cancelSubscription: mock(async () => true),
     purgeStorage: mock(async () => {}),
     deleteUser: mock(async () => true),
+    notifyAccountDeleted: mock(async () => {}),
     ...overrides,
   };
 }
@@ -94,5 +96,30 @@ describe("deleteAccountForUser", () => {
     expect(result).toEqual({
       error: "We couldn't delete your account just now. Please try again.",
     });
+  });
+
+  test("emails a record of the deletion to the address that was just removed", async () => {
+    const deps = fakeDeps();
+    await deleteAccountForUser(fakeDb(null), "user-1", "member@example.com", deps);
+
+    expect(deps.notifyAccountDeleted).toHaveBeenCalledWith({
+      email: "member@example.com",
+      name: "Nadia Haddad",
+    });
+  });
+
+  test("a failed delete sends no farewell and a failing notice never fails the delete", async () => {
+    const failed = fakeDeps({ deleteUser: mock(async () => false) });
+    await deleteAccountForUser(fakeDb(null), "user-1", "member@example.com", failed);
+    expect(failed.notifyAccountDeleted).not.toHaveBeenCalled();
+
+    const crashing = fakeDeps({
+      notifyAccountDeleted: mock(async () => {
+        throw new Error("resend unreachable");
+      }),
+    });
+    expect(
+      await deleteAccountForUser(fakeDb(null), "user-1", "member@example.com", crashing),
+    ).toEqual({ success: true });
   });
 });

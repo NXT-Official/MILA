@@ -7,16 +7,37 @@ function fakeApi(responses: Record<string, Record<string, unknown>>): PaddleApi 
   return { get: async (path) => responses[path] ?? {} };
 }
 
+/** The receipt pipeline is exercised on its own; here it only has to be called. */
+function fakeReceipt() {
+  return mock(async (_txn: unknown, _deps: unknown) => ({
+    claimed: true,
+    emailed: true,
+    receiptPath: "user-1/txn.pdf",
+  }));
+}
+
+function fakeApply() {
+  return mock(async (_db: unknown, _event: unknown) => {});
+}
+
 describe("syncPaddleTransactionForUser", () => {
   test("applies a subscription purchase through the webhook's own applier", async () => {
     const api = fakeApi({
       "/transactions/txn_1": { custom_data: { user_id: "user-1" }, subscription_id: "sub_1" },
       "/subscriptions/sub_1": { id: "sub_1", status: "active" },
     });
-    const applySubscription = mock(async () => {});
+    const applySubscription = fakeApply();
+    const recordReceipt = fakeReceipt();
 
     expect(
-      await syncPaddleTransactionForUser(db, "user-1", "txn_1", api, applySubscription as never),
+      await syncPaddleTransactionForUser(
+        db,
+        "user-1",
+        "txn_1",
+        api,
+        applySubscription as never,
+        recordReceipt as never,
+      ),
     ).toEqual({ synced: true });
     const event = applySubscription.mock.calls[0][1] as {
       data: { id: string; custom_data: { user_id: string } };
@@ -26,27 +47,72 @@ describe("syncPaddleTransactionForUser", () => {
     expect(event.data.custom_data).toEqual({ user_id: "user-1" });
   });
 
+  test("sends the receipt for the payment it just applied", async () => {
+    const api = fakeApi({
+      "/transactions/txn_1": {
+        id: "txn_1",
+        status: "completed",
+        custom_data: { user_id: "user-1" },
+        subscription_id: "sub_1",
+      },
+      "/subscriptions/sub_1": { id: "sub_1", status: "active" },
+    });
+    const recordReceipt = fakeReceipt();
+
+    await syncPaddleTransactionForUser(
+      db,
+      "user-1",
+      "txn_1",
+      api,
+      fakeApply() as never,
+      recordReceipt as never,
+    );
+
+    expect(recordReceipt).toHaveBeenCalledTimes(1);
+    expect(recordReceipt.mock.calls[0][0]).toMatchObject({ id: "txn_1", status: "completed" });
+  });
+
   test("ignores a one-off transaction — memberships are all we sell", async () => {
     const api = fakeApi({
       "/transactions/txn_2": { custom_data: { user_id: "user-1" }, subscription_id: null },
     });
-    const applySubscription = mock(async () => {});
+    const applySubscription = fakeApply();
+    const recordReceipt = fakeReceipt();
 
     expect(
-      await syncPaddleTransactionForUser(db, "user-1", "txn_2", api, applySubscription as never),
+      await syncPaddleTransactionForUser(
+        db,
+        "user-1",
+        "txn_2",
+        api,
+        applySubscription as never,
+        recordReceipt as never,
+      ),
     ).toEqual({ synced: false });
     expect(applySubscription).not.toHaveBeenCalled();
+    // A credit pack is still a purchase: its receipt goes out even though there
+    // is no subscription to apply.
+    expect(recordReceipt).toHaveBeenCalledTimes(1);
   });
 
   test("refuses a transaction belonging to someone else", async () => {
     const api = fakeApi({
       "/transactions/txn_3": { custom_data: { user_id: "someone-else" }, subscription_id: "sub_9" },
     });
-    const applySubscription = mock(async () => {});
+    const applySubscription = fakeApply();
+    const recordReceipt = fakeReceipt();
 
     expect(
-      await syncPaddleTransactionForUser(db, "user-1", "txn_3", api, applySubscription as never),
+      await syncPaddleTransactionForUser(
+        db,
+        "user-1",
+        "txn_3",
+        api,
+        applySubscription as never,
+        recordReceipt as never,
+      ),
     ).toEqual({ synced: false });
     expect(applySubscription).not.toHaveBeenCalled();
+    expect(recordReceipt).not.toHaveBeenCalled();
   });
 });

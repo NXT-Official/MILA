@@ -33,11 +33,22 @@ function requestOrigin(): string {
 export type AuthDependencies = {
   client: typeof authClient;
   origin: typeof requestOrigin;
+  /** Tells the member their password changed; must never fail the change. */
+  notifyPasswordChanged: (userId: string) => Promise<unknown>;
 };
+
+async function notifyPasswordChanged(userId: string): Promise<unknown> {
+  const [{ supabaseAdmin }, { sendPasswordChangedEmail }] = await Promise.all([
+    import("@/integrations/supabase/client.server"),
+    import("./account-emails.server"),
+  ]);
+  return sendPasswordChangedEmail(userId, { db: supabaseAdmin });
+}
 
 const defaults: AuthDependencies = {
   client: authClient,
   origin: requestOrigin,
+  notifyPasswordChanged,
 };
 
 export async function authenticateWithPassword(
@@ -109,7 +120,7 @@ export async function updatePassword(
 ): Promise<{ ok: true }> {
   const data = NewPassword.parse(input);
   const client = deps.client();
-  const { error: sessionError } = await client.auth.setSession({
+  const { data: session, error: sessionError } = await client.auth.setSession({
     access_token: data.accessToken,
     refresh_token: data.refreshToken,
   });
@@ -123,6 +134,13 @@ export async function updatePassword(
     captureServerException(error);
     console.warn(JSON.stringify({ event: "password_reset_update_failure" }));
     throw new Error("Unable to update your password. Please try again.");
+  }
+  // The member must hear about a password change even when it wasn't theirs.
+  // Best effort: the password is already changed.
+  if (session?.user?.id) {
+    await deps
+      .notifyPasswordChanged(session.user.id)
+      .catch((cause) => captureServerException(cause));
   }
   return { ok: true };
 }

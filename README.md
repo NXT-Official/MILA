@@ -416,6 +416,29 @@ cancellation by up to a day, and a membership that stopped paying must not keep 
 the meantime. `past_due` stays live on purpose: Paddle is still retrying that payment, and the
 allowance stops when Paddle gives up and cancels.
 
+## Payments, receipts and member email
+
+Money lives in Paddle; Mila keeps a ledger of what was actually collected and sends the member their
+own copy of it.
+
+- **The ledger** — `purchases` is written by `src/lib/receipts.server.ts` on every completed Paddle
+  transaction, from the webhook (`transaction.completed`) and from the checkout return
+  (`syncPaddleTransactionForUser`). The row is keyed by `metadata.paddle_transaction_id` (read back
+  with a PostgREST JSON filter), and the insert *is* the claim: Paddle retries webhooks and the
+  checkout can race them, so exactly one caller records the purchase and sends the mail. Everything
+  after the claim — storage, email — is best effort, so a member who paid keeps their row even when
+  mail or storage is having a bad day.
+- **The receipt** — `src/lib/receipt-pdf.server.ts` builds the PDF without a dependency (one page of
+  Helvetica, byte-accurate xref, WinAnsi-safe text). It is attached to the member's email and stored
+  in the private `receipts` bucket at `<user_id>/<transaction_id>.pdf`, which is what the admin
+  console's receipt download serves. The bucket is created on first use.
+- **Email** — `src/lib/mailer.server.ts` posts to Resend's HTTP API; with no `RESEND_API_KEY` every
+  send is a logged dry run, so local development and tests never mail anybody. Templates are in
+  `src/lib/member-emails.ts` and all three are wired: a password change (both the reset-link flow in
+  `auth-handler.server.ts` and the signed-in flow via `notifyPasswordChanged`), account deletion
+  (`deleteAccountForUser`, to the address captured before the account went away) and the purchase
+  receipt. None of them can fail the action that triggered them.
+
 ## Forms and Validation
 
 React Hook Form manages form state; Zod schemas define validation, generally declared alongside

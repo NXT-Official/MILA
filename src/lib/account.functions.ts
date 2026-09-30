@@ -12,9 +12,12 @@ export type DeleteAccountResult = { success: true } | { error: string };
 
 export type DeleteAccountDeps = {
   getEmail: (userId: string) => Promise<string | null>;
+  /** Read before the delete: `profiles` cascades away with the account. */
+  getProfileName: (userId: string) => Promise<string | null>;
   cancelSubscription: (paddleSubscriptionId: string) => Promise<boolean>;
   purgeStorage: (userId: string) => Promise<void>;
   deleteUser: (userId: string) => Promise<boolean>;
+  notifyAccountDeleted: (input: { email: string; name: string | null }) => Promise<unknown>;
 };
 
 export async function deleteAccountForUser(
@@ -27,6 +30,7 @@ export async function deleteAccountForUser(
   if (!email || typedEmail.trim().toLowerCase() !== email.trim().toLowerCase()) {
     return { error: "That email doesn't match the account you're signed in to." };
   }
+  const name = await deps.getProfileName(userId).catch(() => null);
 
   const { data: subscription } = await db
     .from("subscriptions")
@@ -51,6 +55,13 @@ export async function deleteAccountForUser(
   if (!(await deps.deleteUser(userId))) {
     return { error: "We couldn't delete your account just now. Please try again." };
   }
+
+  // The account is gone; the member still gets a record of it. Best effort —
+  // the deletion has happened and must not be reported as failed over mail.
+  await deps
+    .notifyAccountDeleted({ email, name })
+    .catch((cause) => console.error("[deleteMyAccount] deletion notice failed", cause));
+
   return { success: true };
 }
 
@@ -64,6 +75,17 @@ export const supabaseDeleteAccountDeps: DeleteAccountDeps = {
     const { data, error } = await (await admin()).auth.admin.getUserById(userId);
     if (error) throw error;
     return data.user?.email ?? null;
+  },
+
+  getProfileName: async (userId) => {
+    const { data } = await (
+      await admin()
+    )
+      .from("profiles")
+      .select("full_name,username")
+      .eq("id", userId)
+      .maybeSingle();
+    return data?.full_name ?? data?.username ?? null;
   },
 
   cancelSubscription: async (paddleSubscriptionId) => {
@@ -97,7 +119,25 @@ export const supabaseDeleteAccountDeps: DeleteAccountDeps = {
     }
     return true;
   },
+
+  notifyAccountDeleted: async ({ email, name }) => {
+    const { sendAccountDeletedEmail } = await import("./account-emails.server");
+    return sendAccountDeletedEmail({ email, name });
+  },
 };
+
+/**
+ * Sent after a password change made while signed in (the reset-link flow
+ * notifies inside `updatePassword`). Best effort: the password is already
+ * changed by the time this runs.
+ */
+export const notifyPasswordChanged = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<{ sent: boolean; error?: string }> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { sendPasswordChangedEmail } = await import("./account-emails.server");
+    return sendPasswordChangedEmail(context.userId, { db: supabaseAdmin });
+  });
 
 export const deleteMyAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

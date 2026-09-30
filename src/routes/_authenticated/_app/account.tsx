@@ -15,7 +15,7 @@ import { profileQueryOptions } from "@/lib/queries/profile";
 import { creditsQueryOptions } from "@/lib/queries/credits";
 import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.functions";
-import { deleteMyAccount } from "@/lib/account.functions";
+import { deleteMyAccount, notifyPasswordChanged } from "@/lib/account.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
 import { MembershipView } from "@/components/account/drawer-views/membership-view";
 import { PreferencesView } from "@/components/account/drawer-views/preferences-view";
@@ -58,6 +58,7 @@ function AccountPage() {
   const cancelSubscription = useServerFn(cancelMySubscription);
   const resumeSubscription = useServerFn(resumeMySubscription);
   const deleteAccount = useServerFn(deleteMyAccount);
+  const notifyPasswordChangedFn = useServerFn(notifyPasswordChanged);
   const [deleteEmail, setDeleteEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
   const deleteEmailMatches =
@@ -167,6 +168,9 @@ function AccountPage() {
       if (reauthError) throw new Error("Current password is incorrect.");
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
+      // Mila emails a receipt of the change. The password is already updated, so
+      // a failure here is logged server-side and never surfaces as an error.
+      void notifyPasswordChangedFn().catch(() => {});
       toast.success("Password updated.");
       setCurrentPassword("");
       setNewPassword("");

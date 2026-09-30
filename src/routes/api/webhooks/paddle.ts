@@ -1,17 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { getPaddleWebhookSecret } from "@/lib/paddle-env";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { mailer } from "@/lib/mailer.server";
 import {
   applyPaddleSubscriptionEvent,
   verifyPaddleSignature,
   type PaddleSubscriptionWebhookEvent,
 } from "@/lib/paddle-webhook.server";
+import type { CompletedTransaction } from "@/lib/purchases.server";
+import { recordPurchaseAndSendReceipt } from "@/lib/receipts.server";
 
 const SUBSCRIPTION_EVENT_TYPES = new Set([
   "subscription.created",
   "subscription.updated",
   "subscription.canceled",
 ]);
+
+const TRANSACTION_EVENT_TYPES = new Set(["transaction.completed"]);
 
 export const Route = createFileRoute("/api/webhooks/paddle")({
   server: {
@@ -32,6 +37,15 @@ export const Route = createFileRoute("/api/webhooks/paddle")({
               supabaseAdmin,
               event as unknown as PaddleSubscriptionWebhookEvent,
             );
+          } else if (TRANSACTION_EVENT_TYPES.has(event.event_type)) {
+            // Money moved: record it in the ledger the admin console reads and
+            // email the member their Mila receipt. The ledger insert is the
+            // claim, so Paddle's retries cannot send a second receipt.
+            const outcome = await recordPurchaseAndSendReceipt(
+              (event as unknown as { data: CompletedTransaction }).data,
+              { db: supabaseAdmin, mail: mailer() },
+            );
+            console.log("[paddle-webhook] transaction receipt", outcome);
           }
         } catch (err) {
           // 5xx is the retry signal: Paddle re-delivers on its own schedule and

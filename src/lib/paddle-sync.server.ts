@@ -5,6 +5,9 @@ import {
   type PaddleSubscriptionWebhookEvent,
 } from "@/lib/paddle-webhook.server";
 import { getPaddleApiBase } from "@/lib/paddle-env";
+import { mailer } from "@/lib/mailer.server";
+import { recordPurchaseAndSendReceipt } from "@/lib/receipts.server";
+import type { CompletedTransaction } from "@/lib/purchases.server";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
@@ -16,16 +19,19 @@ export async function syncPaddleTransactionForUser(
   transactionId: string,
   api: PaddleApi,
   applySubscription: typeof applyPaddleSubscriptionEvent = applyPaddleSubscriptionEvent,
+  recordReceipt: typeof recordPurchaseAndSendReceipt = recordPurchaseAndSendReceipt,
 ): Promise<{ synced: boolean }> {
-  const txn = (await api.get(`/transactions/${transactionId}`)) as {
-    custom_data?: { user_id?: string } | null;
-    subscription_id?: string | null;
-  };
+  const txn = (await api.get(`/transactions/${transactionId}`)) as CompletedTransaction;
 
   if (txn.custom_data?.user_id !== userId) {
     console.error("[paddle-sync] transaction does not belong to the caller", { transactionId });
     return { synced: false };
   }
+
+  // The member is standing in the app having just paid, so the receipt goes out
+  // now rather than whenever the webhook lands. Both paths claim the same
+  // ledger row, so whichever arrives second sends nothing.
+  await recordReceipt(txn, { db, mail: mailer() });
 
   if (!txn.subscription_id) {
     // Memberships are the only thing we sell — a one-off transaction has nothing to apply.

@@ -97,12 +97,17 @@ describe("password reset request", () => {
 
 describe("password reset completion", () => {
   function updateDeps(sessionError: unknown = null, updateError: unknown = null) {
-    const setSession = mock(async () => ({ error: sessionError }));
+    const setSession = mock(async () => ({
+      data: { session: { access_token: "access-token" }, user: { id: "user-1" } },
+      error: sessionError,
+    }));
     const updateUser = mock(async () => ({ error: updateError }));
+    const notifyPasswordChanged = mock(async () => {});
     const deps = {
       client: () => ({ auth: { setSession, updateUser } }),
+      notifyPasswordChanged,
     } as unknown as AuthDependencies;
-    return { deps, setSession, updateUser };
+    return { deps, setSession, updateUser, notifyPasswordChanged };
   }
 
   const payload = {
@@ -120,6 +125,24 @@ describe("password reset completion", () => {
     });
     expect(updateUser).toHaveBeenCalledWith({ password: payload.password });
     expect(result).toEqual({ ok: true });
+  });
+
+  test("tells the member their password changed", async () => {
+    const { deps, notifyPasswordChanged } = updateDeps();
+    await updatePassword(payload, deps);
+    expect(notifyPasswordChanged).toHaveBeenCalledWith("user-1");
+  });
+
+  test("a failing notice never fails the password change", async () => {
+    const { deps } = updateDeps();
+    const crashing = {
+      ...deps,
+      notifyPasswordChanged: mock(async () => {
+        throw new Error("resend unreachable");
+      }),
+    } as unknown as AuthDependencies;
+
+    expect(await updatePassword(payload, crashing)).toEqual({ ok: true });
   });
 
   test("rejects when the recovery session is no longer valid", async () => {
