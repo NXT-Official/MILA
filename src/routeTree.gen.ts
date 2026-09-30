@@ -46,6 +46,7 @@ import { Route as ApiV1LookGenerateRouteImport } from './routes/api/v1/look/gene
 import { Route as ApiV1ItemsAnalyzeRouteImport } from './routes/api/v1/items/analyze'
 import { Route as ApiV1DupesSimilarRouteImport } from './routes/api/v1/dupes/similar'
 import { Route as ApiV1DupesFindRouteImport } from './routes/api/v1/dupes/find'
+import { Route as ApiV1CronMembershipMaintenanceRouteImport } from './routes/api/v1/cron/membership-maintenance'
 import { Route as ApiV1ConciergeChatRouteImport } from './routes/api/v1/concierge/chat'
 import { Route as ApiV1BillingSyncRouteImport } from './routes/api/v1/billing/sync'
 import { Route as ApiV1BillingResumeRouteImport } from './routes/api/v1/billing/resume'
@@ -243,6 +244,12 @@ const ApiV1DupesFindRoute = ApiV1DupesFindRouteImport.update({
   path: '/api/v1/dupes/find',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1CronMembershipMaintenanceRoute =
+  ApiV1CronMembershipMaintenanceRouteImport.update({
+    id: '/api/v1/cron/membership-maintenance',
+    path: '/api/v1/cron/membership-maintenance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1ConciergeChatRoute = ApiV1ConciergeChatRouteImport.update({
   id: '/api/v1/concierge/chat',
   path: '/api/v1/concierge/chat',
@@ -318,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/cron/membership-maintenance': typeof ApiV1CronMembershipMaintenanceRoute
   '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
@@ -362,6 +370,7 @@ export interface FileRoutesByTo {
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/cron/membership-maintenance': typeof ApiV1CronMembershipMaintenanceRoute
   '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
@@ -410,6 +419,7 @@ export interface FileRoutesById {
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
+  '/api/v1/cron/membership-maintenance': typeof ApiV1CronMembershipMaintenanceRoute
   '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
+    | '/api/v1/cron/membership-maintenance'
     | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
+    | '/api/v1/cron/membership-maintenance'
     | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
@@ -548,6 +560,7 @@ export interface FileRouteTypes {
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
     | '/api/v1/concierge/chat'
+    | '/api/v1/cron/membership-maintenance'
     | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
     | '/api/v1/items/analyze'
@@ -582,6 +595,7 @@ export interface RootRouteChildren {
   ApiV1BillingResumeRoute: typeof ApiV1BillingResumeRoute
   ApiV1BillingSyncRoute: typeof ApiV1BillingSyncRoute
   ApiV1ConciergeChatRoute: typeof ApiV1ConciergeChatRoute
+  ApiV1CronMembershipMaintenanceRoute: typeof ApiV1CronMembershipMaintenanceRoute
   ApiV1DupesFindRoute: typeof ApiV1DupesFindRoute
   ApiV1DupesSimilarRoute: typeof ApiV1DupesSimilarRoute
   ApiV1ItemsAnalyzeRoute: typeof ApiV1ItemsAnalyzeRoute
@@ -856,6 +870,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1DupesFindRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/cron/membership-maintenance': {
+      id: '/api/v1/cron/membership-maintenance'
+      path: '/api/v1/cron/membership-maintenance'
+      fullPath: '/api/v1/cron/membership-maintenance'
+      preLoaderRoute: typeof ApiV1CronMembershipMaintenanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/concierge/chat': {
       id: '/api/v1/concierge/chat'
       path: '/api/v1/concierge/chat'
@@ -1004,6 +1025,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1BillingResumeRoute: ApiV1BillingResumeRoute,
   ApiV1BillingSyncRoute: ApiV1BillingSyncRoute,
   ApiV1ConciergeChatRoute: ApiV1ConciergeChatRoute,
+  ApiV1CronMembershipMaintenanceRoute: ApiV1CronMembershipMaintenanceRoute,
   ApiV1DupesFindRoute: ApiV1DupesFindRoute,
   ApiV1DupesSimilarRoute: ApiV1DupesSimilarRoute,
   ApiV1ItemsAnalyzeRoute: ApiV1ItemsAnalyzeRoute,

@@ -390,6 +390,32 @@ Storage has two buckets: `outfits` (public — AI providers fetch the image URL 
 relies on an unguessable `userId/uuid` path) and `posts` (private — feed images are served via
 short-lived signed URLs generated server-side in `admin.functions.ts`/the feed query).
 
+### Daily credits and membership expiry
+
+`user_entitlements.ai_credits` is a **daily bucket**, not a wallet: the credit RPCs
+(`consume_ai_credit`, `grant_ai_credits`) compare `credits_reset_at` with `CURRENT_DATE` (UTC) and
+reset the bucket to the live plan's `credits_included` the first time the member acts that day.
+`purchased_credits` are the member's own and never reset. Two pieces keep that honest without the
+member doing anything:
+
+- **The daily sweep** — `GET /api/v1/cron/membership-maintenance`, run by Vercel Cron once a day
+  (`vercel.json`, 00:05 UTC, guarded by `CRON_SECRET`). It writes today's allowance into every live
+  subscriber's bucket, then takes subscriptions whose paid period has ended out of force: a
+  cancellation the member asked for is simply over, while a renewing subscription whose renewal
+  webhook never arrived is reconciled against Paddle before anything is decided — a Paddle outage
+  leaves it live rather than downgrading on a guess. Logic and tests:
+  `src/server/services/membership-maintenance.ts`.
+- **Reading a balance** — `effectiveCredits` (`src/lib/credits.ts`) is the one place that turns a
+  stored balance into what the member can spend: today's bucket when it exists, otherwise the live
+  plan's allowance, plus purchased credits. The credits query, the membership drawer and the
+  server-side allowance resolver all go through it or through the same predicate.
+
+A subscription counts as live only while it is in force **and** its paid period hasn't ended
+(`isSubscriptionLive`, `src/constants/subscriptions.ts`). The status column alone lags a
+cancellation by up to a day, and a membership that stopped paying must not keep earning credits in
+the meantime. `past_due` stays live on purpose: Paddle is still retrying that payment, and the
+allowance stops when Paddle gives up and cancels.
+
 ## Forms and Validation
 
 React Hook Form manages form state; Zod schemas define validation, generally declared alongside
@@ -484,27 +510,30 @@ navigation, `size-5`–`size-6` for buttons and empty states) with a default `st
 
 Copy `.env.example` to `.env` and fill in real values — never commit `.env`.
 
-| Variable                                 |              Required | Scope                    | Description                                                                           |
-| ---------------------------------------- | --------------------: | ------------------------ | ------------------------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`                      |                   Yes | Client                   | Supabase project URL, shipped to the browser                                          |
-| `VITE_SUPABASE_PUBLISHABLE_KEY`          |                   Yes | Client                   | Supabase anon/publishable key, shipped to the browser                                 |
-| `SUPABASE_URL`                           |                   Yes | Server                   | Same project URL, read by server functions                                            |
-| `SUPABASE_PUBLISHABLE_KEY`               |                   Yes | Server                   | Anon key used by the request-scoped RLS client in `auth-middleware.ts`                |
-| `SUPABASE_SERVICE_ROLE_KEY`              |                   Yes | Server, **secret**       | Bypasses RLS; used only by `client.server.ts` inside server functions                 |
-| `AI_API_KEY`                             | Yes (for AI features) | Server, **secret**       | Gemini API key                                                                        |
-| `AI_MODEL`                               | Yes (for AI features) | Server                   | Gemini model name/ID sent with every request                                          |
-| `VITE_HCAPTCHA_SITEKEY`                  |                   Yes | Client                   | hCaptcha site key rendered on the login/signup form                                   |
-| `HCAPTCHA_SECRET`                        |                   Yes | Server, **secret**       | Verifies support-form CAPTCHA tokens                                                  |
-| `CLOUDFLARE_ACCOUNT_ID`                  |   Yes (for AI images) | Server                   | Cloudflare account used for outfit-image generation                                   |
-| `CLOUDFLARE_API_TOKEN`                   |   Yes (for AI images) | Server, **secret**       | Cloudflare Workers AI token                                                           |
-| `IMAGE_MODEL`                            |                    No | Server                   | Overrides the default Cloudflare image model                                          |
-| `VITE_PADDLE_CLIENT_TOKEN`               |    Yes (for checkout) | Client                   | Paddle.js client token                                                                |
-| `VITE_PADDLE_ENV`                        |                    No | Client                   | Paddle.js environment (`sandbox` or `production`)                                     |
-| `PADDLE_SANDBOX_API_KEY`                 |     Yes (for billing) | Server, **secret**       | Paddle sandbox subscription and transaction API key                                   |
-| `PADDLE_SANDBOX_WEBHOOK_SECRET`          |     Yes (for billing) | Server, **secret**       | Verifies Paddle webhook signatures                                                    |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD`         |                    No | Local documentation only | Not read by application code — the credentials the schema migration seeds (see below) |
-| `USER_EMAIL` / `USER_PASSWORD`           |                    No | Local documentation only | Same as above; the plain member test account                                          |
-| `MODERATOR_EMAIL` / `MODERATOR_PASSWORD` |                    No | Local documentation only | Same as above; the moderator test account                                             |
+| Variable                                   |                         Required | Scope                    | Description                                                                           |
+| ------------------------------------------ | -------------------------------: | ------------------------ | ------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`                        |                              Yes | Client                   | Supabase project URL, shipped to the browser                                          |
+| `VITE_SUPABASE_PUBLISHABLE_KEY`            |                              Yes | Client                   | Supabase anon/publishable key, shipped to the browser                                 |
+| `SUPABASE_URL`                             |                              Yes | Server                   | Same project URL, read by server functions                                            |
+| `SUPABASE_PUBLISHABLE_KEY`                 |                              Yes | Server                   | Anon key used by the request-scoped RLS client in `auth-middleware.ts`                |
+| `SUPABASE_SERVICE_ROLE_KEY`                |                              Yes | Server, **secret**       | Bypasses RLS; used only by `client.server.ts` inside server functions                 |
+| `AI_API_KEY`                               |            Yes (for AI features) | Server, **secret**       | Gemini API key                                                                        |
+| `AI_MODEL`                                 |            Yes (for AI features) | Server                   | Gemini model name/ID sent with every request                                          |
+| `VITE_HCAPTCHA_SITEKEY`                    |                              Yes | Client                   | hCaptcha site key rendered on the login/signup form                                   |
+| `HCAPTCHA_SECRET`                          |                              Yes | Server, **secret**       | Verifies support-form CAPTCHA tokens                                                  |
+| `CLOUDFLARE_ACCOUNT_ID`                    |              Yes (for AI images) | Server                   | Cloudflare account used for outfit-image generation                                   |
+| `CLOUDFLARE_API_TOKEN`                     |              Yes (for AI images) | Server, **secret**       | Cloudflare Workers AI token                                                           |
+| `IMAGE_MODEL`                              |                               No | Server                   | Overrides the default Cloudflare image model                                          |
+| `VITE_PADDLE_CLIENT_TOKEN`                 |               Yes (for checkout) | Client                   | Paddle.js client token                                                                |
+| `VITE_PADDLE_ENV`                          |                               No | Client                   | Paddle.js environment (`sandbox` or `production`)                                     |
+| `PADDLE_SANDBOX_API_KEY`                   |                Yes (for billing) | Server, **secret**       | Paddle sandbox subscription and transaction API key                                   |
+| `PADDLE_SANDBOX_WEBHOOK_SECRET`            |                Yes (for billing) | Server, **secret**       | Verifies Paddle webhook signatures                                                    |
+| `PADDLE_ENV`                               |                               No | Server                   | `sandbox` (default) or `production` — picks the Paddle API base and keys              |
+| `PADDLE_API_KEY` / `PADDLE_WEBHOOK_SECRET` | Yes when `PADDLE_ENV=production` | Server, **secret**       | Live-account counterparts of the two sandbox values                                   |
+| `CRON_SECRET`                              |        Yes (for the daily sweep) | Server, **secret**       | Bearer token Vercel Cron sends to `/api/v1/cron/membership-maintenance`               |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`           |                               No | Local documentation only | Not read by application code — the credentials the schema migration seeds (see below) |
+| `USER_EMAIL` / `USER_PASSWORD`             |                               No | Local documentation only | Same as above; the plain member test account                                          |
+| `MODERATOR_EMAIL` / `MODERATOR_PASSWORD`   |                               No | Local documentation only | Same as above; the moderator test account                                             |
 
 Any variable prefixed `VITE_` is compiled into the client bundle and is visible to anyone using
 the app — never put a secret behind a `VITE_` name. `SUPABASE_SERVICE_ROLE_KEY` and `AI_API_KEY`

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
+import { IN_FORCE_SUBSCRIPTION_STATUSES, isSubscriptionLive } from "@/constants/subscriptions";
 import { getCurrentUserRoles, hasPermission } from "@/lib/authorization";
 import { loadPostItems } from "@/lib/outfit-items.functions";
 import { DomainValidationError } from "@/server/http/api-errors";
@@ -26,13 +26,17 @@ async function loadAuthorDetails(userIds: string[]) {
     supabaseAdmin.from("profiles").select("id,full_name").in("id", userIds),
     supabaseAdmin
       .from("subscriptions")
-      .select("user_id")
+      .select("user_id, status, current_period_end, cancel_at_period_end")
       .in("user_id", userIds)
       .in("status", IN_FORCE_SUBSCRIPTION_STATUSES),
   ]);
 
   for (const profile of profiles.data ?? []) names.set(profile.id, profile.full_name ?? null);
-  for (const row of subscriptions.data ?? []) verified.add(row.user_id);
+  for (const row of subscriptions.data ?? []) {
+    // Community verification follows the membership, not the status column:
+    // a cancelled plan that has run out stops verifying before the sweep runs.
+    if (isSubscriptionLive(row)) verified.add(row.user_id);
+  }
   return { names, verified };
 }
 
@@ -158,12 +162,12 @@ export async function getMemberProfileForUser(
   const profile = profileResult.data;
   const { data: activeSubscription } = await supabaseAdmin
     .from("subscriptions")
-    .select("user_id")
+    .select("user_id, status, current_period_end, cancel_at_period_end")
     .eq("user_id", profile.id)
     .in("status", IN_FORCE_SUBSCRIPTION_STATUSES)
     .limit(1)
     .maybeSingle();
-  const isVerified = !!activeSubscription;
+  const isVerified = !!activeSubscription && isSubscriptionLive(activeSubscription);
 
   let postsQuery = supabaseAdmin
     .from("posts")

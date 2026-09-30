@@ -3,7 +3,24 @@ import { consumeAiCredit, grantAiCredits, payForLookImage, withAiCredit } from "
 import { InsufficientCreditsError } from "./credits";
 import { MemoryCreditStore } from "../../tests/helpers/memory-credit-store";
 
-function fakeSupabase(plan: { plan_id: string } | null, credits_included: number | null) {
+function fakeSupabase(
+  plan: { plan_id: string } | null,
+  credits_included: number | null,
+  subscriptionOverrides: Partial<{
+    status: string;
+    current_period_end: string | null;
+    cancel_at_period_end: boolean;
+  }> = {},
+) {
+  const subscription = plan
+    ? {
+        status: "active",
+        current_period_end: "2999-01-01T00:00:00Z",
+        cancel_at_period_end: false,
+        ...plan,
+        ...subscriptionOverrides,
+      }
+    : null;
   const chain = {
     select: (..._args: unknown[]) => chain,
     eq: (..._args: unknown[]) => chain,
@@ -11,7 +28,7 @@ function fakeSupabase(plan: { plan_id: string } | null, credits_included: number
     order: (..._args: unknown[]) => chain,
     limit: (..._args: unknown[]) => chain,
     maybeSingle: async () => ({
-      data: chain.table === "subscriptions" ? plan : { credits_included },
+      data: chain.table === "subscriptions" ? subscription : { credits_included },
       error: null,
     }),
     table: "",
@@ -34,6 +51,17 @@ describe("consumeAiCredit", () => {
 
   test("a user with no in-force subscription has nothing to spend", async () => {
     const supabase = fakeSupabase(null, null);
+    const store = new MemoryCreditStore(() => "2026-07-24");
+    await expect(consumeAiCredit(supabase, "user-1", store.consume)).rejects.toBeInstanceOf(
+      InsufficientCreditsError,
+    );
+  });
+
+  test("a cancelled subscription past its period end stops granting the allowance", async () => {
+    const supabase = fakeSupabase({ plan_id: "plan-1" }, 100, {
+      cancel_at_period_end: true,
+      current_period_end: "2020-01-01T00:00:00Z",
+    });
     const store = new MemoryCreditStore(() => "2026-07-24");
     await expect(consumeAiCredit(supabase, "user-1", store.consume)).rejects.toBeInstanceOf(
       InsufficientCreditsError,

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
+import { IN_FORCE_SUBSCRIPTION_STATUSES, isSubscriptionLive } from "@/constants/subscriptions";
 import { DEFAULT_AI_CREDITS, InsufficientCreditsError } from "./credits";
 import { captureServerException } from "./sentry.server";
 
@@ -14,13 +14,16 @@ async function resolveDailyCreditAllowance(
 ): Promise<number> {
   const { data: sub } = await supabase
     .from("subscriptions")
-    .select("plan_id")
+    .select("plan_id, status, current_period_end, cancel_at_period_end")
     .eq("user_id", userId)
     .in("status", IN_FORCE_SUBSCRIPTION_STATUSES)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (!sub) return DEFAULT_AI_CREDITS;
+  // A cancelled subscription keeps its in-force status until Paddle's webhook
+  // or the daily sweep catches up, so the paid period being over is what
+  // actually decides whether today's allowance is still owed.
+  if (!sub || !isSubscriptionLive(sub)) return DEFAULT_AI_CREDITS;
 
   const { data: plan } = await supabase
     .from("subscription_plans")

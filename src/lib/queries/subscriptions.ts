@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import {
   IN_FORCE_SUBSCRIPTION_STATUSES,
   isStaffGrantedSubscription,
+  isSubscriptionLive,
 } from "@/constants/subscriptions";
 import { queryKeys } from "@/constants/query-keys";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,7 +38,10 @@ export function mySubscriptionQueryOptions(userId: string | undefined) {
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (subError || !sub) return null;
+      // A subscription whose paid period has run out is over even before the
+      // daily sweep flips its status, so the drawer must not keep showing it as
+      // an active membership.
+      if (subError || !sub || !isSubscriptionLive(sub)) return null;
 
       const { data: plan, error: planError } = await supabase
         .from("subscription_plans")
