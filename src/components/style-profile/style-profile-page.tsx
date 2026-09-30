@@ -7,19 +7,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
-import { Camera } from "lucide-react";
-import { ColorDossierSection } from "@/components/studio/style-profile";
-import {
-  FACE_SHAPES as HOLISTIC_FACE_SHAPES,
-  HAIR_TYPES as HOLISTIC_HAIR_TYPES,
-} from "@/constants/style-profile";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
 import {
   Season,
   MOOD_COLLECT_DEFAULT,
@@ -30,9 +17,6 @@ import {
   type StudioTelemetry,
   SEASON_DETAIL,
   SEASON_EDUCATION,
-  UNDERTONES,
-  SEASONS,
-  BODIES,
   FACE_SHORT_TO_FULL,
   FACE_FULL_TO_SHORT,
   CONTRAST_SHORT_TO_FULL,
@@ -46,17 +30,9 @@ import {
   seasonSaturation,
   splitBeauty,
 } from "@/lib/style-profile";
-import {
-  SyncBadge,
-  PerspectiveSwitcher,
-  DossierField,
-  DossierAccordion,
-  PillRow,
-  BeautyPillTray,
-} from "@/components/style-profile/shared";
-import { KnownSeasonPicker } from "@/components/style-profile/known-season-picker";
-import { ManualOverridePicker } from "@/components/style-profile/manual-override-picker";
-import { SeasonCalibrationSheet } from "@/components/style-profile/season-calibration-sheet";
+import { SyncBadge } from "@/components/style-profile/shared";
+import { SeasonModule } from "@/components/style-profile/season-module";
+import { PhysicalProfileCard } from "@/components/style-profile/physical-profile-card";
 import { RestartStyleAnalysisAction } from "@/components/style-profile/restart-style-analysis-action";
 import { StyleAnalysisNudge } from "@/components/style-profile/style-analysis-nudge";
 import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-diagnostic-viewfinder";
@@ -85,9 +61,7 @@ export function StyleProfile() {
     { face_shape: null, hair_type: null },
   );
   const [diagOpen, setDiagOpen] = useState(false);
-  const [manualOpen, setManualOpen] = useState(false);
   const [manualContrast, setManualContrast] = useState<string>("");
-  const [manualSeason, setManualSeason] = useState<string>("");
   const [dossier, setDossier] = useState<StudioDossier>(MOOD_COLLECT_DEFAULT);
   const [hasRealDossier, setHasRealDossier] = useState(false);
   const [profileRevision, setProfileRevision] = useState(0);
@@ -98,7 +72,6 @@ export function StyleProfile() {
   const portfolioRef = useRef<HTMLDivElement | null>(null);
   const localStudioUpdateRef = useRef(false);
 
-  const [viewMode, setViewMode] = useState<"streamlined" | "detailed">("streamlined");
   const [beautyPrefs, setBeautyPrefs] = useState<string[]>([]);
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [photoConsentAt, setPhotoConsentAt] = useState<string | null>(null);
@@ -223,7 +196,7 @@ export function StyleProfile() {
       manualContrast ??
       CONTRAST_FULL_TO_SHORT[dossier.contrastScale] ??
       "Medium Contrast";
-    const seasonStr = over.season ?? manualSeason ?? dossier.season;
+    const seasonStr = over.season ?? dossier.season;
     const bodyStr = over.body ?? form.body_type ?? dossier.bodyType;
     if (!user || !face || !contrast || !seasonStr || !bodyStr) return;
     const season = seasonStr as Season;
@@ -288,10 +261,6 @@ export function StyleProfile() {
     setManualContrast(v);
     void commitManual({ contrast: v });
   }
-  function pickSeason(v: string) {
-    setManualSeason(v);
-    void commitManual({ season: v });
-  }
   function pickBody(v: string) {
     setForm((f) => ({ ...f, body_type: v }));
     void commitManual({ body: v });
@@ -347,7 +316,6 @@ export function StyleProfile() {
     const undertone = (["Spring", "Autumn"] as string[]).includes(next.season) ? "Warm" : "Cool";
 
     setDiagOpen(false);
-    setManualOpen(false);
     setSyncStatus("syncing");
 
     const { error } = await supabase
@@ -418,6 +386,18 @@ export function StyleProfile() {
     await handleStudioComplete(profile);
   }
 
+  async function confirmKnownTile() {
+    if (!knownTileId) return;
+    const tile = KNOWN_SEASON_GROUPS.flatMap((g) => g.tiles).find((t) => t.id === knownTileId);
+    if (!tile) return;
+    setConfirmingKnown(true);
+    try {
+      await applyDashboardCalibration(tile.key, tile.label);
+    } finally {
+      setConfirmingKnown(false);
+    }
+  }
+
   return (
     <div className="bg-background text-body-foreground min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-12 py-10 md:py-20">
@@ -447,206 +427,17 @@ export function StyleProfile() {
           <>
             {user && <StyleAnalysisNudge userId={user.id} />}
             <div className="mb-10">
-              <PerspectiveSwitcher value={viewMode} onChange={setViewMode} />
-            </div>
-            {form.color_season && (
-              <div className="mb-10 space-y-8">
-                <ColorDossierSection colorSeason={form.color_season} />
-              </div>
-            )}
-            <div className="mb-12 ">
-              <AnimatePresence mode="wait" initial={false}>
-                {viewMode === "streamlined" ? (
-                  <motion.div
-                    key="streamlined"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.35 }}
-                    className="space-y-10"
-                  >
-                    <DossierField
-                      eyebrow="Core · 01"
-                      title="Color Season"
-                      caption="Anchor your palette — sub-season nuance lives in Calibration below."
-                    >
-                      <PillRow
-                        value={form.color_season}
-                        options={SEASONS as unknown as string[]}
-                        onSelect={(v) => setForm((f) => ({ ...f, color_season: v }))}
-                      />
-                    </DossierField>
-                    <DossierField
-                      eyebrow="Core · 02"
-                      title="Body Silhouette"
-                      caption="Drives every cut, drape, and proportion recommendation."
-                    >
-                      <PillRow
-                        value={form.body_type}
-                        options={BODIES as unknown as string[]}
-                        onSelect={(v) => setForm((f) => ({ ...f, body_type: v }))}
-                      />
-                    </DossierField>
-                    <DossierField
-                      eyebrow="Core · 03"
-                      title="Hair Texture"
-                      caption="Shapes the silhouette of every hair direction Mila composes."
-                    >
-                      <PillRow
-                        value={holistic.hair_type}
-                        options={HOLISTIC_HAIR_TYPES as unknown as string[]}
-                        onSelect={(v) => setHolistic((h) => ({ ...h, hair_type: v }))}
-                      />
-                    </DossierField>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="detailed"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.35 }}
-                  >
-                    <Accordion type="multiple" defaultValue={["01"]} className="space-y-4">
-                      <DossierAccordion
-                        value="01"
-                        eyebrow="01 / The Palette Baseline"
-                        caption="Define the chromatic floor that every recommendation refracts through."
-                        filled={[form.color_season, form.skin_undertone].filter(Boolean).length}
-                        total={2}
-                      >
-                        <DossierField title="Color Season">
-                          <PillRow
-                            value={form.color_season}
-                            options={SEASONS as unknown as string[]}
-                            onSelect={(v) => setForm((f) => ({ ...f, color_season: v }))}
-                          />
-                        </DossierField>
-                        <DossierField title="Skin Undertone">
-                          <PillRow
-                            value={form.skin_undertone}
-                            options={UNDERTONES as unknown as string[]}
-                            onSelect={(v) => setForm((f) => ({ ...f, skin_undertone: v }))}
-                          />
-                        </DossierField>
-                      </DossierAccordion>
-                      <DossierAccordion
-                        value="02"
-                        eyebrow="02 / Architectural Frame"
-                        caption="The structural vectors — silhouette and facial geometry — that guide every cut."
-                        filled={[form.body_type, holistic.face_shape].filter(Boolean).length}
-                        total={2}
-                      >
-                        <DossierField title="Body Silhouette">
-                          <PillRow
-                            value={form.body_type}
-                            options={BODIES as unknown as string[]}
-                            onSelect={(v) => setForm((f) => ({ ...f, body_type: v }))}
-                          />
-                        </DossierField>
-                        <DossierField title="Face Shape">
-                          <PillRow
-                            value={holistic.face_shape}
-                            options={HOLISTIC_FACE_SHAPES as unknown as string[]}
-                            onSelect={(v) => setHolistic((h) => ({ ...h, face_shape: v }))}
-                          />
-                        </DossierField>
-                      </DossierAccordion>
-                      <DossierAccordion
-                        value="03"
-                        eyebrow="03 / Beauty & Texture"
-                        caption="Cosmetic finishes and hair texture — the close-up signature beneath the silhouette."
-                        filled={(holistic.hair_type ? 1 : 0) + (beautyPrefs.length > 0 ? 1 : 0)}
-                        total={2}
-                      >
-                        <DossierField title="Hair Texture">
-                          <PillRow
-                            value={holistic.hair_type}
-                            options={HOLISTIC_HAIR_TYPES as unknown as string[]}
-                            onSelect={(v) => setHolistic((h) => ({ ...h, hair_type: v }))}
-                          />
-                        </DossierField>
-                        <DossierField
-                          title="Beauty Preferences"
-                          caption="Tap to toggle the finishes you gravitate toward."
-                        >
-                          <BeautyPillTray active={beautyPrefs} onToggle={toggleBeauty} />
-                        </DossierField>
-                      </DossierAccordion>
-                    </Accordion>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <div className="mb-10">
-              <KnownSeasonPicker
+              <SeasonModule
+                hasRealDossier={hasRealDossier}
+                dossier={dossier}
                 knownTileId={knownTileId}
                 onSelectTile={setKnownTileId}
                 confirming={confirmingKnown}
-                onConfirm={async () => {
-                  if (!knownTileId) return;
-                  const tile = KNOWN_SEASON_GROUPS.flatMap((g) => g.tiles).find(
-                    (t) => t.id === knownTileId,
-                  );
-                  if (!tile) return;
-                  setConfirmingKnown(true);
-                  try {
-                    await applyDashboardCalibration(tile.key, tile.label);
-                  } finally {
-                    setConfirmingKnown(false);
-                  }
-                }}
+                onConfirmTile={confirmKnownTile}
+                onOpenCamera={() => setDiagOpen(true)}
+                fineTuneOpen={dashCalibrateOpen}
+                onFineTuneOpenChange={setDashCalibrateOpen}
               />
-
-              <div className="mt-8">
-                <Accordion
-                  type="single"
-                  collapsible
-                  className="bg-card rounded-card border border-border shadow-paper"
-                >
-                  <AccordionItem value="studio-camera" className="border-b-0">
-                    <AccordionTrigger className="px-6 sm:px-8 py-5 hover:no-underline">
-                      <div className="flex flex-col items-start text-left">
-                        <p className="atelier-kicker">Path 02 · Discover Your Season</p>
-                        <p className="font-serif text-lg sm:text-xl tracking-tight mt-1">
-                          Not sure of your season? Let's find it together.
-                        </p>
-                        <p className="text-label text-muted-foreground mt-1 leading-relaxed">
-                          Find your light, then I'll read your true tones live.
-                        </p>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-6 sm:px-8 pb-8">
-                      <div className="flex flex-col items-center text-center pt-2">
-                        <Button
-                          size="md"
-                          className="w-full sm:w-auto px-8"
-                          onClick={() => setDiagOpen(true)}
-                        >
-                          <Camera aria-hidden="true" />
-                          Open the camera
-                        </Button>
-                        <button
-                          onClick={() => setManualOpen((v) => !v)}
-                          className="mt-4 text-micro uppercase tracking-label-xwide text-accent hover:text-foreground transition-colors underline-offset-4 hover:underline"
-                        >
-                          {manualOpen ? "Hide manual override" : "Or set your season by hand"}
-                        </button>
-                      </div>
-                      {manualOpen && (
-                        <ManualOverridePicker
-                          manualSeason={manualSeason}
-                          manualContrast={manualContrast}
-                          bodyType={form.body_type}
-                          onPickSeason={pickSeason}
-                          onPickContrast={pickContrast}
-                          onPickBody={pickBody}
-                        />
-                      )}
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </div>
             </div>
             {diagOpen && (
               <VisualDiagnosticViewfinder
@@ -655,6 +446,22 @@ export function StyleProfile() {
                 onPhotoSaved={() => setPhotoConsentAt(new Date().toISOString())}
               />
             )}
+            <div className="mb-10">
+              <PhysicalProfileCard
+                bodyType={form.body_type}
+                onPickBody={pickBody}
+                contrast={hasRealDossier ? dossier.contrastScale : manualContrast}
+                onPickContrast={pickContrast}
+                faceShape={holistic.face_shape}
+                onPickFace={(v) => setHolistic((h) => ({ ...h, face_shape: v }))}
+                hairType={holistic.hair_type}
+                onPickHair={(v) => setHolistic((h) => ({ ...h, hair_type: v }))}
+                undertone={form.skin_undertone}
+                onPickUndertone={(v) => setForm((f) => ({ ...f, skin_undertone: v }))}
+                beautyPrefs={beautyPrefs}
+                onToggleBeauty={toggleBeauty}
+              />
+            </div>
             {photoConsentAt ? (
               <div className="mt-6 flex items-center justify-between gap-4 rounded-card border border-border bg-card p-5">
                 <div>
@@ -700,26 +507,6 @@ export function StyleProfile() {
                 telemetry={telemetry}
               />
             </div>
-            {hasRealDossier && (
-              <div className="mt-6 flex items-center justify-center gap-3">
-                <span className="h-px w-10 bg-foreground/20" />
-                <button
-                  type="button"
-                  onClick={() => setDashCalibrateOpen(true)}
-                  className="text-micro uppercase tracking-label-max text-accent hover:text-foreground transition-colors underline-offset-[6px] hover:underline"
-                >
-                  Fine-tune your palette
-                </button>
-                <span className="h-px w-10 bg-foreground/20" />
-              </div>
-            )}
-            <SeasonCalibrationSheet
-              open={dashCalibrateOpen}
-              onOpenChange={setDashCalibrateOpen}
-              activeSeason={dossier.season}
-              activeSubSeason={dossier.subSeason}
-              onApply={(key, label) => void applyDashboardCalibration(key, label)}
-            />
           </>
         )}
       </div>

@@ -232,131 +232,23 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-card p-6 rounded-card border border-border shadow-paper space-y-6">
-            <div className="text-center pb-4 border-b border-porcelain/60">
-              <h4 className="font-serif text-lg text-ink">The Signature Lip</h4>
-              <p className="text-micro text-stone uppercase tracking-widest mt-1">
-                Pigment &amp; Finish
-              </p>
+          {(
+            [
+              { title: "Hair", copy: profile.beautyMap.hair },
+              { title: "Lip", copy: profile.beautyMap.lip },
+              { title: "Base", copy: profile.beautyMap.base },
+            ] as const
+          ).map((row) => (
+            <div
+              key={row.title}
+              className="bg-card p-6 rounded-card border border-border shadow-paper space-y-4"
+            >
+              <div className="pb-4 border-b border-porcelain/60">
+                <h4 className="font-serif text-lg text-ink">{row.title}</h4>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{row.copy}</p>
             </div>
-            <div className="space-y-4">
-              {[
-                { name: "Rosewood Balm", type: "Everyday Sheer", swatch: "oklch(0.60 0.12 15)" },
-                { name: "Crushed Velvet", type: "Statement Matte", swatch: "oklch(0.40 0.15 15)" },
-                { name: "Tawny Nude", type: "Soft Satin", swatch: "oklch(0.70 0.08 45)" },
-              ].map((lip, i) => (
-                <div key={i} className="flex items-center gap-4 group">
-                  <div
-                    className="size-10 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-stone/10 shrink-0 transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: lip.swatch }}
-                  />
-                  <div>
-                    <h5 className="font-serif text-sm text-ink">{lip.name}</h5>
-                    <span className="text-nano uppercase tracking-widest text-stone">
-                      {lip.type}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-card p-6 rounded-card border border-border shadow-paper space-y-6">
-            <div className="text-center pb-4 border-b border-porcelain/60">
-              <h4 className="font-serif text-lg text-ink">The Natural Flush</h4>
-              <p className="text-micro text-stone uppercase tracking-widest mt-1">
-                Cheek &amp; Warmth
-              </p>
-            </div>
-            <div className="space-y-4">
-              {[
-                {
-                  name: "Muted Mauve",
-                  type: "Cream Blush",
-                  swatch: "oklch(0.65 0.10 350)",
-                  fade: "from-white/40",
-                },
-                {
-                  name: "Warm Terracotta",
-                  type: "Powder Sweep",
-                  swatch: "oklch(0.65 0.12 40)",
-                  fade: "from-white/60",
-                },
-                {
-                  name: "Soft Apricot",
-                  type: "Liquid Tint",
-                  swatch: "oklch(0.80 0.08 55)",
-                  fade: "from-white/30",
-                },
-              ].map((cheek, i) => (
-                <div key={i} className="flex items-center gap-4 group">
-                  <div
-                    className="size-10 rounded-full shadow-inner border border-stone/10 shrink-0 relative overflow-hidden transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: cheek.swatch }}
-                  >
-                    <div
-                      className={`absolute inset-0 bg-linear-to-tr ${cheek.fade} to-transparent opacity-80`}
-                    />
-                  </div>
-                  <div>
-                    <h5 className="font-serif text-sm text-ink">{cheek.name}</h5>
-                    <span className="text-nano uppercase tracking-widest text-stone">
-                      {cheek.type}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-card p-6 rounded-card border border-border shadow-paper space-y-6">
-            <div className="text-center pb-4 border-b border-porcelain/60">
-              <h4 className="font-serif text-lg text-ink">Luminous Accents</h4>
-              <p className="text-micro text-stone uppercase tracking-widest mt-1">
-                Highlight &amp; Lid
-              </p>
-            </div>
-            <div className="space-y-4">
-              {[
-                {
-                  name: "Champagne Pearl",
-                  type: "Highlighter",
-                  swatch: "oklch(0.92 0.04 80)",
-                  glow: "oklch(0.98 0.02 85)",
-                },
-                {
-                  name: "Burnished Bronze",
-                  type: "Lid Wash",
-                  swatch: "oklch(0.55 0.08 55)",
-                  glow: "oklch(0.65 0.10 55)",
-                },
-                {
-                  name: "Soft Taupe",
-                  type: "Crease Contour",
-                  swatch: "oklch(0.70 0.03 60)",
-                  glow: "oklch(0.75 0.02 60)",
-                },
-              ].map((accent, i) => (
-                <div key={i} className="flex items-center gap-4 group">
-                  <div
-                    className="size-10 rounded-full shadow-inner border border-stone/10 shrink-0 relative overflow-hidden transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: accent.swatch }}
-                  >
-                    <div
-                      className="absolute -inset-2 blur-sm opacity-60 rotate-45 transform translate-x-2 translate-y-1"
-                      style={{ backgroundColor: accent.glow }}
-                    />
-                  </div>
-                  <div>
-                    <h5 className="font-serif text-sm text-ink">{accent.name}</h5>
-                    <span className="text-nano uppercase tracking-widest text-stone">
-                      {accent.type}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
