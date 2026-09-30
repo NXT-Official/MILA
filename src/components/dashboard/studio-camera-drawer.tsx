@@ -16,12 +16,14 @@ import { cn, errorMessage } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, ArrowLeft, ArrowRight } from "lucide-react";
+import { Camera, ArrowLeft, ArrowRight, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { findDupes, type DupeHuntResult } from "@/lib/dupe-hunter.functions";
 import { publishOotd } from "@/lib/publish-ootd";
 import { isInsufficientCreditsError } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type StudioCameraMode = "look-analysis" | "dupe-hunter";
 
@@ -64,6 +66,7 @@ export function StudioCameraDrawer({
   const [dupeLoading, setDupeLoading] = useState(false);
   const [dupeResult, setDupeResult] = useState<DupeHuntResult | null>(null);
   const [inspirationPreview, setInspirationPreview] = useState<string | null>(null);
+  const [dupeMaxBudget, setDupeMaxBudget] = useState("");
   const [postingOpen, setPostingOpen] = useState(false);
   const [postingSubmitting, setPostingSubmitting] = useState(false);
   const dupeFileRef = useRef<HTMLInputElement>(null);
@@ -114,8 +117,17 @@ export function StudioCameraDrawer({
       const {
         data: { publicUrl },
       } = supabase.storage.from("outfits").getPublicUrl(path);
+      const parsedBudget = Number(dupeMaxBudget);
+      const maxBudget =
+        dupeMaxBudget.trim() !== "" && Number.isFinite(parsedBudget) && parsedBudget > 0
+          ? parsedBudget
+          : undefined;
       const result = await runDupes({
-        data: { imageUrl: publicUrl, region: profile?.delivery_country || undefined },
+        data: {
+          imageUrl: publicUrl,
+          region: profile?.delivery_country || undefined,
+          maxBudget,
+        },
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(userId) });
       setDupeResult(result);
@@ -291,10 +303,33 @@ export function StudioCameraDrawer({
             {mode === "dupe-hunter" && (
               <div className="space-y-6">
                 {!dupeResult && !dupeLoading && (
-                  <CameraCapture
-                    onCapture={(file) => runDupeHunt(file)}
-                    onPickGallery={() => dupeFileRef.current?.click()}
-                  />
+                  <>
+                    <div className="max-w-xs mx-auto">
+                      <Label htmlFor="dupe-max-budget" className="text-ink">
+                        Max budget (optional)
+                      </Label>
+                      <Input
+                        id="dupe-max-budget"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="1"
+                        placeholder="e.g. 150"
+                        leadingIcon={DollarSign}
+                        value={dupeMaxBudget}
+                        onChange={(e) => setDupeMaxBudget(e.target.value)}
+                        className="mt-1.5"
+                      />
+                      <p className="mt-1.5 text-micro text-muted-foreground">
+                        We'll only show dupes at or under this price. Leave blank for no limit.
+                      </p>
+                    </div>
+
+                    <CameraCapture
+                      onCapture={(file) => runDupeHunt(file)}
+                      onPickGallery={() => dupeFileRef.current?.click()}
+                    />
+                  </>
                 )}
 
                 <input

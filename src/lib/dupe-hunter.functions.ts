@@ -4,11 +4,16 @@ import { z } from "zod";
 import { ClothingAttributesSchema, type ClothingAttributes } from "./outfit-items";
 import { findDupesForUser, findSimilarItemsForUser } from "@/server/services/dupes";
 
+/** A hard price ceiling, in the catalog's currency (USD), the user set for
+ * this search. Optional — omitted means no limit. */
+const maxBudgetSchema = z.number().positive().max(1_000_000).optional();
+
 export const Input = z.object({
   imageUrl: z.string().url(),
   maxResults: z.number().int().min(1).max(20).optional().default(6),
   /** ISO 3166-1 alpha-2 country code. Empty/omitted = unknown, don't region-filter. */
   region: z.string().length(2).optional(),
+  maxBudget: maxBudgetSchema,
 });
 export type FindDupesInputData = z.infer<typeof Input>;
 
@@ -42,6 +47,7 @@ export const FindSimilarItemsInput = z.object({
   attributes: ClothingAttributesSchema,
   maxResults: z.number().int().min(1).max(20).optional().default(6),
   region: z.string().length(2).optional(),
+  maxBudget: maxBudgetSchema,
 });
 export type FindSimilarItemsInputData = z.infer<typeof FindSimilarItemsInput>;
 

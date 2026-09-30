@@ -155,6 +155,10 @@ function scoreCandidate(
  * `budgetTag` (from the user's profile, see extractBudgetTag) never widens
  * or narrows the result set — it only re-ranks among candidates that already
  * matched the inspiration piece on category/silhouette/color/palette.
+ *
+ * `maxBudget`, in contrast, is a hard price ceiling the user typed in for
+ * this search — anything priced above it is dropped before scoring, not
+ * just re-ranked.
  */
 export async function rankDupes(
   supabase: MilaSupabaseClient,
@@ -162,6 +166,7 @@ export async function rankDupes(
   maxResults: number,
   region?: string,
   budgetTag: BudgetTag | null = null,
+  maxBudget?: number | null,
 ): Promise<DupeMatch[]> {
   const { data: candidates, error } = await supabase
     .from("products")
@@ -179,7 +184,12 @@ export async function rankDupes(
   }
 
   const relevant = (candidates ?? [])
-    .filter((p) => !!p.affiliate_link && isAvailableInRegion(p, region))
+    .filter(
+      (p) =>
+        !!p.affiliate_link &&
+        isAvailableInRegion(p, region) &&
+        (maxBudget == null || p.price <= maxBudget),
+    )
     .map((product) => {
       const { score, reasons } = scoreCandidate(inspiration, product);
       return { product, score, reasons };
@@ -243,7 +253,14 @@ export async function findSimilarItemsForUser(
     .eq("id", userId)
     .maybeSingle();
   const budgetTag = extractBudgetTag(profileRow?.shopping_preferences);
-  return rankDupes(supabase, data.attributes, data.maxResults, data.region, budgetTag);
+  return rankDupes(
+    supabase,
+    data.attributes,
+    data.maxResults,
+    data.region,
+    budgetTag,
+    data.maxBudget,
+  );
 }
 
 /**
@@ -291,7 +308,14 @@ export async function findDupesForUser(
       .eq("id", userId)
       .maybeSingle();
     const budgetTag = extractBudgetTag(profileRow?.shopping_preferences);
-    const dupes = await rankDupes(supabase, inspiration, data.maxResults, data.region, budgetTag);
+    const dupes = await rankDupes(
+      supabase,
+      inspiration,
+      data.maxResults,
+      data.region,
+      budgetTag,
+      data.maxBudget,
+    );
     return { inspiration, dupes };
   });
 }

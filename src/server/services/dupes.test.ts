@@ -164,3 +164,38 @@ describe("rankDupes budget alignment", () => {
     expect(results).toHaveLength(0);
   });
 });
+
+describe("rankDupes maxBudget", () => {
+  test("drops candidates priced above the user-set ceiling", async () => {
+    const supabase = fakeSupabase([
+      product("cheap", { price: 20 }),
+      product("mid", { price: 50 }),
+      product("pricey", { price: 90 }),
+    ]);
+    const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, 50);
+    expect(results.map((r) => r.id).sort()).toEqual(["cheap", "mid"]);
+  });
+
+  test("a candidate priced exactly at the ceiling is kept", async () => {
+    const supabase = fakeSupabase([product("edge", { price: 50 })]);
+    const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, 50);
+    expect(results.map((r) => r.id)).toEqual(["edge"]);
+  });
+
+  test("omitted maxBudget applies no ceiling", async () => {
+    const supabase = fakeSupabase([product("pricey", { price: 90 })]);
+    const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, null);
+    expect(results.map((r) => r.id)).toEqual(["pricey"]);
+  });
+
+  test("combines with a budget tag: ceiling filters first, tag still re-ranks what's left", async () => {
+    const supabase = fakeSupabase([
+      product("cheap", { price: 20 }),
+      product("mid", { price: 50 }),
+      product("pricey", { price: 90 }),
+    ]);
+    const results = await rankDupes(supabase, INSPIRATION, 10, undefined, "Investment Pieces", 60);
+    expect(results.map((r) => r.id)).not.toContain("pricey");
+    expect(results[0].id).toBe("mid");
+  });
+});
