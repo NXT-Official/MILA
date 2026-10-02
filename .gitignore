@@ -46,3 +46,6 @@ playwright/.cache/
 *.txt
 !IN_DEVELOPMENT.txt
 !public/robots.txt
+
+# Local scratch (screen-capture workflow)
+.figma-capture/
