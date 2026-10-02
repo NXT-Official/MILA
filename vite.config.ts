@@ -88,7 +88,14 @@ export default defineConfig(({ command, mode }) => {
     plugins: [
       tailwindcss(),
       tsConfigPaths({ projects: ["./tsconfig.json"] }),
-      tanstackStart(),
+      tanstackStart({
+        router: {
+          // Colocated bun tests under src/routes/** never export a Route; the
+          // generator already keeps them out of the tree, but without this
+          // pattern it warns about each of them on every build (19 warnings).
+          routeFileIgnorePattern: "\\.test\\.(ts|tsx)$",
+        },
+      }),
       ...(command === "build"
         ? [
             nitro({
