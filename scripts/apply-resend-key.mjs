@@ -36,7 +36,9 @@ const disable = args.includes("--disable");
 const key = args.find((a) => a.startsWith("re_"));
 
 if (!disable && !key) {
-  console.error("Usage: node scripts/apply-resend-key.mjs <re_...key> [--dry-run] | --disable [--dry-run]");
+  console.error(
+    "Usage: node scripts/apply-resend-key.mjs <re_...key> [--dry-run] | --disable [--dry-run]",
+  );
   process.exit(1);
 }
 
@@ -62,8 +64,15 @@ if (!dryRun) {
     console.error("PATCH failed:", res.status, await res.text());
     process.exit(1);
   }
-  const check = await fetch(API, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json());
-  console.log("   applied. smtp_host =", JSON.stringify(check.smtp_host), "| pass set:", Boolean(check.smtp_pass));
+  const check = await fetch(API, { headers: { Authorization: `Bearer ${token}` } }).then((r) =>
+    r.json(),
+  );
+  console.log(
+    "   applied. smtp_host =",
+    JSON.stringify(check.smtp_host),
+    "| pass set:",
+    Boolean(check.smtp_pass),
+  );
 
   if (!disable && key) {
     const fs = await import("node:fs");
