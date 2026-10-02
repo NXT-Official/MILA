@@ -49,3 +49,5 @@ playwright/.cache/
 
 # Local scratch (screen-capture workflow)
 .figma-capture/
+# stray file some expo CLI runs recreate here
+app.json
