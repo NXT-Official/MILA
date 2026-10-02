@@ -268,3 +268,19 @@ export function isOnboardingStepReachable(
   }
   return true;
 }
+
+/** Parses the `restart` search param that RestartStyleAnalysisAction sends. */
+export function sanitizeRestartFlag(value: unknown): boolean {
+  return value === true || value === 1 || value === "true" || value === "1";
+}
+
+/**
+ * A deliberate restart replays the whole wizard from the welcome screen;
+ * otherwise the user resumes wherever their saved profile left off.
+ */
+export function getInitialOnboardingStep(
+  profile: ProfileSnapshot | null | undefined,
+  { restart }: { restart: boolean },
+): OnboardingStepId {
+  return restart ? "welcome" : getFirstIncompleteOnboardingStep(profile);
+}

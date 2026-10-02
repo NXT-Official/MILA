@@ -1,10 +1,11 @@
-import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { LogOut, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useAuthenticatedViewerState } from "@/lib/queries/auth";
 import { useSignOut } from "@/hooks/use-sign-out";
 import { IconButton } from "@/components/ui/icon-button";
+import { sanitizeRestartFlag } from "@/constants/steps";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   component: OnboardingLayout,
@@ -15,11 +16,18 @@ function OnboardingLayout() {
   const viewer = useAuthenticatedViewerState(user?.id);
   const navigate = useNavigate();
   const { signingOut, handleSignOut } = useSignOut();
+  const search = useSearch({ strict: false }) as { restart?: unknown };
+  const isRestart = sanitizeRestartFlag(search.restart);
+  // Captured once so finishing the wizard (which makes the profile complete)
+  // never bounces the user mid-flow. A complete profile only belongs here
+  // when the user explicitly chose Restart Style Analysis.
   const wasCompleteAtLoad = useRef<boolean | null>(null);
-  if (wasCompleteAtLoad.current === null && user && !viewer.isLoading) {
+  const redirectAtLoad = useRef<boolean | null>(null);
+  if (redirectAtLoad.current === null && user && !viewer.isLoading) {
     wasCompleteAtLoad.current = viewer.isStyleProfileComplete;
+    redirectAtLoad.current = viewer.isStyleProfileComplete && !isRestart;
   }
-  const shouldRedirectForComplete = wasCompleteAtLoad.current === true;
+  const shouldRedirectForComplete = redirectAtLoad.current === true;
 
   useEffect(() => {
     if (!user || viewer.isLoading) return;
@@ -40,7 +48,7 @@ function OnboardingLayout() {
     <div className="flex min-h-screen flex-col bg-canvas text-ink">
       <header className="atelier-container flex items-center justify-between py-6">
         <Link
-          to="/onboarding/style-profile"
+          to={wasCompleteAtLoad.current ? "/dashboard" : "/onboarding/style-profile"}
           className="font-display text-xl tracking-label text-ink"
         >
           MILA

@@ -25,6 +25,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import {
   getFirstIncompleteOnboardingStep,
+  getInitialOnboardingStep,
   isOnboardingStepReachable,
   type OnboardingStepId,
 } from "../../constants/steps";
@@ -138,9 +139,11 @@ const SELECT_STEPS = {
 
 export function StyleProfileOnboarding({
   step,
+  restart = false,
   onStepChange,
 }: {
   step: OnboardingStepId | undefined;
+  restart?: boolean;
   onStepChange: (step: OnboardingStepId, opts?: { replace?: boolean }) => void;
 }) {
   const { user } = useAuth();
@@ -161,9 +164,9 @@ export function StyleProfileOnboarding({
     if (!profile || didResolveInitialStepRef.current) return;
     didResolveInitialStepRef.current = true;
     if (!step || !isOnboardingStepReachable(step, profile)) {
-      onStepChange(getFirstIncompleteOnboardingStep(profile), { replace: true });
+      onStepChange(getInitialOnboardingStep(profile, { restart }), { replace: true });
     }
-  }, [profile, step, onStepChange]);
+  }, [profile, step, restart, onStepChange]);
 
   useEffect(() => {
     if (!step) return;

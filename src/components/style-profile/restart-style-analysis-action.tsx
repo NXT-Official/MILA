@@ -24,7 +24,7 @@ export function RestartStyleAnalysisAction() {
         description="This walks you back through your full style profile, including gender and body type. Your current profile stays until you save changes."
         confirmLabel="Restart"
         cancelLabel="Cancel"
-        onConfirm={() => navigate({ to: "/onboarding/style-profile" })}
+        onConfirm={() => navigate({ to: "/onboarding/style-profile", search: { restart: true } })}
       />
     </>
   );

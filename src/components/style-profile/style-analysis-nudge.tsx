@@ -73,7 +73,7 @@ export function StyleAnalysisNudge({ userId }: { userId: string }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => navigate({ to: "/onboarding/style-profile" })}
+          onClick={() => navigate({ to: "/onboarding/style-profile", search: { restart: true } })}
         >
           Refresh analysis
         </Button>
