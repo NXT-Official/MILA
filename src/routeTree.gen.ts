@@ -9,86 +9,60 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as StyleDossierRouteImport } from './routes/style-dossier'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as MembershipRouteImport } from './routes/membership'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as HowItWorksRouteImport } from './routes/how-it-works'
-import { Route as DupeHunterRouteImport } from './routes/dupe-hunter'
-import { Route as CommunityRouteImport } from './routes/community'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as CommunityRouteImport } from './routes/community'
+import { Route as DupeHunterRouteImport } from './routes/dupe-hunter'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as MembershipRouteImport } from './routes/membership'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as StyleDossierRouteImport } from './routes/style-dossier'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as LoginForgotPasswordRouteImport } from './routes/login/forgot-password'
-import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
-import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
-import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
-import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
-import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
-import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
-import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
-import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
-import { Route as AuthenticatedAppPalettesRouteImport } from './routes/_authenticated/_app/palettes'
-import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
-import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
-import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
-import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
 import { Route as AuthenticatedAppAccountRouteImport } from './routes/_authenticated/_app/account'
-import { Route as ApiV1SupportMessageRouteImport } from './routes/api/v1/support/message'
-import { Route as ApiV1ProfileMemberRouteImport } from './routes/api/v1/profile/member'
-import { Route as ApiV1PostsFeedRouteImport } from './routes/api/v1/posts/feed'
-import { Route as ApiV1PostsCreateRouteImport } from './routes/api/v1/posts/create'
-import { Route as ApiV1LookStyleSheetRouteImport } from './routes/api/v1/look/style-sheet'
-import { Route as ApiV1LookPhotoPreviewRouteImport } from './routes/api/v1/look/photo-preview'
-import { Route as ApiV1LookImageRouteImport } from './routes/api/v1/look/image'
-import { Route as ApiV1LookGenerateRouteImport } from './routes/api/v1/look/generate'
-import { Route as ApiV1ItemsAnalyzeRouteImport } from './routes/api/v1/items/analyze'
-import { Route as ApiV1DupesSimilarRouteImport } from './routes/api/v1/dupes/similar'
-import { Route as ApiV1DupesFindRouteImport } from './routes/api/v1/dupes/find'
-import { Route as ApiV1CronMembershipMaintenanceRouteImport } from './routes/api/v1/cron/membership-maintenance'
-import { Route as ApiV1ConciergeChatRouteImport } from './routes/api/v1/concierge/chat'
-import { Route as ApiV1BillingSyncRouteImport } from './routes/api/v1/billing/sync'
-import { Route as ApiV1BillingResumeRouteImport } from './routes/api/v1/billing/resume'
-import { Route as ApiV1BillingCheckoutUrlRouteImport } from './routes/api/v1/billing/checkout-url'
-import { Route as ApiV1BillingCancelRouteImport } from './routes/api/v1/billing/cancel'
-import { Route as ApiV1AnalysisOutfitRouteImport } from './routes/api/v1/analysis/outfit'
-import { Route as ApiV1AccountDeleteRouteImport } from './routes/api/v1/account/delete'
+import { Route as AuthenticatedAppConciergeRouteImport } from './routes/_authenticated/_app/concierge'
+import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
+import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticated/_app/feed'
+import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
+import { Route as AuthenticatedAppPalettesRouteImport } from './routes/_authenticated/_app/palettes'
+import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
+import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
+import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
+import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
 import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_authenticated/_app/profile.$userId'
+import { Route as ApiV1AccountDeleteRouteImport } from './routes/api/v1/account/delete'
+import { Route as ApiV1AnalysisOutfitRouteImport } from './routes/api/v1/analysis/outfit'
+import { Route as ApiV1BillingCancelRouteImport } from './routes/api/v1/billing/cancel'
+import { Route as ApiV1BillingCheckoutUrlRouteImport } from './routes/api/v1/billing/checkout-url'
+import { Route as ApiV1BillingResumeRouteImport } from './routes/api/v1/billing/resume'
+import { Route as ApiV1BillingSyncRouteImport } from './routes/api/v1/billing/sync'
+import { Route as ApiV1ConciergeChatRouteImport } from './routes/api/v1/concierge/chat'
+import { Route as ApiV1CronMembershipMaintenanceRouteImport } from './routes/api/v1/cron/membership-maintenance'
+import { Route as ApiV1DupesFindRouteImport } from './routes/api/v1/dupes/find'
+import { Route as ApiV1DupesSimilarRouteImport } from './routes/api/v1/dupes/similar'
+import { Route as ApiV1ItemsAnalyzeRouteImport } from './routes/api/v1/items/analyze'
+import { Route as ApiV1LookGenerateRouteImport } from './routes/api/v1/look/generate'
+import { Route as ApiV1LookImageRouteImport } from './routes/api/v1/look/image'
+import { Route as ApiV1LookPhotoPreviewRouteImport } from './routes/api/v1/look/photo-preview'
+import { Route as ApiV1LookStyleSheetRouteImport } from './routes/api/v1/look/style-sheet'
+import { Route as ApiV1PostsCreateRouteImport } from './routes/api/v1/posts/create'
+import { Route as ApiV1PostsFeedRouteImport } from './routes/api/v1/posts/feed'
+import { Route as ApiV1ProfileMemberRouteImport } from './routes/api/v1/profile/member'
+import { Route as ApiV1SupportMessageRouteImport } from './routes/api/v1/support/message'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StyleDossierRoute = StyleDossierRouteImport.update({
-  id: '/style-dossier',
-  path: '/style-dossier',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MembershipRoute = MembershipRouteImport.update({
-  id: '/membership',
-  path: '/membership',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HowItWorksRoute = HowItWorksRouteImport.update({
-  id: '/how-it-works',
-  path: '/how-it-works',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DupeHunterRoute = DupeHunterRouteImport.update({
-  id: '/dupe-hunter',
-  path: '/dupe-hunter',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityRoute = CommunityRouteImport.update({
@@ -96,13 +70,58 @@ const CommunityRoute = CommunityRouteImport.update({
   path: '/community',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+const DupeHunterRoute = DupeHunterRouteImport.update({
+  id: '/dupe-hunter',
+  path: '/dupe-hunter',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembershipRoute = MembershipRouteImport.update({
+  id: '/membership',
+  path: '/membership',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StyleDossierRoute = StyleDossierRouteImport.update({
+  id: '/style-dossier',
+  path: '/style-dossier',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
@@ -115,45 +134,31 @@ const LoginForgotPasswordRoute = LoginForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => LoginRoute,
 } as any)
-const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
-  id: '/auth/reset-password',
-  path: '/auth/reset-password',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedAppAccountRoute = AuthenticatedAppAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
-  id: '/_app',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const ApiWebhooksPaddleRoute = ApiWebhooksPaddleRouteImport.update({
-  id: '/api/webhooks/paddle',
-  path: '/api/webhooks/paddle',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedOnboardingStyleProfileRoute =
-  AuthenticatedOnboardingStyleProfileRouteImport.update({
-    id: '/style-profile',
-    path: '/style-profile',
-    getParentRoute: () => AuthenticatedOnboardingRoute,
-  } as any)
-const AuthenticatedAppStyleProfileRoute =
-  AuthenticatedAppStyleProfileRouteImport.update({
-    id: '/style-profile',
-    path: '/style-profile',
+const AuthenticatedAppConciergeRoute =
+  AuthenticatedAppConciergeRouteImport.update({
+    id: '/concierge',
+    path: '/concierge',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
-const AuthenticatedAppPricingRoute = AuthenticatedAppPricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
+const AuthenticatedAppDashboardRoute =
+  AuthenticatedAppDashboardRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppFeedRoute = AuthenticatedAppFeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppHistoryRoute = AuthenticatedAppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
 const AuthenticatedAppPalettesRoute =
@@ -162,127 +167,26 @@ const AuthenticatedAppPalettesRoute =
     path: '/palettes',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
-const AuthenticatedAppHistoryRoute = AuthenticatedAppHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
+const AuthenticatedAppPricingRoute = AuthenticatedAppPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
-const AuthenticatedAppFeedRoute = AuthenticatedAppFeedRouteImport.update({
-  id: '/feed',
-  path: '/feed',
-  getParentRoute: () => AuthenticatedAppRoute,
-} as any)
-const AuthenticatedAppDashboardRoute =
-  AuthenticatedAppDashboardRouteImport.update({
-    id: '/dashboard',
-    path: '/dashboard',
+const AuthenticatedAppStyleProfileRoute =
+  AuthenticatedAppStyleProfileRouteImport.update({
+    id: '/style-profile',
+    path: '/style-profile',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
-const AuthenticatedAppConciergeRoute =
-  AuthenticatedAppConciergeRouteImport.update({
-    id: '/concierge',
-    path: '/concierge',
-    getParentRoute: () => AuthenticatedAppRoute,
+const AuthenticatedOnboardingStyleProfileRoute =
+  AuthenticatedOnboardingStyleProfileRouteImport.update({
+    id: '/style-profile',
+    path: '/style-profile',
+    getParentRoute: () => AuthenticatedOnboardingRoute,
   } as any)
-const AuthenticatedAppAccountRoute = AuthenticatedAppAccountRouteImport.update({
-  id: '/account',
-  path: '/account',
-  getParentRoute: () => AuthenticatedAppRoute,
-} as any)
-const ApiV1SupportMessageRoute = ApiV1SupportMessageRouteImport.update({
-  id: '/api/v1/support/message',
-  path: '/api/v1/support/message',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1ProfileMemberRoute = ApiV1ProfileMemberRouteImport.update({
-  id: '/api/v1/profile/member',
-  path: '/api/v1/profile/member',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1PostsFeedRoute = ApiV1PostsFeedRouteImport.update({
-  id: '/api/v1/posts/feed',
-  path: '/api/v1/posts/feed',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1PostsCreateRoute = ApiV1PostsCreateRouteImport.update({
-  id: '/api/v1/posts/create',
-  path: '/api/v1/posts/create',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1LookStyleSheetRoute = ApiV1LookStyleSheetRouteImport.update({
-  id: '/api/v1/look/style-sheet',
-  path: '/api/v1/look/style-sheet',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1LookPhotoPreviewRoute = ApiV1LookPhotoPreviewRouteImport.update({
-  id: '/api/v1/look/photo-preview',
-  path: '/api/v1/look/photo-preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1LookImageRoute = ApiV1LookImageRouteImport.update({
-  id: '/api/v1/look/image',
-  path: '/api/v1/look/image',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1LookGenerateRoute = ApiV1LookGenerateRouteImport.update({
-  id: '/api/v1/look/generate',
-  path: '/api/v1/look/generate',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1ItemsAnalyzeRoute = ApiV1ItemsAnalyzeRouteImport.update({
-  id: '/api/v1/items/analyze',
-  path: '/api/v1/items/analyze',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1DupesSimilarRoute = ApiV1DupesSimilarRouteImport.update({
-  id: '/api/v1/dupes/similar',
-  path: '/api/v1/dupes/similar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1DupesFindRoute = ApiV1DupesFindRouteImport.update({
-  id: '/api/v1/dupes/find',
-  path: '/api/v1/dupes/find',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1CronMembershipMaintenanceRoute =
-  ApiV1CronMembershipMaintenanceRouteImport.update({
-    id: '/api/v1/cron/membership-maintenance',
-    path: '/api/v1/cron/membership-maintenance',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiV1ConciergeChatRoute = ApiV1ConciergeChatRouteImport.update({
-  id: '/api/v1/concierge/chat',
-  path: '/api/v1/concierge/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1BillingSyncRoute = ApiV1BillingSyncRouteImport.update({
-  id: '/api/v1/billing/sync',
-  path: '/api/v1/billing/sync',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1BillingResumeRoute = ApiV1BillingResumeRouteImport.update({
-  id: '/api/v1/billing/resume',
-  path: '/api/v1/billing/resume',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1BillingCheckoutUrlRoute = ApiV1BillingCheckoutUrlRouteImport.update({
-  id: '/api/v1/billing/checkout-url',
-  path: '/api/v1/billing/checkout-url',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1BillingCancelRoute = ApiV1BillingCancelRouteImport.update({
-  id: '/api/v1/billing/cancel',
-  path: '/api/v1/billing/cancel',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1AnalysisOutfitRoute = ApiV1AnalysisOutfitRouteImport.update({
-  id: '/api/v1/analysis/outfit',
-  path: '/api/v1/analysis/outfit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1AccountDeleteRoute = ApiV1AccountDeleteRouteImport.update({
-  id: '/api/v1/account/delete',
-  path: '/api/v1/account/delete',
+const ApiWebhooksPaddleRoute = ApiWebhooksPaddleRouteImport.update({
+  id: '/api/webhooks/paddle',
+  path: '/api/webhooks/paddle',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppProfileUserIdRoute =
@@ -291,6 +195,102 @@ const AuthenticatedAppProfileUserIdRoute =
     path: '/profile/$userId',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const ApiV1AccountDeleteRoute = ApiV1AccountDeleteRouteImport.update({
+  id: '/api/v1/account/delete',
+  path: '/api/v1/account/delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1AnalysisOutfitRoute = ApiV1AnalysisOutfitRouteImport.update({
+  id: '/api/v1/analysis/outfit',
+  path: '/api/v1/analysis/outfit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingCancelRoute = ApiV1BillingCancelRouteImport.update({
+  id: '/api/v1/billing/cancel',
+  path: '/api/v1/billing/cancel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingCheckoutUrlRoute = ApiV1BillingCheckoutUrlRouteImport.update({
+  id: '/api/v1/billing/checkout-url',
+  path: '/api/v1/billing/checkout-url',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingResumeRoute = ApiV1BillingResumeRouteImport.update({
+  id: '/api/v1/billing/resume',
+  path: '/api/v1/billing/resume',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1BillingSyncRoute = ApiV1BillingSyncRouteImport.update({
+  id: '/api/v1/billing/sync',
+  path: '/api/v1/billing/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ConciergeChatRoute = ApiV1ConciergeChatRouteImport.update({
+  id: '/api/v1/concierge/chat',
+  path: '/api/v1/concierge/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1CronMembershipMaintenanceRoute =
+  ApiV1CronMembershipMaintenanceRouteImport.update({
+    id: '/api/v1/cron/membership-maintenance',
+    path: '/api/v1/cron/membership-maintenance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1DupesFindRoute = ApiV1DupesFindRouteImport.update({
+  id: '/api/v1/dupes/find',
+  path: '/api/v1/dupes/find',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1DupesSimilarRoute = ApiV1DupesSimilarRouteImport.update({
+  id: '/api/v1/dupes/similar',
+  path: '/api/v1/dupes/similar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ItemsAnalyzeRoute = ApiV1ItemsAnalyzeRouteImport.update({
+  id: '/api/v1/items/analyze',
+  path: '/api/v1/items/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1LookGenerateRoute = ApiV1LookGenerateRouteImport.update({
+  id: '/api/v1/look/generate',
+  path: '/api/v1/look/generate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1LookImageRoute = ApiV1LookImageRouteImport.update({
+  id: '/api/v1/look/image',
+  path: '/api/v1/look/image',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1LookPhotoPreviewRoute = ApiV1LookPhotoPreviewRouteImport.update({
+  id: '/api/v1/look/photo-preview',
+  path: '/api/v1/look/photo-preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1LookStyleSheetRoute = ApiV1LookStyleSheetRouteImport.update({
+  id: '/api/v1/look/style-sheet',
+  path: '/api/v1/look/style-sheet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PostsCreateRoute = ApiV1PostsCreateRouteImport.update({
+  id: '/api/v1/posts/create',
+  path: '/api/v1/posts/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PostsFeedRoute = ApiV1PostsFeedRouteImport.update({
+  id: '/api/v1/posts/feed',
+  path: '/api/v1/posts/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ProfileMemberRoute = ApiV1ProfileMemberRouteImport.update({
+  id: '/api/v1/profile/member',
+  path: '/api/v1/profile/member',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1SupportMessageRoute = ApiV1SupportMessageRouteImport.update({
+  id: '/api/v1/support/message',
+  path: '/api/v1/support/message',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -611,60 +611,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/style-dossier': {
-      id: '/style-dossier'
-      path: '/style-dossier'
-      fullPath: '/style-dossier'
-      preLoaderRoute: typeof StyleDossierRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/membership': {
-      id: '/membership'
-      path: '/membership'
-      fullPath: '/membership'
-      preLoaderRoute: typeof MembershipRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/how-it-works': {
-      id: '/how-it-works'
-      path: '/how-it-works'
-      fullPath: '/how-it-works'
-      preLoaderRoute: typeof HowItWorksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dupe-hunter': {
-      id: '/dupe-hunter'
-      path: '/dupe-hunter'
-      fullPath: '/dupe-hunter'
-      preLoaderRoute: typeof DupeHunterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/community': {
-      id: '/community'
-      path: '/community'
-      fullPath: '/community'
-      preLoaderRoute: typeof CommunityRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -674,11 +625,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dupe-hunter': {
+      id: '/dupe-hunter'
+      path: '/dupe-hunter'
+      fullPath: '/dupe-hunter'
+      preLoaderRoute: typeof DupeHunterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membership': {
+      id: '/membership'
+      path: '/membership'
+      fullPath: '/membership'
+      preLoaderRoute: typeof MembershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/style-dossier': {
+      id: '/style-dossier'
+      path: '/style-dossier'
+      fullPath: '/style-dossier'
+      preLoaderRoute: typeof StyleDossierRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/_app': {
+      id: '/_authenticated/_app'
+      path: ''
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login/': {
@@ -695,88 +723,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginForgotPasswordRouteImport
       parentRoute: typeof LoginRoute
     }
-    '/auth/reset-password': {
-      id: '/auth/reset-password'
-      path: '/auth/reset-password'
-      fullPath: '/auth/reset-password'
-      preLoaderRoute: typeof AuthResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/onboarding': {
-      id: '/_authenticated/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/_app': {
-      id: '/_authenticated/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedAppRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/api/webhooks/paddle': {
-      id: '/api/webhooks/paddle'
-      path: '/api/webhooks/paddle'
-      fullPath: '/api/webhooks/paddle'
-      preLoaderRoute: typeof ApiWebhooksPaddleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/onboarding/style-profile': {
-      id: '/_authenticated/onboarding/style-profile'
-      path: '/style-profile'
-      fullPath: '/onboarding/style-profile'
-      preLoaderRoute: typeof AuthenticatedOnboardingStyleProfileRouteImport
-      parentRoute: typeof AuthenticatedOnboardingRoute
-    }
-    '/_authenticated/_app/style-profile': {
-      id: '/_authenticated/_app/style-profile'
-      path: '/style-profile'
-      fullPath: '/style-profile'
-      preLoaderRoute: typeof AuthenticatedAppStyleProfileRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
-    '/_authenticated/_app/pricing': {
-      id: '/_authenticated/_app/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof AuthenticatedAppPricingRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
-    '/_authenticated/_app/palettes': {
-      id: '/_authenticated/_app/palettes'
-      path: '/palettes'
-      fullPath: '/palettes'
-      preLoaderRoute: typeof AuthenticatedAppPalettesRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
-    '/_authenticated/_app/history': {
-      id: '/_authenticated/_app/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof AuthenticatedAppHistoryRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
-    '/_authenticated/_app/feed': {
-      id: '/_authenticated/_app/feed'
-      path: '/feed'
-      fullPath: '/feed'
-      preLoaderRoute: typeof AuthenticatedAppFeedRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
-    '/_authenticated/_app/dashboard': {
-      id: '/_authenticated/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedAppDashboardRouteImport
+    '/_authenticated/_app/account': {
+      id: '/_authenticated/_app/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthenticatedAppAccountRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/concierge': {
@@ -786,130 +737,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppConciergeRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/_app/account': {
-      id: '/_authenticated/_app/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AuthenticatedAppAccountRouteImport
+    '/_authenticated/_app/dashboard': {
+      id: '/_authenticated/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedAppDashboardRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
-    '/api/v1/support/message': {
-      id: '/api/v1/support/message'
-      path: '/api/v1/support/message'
-      fullPath: '/api/v1/support/message'
-      preLoaderRoute: typeof ApiV1SupportMessageRouteImport
+    '/_authenticated/_app/feed': {
+      id: '/_authenticated/_app/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof AuthenticatedAppFeedRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/history': {
+      id: '/_authenticated/_app/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedAppHistoryRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/palettes': {
+      id: '/_authenticated/_app/palettes'
+      path: '/palettes'
+      fullPath: '/palettes'
+      preLoaderRoute: typeof AuthenticatedAppPalettesRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/pricing': {
+      id: '/_authenticated/_app/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof AuthenticatedAppPricingRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/style-profile': {
+      id: '/_authenticated/_app/style-profile'
+      path: '/style-profile'
+      fullPath: '/style-profile'
+      preLoaderRoute: typeof AuthenticatedAppStyleProfileRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/onboarding/style-profile': {
+      id: '/_authenticated/onboarding/style-profile'
+      path: '/style-profile'
+      fullPath: '/onboarding/style-profile'
+      preLoaderRoute: typeof AuthenticatedOnboardingStyleProfileRouteImport
+      parentRoute: typeof AuthenticatedOnboardingRoute
+    }
+    '/api/webhooks/paddle': {
+      id: '/api/webhooks/paddle'
+      path: '/api/webhooks/paddle'
+      fullPath: '/api/webhooks/paddle'
+      preLoaderRoute: typeof ApiWebhooksPaddleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/v1/profile/member': {
-      id: '/api/v1/profile/member'
-      path: '/api/v1/profile/member'
-      fullPath: '/api/v1/profile/member'
-      preLoaderRoute: typeof ApiV1ProfileMemberRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/_app/profile/$userId': {
+      id: '/_authenticated/_app/profile/$userId'
+      path: '/profile/$userId'
+      fullPath: '/profile/$userId'
+      preLoaderRoute: typeof AuthenticatedAppProfileUserIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
     }
-    '/api/v1/posts/feed': {
-      id: '/api/v1/posts/feed'
-      path: '/api/v1/posts/feed'
-      fullPath: '/api/v1/posts/feed'
-      preLoaderRoute: typeof ApiV1PostsFeedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/posts/create': {
-      id: '/api/v1/posts/create'
-      path: '/api/v1/posts/create'
-      fullPath: '/api/v1/posts/create'
-      preLoaderRoute: typeof ApiV1PostsCreateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/look/style-sheet': {
-      id: '/api/v1/look/style-sheet'
-      path: '/api/v1/look/style-sheet'
-      fullPath: '/api/v1/look/style-sheet'
-      preLoaderRoute: typeof ApiV1LookStyleSheetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/look/photo-preview': {
-      id: '/api/v1/look/photo-preview'
-      path: '/api/v1/look/photo-preview'
-      fullPath: '/api/v1/look/photo-preview'
-      preLoaderRoute: typeof ApiV1LookPhotoPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/look/image': {
-      id: '/api/v1/look/image'
-      path: '/api/v1/look/image'
-      fullPath: '/api/v1/look/image'
-      preLoaderRoute: typeof ApiV1LookImageRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/look/generate': {
-      id: '/api/v1/look/generate'
-      path: '/api/v1/look/generate'
-      fullPath: '/api/v1/look/generate'
-      preLoaderRoute: typeof ApiV1LookGenerateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/items/analyze': {
-      id: '/api/v1/items/analyze'
-      path: '/api/v1/items/analyze'
-      fullPath: '/api/v1/items/analyze'
-      preLoaderRoute: typeof ApiV1ItemsAnalyzeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/dupes/similar': {
-      id: '/api/v1/dupes/similar'
-      path: '/api/v1/dupes/similar'
-      fullPath: '/api/v1/dupes/similar'
-      preLoaderRoute: typeof ApiV1DupesSimilarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/dupes/find': {
-      id: '/api/v1/dupes/find'
-      path: '/api/v1/dupes/find'
-      fullPath: '/api/v1/dupes/find'
-      preLoaderRoute: typeof ApiV1DupesFindRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/cron/membership-maintenance': {
-      id: '/api/v1/cron/membership-maintenance'
-      path: '/api/v1/cron/membership-maintenance'
-      fullPath: '/api/v1/cron/membership-maintenance'
-      preLoaderRoute: typeof ApiV1CronMembershipMaintenanceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/concierge/chat': {
-      id: '/api/v1/concierge/chat'
-      path: '/api/v1/concierge/chat'
-      fullPath: '/api/v1/concierge/chat'
-      preLoaderRoute: typeof ApiV1ConciergeChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/billing/sync': {
-      id: '/api/v1/billing/sync'
-      path: '/api/v1/billing/sync'
-      fullPath: '/api/v1/billing/sync'
-      preLoaderRoute: typeof ApiV1BillingSyncRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/billing/resume': {
-      id: '/api/v1/billing/resume'
-      path: '/api/v1/billing/resume'
-      fullPath: '/api/v1/billing/resume'
-      preLoaderRoute: typeof ApiV1BillingResumeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/billing/checkout-url': {
-      id: '/api/v1/billing/checkout-url'
-      path: '/api/v1/billing/checkout-url'
-      fullPath: '/api/v1/billing/checkout-url'
-      preLoaderRoute: typeof ApiV1BillingCheckoutUrlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/billing/cancel': {
-      id: '/api/v1/billing/cancel'
-      path: '/api/v1/billing/cancel'
-      fullPath: '/api/v1/billing/cancel'
-      preLoaderRoute: typeof ApiV1BillingCancelRouteImport
+    '/api/v1/account/delete': {
+      id: '/api/v1/account/delete'
+      path: '/api/v1/account/delete'
+      fullPath: '/api/v1/account/delete'
+      preLoaderRoute: typeof ApiV1AccountDeleteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/analysis/outfit': {
@@ -919,19 +814,124 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1AnalysisOutfitRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/v1/account/delete': {
-      id: '/api/v1/account/delete'
-      path: '/api/v1/account/delete'
-      fullPath: '/api/v1/account/delete'
-      preLoaderRoute: typeof ApiV1AccountDeleteRouteImport
+    '/api/v1/billing/cancel': {
+      id: '/api/v1/billing/cancel'
+      path: '/api/v1/billing/cancel'
+      fullPath: '/api/v1/billing/cancel'
+      preLoaderRoute: typeof ApiV1BillingCancelRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/_app/profile/$userId': {
-      id: '/_authenticated/_app/profile/$userId'
-      path: '/profile/$userId'
-      fullPath: '/profile/$userId'
-      preLoaderRoute: typeof AuthenticatedAppProfileUserIdRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
+    '/api/v1/billing/checkout-url': {
+      id: '/api/v1/billing/checkout-url'
+      path: '/api/v1/billing/checkout-url'
+      fullPath: '/api/v1/billing/checkout-url'
+      preLoaderRoute: typeof ApiV1BillingCheckoutUrlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/resume': {
+      id: '/api/v1/billing/resume'
+      path: '/api/v1/billing/resume'
+      fullPath: '/api/v1/billing/resume'
+      preLoaderRoute: typeof ApiV1BillingResumeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/billing/sync': {
+      id: '/api/v1/billing/sync'
+      path: '/api/v1/billing/sync'
+      fullPath: '/api/v1/billing/sync'
+      preLoaderRoute: typeof ApiV1BillingSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/concierge/chat': {
+      id: '/api/v1/concierge/chat'
+      path: '/api/v1/concierge/chat'
+      fullPath: '/api/v1/concierge/chat'
+      preLoaderRoute: typeof ApiV1ConciergeChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/cron/membership-maintenance': {
+      id: '/api/v1/cron/membership-maintenance'
+      path: '/api/v1/cron/membership-maintenance'
+      fullPath: '/api/v1/cron/membership-maintenance'
+      preLoaderRoute: typeof ApiV1CronMembershipMaintenanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/dupes/find': {
+      id: '/api/v1/dupes/find'
+      path: '/api/v1/dupes/find'
+      fullPath: '/api/v1/dupes/find'
+      preLoaderRoute: typeof ApiV1DupesFindRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/dupes/similar': {
+      id: '/api/v1/dupes/similar'
+      path: '/api/v1/dupes/similar'
+      fullPath: '/api/v1/dupes/similar'
+      preLoaderRoute: typeof ApiV1DupesSimilarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/items/analyze': {
+      id: '/api/v1/items/analyze'
+      path: '/api/v1/items/analyze'
+      fullPath: '/api/v1/items/analyze'
+      preLoaderRoute: typeof ApiV1ItemsAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/look/generate': {
+      id: '/api/v1/look/generate'
+      path: '/api/v1/look/generate'
+      fullPath: '/api/v1/look/generate'
+      preLoaderRoute: typeof ApiV1LookGenerateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/look/image': {
+      id: '/api/v1/look/image'
+      path: '/api/v1/look/image'
+      fullPath: '/api/v1/look/image'
+      preLoaderRoute: typeof ApiV1LookImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/look/photo-preview': {
+      id: '/api/v1/look/photo-preview'
+      path: '/api/v1/look/photo-preview'
+      fullPath: '/api/v1/look/photo-preview'
+      preLoaderRoute: typeof ApiV1LookPhotoPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/look/style-sheet': {
+      id: '/api/v1/look/style-sheet'
+      path: '/api/v1/look/style-sheet'
+      fullPath: '/api/v1/look/style-sheet'
+      preLoaderRoute: typeof ApiV1LookStyleSheetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/posts/create': {
+      id: '/api/v1/posts/create'
+      path: '/api/v1/posts/create'
+      fullPath: '/api/v1/posts/create'
+      preLoaderRoute: typeof ApiV1PostsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/posts/feed': {
+      id: '/api/v1/posts/feed'
+      path: '/api/v1/posts/feed'
+      fullPath: '/api/v1/posts/feed'
+      preLoaderRoute: typeof ApiV1PostsFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/profile/member': {
+      id: '/api/v1/profile/member'
+      path: '/api/v1/profile/member'
+      fullPath: '/api/v1/profile/member'
+      preLoaderRoute: typeof ApiV1ProfileMemberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/support/message': {
+      id: '/api/v1/support/message'
+      path: '/api/v1/support/message'
+      fullPath: '/api/v1/support/message'
+      preLoaderRoute: typeof ApiV1SupportMessageRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
