@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { cn, errorMessage } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useCaptcha } from "@/components/login/use-captcha";
 import { HUBS } from "@/constants/climate";
 import { passwordChecks } from "@/constants/password";
 import { fetchDefaultHubId, localDefaultHubId, saveDefaultHubId } from "@/lib/default-hub";
@@ -59,6 +60,7 @@ function AccountPage() {
   const resumeSubscription = useServerFn(resumeMySubscription);
   const deleteAccount = useServerFn(deleteMyAccount);
   const notifyPasswordChangedFn = useServerFn(notifyPasswordChanged);
+  const captcha = useCaptcha();
   const [deleteEmail, setDeleteEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
   const deleteEmailMatches =
@@ -159,13 +161,26 @@ function AccountPage() {
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
     if (!newPasswordOk || newPassword !== confirmPassword || !authUser?.email) return;
+    if (!captcha.token) {
+      toast.error("Please complete the captcha challenge.");
+      return;
+    }
     setPasswordSubmitting(true);
     try {
+      // The re-auth is a password grant, and the project enforces hCaptcha on
+      // those — without a token every attempt dies server-side with
+      // `captcha_failed` and a correct password reads as wrong.
       const { error: reauthError } = await supabase.auth.signInWithPassword({
         email: authUser.email,
         password: currentPassword,
+        options: { captchaToken: captcha.token },
       });
-      if (reauthError) throw new Error("Current password is incorrect.");
+      if (reauthError) {
+        if (reauthError.code === "captcha_failed") {
+          throw new Error("The human check didn't go through — verify again and retry.");
+        }
+        throw new Error("Current password is incorrect.");
+      }
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       // Mila emails a receipt of the change. The password is already updated, so
@@ -178,6 +193,8 @@ function AccountPage() {
     } catch (err) {
       toast.error(errorMessage(err, "Couldn't update password."));
     } finally {
+      // Tokens are single-use — reset after every attempt, pass or fail.
+      captcha.reset();
       setPasswordSubmitting(false);
     }
   }
@@ -294,6 +311,8 @@ function AccountPage() {
               newPasswordOk={newPasswordOk}
               passwordSubmitting={passwordSubmitting}
               onChangePassword={changePassword}
+              captchaField={captcha.field}
+              captchaReady={Boolean(captcha.token)}
               deleteEmail={deleteEmail}
               onDeleteEmailChange={setDeleteEmail}
               deleteEmailMatches={deleteEmailMatches}

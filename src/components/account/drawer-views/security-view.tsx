@@ -18,6 +18,9 @@ interface SecurityViewProps {
   newPasswordOk: boolean;
   passwordSubmitting: boolean;
   onChangePassword: (e: React.FormEvent) => void;
+  /** hCaptcha widget — the password re-auth is captcha-protected server-side. */
+  captchaField: React.ReactNode;
+  captchaReady: boolean;
   deleteEmail: string;
   onDeleteEmailChange: (v: string) => void;
   deleteEmailMatches: boolean;
@@ -40,6 +43,8 @@ export function SecurityView({
   newPasswordOk,
   passwordSubmitting,
   onChangePassword,
+  captchaField,
+  captchaReady,
   deleteEmail,
   onDeleteEmailChange,
   deleteEmailMatches,
@@ -115,6 +120,7 @@ export function SecurityView({
         {confirmPassword && newPassword !== confirmPassword && (
           <p className="text-label text-destructive">Passwords don't match.</p>
         )}
+        {captchaField}
         <Button
           type="submit"
           variant="secondary"
@@ -123,7 +129,8 @@ export function SecurityView({
             passwordSubmitting ||
             !currentPassword ||
             !newPasswordOk ||
-            newPassword !== confirmPassword
+            newPassword !== confirmPassword ||
+            !captchaReady
           }
           className="w-full"
         >
