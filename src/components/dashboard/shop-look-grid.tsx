@@ -1,5 +1,5 @@
 import { ExternalLink, ImageOff } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { ProductCard } from "@/components/ui/product-card";
 import { LookSection } from "@/components/dashboard/look-section";
 import { formatPrice } from "@/lib/utils";

@@ -1,5 +1,5 @@
 import { ExternalLink, ImageOff, Loader2 } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import {
   ProductCard,
   ProductCardCarouselTrack,
