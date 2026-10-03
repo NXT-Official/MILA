@@ -26,15 +26,32 @@ export function buildCheckoutOptions(
 
 let paddlePromise: Promise<Paddle | null> | null = null;
 let activeEventHandler: ((event: PaddleEvent) => void) | null = null;
+let warnedNotConfigured = false;
 
-function getPaddle(): Promise<Paddle | null> {
+/**
+ * Checkout config, straight from the build-time env. Missing config is a
+ * deployment problem (VITE_PADDLE_CLIENT_TOKEN / VITE_PADDLE_ENV are baked in
+ * at build time) — callers must tell it apart from "still initializing" so a
+ * misconfigured deploy shows a real message instead of an endless spinner.
+ */
+export function paddleConfig(): { token: string; environment: "sandbox" | "production" } | null {
   const token = import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined;
   const environment = import.meta.env.VITE_PADDLE_ENV as "sandbox" | "production" | undefined;
-  if (!token || !environment) return Promise.resolve(null);
+  if (!token || !environment) return null;
+  return { token, environment };
+}
+
+export function isPaddleConfigured(): boolean {
+  return paddleConfig() !== null;
+}
+
+function getPaddle(): Promise<Paddle | null> {
+  const config = paddleConfig();
+  if (!config) return Promise.resolve(null);
   if (!paddlePromise) {
     paddlePromise = initializePaddle({
-      token,
-      environment,
+      token: config.token,
+      environment: config.environment,
       eventCallback: (event) => activeEventHandler?.(event),
     }).then((p) => p ?? null);
   }
@@ -45,6 +62,15 @@ export function usePaddleCheckout(userId: string | undefined) {
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const queryClient = useQueryClient();
   const syncPurchase = useServerFn(syncPaddlePurchase);
+
+  useEffect(() => {
+    if (!isPaddleConfigured() && !warnedNotConfigured) {
+      warnedNotConfigured = true;
+      console.error(
+        "[paddle] Checkout is not configured: VITE_PADDLE_CLIENT_TOKEN and VITE_PADDLE_ENV must be set at build time. Checkout stays disabled.",
+      );
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,5 +128,5 @@ export function usePaddleCheckout(userId: string | undefined) {
     [paddle],
   );
 
-  return { openCheckout, ready: !!paddle };
+  return { openCheckout, ready: !!paddle, configured: isPaddleConfigured() };
 }

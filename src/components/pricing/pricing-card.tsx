@@ -16,6 +16,7 @@ export function PricingCard({
   onChoosePlan,
   disabled,
   loading,
+  unavailable,
 }: {
   plan: PublicSubscriptionPlan;
   onChoosePlan?: () => void;
@@ -23,6 +24,9 @@ export function PricingCard({
   /** True while checkout is still initializing (e.g. Paddle.js loading) —
    * shows a spinner so a disabled button doesn't read as broken. */
   loading?: boolean;
+  /** True when checkout cannot work at all (Paddle env config missing) —
+   * says so instead of spinning forever. */
+  unavailable?: boolean;
 }) {
   const price = formatPlanPrice(plan.price_amount, plan.currency);
   const interval = BILLING_INTERVAL_SUFFIX[plan.billing_interval];
@@ -76,7 +80,7 @@ export function PricingCard({
           <Button
             type="button"
             onClick={onChoosePlan}
-            disabled={disabled || !plan.paddle_price_id || !onChoosePlan}
+            disabled={disabled || unavailable || !plan.paddle_price_id || !onChoosePlan}
             variant={plan.is_featured ? "primary" : "secondary"}
             className="w-full"
           >
@@ -85,6 +89,8 @@ export function PricingCard({
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 Preparing checkout…
               </span>
+            ) : unavailable ? (
+              "Checkout is unavailable right now"
             ) : (
               "Choose Plan"
             )}

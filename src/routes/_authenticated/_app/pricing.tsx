@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/_app/pricing")({
 function PricingPage() {
   const { data, isLoading, isError, refetch } = useQuery(publicSubscriptionPlansQueryOptions());
   const { user } = useAuth();
-  const { openCheckout, ready } = usePaddleCheckout(user?.id);
+  const { openCheckout, ready, configured } = usePaddleCheckout(user?.id);
 
   return (
     <div className="atelier-page">
@@ -47,7 +47,8 @@ function PricingPage() {
               key={plan.id}
               plan={plan}
               disabled={!ready}
-              loading={!ready}
+              loading={configured && !ready}
+              unavailable={!configured}
               onChoosePlan={
                 user ? () => openCheckout(plan, { id: user.id, email: user.email }) : undefined
               }
