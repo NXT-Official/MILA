@@ -6,6 +6,7 @@ import { consumeRateLimit } from "@/lib/rate-limit.server";
 import { withAiCredit } from "@/lib/credits.server";
 import { AiUnavailableError } from "@/server/http/api-errors";
 import type { AnalyzeOutfitInputData } from "@/lib/analyze-outfit.functions";
+import { MILA_VOICE } from "@/lib/mila-voice";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
@@ -67,7 +68,9 @@ export async function analyzeOutfitForUser(
   return withAiCredit(supabase, userId, async () => {
     const imageUrl = assertTrustedStorageImageUrl(data.imageUrl);
 
-    const systemPrompt = `You are an expert fashion stylist and color analyst. You are evaluating an outfit for a user with a ${data.bodyType} body type and a ${data.colorSeason} color profile. Look at the attached image. Does the silhouette flatter their specific body type? Do the colors harmonize with their season? Be candid but encouraging. Always call the report_outfit_analysis tool with your findings.`;
+    const systemPrompt = `You are an expert fashion stylist and color analyst. You are evaluating an outfit for a user with a ${data.bodyType} body type and a ${data.colorSeason} color profile. Look at the attached image. Does the silhouette flatter their specific body type? Do the colors harmonize with their season? Be honest first, kind second — say what works and what doesn't, and why, in plain words. Always call the report_outfit_analysis tool with your findings.
+
+${MILA_VOICE}`;
 
     const result = await aiChatCompletion(
       [

@@ -95,7 +95,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
               {profile.subSeason}
             </h2>
             <p className="text-sm text-muted-foreground font-sans mt-1">
-              A curated spatial canvas of your seasonal harmonies · {profile.brightness} ·{" "}
+              Your season's colors, laid out as a canvas · {profile.brightness} ·{" "}
               {profile.saturation}
             </p>
           </div>

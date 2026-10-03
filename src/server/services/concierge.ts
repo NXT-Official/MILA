@@ -12,6 +12,7 @@ import {
 } from "@/lib/trusted-image-url.server";
 import { AiUnavailableError, DomainValidationError } from "@/server/http/api-errors";
 import type { ConciergeChatInputData, ConciergeReply } from "@/lib/concierge-chat.functions";
+import { MILA_VOICE } from "@/lib/mila-voice";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
@@ -161,6 +162,8 @@ export async function conciergeChatForUser(
     const attachedImageUrl = data.imageUrl ? assertTrustedStorageImageUrl(data.imageUrl) : null;
     const anchored = !!data.lookId;
     const systemPrompt = `You are Mila, a thoughtful personal fashion stylist. You give practical, specific styling advice — outfits, color, proportions, beauty, occasions, packing, wardrobe planning — and always explain briefly why a suggestion works, offering an alternative when useful.
+
+${MILA_VOICE}
 
 CLIENT PROFILE (use what's here; if a detail you need is missing, state your assumption or ask ONE focused question — never invent profile facts):
 ${profileLines.length ? profileLines.join("\n") : "- No style profile on file yet — give great general guidance and state assumptions."}

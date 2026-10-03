@@ -95,7 +95,7 @@ export function CameraCapture({
                 {disabled ? "Complete your profile first" : title}
               </p>
               <p className="text-sm text-muted-foreground max-w-sm">
-                {disabled ? "Set body type & color season above to unlock the scanner." : subtitle}
+                {disabled ? "Set body type & color season above to start the scanner." : subtitle}
               </p>
               {error && <p className="mt-4 text-xs text-destructive max-w-sm">{error}</p>}
             </div>

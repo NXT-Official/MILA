@@ -621,8 +621,8 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
               hydrated.confidenceLabel = "100% (Studio Calibrated)";
               hydrated.detectedLighting = "Backlit Window Glare / Ambient Noise Detected";
               hydrated.stylistNote = leansCool
-                ? "Our studio sensors detected intense background glare and lens reflections. The system successfully bypassed the camera noise to isolate your soft, elegant cool-neutral undertone and unlock your true Summer Muted palette flawlessly."
-                : "Our studio sensors detected intense background glare and lens reflections. The system bypassed the camera sensor noise to calibrate and unlock your authentic, delicate Spring Light palette flawlessly.";
+                ? "The light behind you was strong, so the reading had to work around some glare. Your undertone still comes through clearly: cool and soft, which is Summer Muted."
+                : "The light behind you was strong, so the reading had to work around some glare. Your undertone still comes through clearly: warm and delicate, which is Spring Light.";
             }
 
             const parsed = StudioColorProfileSchema.safeParse(hydrated);

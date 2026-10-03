@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { generateLookForUser } from "@/server/services/look";
+import { MILA_VOICE } from "@/lib/mila-voice";
 import type { LookProduct } from "@/lib/look-products.functions";
 
 // Named 2026 haircut trends, sourced from current hairstylist/salon
@@ -426,7 +427,9 @@ ${
     : "- MAKEUP: do not include makeup guidance — this client has makeup disabled."
 }
 - Be specific, shoppable, executable. Do NOT reference any owned wardrobe.
-- Tone: read like a luxury fashion editorial — confident, precise, never generic.
+- Tone: a top stylist writing for one client — confident, precise, never generic.
+
+${MILA_VOICE}
 
 SHOPPABLE PICKS — THE PRE-SCREENED SHORTLIST (real inventory rows, chosen from the client's full live catalog; the outfit is composed ONLY from these pieces — never invent a garment, price, id, or link):
 ${shortlistBlock}

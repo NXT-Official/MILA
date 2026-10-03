@@ -32,7 +32,7 @@ export function AuthCard() {
       <CardHeader className="space-y-1.5 pb-4">
         <CardTitle className="font-serif text-xl">Get Started</CardTitle>
         <CardDescription className="text-xs">
-          Log in or sign up below to unlock your studio color dossier.
+          Log in or sign up to see your studio color dossier.
         </CardDescription>
       </CardHeader>
 

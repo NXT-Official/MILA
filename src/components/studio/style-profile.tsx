@@ -17,7 +17,7 @@ export function ColorDossierSection({ colorSeason }: { colorSeason: string }) {
           Your Color Dossier Awaits
         </h3>
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          Complete your color analysis mapping to unlock your expert color dossier.
+          Finish your color analysis to see your full color dossier.
         </p>
         <Button
           type="button"

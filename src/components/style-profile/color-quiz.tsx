@@ -164,8 +164,7 @@ export function ColorQuiz({
                   <div className="p-4">
                     <p className="text-xs uppercase font-medium tracking-widest">Warm Gold Tones</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Gold jewelry feels effortless on you, and warm sunlit hues bring your skin to
-                      life.
+                      Gold tends to flatter you, and warm, sunlit colors bring your skin to life.
                     </p>
                   </div>
                 </OptionTile>
@@ -381,7 +380,7 @@ export function ColorQuiz({
                     Powdered and earthy
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Muted velvets, dusted sages, and smoke-kissed hues look quietly elevated on you.
+                    Dusty, muted colors sit quietly next to your skin: sage, smoke, soft velvet.
                   </p>
                 </OptionTile>
               </div>

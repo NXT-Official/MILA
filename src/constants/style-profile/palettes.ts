@@ -26,7 +26,7 @@ export const AESTHETIC_MOODS: Array<{ id: string; name: string; desc: string; im
   {
     id: "boho",
     name: "Modern Boho",
-    desc: "Layered textures, earth tones, effortless movement.",
+    desc: "Layered textures and earth tones, made to move.",
     img: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=200&h=300&fit=crop",
   },
   {
@@ -38,7 +38,7 @@ export const AESTHETIC_MOODS: Array<{ id: string; name: string; desc: string; im
   {
     id: "streetwear",
     name: "Casual Streetwear",
-    desc: "Oversized layers, wide-leg denim, chunky sneakers, effortless ease.",
+    desc: "Oversized layers, wide-leg denim, chunky sneakers. Relaxed and easy.",
     img: "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=200&h=300&fit=crop",
   },
 ];

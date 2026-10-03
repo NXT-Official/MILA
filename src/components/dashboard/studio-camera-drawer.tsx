@@ -154,7 +154,7 @@ export function StudioCameraDrawer({
     setPostingSubmitting(true);
     try {
       await publishOotd({ userId, back, front, caption });
-      toast.success("Today's OOTD posted — feed unlocked.");
+      toast.success("Today's OOTD is up. Your feed is open.");
       await queryClient.invalidateQueries({ queryKey: queryKeys.feed(userId) });
       setPostingOpen(false);
       onClose();
