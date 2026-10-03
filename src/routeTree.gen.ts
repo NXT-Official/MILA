@@ -17,6 +17,7 @@ import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MembershipRouteImport } from './routes/membership'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as StudioRouteImport } from './routes/studio'
 import { Route as StyleDossierRouteImport } from './routes/style-dossier'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
@@ -93,6 +94,11 @@ const MembershipRoute = MembershipRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudioRoute = StudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StyleDossierRoute = StyleDossierRouteImport.update({
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRouteWithChildren
   '/membership': typeof MembershipRoute
   '/privacy': typeof PrivacyRoute
+  '/studio': typeof StudioRoute
   '/style-dossier': typeof StyleDossierRoute
   '/terms': typeof TermsRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
@@ -345,6 +352,7 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/membership': typeof MembershipRoute
   '/privacy': typeof PrivacyRoute
+  '/studio': typeof StudioRoute
   '/style-dossier': typeof StyleDossierRoute
   '/terms': typeof TermsRoute
   '/onboarding': typeof AuthenticatedOnboardingRouteWithChildren
@@ -393,6 +401,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRouteWithChildren
   '/membership': typeof MembershipRoute
   '/privacy': typeof PrivacyRoute
+  '/studio': typeof StudioRoute
   '/style-dossier': typeof StyleDossierRoute
   '/terms': typeof TermsRoute
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
@@ -442,6 +451,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/membership'
     | '/privacy'
+    | '/studio'
     | '/style-dossier'
     | '/terms'
     | '/onboarding'
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/membership'
     | '/privacy'
+    | '/studio'
     | '/style-dossier'
     | '/terms'
     | '/onboarding'
@@ -534,6 +545,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/membership'
     | '/privacy'
+    | '/studio'
     | '/style-dossier'
     | '/terms'
     | '/_authenticated/_app'
@@ -583,6 +595,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRouteWithChildren
   MembershipRoute: typeof MembershipRoute
   PrivacyRoute: typeof PrivacyRoute
+  StudioRoute: typeof StudioRoute
   StyleDossierRoute: typeof StyleDossierRoute
   TermsRoute: typeof TermsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -665,6 +678,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studio': {
+      id: '/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/style-dossier': {
@@ -1013,6 +1033,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRouteWithChildren,
   MembershipRoute: MembershipRoute,
   PrivacyRoute: PrivacyRoute,
+  StudioRoute: StudioRoute,
   StyleDossierRoute: StyleDossierRoute,
   TermsRoute: TermsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
