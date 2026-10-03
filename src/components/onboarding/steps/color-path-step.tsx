@@ -62,7 +62,14 @@ export function ColorPathStep({
       ) : null}
 
       {!showKnown ? (
-        <div className="grid">
+        <div className="grid gap-3">
+          <OptionTile variant="card" onClick={() => setCameraOpen(true)} className="p-5">
+            <Camera className="size-4 text-accent" aria-hidden="true" />
+            <p className="mt-2 text-sm font-medium text-ink">Analyze my coloring</p>
+            <p className="mt-1 text-xs text-muted leading-relaxed">
+              Use your camera and Mila reads your true tones live, in good natural light.
+            </p>
+          </OptionTile>
           <OptionTile variant="card" onClick={() => setShowKnown(true)} className="p-5">
             <Sparkles className="size-4 text-accent" aria-hidden="true" />
             <p className="mt-2 text-sm font-medium text-ink">I know my season</p>
@@ -70,13 +77,6 @@ export function ColorPathStep({
               Pick your seasonal palette from our full sixteen-season library. No camera needed.
             </p>
           </OptionTile>
-          {/* <OptionTile variant="card" onClick={() => setCameraOpen(true)} className="p-5">
-            <Camera className="size-4 text-accent" aria-hidden="true" />
-            <p className="mt-2 text-sm font-medium text-ink">Analyze my coloring</p>
-            <p className="mt-1 text-xs text-muted leading-relaxed">
-              Use your camera and Mila reads your true tones live, in good natural light.
-            </p>
-          </OptionTile> */}
         </div>
       ) : (
         <div>

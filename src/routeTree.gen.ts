@@ -39,6 +39,7 @@ import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/pad
 import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_authenticated/_app/profile.$userId'
 import { Route as ApiV1AccountDeleteRouteImport } from './routes/api/v1/account/delete'
 import { Route as ApiV1AnalysisOutfitRouteImport } from './routes/api/v1/analysis/outfit'
+import { Route as ApiV1AnalysisPersonalColorRouteImport } from './routes/api/v1/analysis/personal-color'
 import { Route as ApiV1BillingCancelRouteImport } from './routes/api/v1/billing/cancel'
 import { Route as ApiV1BillingCheckoutUrlRouteImport } from './routes/api/v1/billing/checkout-url'
 import { Route as ApiV1BillingResumeRouteImport } from './routes/api/v1/billing/resume'
@@ -211,6 +212,12 @@ const ApiV1AnalysisOutfitRoute = ApiV1AnalysisOutfitRouteImport.update({
   path: '/api/v1/analysis/outfit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1AnalysisPersonalColorRoute =
+  ApiV1AnalysisPersonalColorRouteImport.update({
+    id: '/api/v1/analysis/personal-color',
+    path: '/api/v1/analysis/personal-color',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1BillingCancelRoute = ApiV1BillingCancelRouteImport.update({
   id: '/api/v1/billing/cancel',
   path: '/api/v1/billing/cancel',
@@ -327,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/analysis/personal-color': typeof ApiV1AnalysisPersonalColorRoute
   '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
   '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
@@ -373,6 +381,7 @@ export interface FileRoutesByTo {
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/analysis/personal-color': typeof ApiV1AnalysisPersonalColorRoute
   '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
   '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
@@ -423,6 +432,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
+  '/api/v1/analysis/personal-color': typeof ApiV1AnalysisPersonalColorRoute
   '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
   '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
@@ -472,6 +482,7 @@ export interface FileRouteTypes {
     | '/profile/$userId'
     | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
+    | '/api/v1/analysis/personal-color'
     | '/api/v1/billing/cancel'
     | '/api/v1/billing/checkout-url'
     | '/api/v1/billing/resume'
@@ -518,6 +529,7 @@ export interface FileRouteTypes {
     | '/profile/$userId'
     | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
+    | '/api/v1/analysis/personal-color'
     | '/api/v1/billing/cancel'
     | '/api/v1/billing/checkout-url'
     | '/api/v1/billing/resume'
@@ -567,6 +579,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/profile/$userId'
     | '/api/v1/account/delete'
     | '/api/v1/analysis/outfit'
+    | '/api/v1/analysis/personal-color'
     | '/api/v1/billing/cancel'
     | '/api/v1/billing/checkout-url'
     | '/api/v1/billing/resume'
@@ -603,6 +616,7 @@ export interface RootRouteChildren {
   ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
   ApiV1AccountDeleteRoute: typeof ApiV1AccountDeleteRoute
   ApiV1AnalysisOutfitRoute: typeof ApiV1AnalysisOutfitRoute
+  ApiV1AnalysisPersonalColorRoute: typeof ApiV1AnalysisPersonalColorRoute
   ApiV1BillingCancelRoute: typeof ApiV1BillingCancelRoute
   ApiV1BillingCheckoutUrlRoute: typeof ApiV1BillingCheckoutUrlRoute
   ApiV1BillingResumeRoute: typeof ApiV1BillingResumeRoute
@@ -834,6 +848,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1AnalysisOutfitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/analysis/personal-color': {
+      id: '/api/v1/analysis/personal-color'
+      path: '/api/v1/analysis/personal-color'
+      fullPath: '/api/v1/analysis/personal-color'
+      preLoaderRoute: typeof ApiV1AnalysisPersonalColorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/billing/cancel': {
       id: '/api/v1/billing/cancel'
       path: '/api/v1/billing/cancel'
@@ -1041,6 +1062,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
   ApiV1AccountDeleteRoute: ApiV1AccountDeleteRoute,
   ApiV1AnalysisOutfitRoute: ApiV1AnalysisOutfitRoute,
+  ApiV1AnalysisPersonalColorRoute: ApiV1AnalysisPersonalColorRoute,
   ApiV1BillingCancelRoute: ApiV1BillingCancelRoute,
   ApiV1BillingCheckoutUrlRoute: ApiV1BillingCheckoutUrlRoute,
   ApiV1BillingResumeRoute: ApiV1BillingResumeRoute,
