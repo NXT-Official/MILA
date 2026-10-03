@@ -51,11 +51,20 @@ export const Route = createFileRoute("/api/webhooks/paddle")({
             // Money moved: record it in the ledger the admin console reads and
             // email the member their Mila receipt. The ledger insert is the
             // claim, so Paddle's retries cannot send a second receipt.
-            const outcome = await recordPurchaseAndSendReceipt(
-              (event as unknown as { data: CompletedTransaction }).data,
-              { db: supabaseAdmin, mail: mailer() },
-            );
-            console.log("[paddle-webhook] transaction receipt", outcome);
+            const transaction = (event as unknown as { data: CompletedTransaction }).data;
+            const outcome = await recordPurchaseAndSendReceipt(transaction, {
+              db: supabaseAdmin,
+              mail: mailer(),
+            });
+            // Log the outcome flags plus Paddle's transaction id — enough to
+            // trace a receipt end to end. `outcome.receiptPath` embeds the
+            // member id, which must not land in logs.
+            console.log("[paddle-webhook] transaction receipt", {
+              transactionId: transaction.id,
+              claimed: outcome.claimed,
+              emailed: outcome.emailed,
+              skipped: outcome.skipped,
+            });
           }
         } catch (err) {
           // 5xx is the retry signal: Paddle re-delivers on its own schedule and

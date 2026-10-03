@@ -200,10 +200,7 @@ export async function renderPhotoPreviewForUser(
               // Logged on every attempt (pass or fail) so drift in the
               // image-gen provider — a model update, a prompt regression —
               // shows up in distance trends before it starts failing outright.
-              console.log(
-                `[renderPhotoPreviewForUser] face-match check passed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
-                { distance: faceMatch.distance },
-              );
+              console.log(`[renderPhotoPreviewForUser] face-match distance ${faceMatch.distance}`);
               // Not persisted here — same as the text-to-image inspiration
               // path, this is a preview; saveOutfitToHistory uploads it
               // only if/when the user explicitly saves the look.
