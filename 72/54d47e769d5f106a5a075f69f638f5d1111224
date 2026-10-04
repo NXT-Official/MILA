@@ -1,0 +1,19 @@
+src/components/landing/landing-cms.test.tsx
+  s_a9e34acb796733::t_b683237c718165 1-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7254d47e769d5f106a5a075f69f638f5d1111224",
+  "prompts": {},
+  "sessions": {
+    "s_a9e34acb796733": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f4c1acfa-216a-4df0-9f98-0d887690e025",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
