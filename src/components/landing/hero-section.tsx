@@ -3,9 +3,9 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Reveal } from "@/components/landing/reveal";
 import { SeasonTag } from "@/components/landing/season-tag";
 import { CtaButton } from "@/components/landing/cta-button";
-import type { HeroContent } from "@/lib/landing-content";
+import type { CtaContent, HeroContent } from "@/lib/landing-content";
 
-export function HeroSection({ content }: { content: HeroContent }) {
+export function HeroSection({ content, cta }: { content: HeroContent; cta?: CtaContent }) {
   const { preview } = content;
   const reduce = useReducedMotion() ?? false;
 
@@ -35,7 +35,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
             </p>
 
             <div className="mt-10 flex flex-col items-start gap-3.5">
-              <CtaButton className="w-full sm:w-auto" />
+              <CtaButton className="w-full sm:w-auto" labels={cta} />
               <span className="text-xs text-muted-foreground">{content.ctaNote}</span>
             </div>
           </div>
@@ -51,8 +51,8 @@ export function HeroSection({ content }: { content: HeroContent }) {
 
             <div className="py-5">
               <motion.img
-                src="/hero-style-sheet.png"
-                alt="Identity-locked 5-view style sheet — face close-up, front, back, left profile, and right profile"
+                src={content.image.src}
+                alt={content.image.alt}
                 width={1686}
                 height={1128}
                 loading="eager"
@@ -63,7 +63,7 @@ export function HeroSection({ content }: { content: HeroContent }) {
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
               />
               <p className="mt-3 text-micro uppercase tracking-label-xwide text-muted-foreground">
-                Identity-locked style sheet — five angles, one you
+                {content.imageCaption}
               </p>
             </div>
           </div>

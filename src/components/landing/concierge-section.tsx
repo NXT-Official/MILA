@@ -1,37 +1,24 @@
 import { Section, SectionHeading } from "@/components/landing/section";
+import type { ConciergeContent } from "@/lib/landing-content";
 
-const EXCHANGE = [
-  {
-    role: "user" as const,
-    text: "What do I pair with this coat for a dinner tonight?",
-  },
-  {
-    role: "assistant" as const,
-    text: "Swap the sneakers for your black block heels, and add the gold hoops from your dossier — keeps the silhouette elongated under low light.",
-  },
-];
-
-export function ConciergeSection() {
+export function ConciergeSection({ content }: { content: ConciergeContent }) {
   return (
     <Section id="concierge">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
-        <SectionHeading
-          heading="Ask Mila anything, anytime."
-          body="Not sure about a pairing? Stuck between two looks? Mila remembers your dossier and every look you've saved — just ask."
-        />
+        <SectionHeading heading={content.heading} body={content.body} />
         <div className="space-y-6">
           <img
-            src="/landing/concierge-garment.jpg"
-            alt="Close-up of a black wool coat and gold hoop earrings — the items Mila is discussing"
+            src={content.image.src}
+            alt={content.image.alt}
             width={640}
             height={480}
             loading="lazy"
             className="w-full rounded-card border border-border object-cover shadow-paper transition-shadow duration-200 ease-editorial hover:shadow-raised"
           />
           <div className="space-y-3">
-            {EXCHANGE.map((m, i) => (
+            {content.exchange.map((m) => (
               <div
-                key={i}
+                key={m._key}
                 className={
                   m.role === "user"
                     ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-ink px-4 py-3 text-sm text-surface"

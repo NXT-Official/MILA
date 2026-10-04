@@ -29,6 +29,18 @@ export const Route = createFileRoute("/")({
   },
   loader: () => getLandingContent(),
   staleTime: 5 * 60 * 1000,
+  // Studio-edited SEO. The deepest route's tags win over __root's defaults.
+  head: ({ loaderData }) =>
+    loaderData
+      ? {
+          meta: [
+            { title: loaderData.seo.title },
+            { name: "description", content: loaderData.seo.description },
+            { property: "og:title", content: loaderData.seo.title },
+            { property: "og:description", content: loaderData.seo.socialDescription },
+          ],
+        }
+      : {},
   component: LandingPage,
 });
 
@@ -47,22 +59,29 @@ function LandingPage() {
     return <AtelierSplash />;
   }
 
+  // Section order is fixed in code; the Studio can only hide a section.
   return (
     <div className="min-h-screen">
       <SiteHeader />
       <main className="overflow-x-clip">
-        <HeroSection content={content.hero} />
-        <HowItWorksSection content={content.howItWorks} />
-        <DossierSection content={content.dossier} />
-        <DailyPaletteSection />
-        <ConciergeSection />
-        <DupeHunterSection content={content.dupeHunter} />
-        <FeedSection />
-        <CommunitySection content={content.community}>
-          <TestimonialsSection testimonials={content.testimonials} />
-        </CommunitySection>
-        <PricingSection />
-        <FinalCtaSection content={content.finalCta} />
+        <HeroSection content={content.hero} cta={content.cta} />
+        {!content.howItWorks.hidden && <HowItWorksSection content={content.howItWorks} />}
+        {!content.dossier.hidden && <DossierSection content={content.dossier} />}
+        {!content.dailyPalette.hidden && <DailyPaletteSection content={content.dailyPalette} />}
+        {!content.concierge.hidden && <ConciergeSection content={content.concierge} />}
+        {!content.dupeHunter.hidden && <DupeHunterSection content={content.dupeHunter} />}
+        {!content.feed.hidden && <FeedSection content={content.feed} />}
+        {!content.community.hidden && (
+          <CommunitySection content={content.community}>
+            {!content.community.hideTestimonials && (
+              <TestimonialsSection testimonials={content.testimonials} />
+            )}
+          </CommunitySection>
+        )}
+        {!content.pricing.hidden && <PricingSection content={content.pricing} />}
+        {!content.finalCta.hidden && (
+          <FinalCtaSection content={content.finalCta} cta={content.cta} />
+        )}
       </main>
       <SiteFooter content={content.footer} />
     </div>

@@ -1,33 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { LandingContent } from "@/lib/landing-content";
+import { LANDING_QUERY, loadLandingContent } from "@/lib/landing-content.normalize";
 
-const LANDING_QUERY = `*[_id == "landingPage"][0]{
-  hero{
-    kicker, headlineLine1, headlineLine2, subhead, ctaNote,
-    preview{season, weather, outfitTitle, outfitBody, hair, makeup}
-  },
-  testimonials[]{_key, name, season, quote},
-  howItWorks{kicker, heading, steps[]{_key, number, title, body}},
-  dossier{
-    kicker, heading, body, cardTitle, season,
-    rows[]{_key, label, value},
-    completionLabel, completionPercent
-  },
-  dupeHunter{
-    kicker, heading, body,
-    inspiration{label, title, price},
-    milaMatch{label, title, price}
-  },
-  community{kicker, heading, body, seasonChips},
-  finalCta{heading, body, privacyNote},
-  footer{wordmark, tagline}
-}`;
-
+/**
+ * Landing copy from the MILA Sanity Studio (`landingPage` singleton).
+ * Never throws: a Sanity outage, missing env or unpublished document renders
+ * the checked-in fallback (`landing-content.fallback.ts`) and logs a warning
+ * on the server. Before 2026-10-04 it threw, which took the home page down.
+ */
 export const getLandingContent = createServerFn({ method: "GET" }).handler(
   async (): Promise<LandingContent> => {
-    const { sanity } = await import("@/lib/sanity.server");
-    const content = await sanity.fetch<LandingContent | null>(LANDING_QUERY);
-    if (!content) throw new Error("Landing page content is missing from Sanity.");
-    return content;
+    const projectId = process.env.SANITY_PROJECT_ID;
+    const dataset = process.env.SANITY_DATASET;
+    return loadLandingContent({
+      target: projectId && dataset ? { projectId, dataset } : null,
+      fetchDocument: async () => {
+        const { sanity } = await import("@/lib/sanity.server");
+        return sanity.fetch<unknown>(LANDING_QUERY);
+      },
+      warn: (...args) => console.warn(...args),
+    });
   },
 );

@@ -1,31 +1,24 @@
 import { Section, SectionHeading } from "@/components/landing/section";
+import type { DailyPaletteContent } from "@/lib/landing-content";
 
-const SWATCHES = [
-  { label: "Base Layer", hex: "#D8C4A0" },
-  { label: "Statement", hex: "#8B4A62" },
-  { label: "Accent Pop", hex: "#C9A227" },
-];
-
-export function DailyPaletteSection() {
+/** Swatch hex values arrive validated as #RRGGBB (landing-content.normalize). */
+export function DailyPaletteSection({ content }: { content: DailyPaletteContent }) {
   return (
     <Section id="palette">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
-        <SectionHeading
-          heading="A new color mix, every morning."
-          body="Three colors pulled fresh from your season each day — base, statement, and accent — so you never second-guess what goes together."
-        />
+        <SectionHeading heading={content.heading} body={content.body} />
         <div className="flex flex-col items-center gap-8">
           <img
-            src="/landing/palette-flatlay.jpg"
-            alt="Flat-lay of camel, deep berry, and gold garments — one day's color palette"
+            src={content.image.src}
+            alt={content.image.alt}
             width={640}
             height={480}
             loading="lazy"
             className="w-full max-w-md rounded-card border border-border object-cover shadow-paper transition-shadow duration-200 ease-editorial hover:shadow-raised"
           />
           <div className="flex justify-center gap-4">
-            {SWATCHES.map((s) => (
-              <div key={s.label} className="flex flex-col items-center gap-2">
+            {content.swatches.map((s) => (
+              <div key={s._key} className="flex flex-col items-center gap-2">
                 <span
                   className="size-16 rounded-full border-2 border-card shadow-sm sm:size-20"
                   style={{ backgroundColor: s.hex }}

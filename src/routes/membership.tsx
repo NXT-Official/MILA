@@ -13,8 +13,8 @@ export const Route = createFileRoute("/membership")({
 function MembershipPage() {
   const content = Route.useLoaderData();
   return (
-    <MarketingSubpage title="Membership" footer={content.footer}>
-      <PricingSection />
+    <MarketingSubpage title="Membership" content={content}>
+      <PricingSection content={content.pricing} />
     </MarketingSubpage>
   );
 }

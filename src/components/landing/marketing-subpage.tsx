@@ -4,15 +4,15 @@ import { ArrowLeft } from "lucide-react";
 import { SiteHeader } from "@/components/landing/site-header";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { CtaButton } from "@/components/landing/cta-button";
-import type { FooterContent } from "@/lib/landing-content";
+import type { LandingContent } from "@/lib/landing-content";
 
 export function MarketingSubpage({
   title,
-  footer,
+  content,
   children,
 }: {
   title: string;
-  footer: FooterContent;
+  content: Pick<LandingContent, "footer" | "cta" | "subpageCta">;
   children: ReactNode;
 }) {
   return (
@@ -34,13 +34,15 @@ export function MarketingSubpage({
         {children}
 
         <div className="atelier-container border-t border-border py-20 text-center sm:py-24">
-          <h3 className="text-[clamp(2rem,4vw,3rem)] leading-[1.05]">Ready for your first look?</h3>
+          <h3 className="text-[clamp(2rem,4vw,3rem)] leading-[1.05]">
+            {content.subpageCta.heading}
+          </h3>
           <div className="mt-8 flex justify-center">
-            <CtaButton />
+            <CtaButton labels={content.cta} />
           </div>
         </div>
       </main>
-      <SiteFooter content={footer} />
+      <SiteFooter content={content.footer} />
     </div>
   );
 }

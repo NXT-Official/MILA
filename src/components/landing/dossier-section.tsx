@@ -10,8 +10,8 @@ export function DossierSection({ content }: { content: DossierContent }) {
         <div>
           <SectionHeading heading={content.heading} body={content.body} />
           <img
-            src="/landing/dossier-example.jpg"
-            alt="Editorial photograph of a True Summer palette outfit — soft blue-grey and dusty rose"
+            src={content.image.src}
+            alt={content.image.alt}
             width={640}
             height={800}
             loading="lazy"

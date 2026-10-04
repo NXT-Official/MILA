@@ -3,10 +3,21 @@ import { useNavigate } from "@tanstack/react-router";
 import { Section, SectionHeading } from "@/components/landing/section";
 import { PricingCard } from "@/components/pricing/pricing-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LANDING_FALLBACK } from "@/lib/landing-content.fallback";
+import type { PricingContent } from "@/lib/landing-content";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
 import { cn } from "@/lib/utils";
 
-export function PricingSection() {
+/**
+ * The Studio edits only the heading and body. Plan names, prices, credits and
+ * the choose-plan action come from Supabase (`subscription_plans`), never
+ * from Sanity, so editorial content can't misstate what a member pays.
+ */
+export function PricingSection({
+  content = LANDING_FALLBACK.pricing,
+}: {
+  content?: PricingContent;
+}) {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useQuery(publicSubscriptionPlansQueryOptions());
 
@@ -14,11 +25,7 @@ export function PricingSection() {
 
   return (
     <Section id="pricing">
-      <SectionHeading
-        align="center"
-        heading="Choose your Atelier access."
-        body="Every plan includes daily styling credits, credit packs to top up any day, and a verified badge on your profile."
-      />
+      <SectionHeading align="center" heading={content.heading} body={content.body} />
       {isLoading ? (
         <div className="mt-14 grid gap-6 sm:mt-16 sm:grid-cols-2 md:grid-cols-3">
           {[0, 1, 2].map((i) => (

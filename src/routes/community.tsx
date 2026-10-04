@@ -14,7 +14,7 @@ export const Route = createFileRoute("/community")({
 function CommunityPage() {
   const content = Route.useLoaderData();
   return (
-    <MarketingSubpage title="Community" footer={content.footer}>
+    <MarketingSubpage title="Community" content={content}>
       <CommunitySection content={content.community}>
         <TestimonialsSection testimonials={content.testimonials} />
       </CommunitySection>

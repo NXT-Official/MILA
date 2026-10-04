@@ -3,17 +3,7 @@ import { Section, SectionHeading, Eyebrow } from "@/components/landing/section";
 import { cn } from "@/lib/utils";
 import type { DupeCard, DupeHunterContent } from "@/lib/landing-content";
 
-function DupeColumn({
-  card,
-  image,
-  alt,
-  isMatch,
-}: {
-  card: DupeCard;
-  image: string;
-  alt: string;
-  isMatch?: boolean;
-}) {
+function DupeColumn({ card, isMatch }: { card: DupeCard; isMatch?: boolean }) {
   return (
     <div
       className={cn(
@@ -22,8 +12,8 @@ function DupeColumn({
       )}
     >
       <img
-        src={image}
-        alt={alt}
+        src={card.image.src}
+        alt={card.image.alt}
         width={480}
         height={600}
         loading="lazy"
@@ -50,17 +40,8 @@ export function DupeHunterSection({ content }: { content: DupeHunterContent }) {
     <Section id="dupe-hunter">
       <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
         <div className="order-last flex flex-col divide-y divide-border overflow-hidden rounded-card border border-border bg-surface shadow-paper transition-shadow duration-200 ease-editorial hover:shadow-raised sm:flex-row sm:divide-x sm:divide-y-0 lg:order-first">
-          <DupeColumn
-            card={content.inspiration}
-            image="/landing/dupe-inspiration.jpg"
-            alt="The inspiration piece — a camel wool-blend maxi coat"
-          />
-          <DupeColumn
-            card={content.milaMatch}
-            image="/landing/dupe-match.jpg"
-            alt="Mila's match — a near-identical camel maxi coat"
-            isMatch
-          />
+          <DupeColumn card={content.inspiration} />
+          <DupeColumn card={content.milaMatch} isMatch />
         </div>
 
         <SectionHeading heading={content.heading} body={content.body} />

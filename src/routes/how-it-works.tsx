@@ -13,7 +13,7 @@ export const Route = createFileRoute("/how-it-works")({
 function HowItWorksPage() {
   const content = Route.useLoaderData();
   return (
-    <MarketingSubpage title="How it Works" footer={content.footer}>
+    <MarketingSubpage title="How it Works" content={content}>
       <HowItWorksSection content={content.howItWorks} />
     </MarketingSubpage>
   );

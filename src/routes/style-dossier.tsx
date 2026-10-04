@@ -13,7 +13,7 @@ export const Route = createFileRoute("/style-dossier")({
 function StyleDossierPage() {
   const content = Route.useLoaderData();
   return (
-    <MarketingSubpage title="The Style Dossier" footer={content.footer}>
+    <MarketingSubpage title="The Style Dossier" content={content}>
       <DossierSection content={content.dossier} />
     </MarketingSubpage>
   );

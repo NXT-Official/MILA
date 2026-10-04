@@ -13,7 +13,7 @@ export const Route = createFileRoute("/dupe-hunter")({
 function DupeHunterPage() {
   const content = Route.useLoaderData();
   return (
-    <MarketingSubpage title="Dupe Hunter" footer={content.footer}>
+    <MarketingSubpage title="Dupe Hunter" content={content}>
       <DupeHunterSection content={content.dupeHunter} />
     </MarketingSubpage>
   );
