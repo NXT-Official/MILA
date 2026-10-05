@@ -128,16 +128,16 @@ export async function renderStyleSheetForUser(
       // verifyStyleSheet call threw straight out of this loop into the
       // outer catch below, ending the whole function on attempt 1 and
       // wasting the other 2 attempts this retry loop exists for. Vercel's
-      // function budget is 300s; one attempt (up to 150s image + 75s
-      // verify) can eat most of that, so an inner try/catch treats a
-      // thrown error as a failed attempt (retry) instead of a fatal one,
-      // and the elapsed-time check stops before starting an attempt that
-      // can't finish inside the remaining budget — returning our own clean
-      // "unavailable" message instead of letting the platform hard-kill
-      // the request.
+      // function budget is 300s; one attempt (up to 150s image + 110s
+      // verify — ai.server.ts TIMEOUT_MS) can eat most of that, so an inner
+      // try/catch treats a thrown error as a failed attempt (retry) instead
+      // of a fatal one, and the elapsed-time check stops before starting an
+      // attempt that can't finish inside the remaining budget — returning
+      // our own clean "unavailable" message instead of letting the platform
+      // hard-kill the request.
       const startedAt = Date.now();
       const FUNCTION_BUDGET_MS = 280_000;
-      const ATTEMPT_ESTIMATE_MS = 150_000 + 75_000;
+      const ATTEMPT_ESTIMATE_MS = 150_000 + 110_000;
       let lastReason = "Your style sheet couldn't be verified safe this time.";
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         if (Date.now() - startedAt + ATTEMPT_ESTIMATE_MS > FUNCTION_BUDGET_MS) {

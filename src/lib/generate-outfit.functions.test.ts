@@ -255,6 +255,36 @@ describe("DailyLookSchema makeup nullability", () => {
   });
 });
 
+describe("DailyLookSchema vibe_alignment_score", () => {
+  // makeup is a required key (nullable) — see the makeup describe above.
+  const parseWithScore = (score: unknown) =>
+    DailyLookSchema.safeParse({ ...baseArgs, makeup: null, vibe_alignment_score: score });
+
+  test("keeps an in-range integer as-is", () => {
+    const result = parseWithScore(5);
+    expect(result.success && result.data.vibe_alignment_score).toBe(5);
+  });
+
+  test("clamps a below-range score into 1-10 instead of rejecting the whole look", () => {
+    // Confirmed live (2026-10-05): a 0 from the model used to reject the
+    // entire composition over this one cosmetic number.
+    const result = parseWithScore(0);
+    expect(result.success && result.data.vibe_alignment_score).toBe(1);
+  });
+
+  test("clamps above-range and fractional scores to an in-range integer", () => {
+    const high = parseWithScore(11);
+    expect(high.success && high.data.vibe_alignment_score).toBe(10);
+    const fractional = parseWithScore(7.6);
+    expect(fractional.success && fractional.data.vibe_alignment_score).toBe(8);
+  });
+
+  test("still rejects non-numeric scores", () => {
+    const result = parseWithScore("8");
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("DailyLookSchema shoppable pick shelving", () => {
   const pick = {
     id: "prod-1",

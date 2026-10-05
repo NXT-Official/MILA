@@ -52,12 +52,12 @@ function reloadForNewVersion() {
 // server side's own retry budget tops out well under these ceilings (see
 // FUNCTION_BUDGET_MS in style-sheet.ts, 280s). Generation itself now runs
 // TWO sequential deepseek calls (inventory review, then outfit plan), each
-// bounded at 75s server-side, so this must clear 150s worst case. Set
-// generously above that so a real in-progress generation is never cut off
-// before the server's own graceful deadline can return its own
-// "unavailable" message — only a genuinely hung request should ever hit
-// this client-side timeout.
-const LOOK_TIMEOUT_MS = 170_000;
+// bounded at 110s server-side (ai.server.ts TIMEOUT_MS), so this must clear
+// 220s worst case plus inventory/DB overhead. Set generously above that so a
+// real in-progress generation is never cut off before the server's own
+// graceful deadline can return its own "unavailable" message — only a
+// genuinely hung request should ever hit this client-side timeout.
+const LOOK_TIMEOUT_MS = 240_000;
 const VISUAL_TIMEOUT_MS = 290_000;
 
 const TIMEOUT_MESSAGE = "This is taking longer than expected. Please refresh and try again.";
