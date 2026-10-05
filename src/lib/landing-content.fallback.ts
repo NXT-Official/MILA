@@ -1,14 +1,17 @@
 import type { LandingContent } from "@/lib/landing-content";
 
 /**
- * Last-known-good landing copy. Used field-by-field when the published Sanity
+ * Checked-in landing copy. Used field-by-field when the published Sanity
  * document lacks a field (older documents, new sections not yet populated) and
- * wholesale when Sanity is unreachable, so the public page never goes blank.
+ * wholesale when Sanity can't be read and this server has no earlier good read
+ * to serve instead, so the public page never goes blank.
  *
  * Text is the published `landingPage` document as read on 2026-10-04
  * (`_rev AbE0eRTxRWYSaELT1T6WPq`) plus the copy that was hard-coded in the
  * landing components at `f2bbde5`. Images are the static files in `public/`.
- * Keep this in step with the Studio seed (`MILA_STUDIO/seed/landing-snapshot.json`).
+ * Keep this in step with the Studio seed (`MILA_STUDIO/seed/landing-snapshot.json`);
+ * the test suite holds it against the real document in
+ * `__fixtures__/landing.legacy-8bkzi9bn.json`.
  */
 export const LANDING_FALLBACK_VERSION = "2026-10-04";
 
@@ -33,11 +36,6 @@ export const LANDING_FALLBACK: LandingContent = {
     preview: {
       season: "True Summer",
       weather: "18°C · Light rain",
-      outfitTitle: "Slate trench over a dove-grey knit",
-      outfitBody:
-        "Cool, muted layers carry your palette through the rain — soft charcoal trousers keep the line long.",
-      hair: "Low knot, centre part — humidity-proof",
-      makeup: "Rose-beige lip, cool taupe lid",
     },
     image: {
       src: "/hero-style-sheet.png",
@@ -79,7 +77,6 @@ export const LANDING_FALLBACK: LandingContent = {
   ],
   howItWorks: {
     hidden: false,
-    kicker: "How it works",
     heading: "Three steps to dressed",
     steps: [
       {
@@ -104,7 +101,6 @@ export const LANDING_FALLBACK: LandingContent = {
   },
   dossier: {
     hidden: false,
-    kicker: "The Style Dossier",
     heading: "The more Mila knows you, the better she dresses you.",
     body: "Your dossier is a living profile — colour season, body silhouette, face shape, hair texture, beauty preferences. Every recommendation is anchored to it, and it gets more precise every day you use it.",
     cardTitle: "Digital Style Dossier",
@@ -158,7 +154,6 @@ export const LANDING_FALLBACK: LandingContent = {
   },
   dupeHunter: {
     hidden: false,
-    kicker: "Dupe Hunter",
     heading: "Mila found the dupe. You keep £340.",
     body: "Photograph any fashion item and Mila finds an affordable alternative. Same look, a fraction of the price.",
     inspiration: {
@@ -210,7 +205,6 @@ export const LANDING_FALLBACK: LandingContent = {
   community: {
     hidden: false,
     hideTestimonials: false,
-    kicker: "The feed",
     heading: "A feed that actually makes sense for you.",
     body: "Only the looks that could work for your season — real outfits from women who share your palette, not whatever's trending. Share your look, unlock the feed. Everyone here actually dresses with intention.",
     seasonChips: ["True Summer", "Soft Autumn", "Deep Winter", "Light Spring"],

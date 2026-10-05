@@ -7,6 +7,10 @@
  *
  * The shape is validated by `normalizeLandingContent` and backed by the
  * checked-in `LANDING_FALLBACK`; components can rely on every field existing.
+ * Existing is not the same as filled: hidden content is not sent to the
+ * browser, so `testimonials` is empty when `community.hideTestimonials` is set
+ * and a hidden `dailyPalette`, `concierge`, `feed` or `finalCta` has blank copy.
+ * Check the flag before rendering.
  */
 
 /** An image the page renders: a Sanity CDN URL or a static `/public` path. */
@@ -34,10 +38,6 @@ export type HeroContent = {
   preview: {
     season: string;
     weather: string;
-    outfitTitle: string;
-    outfitBody: string;
-    hair: string;
-    makeup: string;
   };
   image: LandingImage;
   imageCaption: string;
@@ -45,14 +45,12 @@ export type HeroContent = {
 
 export type HowItWorksContent = {
   hidden: boolean;
-  kicker: string;
   heading: string;
   steps: Step[];
 };
 
 export type DossierContent = {
   hidden: boolean;
-  kicker: string;
   heading: string;
   body: string;
   cardTitle: string;
@@ -81,7 +79,6 @@ export type ConciergeContent = {
 
 export type DupeHunterContent = {
   hidden: boolean;
-  kicker: string;
   heading: string;
   body: string;
   inspiration: DupeCard;
@@ -98,7 +95,6 @@ export type FeedContent = {
 export type CommunityContent = {
   hidden: boolean;
   hideTestimonials: boolean;
-  kicker: string;
   heading: string;
   body: string;
   seasonChips: string[];
