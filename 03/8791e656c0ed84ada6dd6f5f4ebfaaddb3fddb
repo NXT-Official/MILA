@@ -1,0 +1,34 @@
+src/components/landing/pricing-section.test.tsx
+  s_0cc7eb3d8eb999::t_5e27a7abb01dba 1-30,32-180
+  s_0cc7eb3d8eb999::t_211ddacd8d7792 31
+src/components/landing/dossier-section.test.tsx
+  s_0cc7eb3d8eb999::t_ea3a5fcfcbf14a 1-106
+src/components/landing/landing-head.test.ts
+  s_0cc7eb3d8eb999::t_f9be281856ecc5 16,143
+  s_0cc7eb3d8eb999::t_86f722f2c96427 14
+  s_0cc7eb3d8eb999::t_fe7a9c455e19cc 3-13,15,17-18,20,56,59,76,78-82,85-90
+  s_0cc7eb3d8eb999::t_7f8106ebf85666 1-2,19,21-55,57-58,60-75,77,83-84,91-142
+src/components/landing/marketing-subpage.test.tsx
+  s_0cc7eb3d8eb999::t_29e9ddb0a8b210 1-104
+src/components/landing/final-cta-section.test.tsx
+  s_0cc7eb3d8eb999::t_48061ddb356d8b 1-122
+src/components/landing/hero-section.test.tsx
+  s_0cc7eb3d8eb999::t_1df6d8ccf40cc5 2-9,11,13-14,37-40,42-47,49-59,72,75,91,97,152
+  s_0cc7eb3d8eb999::t_2c34d0ca951cc1 1,10,12,15-36,41,48,60-71,73-74,76-90,92-96,98-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "038791e656c0ed84ada6dd6f5f4ebfaaddb3fddb",
+  "prompts": {},
+  "sessions": {
+    "s_0cc7eb3d8eb999": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9204abd3-77fd-4017-aca1-2322f5e9db32",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
