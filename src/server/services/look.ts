@@ -43,6 +43,12 @@ import { AiUnavailableError, DomainValidationError } from "@/server/http/api-err
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
+/** Below this many shortlisted rows — when the inventory is clearly big
+ * enough to support more — the review stage is re-asked once. Confirmed
+ * live: a thin one-row shortlist left the plan stage with nothing to build
+ * a full look from, and it composed a single-garment "look" instead. */
+const REVIEW_MIN_SHORTLIST = 8;
+
 export type LookImageResult = {
   imageDataUri: string | null;
   imageGenerationError?: string;
@@ -247,6 +253,42 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         (reviewed.args as Record<string, unknown> | null)?.shortlist,
         inventory,
       );
+
+      // Shortlist floor with one recheck: the reviewer occasionally comes back
+      // with a near-empty shortlist for a strict occasion (confirmed live: a
+      // Business Attire run returned ONE row, and the plan stage then composed
+      // a one-garment "look" — the plan can only choose from what this stage
+      // returns). When the inventory clearly supports a full look, re-ask once
+      // rather than shipping a thin one; the better shortlist wins.
+      if (
+        shortlistProducts.length < REVIEW_MIN_SHORTLIST &&
+        inventory.length >= REVIEW_MIN_SHORTLIST * 2
+      ) {
+        const recheck = await aiChatCompletion(
+          [
+            { role: "system", content: reviewPrompt },
+            { role: "user", content: "Check the full inventory and report the shortlist." },
+            {
+              role: "user",
+              content: `That shortlist carried only ${shortlistProducts.length} row(s) — far too thin to build a full head-to-toe look. Re-check the ENTIRE inventory and report a full shortlist covering every wearable slot the occasion allows (3–4 tops, 3–4 bottoms/dresses, 2–3 shoes, outerwear only if the weather calls for it, bags, jewelry, accessories), up to two dozen rows, best-first per category.`,
+            },
+          ],
+          buildInventoryReviewTool(inventory.length - 1),
+          { supabase, userId },
+        );
+        if (recheck.ok) {
+          const second = resolveShortlist(
+            (recheck.args as Record<string, unknown> | null)?.shortlist,
+            inventory,
+          );
+          if (second.length > shortlistProducts.length) shortlistProducts = second;
+        } else {
+          console.warn(
+            `[generateLookForUser] shortlist recheck failed after a thin review (${shortlistProducts.length} rows kept, status=${recheck.status})`,
+          );
+        }
+      }
+
       if (shortlistProducts.length === 0) {
         // Diagnosable: an empty shortlist silently degrades the look to
         // "no shoppable picks", so leave a trace of the review that caused it.
