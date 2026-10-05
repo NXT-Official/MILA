@@ -1,0 +1,55 @@
+src/lib/sanity.server.test.ts
+  s_0cc7eb3d8eb999::t_538f9f57e67aee 1-12,26-48
+  s_0cc7eb3d8eb999::t_e01cba671571b4 13-25
+src/lib/landing-content.normalize.ts
+  s_0cc7eb3d8eb999::t_0b297318a20270 501
+  s_0cc7eb3d8eb999::t_031921e7138508 486-487
+  s_0cc7eb3d8eb999::t_3df2507391f8e6 536
+  s_0cc7eb3d8eb999::t_1e8f458ca5a72b 483-484,488-493,500,506-510,537-540,542-543,562-569,571-575
+  s_0cc7eb3d8eb999::t_f9e4fbdbe8682d 382-385
+  s_0cc7eb3d8eb999::t_45c24fc7f9c554 438-445
+  s_0cc7eb3d8eb999::t_65550ca47b0afe 552-553
+  s_0cc7eb3d8eb999::t_decce89dcc4240 541,544-551,554-558
+  s_0cc7eb3d8eb999::t_384023393f5545 570
+  s_0cc7eb3d8eb999::t_f040354170ca66 576
+  s_0cc7eb3d8eb999::t_e3ec74a67d1587 391,398-400
+src/lib/landing-content.functions.ts
+  s_0cc7eb3d8eb999::t_969adb8eb77cfc 30
+  s_0cc7eb3d8eb999::t_cee77bd8f14277 62,64
+  s_0cc7eb3d8eb999::t_918bd92cd986b3 53-54
+  s_0cc7eb3d8eb999::t_4037958edc8aa7 9-29,31-46
+src/lib/landing-content.fallback.ts
+  s_0cc7eb3d8eb999::t_81ed6858ff31ea 13-15
+src/lib/__fixtures__/landing.published-8gum36g6.json
+  s_0cc7eb3d8eb999::t_c222cfad922729 1-197
+src/lib/sanity.server.ts
+  s_0cc7eb3d8eb999::t_b9a63e83c60a0a 14-18,21-24,26
+src/lib/landing-content.functions.test.ts
+  s_0cc7eb3d8eb999::t_48c2e3c17a942a 10-14
+  s_0cc7eb3d8eb999::t_ca8ef9a90d734a 1-9,15-66
+src/lib/landing-content.normalize.test.ts
+  s_0cc7eb3d8eb999::t_f8b6d1cce5c697 1
+  s_0cc7eb3d8eb999::t_3721d938f9c623 841-866
+  s_0cc7eb3d8eb999::t_5a9e25a390be41 1006-1137
+  s_0cc7eb3d8eb999::t_a04dcfe5e3ad9a 262-275
+  s_0cc7eb3d8eb999::t_bd9a32a8f19e87 1218,1220,1223,1225,1227,1232,1234,1236,1238,1241
+  s_0cc7eb3d8eb999::t_e8313a790fab8c 725-765
+  s_0cc7eb3d8eb999::t_8893e338abb46e 88-99
+  s_0cc7eb3d8eb999::t_cdd6e45d945ed5 6-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59e9cefc294baa6beafde9dc608d927ccb7a9013",
+  "prompts": {},
+  "sessions": {
+    "s_0cc7eb3d8eb999": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9204abd3-77fd-4017-aca1-2322f5e9db32",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
