@@ -12,6 +12,19 @@ export type AiTool = { function: { name: string; parameters: Record<string, unkn
 
 export type AiResult = { ok: true; args: unknown } | { ok: false; status: number };
 
+/** Optional per-call controls. Absent fields keep the shipped defaults, so
+ * every pre-existing caller behaves exactly as before. */
+export interface AiChatOptions {
+  /** Per-attempt budget for the whole request INCLUDING the body read. */
+  timeoutMs?: number;
+  /** OpenRouter reasoning budget, in tokens. The big compose calls otherwise
+   * spend ~10k reasoning tokens to produce a ~1.5k answer (observed), which
+   * dominates both latency and cost and widens the window for provider
+   * stalls. Calls that pass this bounded reasoning still returned a full,
+   * valid payload in live probes. */
+  reasoningMaxTokens?: number;
+}
+
 const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 // Every image-generation call in this codebase bounds its OpenRouter fetch
 // with this same timeout — this was the one call site missing it. Confirmed
@@ -60,11 +73,13 @@ export async function aiChatCompletion(
   messages: Array<Record<string, unknown>>,
   tool: AiTool,
   caller: AiCallerContext,
+  options: AiChatOptions = {},
 ): Promise<AiResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("AI provider not configured — set OPENROUTER_API_KEY");
   }
+  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
 
   const model = await resolveTextModel();
 
@@ -76,13 +91,16 @@ export async function aiChatCompletion(
       body: JSON.stringify({
         model,
         messages,
+        ...(options.reasoningMaxTokens
+          ? { reasoning: { max_tokens: options.reasoningMaxTokens } }
+          : {}),
         response_format: {
           type: "json_schema",
           json_schema: { name: tool.function.name, schema: tool.function.parameters, strict: true },
         },
         usage: { include: true },
       }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (err) {
     console.error("[ai] provider request failed or timed out", errorMessage(err, "unknown"));
