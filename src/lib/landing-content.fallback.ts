@@ -10,8 +10,9 @@ import type { LandingContent } from "@/lib/landing-content";
  * (`_rev AbE0eRTxRWYSaELT1T6WPq`) plus the copy that was hard-coded in the
  * landing components at `f2bbde5`. Images are the static files in `public/`.
  * Keep this in step with the Studio seed (`MILA_STUDIO/seed/landing-snapshot.json`);
- * the test suite holds it against the real document in
- * `__fixtures__/landing.legacy-8bkzi9bn.json`.
+ * the test suite holds it against the real documents in `__fixtures__/`: the
+ * legacy project's (`landing.legacy-8bkzi9bn.json`) and the Studio's
+ * (`landing.published-8gum36g6.json`).
  */
 export const LANDING_FALLBACK_VERSION = "2026-10-04";
 

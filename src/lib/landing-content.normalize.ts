@@ -379,19 +379,25 @@ export type LoadLandingOptions = {
   /** `null` when SANITY_PROJECT_ID / SANITY_DATASET are not configured. */
   target: SanityTarget | null;
   warn: (...args: unknown[]) => void;
-  /** Error tracker (Sentry in production); gets the error that starts each outage. */
+  /**
+   * Error tracker (Sentry in production); gets each failed read's error, and
+   * once per loader the error saying Sanity is not configured.
+   */
   report: (error: unknown) => void;
 };
 
 /** Time source for a loader; injected so tests never wait on a real timer. */
 export type LandingClock = {
+  /** Milliseconds on a clock that only moves forward; only differences matter. */
   now: () => number;
   /** Runs `callback` after `ms`; the returned function cancels it. */
   after: (ms: number, callback: () => void) => () => void;
 };
 
 const SYSTEM_CLOCK: LandingClock = {
-  now: () => Date.now(),
+  // Monotonic, unlike Date.now(): a step of the wall clock (NTP, a VM resuming)
+  // must neither skip nor stretch the quiet period after a failure.
+  now: () => performance.now(),
   after: (ms, callback) => {
     const timer = setTimeout(callback, ms);
     return () => clearTimeout(timer);
@@ -427,6 +433,14 @@ function describeFailure(error: unknown): string {
   const http = typeof status === "number" && Number.isInteger(status) ? `, HTTP ${status}` : "";
   const detail = error instanceof LandingReadError ? `: ${error.message}` : "";
   return `${name}${http}${detail}`;
+}
+
+function reportSafely(report: LoadLandingOptions["report"], error: unknown): void {
+  try {
+    report(error);
+  } catch {
+    // The page outranks the report: a broken reporter must not take it down.
+  }
 }
 
 /**
@@ -466,34 +480,34 @@ async function readWithDeadline(
  * A read that throws, times out, finds no published document or finds another
  * product's is a failure. A failure serves the last content this loader read,
  * so an outage does not un-hide sections or revert edits; before any read has
- * succeeded it serves the checked-in copy. The failure that starts an outage
- * warns once and is reported once, then Sanity is left alone for
- * `LANDING_RETRY_AFTER_MS`; reads that were already under way and fail inside
- * that window say nothing more and do not extend it.
+ * succeeded it serves the checked-in copy. The failure warns once and is
+ * reported once, then Sanity is left alone for `LANDING_RETRY_AFTER_MS`.
  * The upstream error message is not logged (it can carry request details).
+ * Without a target (SANITY_* unset) every call serves the checked-in copy,
+ * and the loader warns and reports that once.
+ *
+ * One read at a time: callers that arrive while it runs share it, or get the
+ * last good copy at once when there is one, so an outage costs one read and
+ * one deadline, not one per visitor. With no overlap, reads finish in the
+ * order they start, and a read abandoned at its deadline can no longer
+ * change anything (`readWithDeadline`).
  */
 export function createLandingLoader(clock: LandingClock = SYSTEM_CLOCK): LandingLoader {
   // Held by the loader, never module scope, so every loader (one per server
   // instance, one per test) has its own memory.
   let lastGood: LandingContent | null = null;
   let retryAt = 0;
+  let reading: Promise<void> | null = null;
+  let unconfiguredReported = false;
 
   // Always a copy: a caller that mutates what it was served can't reach this.
   const stale = () => structuredClone(lastGood ?? LANDING_FALLBACK);
 
-  return async function loadLandingContent(options) {
-    const { fetchDocument, target, warn, report } = options;
-
-    if (!target) {
-      warn(
-        `[landing] Sanity is not configured; serving fallback copy v${LANDING_FALLBACK_VERSION}.`,
-      );
-      return stale();
-    }
-
-    // Still inside the quiet period after a failure: no read, no second warning.
-    if (clock.now() < retryAt) return stale();
-
+  /** One read: a new last good copy, or a failure and the quiet period. Never throws. */
+  async function read(
+    { fetchDocument, warn, report }: LoadLandingOptions,
+    target: SanityTarget,
+  ): Promise<void> {
     try {
       const raw = await readWithDeadline(fetchDocument, clock);
       if (!isObj(raw)) {
@@ -511,14 +525,7 @@ export function createLandingLoader(clock: LandingClock = SYSTEM_CLOCK): Landing
         );
       }
       lastGood = normalizeLandingContent(raw, target);
-      return structuredClone(lastGood);
     } catch (error) {
-      // This read was already under way when another one failed and opened the
-      // quiet period: same outage, already warned about and reported. Speaking
-      // up again would be one Sentry event per visitor, and restarting the
-      // clock would let steady traffic postpone the next attempt forever.
-      if (clock.now() < retryAt) return stale();
-
       retryAt = clock.now() + LANDING_RETRY_AFTER_MS;
       const serving = lastGood
         ? "the last good content"
@@ -526,12 +533,46 @@ export function createLandingLoader(clock: LandingClock = SYSTEM_CLOCK): Landing
       warn(
         `[landing] Sanity read failed (${describeFailure(error)}) for ${target.projectId}/${target.dataset}; serving ${serving}, next attempt in ${LANDING_RETRY_AFTER_MS / 1000}s.`,
       );
-      try {
-        report(error);
-      } catch {
-        // The page outranks the report: a broken reporter must not take it down.
+      reportSafely(report, error);
+    }
+  }
+
+  return async function loadLandingContent(options) {
+    const { target, warn, report } = options;
+
+    if (!target) {
+      // Said once per instance: it holds for every request this instance serves,
+      // and without the report a deployment missing its env vars would drop
+      // every Studio publish without anyone noticing.
+      if (!unconfiguredReported) {
+        unconfiguredReported = true;
+        warn(
+          `[landing] Sanity is not configured (SANITY_PROJECT_ID / SANITY_DATASET unset); this server instance serves fallback copy v${LANDING_FALLBACK_VERSION} and will not say so again.`,
+        );
+        reportSafely(
+          report,
+          new LandingReadError(
+            "LandingConfigError",
+            "SANITY_PROJECT_ID / SANITY_DATASET are not set, so Studio publishes never reach the landing page",
+          ),
+        );
       }
       return stale();
     }
+
+    // Still inside the quiet period after a failure: no read, no second warning.
+    if (clock.now() < retryAt) return stale();
+
+    if (!reading) {
+      reading = read(options, target).finally(() => {
+        reading = null;
+      });
+    } else if (lastGood) {
+      // Someone else's read is under way: a page served now beats one served
+      // after Sanity answers, and it is at most one read behind.
+      return stale();
+    }
+    await reading;
+    return stale();
   };
 }

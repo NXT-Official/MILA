@@ -1,0 +1,197 @@
+{
+  "community": {
+    "body": "Only the looks that could work for your season — real outfits from women who share your palette, not whatever's trending. Share your look, unlock the feed. Everyone here actually dresses with intention.",
+    "heading": "A feed that actually makes sense for you.",
+    "hidden": false,
+    "hideTestimonials": false,
+    "seasonChips": ["True Summer", "Soft Autumn", "Deep Winter", "Light Spring"]
+  },
+  "concierge": {
+    "body": "Not sure about a pairing? Stuck between two looks? Mila remembers your dossier and every look you've saved — just ask.",
+    "exchange": [
+      {
+        "_key": "question",
+        "role": "user",
+        "text": "What do I pair with this coat for a dinner tonight?"
+      },
+      {
+        "_key": "answer",
+        "role": "assistant",
+        "text": "Swap the sneakers for your black block heels, and add the gold hoops from your dossier — keeps the silhouette elongated under low light."
+      }
+    ],
+    "heading": "Ask Mila anything, anytime.",
+    "hidden": false,
+    "image": null
+  },
+  "cta": {
+    "signedInLabel": "Open the studio",
+    "signedOutLabel": "Get your first look"
+  },
+  "dailyPalette": {
+    "body": "Three colors pulled fresh from your season each day — base, statement, and accent — so you never second-guess what goes together.",
+    "heading": "A new color mix, every morning.",
+    "hidden": false,
+    "image": null,
+    "swatches": [
+      {
+        "_key": "base",
+        "hex": "#D8C4A0",
+        "label": "Base Layer"
+      },
+      {
+        "_key": "statement",
+        "hex": "#8B4A62",
+        "label": "Statement"
+      },
+      {
+        "_key": "accent",
+        "hex": "#C9A227",
+        "label": "Accent Pop"
+      }
+    ]
+  },
+  "dossier": {
+    "body": "Your dossier is a living profile — colour season, body silhouette, face shape, hair texture, beauty preferences. Every recommendation is anchored to it, and it gets more precise every day you use it.",
+    "cardTitle": "Digital Style Dossier",
+    "completionLabel": "Dossier completion",
+    "completionPercent": 80,
+    "heading": "The more Mila knows you, the better she dresses you.",
+    "hidden": false,
+    "image": null,
+    "rows": [
+      {
+        "_key": "season",
+        "label": "Colour season",
+        "value": "True Summer — cool, muted, soft"
+      },
+      {
+        "_key": "silhouette",
+        "label": "Silhouette",
+        "value": "Inverted triangle"
+      },
+      {
+        "_key": "beauty",
+        "label": "Beauty profile",
+        "value": "Wavy hair · warm-neutral skin"
+      }
+    ],
+    "season": "True Summer"
+  },
+  "dupeHunter": {
+    "body": "Photograph any fashion item and Mila finds an affordable alternative. Same look, a fraction of the price.",
+    "heading": "Mila found the dupe. You keep £340.",
+    "hidden": false,
+    "inspiration": {
+      "image": null,
+      "label": "The inspiration",
+      "price": "£420",
+      "title": "Wool-blend maxi coat"
+    },
+    "milaMatch": {
+      "image": null,
+      "label": "Mila's match",
+      "price": "£80",
+      "title": "Same cut, same drape"
+    }
+  },
+  "feed": {
+    "body": "One photo, tagged automatically — every piece becomes shoppable for the whole community.",
+    "heading": "Post today's fit. See everyone else's.",
+    "hidden": false,
+    "images": null
+  },
+  "finalCta": {
+    "backgroundImage": null,
+    "body": "Answer three quick questions and Mila will compose your first look — tuned to your colours, your shape, and today's weather.",
+    "heading": "Style that knows you.",
+    "hidden": false,
+    "privacyNote": "Your profile stays private. Always."
+  },
+  "footer": {
+    "tagline": "Your AI stylist. Every morning.",
+    "wordmark": "MILA"
+  },
+  "hero": {
+    "ctaNote": "Takes under a minute",
+    "headlineLine1": "Your stylist.",
+    "headlineLine2": "Every morning.",
+    "image": null,
+    "imageCaption": "Identity-locked style sheet — five angles, one you",
+    "kicker": "Your AI stylist",
+    "preview": {
+      "season": "True Summer",
+      "weather": "18°C · Light rain"
+    },
+    "subhead": "Mila composes your daily look around your colour season, your silhouette, and the weather outside. Personalised guidance — without the appointment."
+  },
+  "howItWorks": {
+    "heading": "Three steps to dressed",
+    "hidden": false,
+    "steps": [
+      {
+        "_key": "step01",
+        "body": "Three questions, under a minute. Your colour season, your silhouette, your features.",
+        "number": "01",
+        "title": "Tell Mila who you are"
+      },
+      {
+        "_key": "step02",
+        "body": "Outfit, hair, and makeup for today — tuned to your palette and the weather outside.",
+        "number": "02",
+        "title": "Get your look"
+      },
+      {
+        "_key": "step03",
+        "body": "Share your look, unlock the feed, and see how women with your season dress in real life.",
+        "number": "03",
+        "title": "Post and discover"
+      }
+    ]
+  },
+  "pricing": {
+    "body": "Every plan includes daily styling credits, credit packs to top up any day, and a verified badge on your profile.",
+    "heading": "Choose your Atelier access.",
+    "hidden": false
+  },
+  "seo": {
+    "description": "Your AI personal stylist. Daily outfits built on your colour season and shape.",
+    "socialDescription": "Mila composes your daily look around your colour season, your silhouette, and the weather outside.",
+    "title": "Mila — Your stylist. Every morning."
+  },
+  "subpageCta": {
+    "heading": "Ready for your first look?"
+  },
+  "testimonials": [
+    {
+      "_key": "amara",
+      "name": "Amara",
+      "quote": "I'm a True Summer and I finally know what to actually buy.",
+      "season": "True Summer"
+    },
+    {
+      "_key": "jess",
+      "name": "Jess",
+      "quote": "Mila nailed my face shape on the first try.",
+      "season": "Soft Autumn"
+    },
+    {
+      "_key": "priya",
+      "name": "Priya",
+      "quote": "I used to just grab 'a red.' Now I know which red is actually mine.",
+      "season": "Deep Winter"
+    },
+    {
+      "_key": "sofia",
+      "name": "Sofia",
+      "quote": "One tap before work and I've stopped second-guessing myself in the mirror.",
+      "season": "Light Spring"
+    },
+    {
+      "_key": "renee",
+      "name": "Renee",
+      "quote": "First app that's straight with me about my shape instead of dancing around it.",
+      "season": "True Autumn"
+    }
+  ]
+}

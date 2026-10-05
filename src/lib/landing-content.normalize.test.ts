@@ -1,8 +1,12 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setSystemTime, test } from "bun:test";
 // The result of LANDING_QUERY against the real published document: project
 // 8bkzi9bn, dataset production, perspective=published, read anonymously on
 // 2026-10-05. Public marketing copy only.
 import LEGACY_DOCUMENT from "./__fixtures__/landing.legacy-8bkzi9bn.json";
+// The same, against the project the Studio publishes to now: 8gum36g6,
+// production, perspective=published, read anonymously on 2026-10-05. Public
+// marketing copy only; every group is populated.
+import PUBLISHED_DOCUMENT from "./__fixtures__/landing.published-8gum36g6.json";
 import type { LandingContent } from "./landing-content";
 import { LANDING_FALLBACK } from "./landing-content.fallback";
 import {
@@ -80,6 +84,18 @@ function scriptedLoader() {
 const failWith = (error: unknown) => async () => {
   throw error;
 };
+
+type HeldRead = { resolve: (document: unknown) => void; reject: (error: unknown) => void };
+
+/**
+ * From now on every read the loader starts waits for the test to answer it,
+ * ignoring its abort signal as a stuck connection would. Oldest first.
+ */
+function heldReads(loader: ReturnType<typeof scriptedLoader>): HeldRead[] {
+  const held: HeldRead[] = [];
+  loader.nextRead(() => new Promise((resolve, reject) => held.push({ resolve, reject })));
+  return held;
+}
 
 /**
  * What MILA's query would read from LINARA's `landingPage`: the sibling product
@@ -241,6 +257,20 @@ describe("normalizeLandingContent", () => {
       "howItWorks",
       "testimonials",
     ]);
+  });
+
+  // The legacy document predates seven of the groups, so it can't catch drift
+  // in them; the Studio's published document has all fifteen.
+  test("the Studio's published document renders exactly the checked-in page", () => {
+    const studio: SanityTarget = { projectId: "8gum36g6", dataset: "production" };
+    expect(normalizeLandingContent(PUBLISHED_DOCUMENT, studio)).toEqual(LANDING_FALLBACK);
+  });
+
+  test("the published fixture carries every group the page renders", () => {
+    const populated = Object.entries(PUBLISHED_DOCUMENT)
+      .filter(([, group]) => group !== null)
+      .map(([name]) => name);
+    expect(populated.sort()).toEqual(Object.keys(LANDING_FALLBACK).sort());
   });
 
   test("null, undefined and non-objects give the full fallback", () => {
@@ -692,6 +722,47 @@ describe("createLandingLoader", () => {
     expect(warnings).toHaveLength(1);
   });
 
+  // Forgotten env vars on a deployment would otherwise mean Studio publishes
+  // silently never appear: one warning and one report per server instance.
+  test("missing Sanity configuration warns once and is reported once, however many requests", async () => {
+    const load = createLandingLoader(fakeClock());
+    const seen = { fetches: 0, warnings: [] as string[], reports: [] as unknown[] };
+    for (let request = 0; request < 3; request++) {
+      const out = await load({
+        fetchDocument: async () => {
+          seen.fetches += 1;
+          return milaDoc({});
+        },
+        target: null,
+        warn: (...args) => seen.warnings.push(args.join(" ")),
+        report: (error) => seen.reports.push(error),
+      });
+      expect(out).toEqual(LANDING_FALLBACK);
+    }
+    expect(seen.fetches).toBe(0);
+    expect(seen.warnings).toHaveLength(1);
+    expect(seen.reports).toHaveLength(1);
+    const [report] = seen.reports as Error[];
+    expect(report).toBeInstanceOf(Error);
+    expect(report.name).toBe("LandingConfigError");
+    expect(report.message).toContain("SANITY_PROJECT_ID");
+    expect(report.message).toContain("SANITY_DATASET");
+  });
+
+  test("a reporter that throws on missing configuration does not take the page down", async () => {
+    const load = createLandingLoader(fakeClock());
+    const options = {
+      fetchDocument: async () => milaDoc({}),
+      target: null,
+      warn: () => {},
+      report: () => {
+        throw new Error("Sentry transport exploded");
+      },
+    };
+    expect(await load(options)).toEqual(LANDING_FALLBACK);
+    expect(await load(options)).toEqual(LANDING_FALLBACK);
+  });
+
   test("a published document is normalized", async () => {
     const out = await createLandingLoader(fakeClock())({
       fetchDocument: async () => milaDoc({ hero: { kicker: "New kicker" } }),
@@ -766,6 +837,32 @@ describe("createLandingLoader", () => {
     });
     expect(out.hero.kicker).toBe("New kicker");
     expect(warnings).toEqual([]);
+  });
+
+  // The wall clock can step (NTP, a VM resuming); the quiet period must count
+  // real elapsed time, or a step ahead would skip it and a step back stall it.
+  test("without an injected clock, the wall clock jumping ahead does not end the quiet period", async () => {
+    const load = createLandingLoader();
+    let fetches = 0;
+    const options = {
+      fetchDocument: async () => {
+        fetches += 1;
+        throw new Error("Sanity is down");
+      },
+      target: TARGET,
+      warn: () => {},
+      report: () => {},
+    };
+    await load(options);
+    expect(fetches).toBe(1);
+
+    setSystemTime(new Date(Date.now() + 60 * 60 * 1000));
+    try {
+      await load(options);
+    } finally {
+      setSystemTime();
+    }
+    expect(fetches).toBe(1);
   });
 });
 
@@ -906,6 +1003,138 @@ describe("createLandingLoader: after a failure Sanity is left alone for 30 secon
   });
 });
 
+describe("createLandingLoader: one Sanity read at a time", () => {
+  test("25 callers during an outage start one read, and all get the checked-in copy at its deadline", async () => {
+    const loader = scriptedLoader();
+    loader.nextRead(() => new Promise(() => {}));
+    const calls = Array.from({ length: 25 }, () => loader.load());
+    await settle();
+    expect(loader.seen.fetches).toBe(1);
+
+    loader.clock.advance(4_000);
+    for (const served of await Promise.all(calls)) {
+      expect(served).toEqual(LANDING_FALLBACK);
+    }
+    expect(loader.seen.warnings).toHaveLength(1);
+    expect(loader.seen.reports).toHaveLength(1);
+  });
+
+  test("callers sharing a read each get their own copy of its content", async () => {
+    const loader = scriptedLoader();
+    const held = heldReads(loader);
+    const calls = [loader.load(), loader.load()];
+    await settle();
+    for (const read of held) read.resolve(EDITED_DOC);
+    const [first, second] = await Promise.all(calls);
+    expect(first).toEqual(second);
+    expect(first).not.toBe(second);
+
+    first.hero.headlineLine1 = "mutated by a caller";
+    expect(second.hero.headlineLine1).toBe("Dressed by noon.");
+    loader.nextRead(failWith(new Error("Sanity is down")));
+    expect((await loader.load()).hero.headlineLine1).toBe("Dressed by noon.");
+  });
+
+  test("with a last good copy, callers arriving during a read get it at once instead of waiting", async () => {
+    const loader = scriptedLoader();
+    await loader.load();
+    const held = heldReads(loader);
+    const reader = loader.load();
+    await settle();
+
+    const served: LandingContent[] = [];
+    for (const call of [loader.load(), loader.load()]) void call.then((c) => served.push(c));
+    await settle();
+    // Answered with no time passing and the read still open.
+    expect(served).toHaveLength(2);
+    for (const content of served) {
+      expect(content.hero.headlineLine1).toBe("Dressed by noon.");
+      expect(content.feed.hidden).toBe(true);
+    }
+    expect(loader.seen.fetches).toBe(2);
+
+    held[0].resolve(milaDoc({ hero: { headlineLine1: "Republished." } }));
+    expect((await reader).hero.headlineLine1).toBe("Republished.");
+  });
+
+  test("an older read answering after a newer one never replaces its content", async () => {
+    const loader = scriptedLoader();
+    const held = heldReads(loader);
+    const calls = [loader.load(), loader.load()];
+    await settle();
+    // Sanity answers the newest read first, then the oldest.
+    held.at(-1)!.resolve(milaDoc({ hero: { headlineLine1: "Newer." } }));
+    await settle();
+    held[0].resolve(milaDoc({ hero: { headlineLine1: "Older." } }));
+    await Promise.all(calls);
+
+    loader.nextRead(failWith(new Error("Sanity is down")));
+    expect((await loader.load()).hero.headlineLine1).toBe("Newer.");
+  });
+
+  test("an older read failing after a newer one succeeded does not warn, report or open a quiet period", async () => {
+    const loader = scriptedLoader();
+    const held = heldReads(loader);
+    const calls = [loader.load(), loader.load()];
+    await settle();
+    held.at(-1)!.resolve(milaDoc({ hero: { headlineLine1: "Newer." } }));
+    await settle();
+    held[0].reject(new Error("an older read failed late"));
+    await Promise.all(calls);
+    expect(loader.seen.warnings).toEqual([]);
+    expect(loader.seen.reports).toEqual([]);
+
+    const fetched = loader.seen.fetches;
+    loader.nextRead(async () => milaDoc({ hero: { headlineLine1: "Fresh." } }));
+    expect((await loader.load()).hero.headlineLine1).toBe("Fresh.");
+    expect(loader.seen.fetches).toBe(fetched + 1);
+  });
+
+  // Since reads no longer overlap, a read abandoned at its deadline is the one
+  // way an older answer can still arrive after a newer read's.
+  test("a read abandoned at its deadline that succeeds later changes nothing", async () => {
+    const loader = scriptedLoader();
+    const held = heldReads(loader);
+    const abandoned = loader.load();
+    await settle();
+    loader.clock.advance(4_000);
+    expect(await abandoned).toEqual(LANDING_FALLBACK);
+
+    loader.clock.advance(30_000);
+    loader.nextRead(async () => milaDoc({ hero: { headlineLine1: "Newer." } }));
+    expect((await loader.load()).hero.headlineLine1).toBe("Newer.");
+    held[0].resolve(milaDoc({ hero: { headlineLine1: "Older." } }));
+    await settle();
+
+    loader.nextRead(failWith(new Error("Sanity is down")));
+    expect((await loader.load()).hero.headlineLine1).toBe("Newer.");
+  });
+
+  test("a read abandoned at its deadline that fails later warns, reports and waits no more", async () => {
+    const loader = scriptedLoader();
+    const held = heldReads(loader);
+    const abandoned = loader.load();
+    await settle();
+    loader.clock.advance(4_000);
+    await abandoned;
+    expect(loader.seen.warnings).toHaveLength(1);
+    expect(loader.seen.reports).toHaveLength(1);
+
+    loader.clock.advance(30_000);
+    loader.nextRead(async () => milaDoc({ hero: { headlineLine1: "Newer." } }));
+    await loader.load();
+    held[0].reject(new Error("the abandoned read failed late"));
+    await settle();
+    expect(loader.seen.warnings).toHaveLength(1);
+    expect(loader.seen.reports).toHaveLength(1);
+
+    const fetched = loader.seen.fetches;
+    loader.nextRead(async () => milaDoc({ hero: { headlineLine1: "Fresh." } }));
+    expect((await loader.load()).hero.headlineLine1).toBe("Fresh.");
+    expect(loader.seen.fetches).toBe(fetched + 1);
+  });
+});
+
 describe("createLandingLoader: only MILA's document is accepted", () => {
   test("another product's document is refused: none of its text reaches the page", async () => {
     const loader = scriptedLoader();
@@ -986,39 +1215,30 @@ describe("createLandingLoader: a failed read is visible to the owner", () => {
     expect(loader.seen.warnings).toHaveLength(2);
   });
 
-  test("reads already under way when an outage starts fail quietly: one warning, one report, 30 seconds from the first failure", async () => {
+  test("callers that arrive during a failing read share it: one warning, one report, 30 seconds from its failure", async () => {
     const loader = scriptedLoader();
-    const rejects: ((error: unknown) => void)[] = [];
-    loader.nextRead(() => new Promise((_, reject) => rejects.push(reject)));
+    const held = heldReads(loader);
     const reads = [loader.load(), loader.load(), loader.load()];
     await settle();
-    expect(loader.seen.fetches).toBe(3);
+    expect(loader.seen.fetches).toBe(1);
 
-    const first = new Error("first");
+    const failure = new Error("Sanity is down");
     loader.clock.advance(1_000);
-    rejects[0](first);
-    await settle();
-    loader.clock.advance(1_000);
-    rejects[1](new Error("second"));
-    await settle();
-    loader.clock.advance(1_000);
-    rejects[2](new Error("third"));
-
+    held[0].reject(failure);
     for (const served of await Promise.all(reads)) {
       expect(served).toEqual(LANDING_FALLBACK);
     }
     expect(loader.seen.warnings).toHaveLength(1);
-    expect(loader.seen.reports).toHaveLength(1);
-    expect(loader.seen.reports[0]).toBe(first);
+    expect(loader.seen.reports).toEqual([failure]);
 
-    // The first failure was at 1s, the last at 3s: quiet until 31s, not 33s.
+    // The read failed at 1s: quiet until 31s.
     loader.nextRead(async () => milaDoc({ hero: { headlineLine1: "Back online." } }));
-    loader.clock.advance(27_999);
+    loader.clock.advance(29_999);
     await loader.load();
-    expect(loader.seen.fetches).toBe(3);
+    expect(loader.seen.fetches).toBe(1);
     loader.clock.advance(1);
     expect((await loader.load()).hero.headlineLine1).toBe("Back online.");
-    expect(loader.seen.fetches).toBe(4);
+    expect(loader.seen.fetches).toBe(2);
   });
 
   test("a good read warns about nothing and reports nothing", async () => {
