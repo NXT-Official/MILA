@@ -62,7 +62,7 @@ function buildEditPrompt({
     " Keep the exact same framing, crop, camera angle, and pose as the original photo — do not zoom out, reframe to full-body, or change the composition. Match lighting and image quality to the source photo so the result reads as one continuous photograph, not a composite.";
 
   const negativeLine =
-    " Avoid: generic or stock-photo-looking face, any face that doesn't match the input photo, face-swap artifacts, plastic/airbrushed skin, uncanny-valley expression, warped or extra fingers/limbs, mismatched lighting between face and body, blurry or duplicated facial features, a different apparent ethnicity or skin tone than the source photo, sexualized or exposed content, hallucinated brand logos.";
+    " Avoid: generic or stock-photo-looking face, any face that doesn't match the input photo, face-swap artifacts, plastic/airbrushed skin, uncanny-valley expression, warped or extra fingers/limbs, mismatched lighting between face and body, blurry or duplicated facial features, a different apparent ethnicity or skin tone than the source photo, sexualized or exposed content, hallucinated brand logos, any headwear — no hats, caps, beanies, visors, or anything covering the hair; the hairstyle must stay fully visible.";
 
   const hairGenderGuard =
     gender && gender !== "Prefer not to say"

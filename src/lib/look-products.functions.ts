@@ -42,6 +42,9 @@ export type LookInventoryItem = LookProduct & {
   description: string | null;
   seasonal_palettes: string[];
   body_shapes: string[];
+  /** Attire register(s) — the occasion gate the review prompt reads
+   * (see formatInventoryForPrompt). Values from src/constants/attire.ts. */
+  attire: string[];
 };
 
 /** A product matches when it's Unisex, matches the requested gender exactly,
@@ -142,6 +145,7 @@ type RawProductRow = {
   description: string | null;
   seasonal_palettes: string[];
   body_shapes: string[];
+  attire: string[];
   available_regions: string[];
   verification_status: string;
   last_verified_at: string | null;
@@ -184,7 +188,7 @@ async function fetchRankedCategory(
   const { data: candidates, error } = await supabase
     .from("products")
     .select(
-      "id,title,brand_id,category,price,currency,image_url,affiliate_link,description,seasonal_palettes,body_shapes,available_regions,verification_status,last_verified_at,in_stock,gender",
+      "id,title,brand_id,category,price,currency,image_url,affiliate_link,description,seasonal_palettes,body_shapes,available_regions,verification_status,last_verified_at,in_stock,gender,attire",
     )
     .eq("category", category)
     .neq("verification_status", "broken")
@@ -326,10 +330,12 @@ function clipDescription(description: string | null): string | null {
  * read the same list, in the same order.
  *
  * Row format (pinned by tests):
- *   {index} | {title} | {price} {currency}[ | [P][S]][ | {description}]
+ *   {index} | {title} | {price} {currency}[ | [P][S]][ | {attire}][ | {description}]
  * `[P]` = tagged with the client's seasonal palette, `[S]` = tagged for the
- * client's body shape. Most live rows carry neither tag; the description is
- * what there is to judge.
+ * client's body shape. `{attire}` = the piece's register(s), slash-joined
+ * (e.g. "Business Professional/Business Casual") — the review gates the
+ * occasion on it (see buildInventoryReviewPrompt). Most live rows carry
+ * neither palette nor shape tag; the description is what there is to judge.
  */
 export function formatInventoryForPrompt(
   inventory: LookInventoryItem[],
@@ -348,9 +354,10 @@ export function formatInventoryForPrompt(
     ]
       .filter(Boolean)
       .join("");
+    const attire = item.attire.length > 0 ? item.attire.join("/") : null;
     const description = clipDescription(item.description);
     lines.push(
-      [`${index}`, item.title, `${item.price} ${item.currency}`, tags || null, description]
+      [`${index}`, item.title, `${item.price} ${item.currency}`, tags || null, attire, description]
         .filter((part): part is string => part != null && part !== "")
         .join(" | "),
     );
