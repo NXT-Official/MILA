@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { LandingContent } from "@/lib/landing-content";
+import type { LandingReply } from "@/lib/landing-content";
 import { LANDING_QUERY, createLandingLoader } from "@/lib/landing-content.normalize";
 
 // One loader per server instance: it remembers the last good content and
@@ -52,9 +52,13 @@ export function reportLandingFailure(
  * succeeded), warns on the server and reports to Sentry. Missing env renders
  * the fallback, with one warning and one report per server instance. Before
  * 2026-10-04 it threw, which took the home page down.
+ *
+ * Replies with the content and where it came from (`LandingReply`), so a
+ * browser that already has Studio copy can turn down the checked-in copy of
+ * an instance that has never read Sanity (`createLandingRouteLoader`).
  */
 export const getLandingContent = createServerFn({ method: "GET" }).handler(
-  async (): Promise<LandingContent> => {
+  async (): Promise<LandingReply> => {
     const projectId = process.env.SANITY_PROJECT_ID;
     const dataset = process.env.SANITY_DATASET;
     return loadLandingContent({

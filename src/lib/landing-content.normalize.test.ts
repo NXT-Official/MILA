@@ -62,22 +62,26 @@ function scriptedLoader() {
   const load = createLandingLoader(clock);
   const seen = { fetches: 0, warnings: [] as string[], reports: [] as unknown[] };
   let read: (signal: AbortSignal) => Promise<unknown> = async () => EDITED_DOC;
+  /** The loader's whole reply: the content and where it came from. */
+  const reply = () =>
+    load({
+      fetchDocument: (signal) => {
+        seen.fetches += 1;
+        return read(signal);
+      },
+      target: TARGET,
+      warn: (...args) => seen.warnings.push(args.join(" ")),
+      report: (error) => seen.reports.push(error),
+    });
   return {
     clock,
     seen,
     nextRead(next: (signal: AbortSignal) => Promise<unknown>) {
       read = next;
     },
-    load: () =>
-      load({
-        fetchDocument: (signal) => {
-          seen.fetches += 1;
-          return read(signal);
-        },
-        target: TARGET,
-        warn: (...args) => seen.warnings.push(args.join(" ")),
-        report: (error) => seen.reports.push(error),
-      }),
+    reply,
+    /** The content the loader replies with. */
+    load: async () => (await reply()).content,
   };
 }
 
@@ -680,7 +684,7 @@ describe("LANDING_QUERY", () => {
 describe("createLandingLoader", () => {
   test("a fetch error gives the fallback and a server-side warning without secrets", async () => {
     const warnings: unknown[][] = [];
-    const out = await createLandingLoader(fakeClock())({
+    const { content: out } = await createLandingLoader(fakeClock())({
       fetchDocument: async () => {
         throw new Error("401 token=sk-secret-value");
       },
@@ -695,7 +699,7 @@ describe("createLandingLoader", () => {
 
   test("an unpublished document gives the fallback and a warning", async () => {
     const warnings: unknown[][] = [];
-    const out = await createLandingLoader(fakeClock())({
+    const { content: out } = await createLandingLoader(fakeClock())({
       fetchDocument: async () => null,
       target: TARGET,
       warn: (...args) => warnings.push(args),
@@ -708,7 +712,7 @@ describe("createLandingLoader", () => {
   test("missing Sanity configuration gives the fallback without a read or a throw", async () => {
     const warnings: unknown[][] = [];
     let fetches = 0;
-    const out = await createLandingLoader(fakeClock())({
+    const { content: out } = await createLandingLoader(fakeClock())({
       fetchDocument: async () => {
         fetches += 1;
         return milaDoc({ hero: { kicker: "Must not be read" } });
@@ -728,7 +732,7 @@ describe("createLandingLoader", () => {
     const load = createLandingLoader(fakeClock());
     const seen = { fetches: 0, warnings: [] as string[], reports: [] as unknown[] };
     for (let request = 0; request < 3; request++) {
-      const out = await load({
+      const { content: out } = await load({
         fetchDocument: async () => {
           seen.fetches += 1;
           return milaDoc({});
@@ -759,12 +763,12 @@ describe("createLandingLoader", () => {
         throw new Error("Sentry transport exploded");
       },
     };
-    expect(await load(options)).toEqual(LANDING_FALLBACK);
-    expect(await load(options)).toEqual(LANDING_FALLBACK);
+    expect((await load(options)).content).toEqual(LANDING_FALLBACK);
+    expect((await load(options)).content).toEqual(LANDING_FALLBACK);
   });
 
   test("a published document is normalized", async () => {
-    const out = await createLandingLoader(fakeClock())({
+    const { content: out } = await createLandingLoader(fakeClock())({
       fetchDocument: async () => milaDoc({ hero: { kicker: "New kicker" } }),
       target: TARGET,
       warn: () => {},
@@ -785,7 +789,7 @@ describe("createLandingLoader", () => {
       target: TARGET,
       warn: () => {},
       report: () => {},
-    }).then((content) => {
+    }).then(({ content }) => {
       out = content;
     });
 
@@ -826,7 +830,7 @@ describe("createLandingLoader", () => {
 
   test("without an injected clock a read that takes real time is still served", async () => {
     const warnings: unknown[][] = [];
-    const out = await createLandingLoader()({
+    const { content: out } = await createLandingLoader()({
       fetchDocument: () =>
         new Promise((resolve) =>
           setTimeout(() => resolve(milaDoc({ hero: { kicker: "New kicker" } })), 5),
@@ -863,6 +867,79 @@ describe("createLandingLoader", () => {
       setSystemTime();
     }
     expect(fetches).toBe(1);
+  });
+});
+
+// The browser turns down a checked-in copy when it has a better one
+// (`createLandingRouteLoader`), so each reply must say which it is.
+describe("createLandingLoader: each reply says where its content came from", () => {
+  test("a good read replies with what the Studio published, from studio", async () => {
+    const loader = scriptedLoader();
+    expect(await loader.reply()).toEqual({
+      content: normalizeLandingContent(EDITED_DOC, TARGET),
+      source: "studio",
+    });
+  });
+
+  test("after a good read, a failed read and the quiet period after it reply with that read, from last-good", async () => {
+    const loader = scriptedLoader();
+    await loader.reply();
+    const lastGood = { content: normalizeLandingContent(EDITED_DOC, TARGET), source: "last-good" };
+
+    loader.nextRead(failWith(new Error("Sanity is down")));
+    expect(await loader.reply()).toEqual(lastGood);
+    loader.clock.advance(1);
+    expect(await loader.reply()).toEqual(lastGood);
+    expect(loader.seen.fetches).toBe(2);
+  });
+
+  test("with no good read yet, a failed read and the quiet period after it reply with the checked-in copy, from fallback", async () => {
+    const loader = scriptedLoader();
+    const checkedIn = { content: LANDING_FALLBACK, source: "fallback" };
+
+    loader.nextRead(failWith(new Error("Sanity is down")));
+    expect(await loader.reply()).toEqual(checkedIn);
+    loader.clock.advance(1);
+    expect(await loader.reply()).toEqual(checkedIn);
+    expect(loader.seen.fetches).toBe(1);
+  });
+
+  test("without Sanity settings, every reply is the checked-in copy, from fallback", async () => {
+    const load = createLandingLoader(fakeClock());
+    const options = {
+      fetchDocument: async () => milaDoc({ hero: { kicker: "Must not be read" } }),
+      target: null,
+      warn: () => {},
+      report: () => {},
+    };
+    expect(await load(options)).toEqual({ content: LANDING_FALLBACK, source: "fallback" });
+    expect(await load(options)).toEqual({ content: LANDING_FALLBACK, source: "fallback" });
+  });
+
+  test("callers sharing a read that succeeds are all answered from studio", async () => {
+    const loader = scriptedLoader();
+    const held = heldReads(loader);
+    const calls = [loader.reply(), loader.reply()];
+    await settle();
+    held[0].resolve(EDITED_DOC);
+    const replies = await Promise.all(calls);
+    expect(replies.map((reply) => reply.source)).toEqual(["studio", "studio"]);
+    expect(loader.seen.fetches).toBe(1);
+  });
+
+  test("a caller served during someone else's read gets the last good content, from last-good", async () => {
+    const loader = scriptedLoader();
+    await loader.reply();
+    const held = heldReads(loader);
+    const reader = loader.reply();
+    await settle();
+
+    expect(await loader.reply()).toEqual({
+      content: normalizeLandingContent(EDITED_DOC, TARGET),
+      source: "last-good",
+    });
+    held[0].resolve(milaDoc({ hero: { headlineLine1: "Republished." } }));
+    expect((await reader).source).toBe("studio");
   });
 });
 
@@ -1057,12 +1134,12 @@ describe("createLandingLoader: one Sanity read at a time", () => {
     expect((await reader).hero.headlineLine1).toBe("Republished.");
   });
 
-  test("an older read answering after a newer one never replaces its content", async () => {
+  test("callers arriving together share one read: a later answer never replaces its content", async () => {
     const loader = scriptedLoader();
     const held = heldReads(loader);
     const calls = [loader.load(), loader.load()];
     await settle();
-    // Sanity answers the newest read first, then the oldest.
+    // The newest held read, then the oldest: the same read, as the callers share it.
     held.at(-1)!.resolve(milaDoc({ hero: { headlineLine1: "Newer." } }));
     await settle();
     held[0].resolve(milaDoc({ hero: { headlineLine1: "Older." } }));
@@ -1072,7 +1149,7 @@ describe("createLandingLoader: one Sanity read at a time", () => {
     expect((await loader.load()).hero.headlineLine1).toBe("Newer.");
   });
 
-  test("an older read failing after a newer one succeeded does not warn, report or open a quiet period", async () => {
+  test("callers arriving together share one read: a later failure does not warn, report or open a quiet period", async () => {
     const loader = scriptedLoader();
     const held = heldReads(loader);
     const calls = [loader.load(), loader.load()];
@@ -1301,7 +1378,7 @@ describe("createLandingLoader: a failed read is visible to the owner", () => {
   });
 
   test("a reporter that itself throws does not take the page down", async () => {
-    const out = await createLandingLoader(fakeClock())({
+    const { content: out } = await createLandingLoader(fakeClock())({
       fetchDocument: failWith(new Error("boom")),
       target: TARGET,
       warn: () => {},

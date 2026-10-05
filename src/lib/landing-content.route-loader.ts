@@ -1,6 +1,6 @@
 import { useLayoutEffect } from "react";
 import { isNotFound, isRedirect } from "@tanstack/react-router";
-import type { LandingContent } from "@/lib/landing-content";
+import type { LandingContent, LandingReply, LandingSource } from "@/lib/landing-content";
 import { LANDING_FALLBACK } from "@/lib/landing-content.fallback";
 import { getLandingContent } from "@/lib/landing-content.functions";
 
@@ -11,6 +11,16 @@ function isLandingContent(value: unknown): value is LandingContent {
     value !== null &&
     Object.keys(LANDING_FALLBACK).every((group) => group in value)
   );
+}
+
+/** Every source, keyed so the check can't drift from the type. */
+const SOURCES: Record<LandingSource, true> = { studio: true, "last-good": true, fallback: true };
+
+/** The server function's reply: landing content and a source it names. */
+function isLandingReply(value: unknown): value is LandingReply {
+  if (typeof value !== "object" || value === null) return false;
+  const { content, source } = value as { content?: unknown; source?: unknown };
+  return isLandingContent(content) && typeof source === "string" && Object.hasOwn(SOURCES, source);
 }
 
 /** The part of the router's loader context a landing route uses. */
@@ -40,6 +50,10 @@ export type LandingRouteLoader = {
  * hidden sections or Studio edits. Such a load is not fresh, so the page is
  * fetched again on its next visit.
  *
+ * A server instance that has never read Sanity replies with that same
+ * checked-in copy while Sanity is down (`source: "fallback"`). When the
+ * browser has a copy of its own, such a reply is a failed load too.
+ *
  * Only a browser remembers. The server keeps its own last good copy
  * (`createLandingLoader`); state kept here would outlive the request.
  */
@@ -48,7 +62,7 @@ export function createLandingRouteLoader({
   fetchContent = getLandingContent,
 }: {
   inBrowser?: boolean;
-  fetchContent?: () => Promise<LandingContent>;
+  fetchContent?: () => Promise<LandingReply>;
 } = {}): LandingRouteLoader {
   let remembered: LandingContent | null = null;
   // Until this browser's first load of its own, a page can only render the
@@ -61,9 +75,9 @@ export function createLandingRouteLoader({
   return {
     async loader({ route }) {
       if (inBrowser) loadedOnce = true;
-      let content: unknown;
+      let reply: unknown;
       try {
-        content = await fetchContent();
+        reply = await fetchContent();
       } catch (error) {
         // Redirects and not-founds are the router's control flow, not failures.
         // src: https://github.com/TanStack/router/blob/@tanstack/react-router@1.170.41/docs/router/api/router/isRedirectFunction.md · @tanstack/react-router 1.170.41 · 2026-10-05
@@ -73,12 +87,17 @@ export function createLandingRouteLoader({
       // A 200 that is not the server function's reply (captive portal, proxy
       // page) resolves with the raw Response rather than rejecting.
       // src: https://github.com/TanStack/router/blob/@tanstack/start-client-core@1.170.34/packages/start-client-core/src/client-rpc/serverFnFetcher.ts · @tanstack/start-client-core 1.170.34 · 2026-10-05
-      if (isLandingContent(content)) {
+      //
+      // A `fallback` reply is the checked-in copy of an instance that has never
+      // read Sanity. Over a copy this browser already has it would bring back
+      // what an editor hid, so it counts as a failed load. Only a browser has a
+      // copy; the server renders every reply.
+      if (isLandingReply(reply) && (reply.source !== "fallback" || remembered === null)) {
         if (inBrowser) {
-          remembered = content;
+          remembered = reply.content;
           notFresh.delete(route.id);
         }
-        return content;
+        return reply.content;
       }
       if (inBrowser) notFresh.add(route.id);
       return remembered ?? LANDING_FALLBACK;

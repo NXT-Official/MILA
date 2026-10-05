@@ -7,7 +7,7 @@ import {
   notFound,
   redirect,
 } from "@tanstack/react-router";
-import type { LandingContent } from "./landing-content";
+import type { LandingContent, LandingReply, LandingSource } from "./landing-content";
 import { LANDING_FALLBACK } from "./landing-content.fallback";
 import { createLandingRouteLoader } from "./landing-content.route-loader";
 
@@ -30,12 +30,25 @@ const REPUBLISHED: LandingContent = {
   hero: { ...LANDING_FALLBACK.hero, headlineLine1: "Republished." },
 };
 
-type Fetch = () => Promise<LandingContent>;
+/**
+ * Stands in for a server's checked-in copy. Unlike `LANDING_FALLBACK` itself,
+ * which a failed load also serves, a test can tell this one was served.
+ */
+const CHECKED_IN: LandingContent = {
+  ...LANDING_FALLBACK,
+  footer: { ...LANDING_FALLBACK.footer, tagline: "Checked in on the server." },
+};
+
+type Fetch = () => Promise<LandingReply>;
 
 const resolvesWith =
   (reply: unknown): Fetch =>
   async () =>
-    reply as LandingContent;
+    reply as LandingReply;
+
+/** The server function's reply: `content`, and where it came from. */
+const serves = (content: LandingContent, source: LandingSource): Fetch =>
+  resolvesWith({ content, source });
 
 function rejectsWith(reason: unknown): Fetch {
   return async () => {
@@ -60,11 +73,22 @@ const FAILURES: Record<string, Fetch> = {
   "a JSON error body": resolvesWith({ message: "Bad gateway" }),
   null: resolvesWith(null),
   undefined: resolvesWith(undefined),
+  "landing content that is not a reply": resolvesWith(PUBLISHED),
+  "a reply without a source": resolvesWith({ content: PUBLISHED }),
+  "a reply from an unknown source": resolvesWith({ content: PUBLISHED, source: "cache" }),
+  "a reply whose source is an inherited key": resolvesWith({
+    content: PUBLISHED,
+    source: "toString",
+  }),
+  "a reply without landing content": resolvesWith({
+    content: { message: "Bad gateway" },
+    source: "studio",
+  }),
 };
 
 /** One loader whose next fetch the test scripts; counts the fetches it makes. */
 function scripted(inBrowser: boolean) {
-  let next: Fetch = async () => PUBLISHED;
+  let next: Fetch = serves(PUBLISHED, "studio");
   const seen = { fetches: 0 };
   const landing = createLandingRouteLoader({
     inBrowser,
@@ -130,7 +154,7 @@ describe("landing route loader: the browser keeps the Studio copy it already has
   test("each good fetch replaces the remembered copy", async () => {
     const landing = scripted(true);
     landing.rememberServerRendered(SERVER_RENDERED);
-    landing.nextFetch(resolvesWith(REPUBLISHED));
+    landing.nextFetch(serves(REPUBLISHED, "studio"));
     expect(await landing.load("/how-it-works")).toEqual(REPUBLISHED);
 
     landing.nextFetch(OFFLINE);
@@ -141,7 +165,7 @@ describe("landing route loader: the browser keeps the Studio copy it already has
   // that must not replace what a later fetch brought.
   test("only the server-rendered copy seeds the memory, never a copy rendered after the first fetch", async () => {
     const landing = scripted(true);
-    landing.nextFetch(resolvesWith(REPUBLISHED));
+    landing.nextFetch(serves(REPUBLISHED, "studio"));
     await landing.load("/how-it-works");
     landing.rememberServerRendered(SERVER_RENDERED);
 
@@ -169,7 +193,7 @@ describe("landing route loader: the browser keeps the Studio copy it already has
   // The server has no `window`, and neither has bun: with no explicit switch a
   // loader (the app's is built this way) must take that for the server.
   test("without an explicit switch, a runtime with no window remembers nothing", async () => {
-    let next: Fetch = async () => PUBLISHED;
+    let next: Fetch = serves(PUBLISHED, "studio");
     const landing = createLandingRouteLoader({ fetchContent: () => next() });
     const community = { route: { id: "/community" } };
     landing.rememberServerRendered(SERVER_RENDERED);
@@ -202,9 +226,96 @@ describe("landing route loader: a failed load is not fresh", () => {
     const landing = scripted(true);
     landing.nextFetch(OFFLINE);
     await landing.load("/community");
-    landing.nextFetch(resolvesWith(REPUBLISHED));
+    landing.nextFetch(serves(REPUBLISHED, "studio"));
     await landing.load("/community");
     expect(landing.shouldReload({ route: { id: "/community" } })).toBeUndefined();
+  });
+});
+
+describe("landing route loader: a checked-in reply never replaces the browser's own copy", () => {
+  // The page was rendered by an instance holding Studio copy with the
+  // testimonials hidden. Sanity goes down, and the next navigation reaches an
+  // instance that has never read it: a normal reply carrying the checked-in
+  // copy, testimonials and all.
+  test("a fallback reply keeps hidden testimonials hidden; the next Studio reply replaces the copy", async () => {
+    const landing = scripted(true);
+    const community = { route: { id: "/community" } };
+    landing.rememberServerRendered(SERVER_RENDERED);
+
+    landing.nextFetch(serves(LANDING_FALLBACK, "fallback"));
+    const served = await landing.load("/community");
+    expect(served).toEqual(SERVER_RENDERED);
+    expect(served.testimonials).toEqual([]);
+    expect(landing.shouldReload(community)).toBe(true);
+
+    landing.nextFetch(serves(REPUBLISHED, "studio"));
+    expect(await landing.load("/community")).toEqual(REPUBLISHED);
+    expect(landing.shouldReload(community)).toBeUndefined();
+    landing.nextFetch(OFFLINE);
+    expect(await landing.load("/how-it-works")).toEqual(REPUBLISHED);
+  });
+
+  test("a fallback reply is not remembered, whether the browser's copy came from the server render or a fetch", async () => {
+    const seeded = scripted(true);
+    seeded.rememberServerRendered(SERVER_RENDERED);
+    const fetched = scripted(true);
+    fetched.nextFetch(serves(SERVER_RENDERED, "studio"));
+    await fetched.load("/how-it-works");
+
+    for (const [name, landing] of Object.entries({ seeded, fetched })) {
+      landing.nextFetch(serves(LANDING_FALLBACK, "fallback"));
+      expect([name, await landing.load("/community")]).toEqual([name, SERVER_RENDERED]);
+      expect([name, landing.shouldReload({ route: { id: "/community" } })]).toEqual([name, true]);
+
+      landing.nextFetch(OFFLINE);
+      expect([name, await landing.load("/membership")]).toEqual([name, SERVER_RENDERED]);
+    }
+  });
+
+  test("with nothing remembered, a fallback reply is accepted and remembered as before", async () => {
+    const landing = scripted(true);
+    landing.nextFetch(serves(CHECKED_IN, "fallback"));
+    expect(await landing.load("/community")).toEqual(CHECKED_IN);
+    expect(landing.shouldReload({ route: { id: "/community" } })).toBeUndefined();
+
+    landing.nextFetch(OFFLINE);
+    expect(await landing.load("/how-it-works")).toEqual(CHECKED_IN);
+  });
+
+  test("a last-good reply is accepted and remembered, and clears the route's reload mark", async () => {
+    const landing = scripted(true);
+    const community = { route: { id: "/community" } };
+    landing.rememberServerRendered(SERVER_RENDERED);
+    landing.nextFetch(OFFLINE);
+    await landing.load("/community");
+    expect(landing.shouldReload(community)).toBe(true);
+
+    landing.nextFetch(serves(REPUBLISHED, "last-good"));
+    expect(await landing.load("/community")).toEqual(REPUBLISHED);
+    expect(landing.shouldReload(community)).toBeUndefined();
+    landing.nextFetch(OFFLINE);
+    expect(await landing.load("/how-it-works")).toEqual(REPUBLISHED);
+  });
+
+  test("on the server a reply renders whatever its source, and nothing is remembered", async () => {
+    const replies: [LandingSource, LandingContent][] = [
+      ["studio", PUBLISHED],
+      ["last-good", REPUBLISHED],
+      ["fallback", CHECKED_IN],
+    ];
+    for (const [source, content] of replies) {
+      const landing = scripted(false);
+      landing.rememberServerRendered(SERVER_RENDERED);
+      landing.nextFetch(serves(content, source));
+      expect([source, await landing.load("/community")]).toEqual([source, content]);
+      expect([source, landing.shouldReload({ route: { id: "/community" } })]).toEqual([
+        source,
+        undefined,
+      ]);
+
+      landing.nextFetch(OFFLINE);
+      expect([source, await landing.load("/community")]).toEqual([source, LANDING_FALLBACK]);
+    }
   });
 });
 
@@ -255,7 +366,7 @@ describe("landing routes in a router: a failed load is fetched again", () => {
     await router.load();
     expect(shown(router)).toEqual(LANDING_FALLBACK);
 
-    landing.nextFetch(resolvesWith(REPUBLISHED));
+    landing.nextFetch(serves(REPUBLISHED, "studio"));
     await router.navigate({ to: "/how-it-works" });
     expect(landing.seen.fetches).toBe(2);
 
@@ -270,7 +381,7 @@ describe("landing routes in a router: a failed load is fetched again", () => {
     landing.nextFetch(OFFLINE);
     const router = landingRouter(landing);
     await router.load();
-    landing.nextFetch(resolvesWith(REPUBLISHED));
+    landing.nextFetch(serves(REPUBLISHED, "studio"));
     await router.navigate({ to: "/how-it-works" });
     expect(landing.seen.fetches).toBe(2);
 
@@ -300,7 +411,7 @@ describe("landing routes in a router: a failed load is fetched again", () => {
     await router.navigate({ to: "/how-it-works" });
     setSystemTime(new Date(Date.now() + FIVE_MINUTES));
     try {
-      landing.nextFetch(resolvesWith(REPUBLISHED));
+      landing.nextFetch(serves(REPUBLISHED, "studio"));
       await router.navigate({ to: "/community" });
       await settle();
     } finally {

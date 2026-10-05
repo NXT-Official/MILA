@@ -131,3 +131,14 @@ export type LandingContent = {
   subpageCta: SubpageCtaContent;
   footer: FooterContent;
 };
+
+/**
+ * Where a server's landing content came from: `studio`, a Sanity read the
+ * request waited for; `last-good`, the last good read of the server instance
+ * that answered; `fallback`, the checked-in copy (`LANDING_FALLBACK`), which
+ * knows nothing of hidden sections or Studio edits.
+ */
+export type LandingSource = "studio" | "last-good" | "fallback";
+
+/** What the landing server function (`getLandingContent`) replies with. */
+export type LandingReply = { content: LandingContent; source: LandingSource };

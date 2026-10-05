@@ -5,6 +5,7 @@ import type {
   FeedImage,
   LandingContent,
   LandingImage,
+  LandingReply,
   PaletteSwatch,
   Step,
   Testimonial,
@@ -404,7 +405,7 @@ const SYSTEM_CLOCK: LandingClock = {
   },
 };
 
-export type LandingLoader = (options: LoadLandingOptions) => Promise<LandingContent>;
+export type LandingLoader = (options: LoadLandingOptions) => Promise<LandingReply>;
 
 /** A page render waits this long for Sanity, then serves what it has. */
 const LANDING_READ_TIMEOUT_MS = 4_000;
@@ -491,23 +492,34 @@ async function readWithDeadline(
  * one deadline, not one per visitor. With no overlap, reads finish in the
  * order they start, and a read abandoned at its deadline can no longer
  * change anything (`readWithDeadline`).
+ *
+ * Each reply says where its content came from (`LandingReply.source`):
+ * `studio` when the read the caller waited for succeeded, `last-good` for the
+ * last good copy, `fallback` for the checked-in copy. A browser holding Studio
+ * copy of its own turns down a `fallback` reply (`createLandingRouteLoader`).
  */
 export function createLandingLoader(clock: LandingClock = SYSTEM_CLOCK): LandingLoader {
   // Held by the loader, never module scope, so every loader (one per server
   // instance, one per test) has its own memory.
   let lastGood: LandingContent | null = null;
   let retryAt = 0;
-  let reading: Promise<void> | null = null;
+  let reading: Promise<LandingContent | null> | null = null;
   let unconfiguredReported = false;
 
   // Always a copy: a caller that mutates what it was served can't reach this.
-  const stale = () => structuredClone(lastGood ?? LANDING_FALLBACK);
+  const stale = (): LandingReply =>
+    lastGood
+      ? { content: structuredClone(lastGood), source: "last-good" }
+      : { content: structuredClone(LANDING_FALLBACK), source: "fallback" };
 
-  /** One read: a new last good copy, or a failure and the quiet period. Never throws. */
+  /**
+   * One read: the new last good copy, or `null` after a failure and the quiet
+   * period. Never throws.
+   */
   async function read(
     { fetchDocument, warn, report }: LoadLandingOptions,
     target: SanityTarget,
-  ): Promise<void> {
+  ): Promise<LandingContent | null> {
     try {
       const raw = await readWithDeadline(fetchDocument, clock);
       if (!isObj(raw)) {
@@ -525,6 +537,7 @@ export function createLandingLoader(clock: LandingClock = SYSTEM_CLOCK): Landing
         );
       }
       lastGood = normalizeLandingContent(raw, target);
+      return lastGood;
     } catch (error) {
       retryAt = clock.now() + LANDING_RETRY_AFTER_MS;
       const serving = lastGood
@@ -534,6 +547,7 @@ export function createLandingLoader(clock: LandingClock = SYSTEM_CLOCK): Landing
         `[landing] Sanity read failed (${describeFailure(error)}) for ${target.projectId}/${target.dataset}; serving ${serving}, next attempt in ${LANDING_RETRY_AFTER_MS / 1000}s.`,
       );
       reportSafely(report, error);
+      return null;
     }
   }
 
@@ -572,7 +586,7 @@ export function createLandingLoader(clock: LandingClock = SYSTEM_CLOCK): Landing
       // after Sanity answers, and it is at most one read behind.
       return stale();
     }
-    await reading;
-    return stale();
+    const fresh = await reading;
+    return fresh ? { content: structuredClone(fresh), source: "studio" } : stale();
   };
 }
