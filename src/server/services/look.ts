@@ -32,6 +32,7 @@ import {
 import { deriveColorMetrics } from "@/lib/profile-color";
 import { AESTHETIC_MOODS } from "@/constants/style-profile";
 import {
+  buildFallbackShortlist,
   formatInventoryForPrompt,
   loadLookInventory,
   needsColdWeatherOuterwear,
@@ -295,50 +296,64 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
           },
         );
       }
-      if (!reviewed.ok) throw new AiUnavailableError(failure);
-
-      shortlistProducts = resolveShortlist(
-        (reviewed.args as Record<string, unknown> | null)?.shortlist,
-        inventory,
-      );
-
-      // Shortlist floor with one recheck: the reviewer occasionally comes back
-      // with a near-empty shortlist for a strict occasion (confirmed live: a
-      // Business Attire run returned ONE row, and the plan stage then composed
-      // a one-garment "look" — the plan can only choose from what this stage
-      // returns). When the inventory clearly supports a full look, re-ask once
-      // rather than shipping a thin one; the better shortlist wins.
-      if (
-        shortlistProducts.length < REVIEW_MIN_SHORTLIST &&
-        inventory.length >= REVIEW_MIN_SHORTLIST * 2 &&
-        remainingComposeMs() > 90_000
-      ) {
-        const recheck = await aiChatCompletion(
-          [
-            { role: "system", content: reviewPrompt },
-            { role: "user", content: "Check the full inventory and report the shortlist." },
-            {
-              role: "user",
-              content: `That shortlist carried only ${shortlistProducts.length} row(s) — far too thin to build a full head-to-toe look. Re-check the ENTIRE inventory and report a full shortlist covering every wearable slot the occasion allows (3–4 tops, 3–4 bottoms/dresses, 2–3 shoes, outerwear only if the weather calls for it, bags, jewelry, accessories), up to two dozen rows, best-first per category.`,
-            },
-          ],
-          reviewTool,
-          { supabase, userId },
-          {
-            timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
-            reasoningMaxTokens: REVIEW_REASONING_TOKENS,
-          },
+      if (!reviewed.ok) {
+        // Both review attempts failed: degrade to the deterministic shortlist
+        // rather than failing the whole generation — the plan stage can still
+        // compose a real look from catalogue rows, with the same attire gate
+        // the review would have applied.
+        console.warn(
+          `[generateLookForUser] review unavailable (status=${reviewed.status}) — using the deterministic shortlist`,
         );
-        if (recheck.ok) {
-          const second = resolveShortlist(
-            (recheck.args as Record<string, unknown> | null)?.shortlist,
-            inventory,
+        shortlistProducts = buildFallbackShortlist(inventory, {
+          vibe: data.vibe,
+          colorSeason: colorSeasonValue,
+          bodyType: data.bodyType,
+          tempF,
+        });
+      } else {
+        shortlistProducts = resolveShortlist(
+          (reviewed.args as Record<string, unknown> | null)?.shortlist,
+          inventory,
+        );
+
+        // Shortlist floor with one recheck: the reviewer occasionally comes back
+        // with a near-empty shortlist for a strict occasion (confirmed live: a
+        // Business Attire run returned ONE row, and the plan stage then composed
+        // a one-garment "look" — the plan can only choose from what this stage
+        // returns). When the inventory clearly supports a full look, re-ask once
+        // rather than shipping a thin one; the better shortlist wins.
+        if (
+          shortlistProducts.length < REVIEW_MIN_SHORTLIST &&
+          inventory.length >= REVIEW_MIN_SHORTLIST * 2 &&
+          remainingComposeMs() > 90_000
+        ) {
+          const recheck = await aiChatCompletion(
+            [
+              { role: "system", content: reviewPrompt },
+              { role: "user", content: "Check the full inventory and report the shortlist." },
+              {
+                role: "user",
+                content: `That shortlist carried only ${shortlistProducts.length} row(s) — far too thin to build a full head-to-toe look. Re-check the ENTIRE inventory and report a full shortlist covering every wearable slot the occasion allows (3–4 tops, 3–4 bottoms/dresses, 2–3 shoes, outerwear only if the weather calls for it, bags, jewelry, accessories), up to two dozen rows, best-first per category.`,
+              },
+            ],
+            reviewTool,
+            { supabase, userId },
+            {
+              timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
+              reasoningMaxTokens: REVIEW_REASONING_TOKENS,
+            },
           );
-          if (second.length > shortlistProducts.length) shortlistProducts = second;
-        } else {
-          console.warn(
-            `[generateLookForUser] shortlist recheck failed after a thin review (${shortlistProducts.length} rows kept, status=${recheck.status})`,
-          );
+          if (recheck.ok) {
+            const second = resolveShortlist(
+              (recheck.args as Record<string, unknown> | null)?.shortlist,
+              inventory,
+            );
+            if (second.length > shortlistProducts.length) shortlistProducts = second;
+          } else {
+            console.warn(
+              `[generateLookForUser] shortlist recheck failed after a thin review (${shortlistProducts.length} rows kept, status=${recheck.status})`,
+            );
+          }
         }
       }
 

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  buildFallbackShortlist,
   COLD_WEATHER_F,
   formatInventoryForPrompt,
   INVENTORY_MAX_PER_CATEGORY,
@@ -691,5 +692,65 @@ describe("pickWeatherBackfill", () => {
         bodyType: "Rectangle",
       }),
     ).toBeNull();
+  });
+});
+
+describe("buildFallbackShortlist", () => {
+  const make = (
+    id: string,
+    category: string,
+    attire: string[] = [],
+    extra: Partial<LookInventoryItem> = {},
+  ) => inventoryItem(id, { category, attire, ...extra });
+
+  test("applies the occasion attire gate — business vibes exclude Athletic rows", () => {
+    const inventory = [
+      make("bp-top", "Tops", ["Business Professional"]),
+      make("athletic-top", "Tops", ["Athletic"]),
+      make("untagged-top", "Tops", []),
+    ];
+    const out = buildFallbackShortlist(inventory, {
+      vibe: "Business Attire",
+      colorSeason: "Summer",
+      bodyType: "Hourglass",
+      tempF: 84,
+    });
+    const ids = out.map((i) => i.id);
+    expect(ids).toContain("bp-top");
+    expect(ids).toContain("untagged-top");
+    expect(ids).not.toContain("athletic-top");
+  });
+
+  test("caps per category and puts palette-matched rows first", () => {
+    const inventory = [
+      ...Array.from({ length: 6 }, (_, i) => make(`top-${i}`, "Tops", ["Casual"])),
+      make("palette-top", "Tops", ["Casual"], { seasonal_palettes: ["Summer"] }),
+    ];
+    const out = buildFallbackShortlist(inventory, {
+      vibe: "Everyday Casual",
+      colorSeason: "Summer",
+      bodyType: "Hourglass",
+    });
+    const tops = out.filter((i) => i.category === "Tops");
+    expect(tops.length).toBe(4);
+    expect(tops[0].id).toBe("palette-top");
+  });
+
+  test("drops Outerwear in hot weather and keeps it when mild", () => {
+    const inventory = [make("coat", "Outerwear", ["Casual"]), make("tee", "Tops", ["Casual"])];
+    const hot = buildFallbackShortlist(inventory, {
+      vibe: "Everyday Casual",
+      colorSeason: "Summer",
+      bodyType: "Hourglass",
+      tempF: 90,
+    });
+    expect(hot.map((i) => i.id)).not.toContain("coat");
+    const mild = buildFallbackShortlist(inventory, {
+      vibe: "Everyday Casual",
+      colorSeason: "Summer",
+      bodyType: "Hourglass",
+      tempF: 60,
+    });
+    expect(mild.map((i) => i.id)).toContain("coat");
   });
 });
