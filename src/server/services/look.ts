@@ -51,16 +51,18 @@ type MilaSupabaseClient = SupabaseClient<Database>;
 const REVIEW_MIN_SHORTLIST = 8;
 
 /** The compose stages share the client's budget: the dashboard and the
- * mobile client both give up at 240s. The server aims to resolve by this
- * deadline so the member always gets a real answer (success, or the friendly
- * AI_UNAVAILABLE retry message) before the client's own timeout fires.
- * Confirmed live: unbounded provider calls let one stalled response burn the
- * whole budget, and a timed-out compose surfaced as a generic failure. */
-const COMPOSE_DEADLINE_MS = 225_000;
-/** Per-attempt budgets. Paired with one retry per stage, the worst case
- * (both attempts of both stages) still lands inside COMPOSE_DEADLINE_MS. */
-const REVIEW_CALL_TIMEOUT_MS = 70_000;
-const PLAN_CALL_TIMEOUT_MS = 85_000;
+ * mobile client both give up at 240s. The server aims to resolve well inside
+ * that so the member always gets a real answer (success, or the friendly
+ * AI_UNAVAILABLE retry message) before the client's own timeout fires. */
+const COMPOSE_DEADLINE_MS = 215_000;
+/** Per-attempt budgets, allocated by blast radius: the REVIEW is backed by
+ * the deterministic fallback (buildFallbackShortlist), so it fails fast — a
+ * second review attempt only happens when the first died early enough that
+ * there's plenty of room left. The PLAN has no fallback and gets the lion's
+ * share, with a retry whenever a clamped attempt is still worthwhile.
+ * Measured live: provider calls run 35–60s normally, with stalls past 100s. */
+const REVIEW_CALL_TIMEOUT_MS = 85_000;
+const PLAN_CALL_TIMEOUT_MS = 105_000;
 /** OpenRouter reasoning budgets: these calls otherwise spend ~10k reasoning
  * tokens to produce a ~1.5k answer (live probe), dominating latency and cost.
  * Bounded waits in the same probe still returned full, valid payloads. */
@@ -249,8 +251,11 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     /** Clamp a per-attempt budget to what's left, with a small floor so a
      * late attempt still gets a real chance rather than a 3-second spasm. */
     const composeCallTimeout = (preferredMs: number) =>
-      Math.max(20_000, Math.min(preferredMs, remainingComposeMs()));
-    const canRetryComposeCall = () => remainingComposeMs() > 40_000;
+      Math.max(12_000, Math.min(preferredMs, remainingComposeMs() - 5_000));
+    /** A retry is worth it only when the attempt it would buy can be long
+     * enough to plausibly finish inside the deadline. */
+    const canRetryComposeCall = (minAttemptMs: number) =>
+      remainingComposeMs() - 5_000 >= Math.min(minAttemptMs, 45_000);
     if (inventory.length > 0) {
       const reviewPrompt = buildInventoryReviewPrompt({
         profileLines,
@@ -279,10 +284,10 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         { supabase, userId },
         reviewOptions,
       );
-      if (!reviewed.ok && canRetryComposeCall()) {
-        // One retry: confirmed live, a stalled provider stream that killed the
-        // whole generation on attempt one routinely succeeds on a fresh call —
-        // and the deadline above guarantees the pair still lands in budget.
+      if (!reviewed.ok && canRetryComposeCall(REVIEW_CALL_TIMEOUT_MS + 45_000)) {
+        // A second review attempt only when the first died early enough to
+        // leave ~85s + plan headroom; otherwise the deterministic fallback
+        // below takes over and the plan keeps the rest of the budget.
         console.warn(
           `[generateLookForUser] review call failed (status=${reviewed.status}) — retrying with ${Math.round(remainingComposeMs() / 1000)}s left`,
         );
@@ -442,7 +447,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         reasoningMaxTokens: PLAN_REASONING_TOKENS,
       },
     );
-    if (!composed.ok && canRetryComposeCall()) {
+    if (!composed.ok && canRetryComposeCall(PLAN_CALL_TIMEOUT_MS + 5_000)) {
       console.warn(
         `[generateLookForUser] plan call failed (status=${composed.status}) — retrying with ${Math.round(remainingComposeMs() / 1000)}s left`,
       );
