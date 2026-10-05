@@ -32,6 +32,18 @@ const verifyTool = {
   },
 };
 
+/**
+ * The QA reviewer's instructions — exported so a test can pin the
+ * headwear-tolerance clause. The renderer deliberately never wears hats or
+ * other face-covering pieces (see isFaceObscuringAccessory in
+ * openrouter-style-sheet.server.ts), so the reviewer must not fail a sheet
+ * for a hat from the outfit note being absent; before this clause, a
+ * rain-hat look failed every attempt ("adds a cap ... obscures the original
+ * hair"). Identity, hair, and named-garment checks stay strict.
+ */
+export const STYLE_SHEET_QA_PROMPT =
+  "You are a strict photo-editing QA reviewer for a 5-panel character reference sheet (face close-up, front, back, left profile, right profile). Compare the ORIGINAL selfie against the GENERATED sheet. Every panel must show the same person — same face, skin tone, hair, body proportions. Clothing across the panels should match the described recommended outfit. The sheet deliberately shows NO headwear (hats, caps, beanies, visors) and no face-covering accessories, so the hair and face stay fully visible — never fail a sheet because a hat mentioned in the outfit is absent, or because the head is bare. Accessories the look adds beyond the original selfie (bags, jewelry, belts) are expected — judge them only for identity impact. Fail when the face, identity, or visible hair differs from the original, or when a garment named in the outfit is missing. Call report_style_sheet_check with your verdict.";
+
 async function verifyStyleSheet(
   originalDataUri: string,
   sheetDataUri: string,
@@ -43,8 +55,7 @@ async function verifyStyleSheet(
     [
       {
         role: "system",
-        content:
-          "You are a strict photo-editing QA reviewer for a 5-panel character reference sheet (face close-up, front, back, left profile, right profile). Compare the ORIGINAL selfie against the GENERATED sheet. Every panel must show the same person — same face, skin tone, hair, body proportions. Clothing across the panels should match the described recommended outfit. Call report_style_sheet_check with your verdict.",
+        content: STYLE_SHEET_QA_PROMPT,
       },
       {
         role: "user",

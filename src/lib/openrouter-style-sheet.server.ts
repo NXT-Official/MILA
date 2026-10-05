@@ -49,12 +49,33 @@ const PRIMARY_RESOLUTION = "4K";
 const FALLBACK_RESOLUTION = "2K";
 const ASPECT_RATIO = "16:9";
 
-function buildWardrobeLine(outfit: DailyLook, shoppablePicks: ShoppablePick[]): string {
+/**
+ * Pieces that cover the head, hair, or eyes. They are worn by the person in
+ * everyday life — a rain hat is a legitimate pick — but NEVER by the style
+ * sheet: the sheet exists to verify identity (same face, skin, hair), and a
+ * cap obscuring the hair makes that impossible. Confirmed live: a look whose
+ * picks included a rain bucket hat rendered a cap in every panel and failed
+ * QA on every attempt ("adds a black Nike baseball cap ... obscures the
+ * original hair"). Dropped from the "Specifically wearing" line only; the
+ * pieces stay part of the look everywhere else. Matched on the title because
+ * accessories carry no headwear category.
+ */
+const FACE_OBSCURING_TITLE =
+  /\b(caps?|hats?|beanies?|berets?|visors?|turbans?|balaclavas?|durags?|fedoras?|panamas?|sunglass(es)?|eyewear|goggles?)\b/i;
+
+export function isFaceObscuringAccessory(title: string): boolean {
+  return FACE_OBSCURING_TITLE.test(title);
+}
+
+export function buildWardrobeLine(outfit: DailyLook, shoppablePicks: ShoppablePick[]): string {
   // Only the planned pieces: "similar" entries are extra shoppable options
   // beside the look, not things the person is wearing — listing them here
-  // would tell the image model to wear ten-plus garments at once.
+  // would tell the image model to wear ten-plus garments at once. And never
+  // headwear/face-covering pieces: the sheet must keep the hair and face
+  // fully visible or its identity QA fails — see isFaceObscuringAccessory.
   const pickLines = shoppablePicks
     .filter((pick) => pick.source !== "similar")
+    .filter((pick) => !isFaceObscuringAccessory(pick.title))
     .map((pick) => `${pick.title} (${pick.category}, ${pick.price} ${pick.currency})`)
     .join("; ");
   return pickLines
@@ -62,7 +83,7 @@ function buildWardrobeLine(outfit: DailyLook, shoppablePicks: ShoppablePick[]): 
     : `${outfit.outfit.headline}: ${outfit.outfit.description}`;
 }
 
-function buildStyleSheetPrompt({
+export function buildStyleSheetPrompt({
   outfit,
   shoppablePicks,
   gender,
@@ -76,6 +97,8 @@ function buildStyleSheetPrompt({
 
   return `REFERENCE / IDENTITY LOCK:
 Use the uploaded reference image as the ONLY identity reference for the character. Recreate the EXACT SAME PERSON from the reference image with maximum identity accuracy. ${identityLockLine} Do NOT beautify, redesign, age, de-age, stylize, or alter the person's identity.
+
+HEADWEAR OVERRIDE — KEEP THE HEAD BARE IN EVERY VIEW: never add hats, caps, beanies, berets, visors, sunglasses, or anything else covering the head, hair, or eyes, even if the recommended outfit below mentions a hat. The full hairstyle and face must stay clearly visible in all five views.
 
 CHARACTER SHEET FORMAT:
 Create a clean professional character turnaround/reference sheet containing EXACTLY FIVE clearly separated views arranged horizontally: FACE CLOSE-UP, FRONT, BACK, LEFT PROFILE, RIGHT PROFILE.
