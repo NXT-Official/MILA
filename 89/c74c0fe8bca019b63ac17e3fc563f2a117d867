@@ -1,0 +1,63 @@
+src/routes/community.tsx
+  s_0cc7eb3d8eb999::t_f2039adb7c5526 2-6,11-12,19
+src/routes/how-it-works.tsx
+  s_0cc7eb3d8eb999::t_abed1083c290d0 2-6,11-12,19
+  s_0cc7eb3d8eb999::t_0f42ba3bc77f64 7,20
+src/lib/landing-content.route-loader.test.ts
+  s_0cc7eb3d8eb999::t_4be28a1271f3d5 2-9,20-41,46-60,63,65-74,76-107,109-113,115-126,130-149,152-168,181-207,209
+  s_0cc7eb3d8eb999::t_283df724a01bca 61-62
+  s_0cc7eb3d8eb999::t_d92c05a8989f95 180,208,210-219,223-238,240-310
+  s_0cc7eb3d8eb999::t_34f61ed04aede0 1,12
+  s_0cc7eb3d8eb999::t_02e5c32c2b1bff 239
+  s_0cc7eb3d8eb999::t_fa0440d173d532 220-222
+  s_0cc7eb3d8eb999::t_753d0c53c9468c 169-179
+src/routes/style-dossier.tsx
+  s_0cc7eb3d8eb999::t_f795f4eb3f65f5 2-6,11-12,19
+  s_0cc7eb3d8eb999::t_90c47262deffd9 7,20
+src/routes/membership.tsx
+  s_0cc7eb3d8eb999::t_ae12e01a42836f 7,20
+  s_0cc7eb3d8eb999::t_e524943d075835 2-6,11-12,19
+src/routes/index.tsx
+  s_0cc7eb3d8eb999::t_0779660a1573d9 45
+  s_0cc7eb3d8eb999::t_4f1805db03f19e 6-10
+  s_0cc7eb3d8eb999::t_e029bd88db8107 22-23
+src/lib/landing-content.route-loader.ts
+  s_0cc7eb3d8eb999::t_5ad0ffe913e250 84
+  s_0cc7eb3d8eb999::t_f11b5070f302ed 93
+  s_0cc7eb3d8eb999::t_0f8809e96d4434 1,16-30,32,35-46,48-53,57-77,79-83,85-92,94-96,98-114,116-119
+  s_0cc7eb3d8eb999::t_fa4613814da3f3 54-56
+  s_0cc7eb3d8eb999::t_0995ee9b48d435 47
+  s_0cc7eb3d8eb999::t_62d0f3b7ddcd9d 78
+  s_0cc7eb3d8eb999::t_7b5fa35fd0578d 97
+src/components/landing/how-it-works-page-view.tsx
+  s_0cc7eb3d8eb999::t_b35ec1fa49eacb 1-16
+src/components/landing/dupe-hunter-page-view.tsx
+  s_0cc7eb3d8eb999::t_47676046912b00 1-16
+src/components/landing/marketing-page-views.test.tsx
+  s_0cc7eb3d8eb999::t_32c58ec36ba9d9 1-95
+src/components/landing/style-dossier-page-view.tsx
+  s_0cc7eb3d8eb999::t_572cbe18155c0a 13
+  s_0cc7eb3d8eb999::t_78bdcfd843bedf 1-12,14-16
+src/routes/dupe-hunter.tsx
+  s_0cc7eb3d8eb999::t_66861a31d5279a 7,20
+  s_0cc7eb3d8eb999::t_e3bb7e03a86183 2-6,11-12,19
+src/components/landing/membership-page-view.tsx
+  s_0cc7eb3d8eb999::t_41f7300091b377 1-12,14-16
+  s_0cc7eb3d8eb999::t_951877fc9e5df4 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "89c74c0fe8bca019b63ac17e3fc563f2a117d867",
+  "prompts": {},
+  "sessions": {
+    "s_0cc7eb3d8eb999": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9204abd3-77fd-4017-aca1-2322f5e9db32",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
