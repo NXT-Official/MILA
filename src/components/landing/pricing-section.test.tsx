@@ -1,0 +1,180 @@
+import { describe, expect, test } from "bun:test";
+import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  RouterProvider,
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+} from "@tanstack/react-router";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { PricingContent } from "@/lib/landing-content";
+import { LANDING_FALLBACK } from "@/lib/landing-content.fallback";
+import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
+import type { PublicSubscriptionPlan } from "@/lib/subscription-plans";
+import { PricingSection } from "./pricing-section";
+
+/** The cache entry the section reads; the same key the app's query writes. */
+const PLANS_KEY = publicSubscriptionPlansQueryOptions().queryKey;
+
+/** Copy as it appears in the markup: React escapes quotes, ampersands and angle brackets. */
+function text(copy: string) {
+  return renderToStaticMarkup(<>{copy}</>);
+}
+
+/** Every `<h2>` in the markup, in document order: the section heading, then one per plan. */
+function headings(markup: string) {
+  return [...markup.matchAll(/<h2[^>]*>(.*?)<\/h2>/gs)].map(([, inner]) => inner);
+}
+
+/** Everything in the markup that reads as a price, in document order. */
+function prices(markup: string): string[] {
+  return markup.match(/[$£€₱]\d[\d.,]*/g) ?? [];
+}
+
+function count(markup: string, needle: string) {
+  return markup.split(needle).length - 1;
+}
+
+/** How one loading placeholder opens in the markup, taken from the real Skeleton. */
+const PLACEHOLDER = renderToStaticMarkup(<Skeleton />).replace(/"><\/div>$/, "");
+
+/** A query client whose plans query has already resolved with `plans`. */
+function clientWith(plans: PublicSubscriptionPlan[]) {
+  const client = new QueryClient();
+  client.setQueryData(PLANS_KEY, plans);
+  return client;
+}
+
+/** The section needs a router (useNavigate, Link) and a query client. */
+async function renderPricing(client: QueryClient, content: PricingContent) {
+  const rootRoute = createRootRoute({
+    component: () => (
+      <QueryClientProvider client={client}>
+        <PricingSection content={content} />
+      </QueryClientProvider>
+    ),
+  });
+  const router = createRouter({
+    routeTree: rootRoute,
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+  });
+  await router.load();
+  return renderToStaticMarkup(<RouterProvider router={router} />);
+}
+
+/** Two plans as the Supabase query returns them. */
+const PLANS: PublicSubscriptionPlan[] = [
+  {
+    id: "plan-a",
+    slug: "test-muse",
+    title: "Test Plan Muse",
+    description: "First test plan",
+    price_amount: 900,
+    currency: "usd",
+    billing_interval: "monthly",
+    credits_included: 5,
+    features: ["First test feature"],
+    is_featured: false,
+    paddle_price_id: "pri_test_a",
+  },
+  {
+    id: "plan-b",
+    slug: "test-atelier",
+    title: "Test Plan Atelier",
+    description: "Second test plan",
+    price_amount: 2400,
+    currency: "usd",
+    billing_interval: "yearly",
+    credits_included: 20,
+    features: ["Second test feature"],
+    is_featured: true,
+    paddle_price_id: "pri_test_b",
+  },
+];
+/** What a visitor is shown for those amounts: 900 and 2400 cents of USD. */
+const SHOWN_PRICES = ["$9.00", "$24.00"];
+
+/** The two fields the Studio edits, set to copy the fallback does not contain. */
+const EDITED: PricingContent = {
+  ...LANDING_FALLBACK.pricing,
+  heading: "Edited pricing heading",
+  body: "Edited pricing body — it's clear & simple.",
+};
+
+describe("PricingSection copy comes from content", () => {
+  test("heading and body", async () => {
+    const out = await renderPricing(clientWith(PLANS), EDITED);
+    expect(out).toContain(`>${text(EDITED.heading)}</h2>`);
+    expect(out).toContain(`>${text(EDITED.body)}<`);
+  });
+});
+
+describe("PricingSection plans come only from the plans query", () => {
+  test("plan names and prices are the query's, in the query's order", async () => {
+    const out = await renderPricing(clientWith(PLANS), EDITED);
+    expect(headings(out)).toEqual([text(EDITED.heading), ...PLANS.map((plan) => text(plan.title))]);
+    expect(prices(out)).toEqual(SHOWN_PRICES);
+    expect(count(out, PLACEHOLDER)).toBe(0);
+
+    const reversedPlans = [...PLANS].reverse();
+    const reversed = await renderPricing(clientWith(reversedPlans), EDITED);
+    expect(headings(reversed)).toEqual([
+      text(EDITED.heading),
+      ...reversedPlans.map((plan) => text(plan.title)),
+    ]);
+    expect(prices(reversed)).toEqual([...SHOWN_PRICES].reverse());
+  });
+
+  test("price- and plan-looking values smuggled into content change nothing", async () => {
+    /** Fields the Studio schema does not have, as a tampered document might carry them. */
+    const smuggled = {
+      ...EDITED,
+      price: "$1",
+      title: "Smuggled Plan",
+      plans: [{ ...PLANS[0], id: "smuggled", title: "Smuggled Plan", price_amount: 100 }],
+      href: "https://evil.example/checkout",
+    } as PricingContent;
+    const out = await renderPricing(clientWith(PLANS), smuggled);
+    // Guard: the smuggled object is what was rendered.
+    expect(out).toContain(`>${text(smuggled.heading)}</h2>`);
+
+    expect(out).not.toContain("$1");
+    expect(out).not.toContain("Smuggled");
+    expect(out).not.toContain("evil.example");
+    expect(out).toBe(await renderPricing(clientWith(PLANS), EDITED));
+  });
+});
+
+describe("PricingSection without plans", () => {
+  test("before the query has data: heading and body over three placeholders, no plan or price", async () => {
+    const out = await renderPricing(new QueryClient(), EDITED);
+    expect(headings(out)).toEqual([text(EDITED.heading)]);
+    expect(out).toContain(`>${text(EDITED.body)}<`);
+    expect(count(out, PLACEHOLDER)).toBe(3);
+    expect(prices(out)).toEqual([]);
+    expect(out).not.toContain("<li");
+    expect(out).not.toContain("<button");
+  });
+
+  test("the query returned no plans: the whole section is omitted, heading included", async () => {
+    expect(await renderPricing(clientWith([]), EDITED)).toBe("");
+  });
+
+  test("the query failed: the whole section is omitted, heading included", async () => {
+    // `retryOnMount: false` keeps the failed result for the first render. With
+    // the default, a newly mounted section shows the placeholders while it retries.
+    const client = new QueryClient({ defaultOptions: { queries: { retryOnMount: false } } });
+    await client.prefetchQuery({
+      queryKey: PLANS_KEY,
+      queryFn: async (): Promise<PublicSubscriptionPlan[]> => {
+        throw new Error("plans unavailable");
+      },
+      retry: false,
+    });
+    // Guard: the query really is in its failed state.
+    expect(client.getQueryState(PLANS_KEY)?.status).toBe("error");
+
+    expect(await renderPricing(client, EDITED)).toBe("");
+  });
+});
