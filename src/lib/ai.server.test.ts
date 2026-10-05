@@ -126,4 +126,30 @@ describe("OpenRouter chat gateway", () => {
       "AI provider not configured",
     );
   });
+
+  test("sends a reasoning budget only when one is provided", async () => {
+    // The big compose calls otherwise spend ~10k reasoning tokens for a
+    // ~1.5k answer (live probe); the budget bounds that. Absent the option,
+    // the request shape is unchanged for every existing caller.
+    process.env.OPENROUTER_API_KEY = "test-key";
+    const fetchMock = mock(async () =>
+      Response.json({ choices: [{ message: { content: '{"value":"ok"}' } }], usage: {} }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await aiChatCompletion([{ role: "user", content: "hi" }], tool, fakeCaller, {
+      timeoutMs: 70_000,
+      reasoningMaxTokens: 1024,
+    });
+    const first = JSON.parse(
+      String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body),
+    );
+    expect(first.reasoning).toEqual({ max_tokens: 1024 });
+
+    await aiChatCompletion([{ role: "user", content: "hi" }], tool, fakeCaller);
+    const second = JSON.parse(
+      String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body),
+    );
+    expect(second.reasoning).toBeUndefined();
+  });
 });

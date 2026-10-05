@@ -49,6 +49,23 @@ type MilaSupabaseClient = SupabaseClient<Database>;
  * a full look from, and it composed a single-garment "look" instead. */
 const REVIEW_MIN_SHORTLIST = 8;
 
+/** The compose stages share the client's budget: the dashboard and the
+ * mobile client both give up at 240s. The server aims to resolve by this
+ * deadline so the member always gets a real answer (success, or the friendly
+ * AI_UNAVAILABLE retry message) before the client's own timeout fires.
+ * Confirmed live: unbounded provider calls let one stalled response burn the
+ * whole budget, and a timed-out compose surfaced as a generic failure. */
+const COMPOSE_DEADLINE_MS = 225_000;
+/** Per-attempt budgets. Paired with one retry per stage, the worst case
+ * (both attempts of both stages) still lands inside COMPOSE_DEADLINE_MS. */
+const REVIEW_CALL_TIMEOUT_MS = 70_000;
+const PLAN_CALL_TIMEOUT_MS = 85_000;
+/** OpenRouter reasoning budgets: these calls otherwise spend ~10k reasoning
+ * tokens to produce a ~1.5k answer (live probe), dominating latency and cost.
+ * Bounded waits in the same probe still returned full, valid payloads. */
+const REVIEW_REASONING_TOKENS = 1024;
+const PLAN_REASONING_TOKENS = 4096;
+
 export type LookImageResult = {
   imageDataUri: string | null;
   imageGenerationError?: string;
@@ -226,6 +243,13 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     // isn't a live row from the same list, so the plan stage below can only
     // ever choose pieces that actually exist in the shop.
     let shortlistProducts: LookInventoryItem[] = [];
+    const composeStartedAt = Date.now();
+    const remainingComposeMs = () => COMPOSE_DEADLINE_MS - (Date.now() - composeStartedAt);
+    /** Clamp a per-attempt budget to what's left, with a small floor so a
+     * late attempt still gets a real chance rather than a 3-second spasm. */
+    const composeCallTimeout = (preferredMs: number) =>
+      Math.max(20_000, Math.min(preferredMs, remainingComposeMs()));
+    const canRetryComposeCall = () => remainingComposeMs() > 40_000;
     if (inventory.length > 0) {
       const reviewPrompt = buildInventoryReviewPrompt({
         profileLines,
@@ -239,14 +263,38 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         }),
       });
 
-      const reviewed = await aiChatCompletion(
-        [
-          { role: "system", content: reviewPrompt },
-          { role: "user", content: "Check the full inventory and report the shortlist." },
-        ],
-        buildInventoryReviewTool(inventory.length - 1),
+      const reviewMessages = [
+        { role: "system", content: reviewPrompt },
+        { role: "user", content: "Check the full inventory and report the shortlist." },
+      ];
+      const reviewTool = buildInventoryReviewTool(inventory.length - 1);
+      const reviewOptions = {
+        timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
+        reasoningMaxTokens: REVIEW_REASONING_TOKENS,
+      };
+      let reviewed = await aiChatCompletion(
+        reviewMessages,
+        reviewTool,
         { supabase, userId },
+        reviewOptions,
       );
+      if (!reviewed.ok && canRetryComposeCall()) {
+        // One retry: confirmed live, a stalled provider stream that killed the
+        // whole generation on attempt one routinely succeeds on a fresh call —
+        // and the deadline above guarantees the pair still lands in budget.
+        console.warn(
+          `[generateLookForUser] review call failed (status=${reviewed.status}) — retrying with ${Math.round(remainingComposeMs() / 1000)}s left`,
+        );
+        reviewed = await aiChatCompletion(
+          reviewMessages,
+          reviewTool,
+          { supabase, userId },
+          {
+            timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
+            reasoningMaxTokens: REVIEW_REASONING_TOKENS,
+          },
+        );
+      }
       if (!reviewed.ok) throw new AiUnavailableError(failure);
 
       shortlistProducts = resolveShortlist(
@@ -262,7 +310,8 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       // rather than shipping a thin one; the better shortlist wins.
       if (
         shortlistProducts.length < REVIEW_MIN_SHORTLIST &&
-        inventory.length >= REVIEW_MIN_SHORTLIST * 2
+        inventory.length >= REVIEW_MIN_SHORTLIST * 2 &&
+        remainingComposeMs() > 90_000
       ) {
         const recheck = await aiChatCompletion(
           [
@@ -273,8 +322,12 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
               content: `That shortlist carried only ${shortlistProducts.length} row(s) — far too thin to build a full head-to-toe look. Re-check the ENTIRE inventory and report a full shortlist covering every wearable slot the occasion allows (3–4 tops, 3–4 bottoms/dresses, 2–3 shoes, outerwear only if the weather calls for it, bags, jewelry, accessories), up to two dozen rows, best-first per category.`,
             },
           ],
-          buildInventoryReviewTool(inventory.length - 1),
+          reviewTool,
           { supabase, userId },
+          {
+            timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
+            reasoningMaxTokens: REVIEW_REASONING_TOKENS,
+          },
         );
         if (recheck.ok) {
           const second = resolveShortlist(
@@ -360,14 +413,34 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     });
 
     const shortlistIds = shortlistProducts.map((p) => p.id);
-    const composed = await aiChatCompletion(
-      [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: "Compose today's complete look." },
-      ],
-      buildDailyLookTool(makeupEnabled, shortlistIds),
+    const planMessages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: "Compose today's complete look." },
+    ];
+    const planTool = buildDailyLookTool(makeupEnabled, shortlistIds);
+    let composed = await aiChatCompletion(
+      planMessages,
+      planTool,
       { supabase, userId },
+      {
+        timeoutMs: composeCallTimeout(PLAN_CALL_TIMEOUT_MS),
+        reasoningMaxTokens: PLAN_REASONING_TOKENS,
+      },
     );
+    if (!composed.ok && canRetryComposeCall()) {
+      console.warn(
+        `[generateLookForUser] plan call failed (status=${composed.status}) — retrying with ${Math.round(remainingComposeMs() / 1000)}s left`,
+      );
+      composed = await aiChatCompletion(
+        planMessages,
+        planTool,
+        { supabase, userId },
+        {
+          timeoutMs: composeCallTimeout(PLAN_CALL_TIMEOUT_MS),
+          reasoningMaxTokens: PLAN_REASONING_TOKENS,
+        },
+      );
+    }
     if (!composed.ok) throw new AiUnavailableError(failure);
 
     // Hydrate the model's product_id/rationale picks into full, real product
