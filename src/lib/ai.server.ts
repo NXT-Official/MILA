@@ -20,7 +20,16 @@ const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 // feedback beyond the client's own generic timeout toast, and the server
 // call kept consuming function time (and, if it eventually succeeded, a
 // credit) after the client had already given up.
-const TIMEOUT_MS = 75_000;
+//
+// Raised 75s -> 110s (2026-10-05): the look pipeline's review and plan calls
+// run 12-14k-token prompts with 5-9k-token completions, and on a slow
+// provider night calls that normally finish inside a minute were aborting
+// mid-body at 75s ("provider response body failed timed out mid-body"),
+// failing the whole generation with the generic retry message. 110s per
+// call x the two sequential compose stages stays inside the dashboard's
+// compose budget (LOOK_TIMEOUT_MS, 240s), so the server still resolves
+// before the client gives up.
+const TIMEOUT_MS = 110_000;
 
 // The one permanent text/vision brain — multimodal, handles every
 // aiChatCompletion caller (text-only look composition and image-bearing

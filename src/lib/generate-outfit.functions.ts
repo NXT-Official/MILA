@@ -258,7 +258,8 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
 /**
  * Hard cap on the review stage's shortlist (schema `maxItems` + prompt copy).
  * Step one is the pipeline's slowest call, and an uncapped run measured 8.3k
- * completion tokens on a 36k-token prompt — close enough to the 75s provider
+ * completion tokens on a 36k-token prompt — close enough to the (then 75s;
+ * 110s since 2026-10-05, see ai.server.ts) provider
  * timeout that a slow moment aborted the whole generation. Capping keeps the
  * call comfortably inside its budget and cuts cost with it.
  */
@@ -466,7 +467,16 @@ export const DailyLookSchema = z.object({
       details: z.string().min(1).max(3000),
     })
     .nullable(),
-  vibe_alignment_score: z.number().int().min(1).max(10),
+  // Confirmed live (2026-10-05): deepseek occasionally emits 0 for the score —
+  // its 1-10 scale slipping to a 0-based read — and the old
+  // `.int().min(1).max(10)` rejected the WHOLE look over that one cosmetic
+  // number, so a complete, valid composition reached the member as "Mila
+  // couldn't compose a look." Clamp instead of reject: round to the nearest
+  // integer and pull it into 1-10. NaN still fails (zod rejects it before the
+  // transform) and non-numbers still fail; every consumer (result panel,
+  // saved looks, style-sheet prompt) expects an integer in 1-10 and keeps
+  // getting one.
+  vibe_alignment_score: z.number().transform((n) => Math.min(10, Math.max(1, Math.round(n)))),
   // Server-hydrated real product rows (mirrors LookProduct in
   // look-products.functions.ts) — never the model's raw product_id/rationale
   // output. See RawShoppablePickSchema below for what the model actually emits.
