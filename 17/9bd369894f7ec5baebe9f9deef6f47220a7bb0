@@ -1,0 +1,56 @@
+src/routes/dupe-hunter.tsx
+  s_0cc7eb3d8eb999::t_47a8405f63b4d6 17
+  s_0cc7eb3d8eb999::t_fc6ede7e0d242f 2,8
+src/components/landing/community-page-view.test.tsx
+  s_0cc7eb3d8eb999::t_98deea488f17f3 1-69
+src/routes/index.tsx
+  s_0cc7eb3d8eb999::t_0c349b6defcafd 7
+  s_0cc7eb3d8eb999::t_9e12aefef3e0ea 50
+  s_0cc7eb3d8eb999::t_b6ecdc5a344956 6,18
+src/routes/membership.tsx
+  s_0cc7eb3d8eb999::t_d73bf806bbd7dc 17
+  s_0cc7eb3d8eb999::t_1f8cfabb09481c 2,8
+src/routes/community.tsx
+  s_0cc7eb3d8eb999::t_d5a5afd8e7c20a 3,7,14
+  s_0cc7eb3d8eb999::t_0df4bc97764b42 2
+src/components/landing/community-page-view.tsx
+  s_0cc7eb3d8eb999::t_3c84887f8e6ee5 1-12,14,18-21
+  s_0cc7eb3d8eb999::t_0c0aa121b57471 13
+  s_0cc7eb3d8eb999::t_a96b2ee416753e 15-17
+src/lib/landing-content.route-loader.ts
+  s_0cc7eb3d8eb999::t_9bcf896e3e9c21 30,33-35
+  s_0cc7eb3d8eb999::t_761da92ddd0f19 6-14,27-29,31
+  s_0cc7eb3d8eb999::t_4f771eac5b907f 2,4-5,23-25,39
+  s_0cc7eb3d8eb999::t_2e197379705242 1,15-22,32,36
+  s_0cc7eb3d8eb999::t_ca231db4d9d796 3,26,37-38
+src/routes/style-dossier.tsx
+  s_0cc7eb3d8eb999::t_69e541d0281664 17
+  s_0cc7eb3d8eb999::t_a95ad52e4e46cd 2,8
+src/components/landing/landing-page-view.tsx
+  s_0cc7eb3d8eb999::t_ce2d543037fb35 1-48
+src/lib/landing-content.route-loader.test.ts
+  s_0cc7eb3d8eb999::t_574cefd0bd858f 29-40
+  s_0cc7eb3d8eb999::t_ece8a4f4ca3278 1-28,41-50
+src/components/landing/landing-page-view.test.tsx
+  s_0cc7eb3d8eb999::t_c9df27d3974b5f 1-86,97-106
+  s_0cc7eb3d8eb999::t_d1c256b3875e15 87-96
+src/routes/how-it-works.tsx
+  s_0cc7eb3d8eb999::t_3db284e79c86e0 17
+  s_0cc7eb3d8eb999::t_08011f6cb227e2 2,8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "179bd369894f7ec5baebe9f9deef6f47220a7bb0",
+  "prompts": {},
+  "sessions": {
+    "s_0cc7eb3d8eb999": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9204abd3-77fd-4017-aca1-2322f5e9db32",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
