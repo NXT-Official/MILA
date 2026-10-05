@@ -450,6 +450,78 @@ export function pickSimilarAdditions(
   return additions;
 }
 
+/** Occasion → allowed attire registers: the deterministic twin of the review
+ * prompt's ATTIRE REGISTERS rule, used by buildFallbackShortlist when the AI
+ * review is unavailable. A null value means no gating (every register is
+ * fair game for that occasion). */
+const VIBE_ATTIRE_GATES: Record<string, string[] | null> = {
+  "Business Attire": ["Business Professional", "Business Casual", "Smart Casual"],
+  "Business Casual": ["Business Professional", "Business Casual", "Smart Casual"],
+  "Work or School": ["Business Professional", "Business Casual", "Smart Casual"],
+  "Active Day": ["Athletic", "Casual", "Smart Casual"],
+  "Date Night": ["Evening", "Smart Casual", "Casual"],
+  Dinner: ["Evening", "Smart Casual", "Casual"],
+  Party: ["Evening", "Smart Casual"],
+  "Formal Event": ["Formal", "Evening"],
+};
+
+/** Per-category take limits for the deterministic shortlist (~22 rows, the
+ * same shape the review prompt asks for). */
+const FALLBACK_SHORTLIST_QUOTAS: Record<string, number> = {
+  Tops: 4,
+  Dresses: 4,
+  Bottoms: 4,
+  Shoes: 3,
+  Outerwear: 2,
+  Bags: 2,
+  Jewelry: 2,
+  Accessories: 2,
+};
+
+/**
+ * The deterministic shortlist used when the AI review is unavailable (both
+ * attempts failed): best-scoring rows per category, palette/body-shape first,
+ * with the same occasion attire gate the review would have applied. Seems
+ * worse than a perfect review and infinitely better than failing the whole
+ * generation — the plan stage can still compose from real catalogue rows.
+ * Untagged rows pass the gate (their register is simply unknown).
+ */
+export function buildFallbackShortlist(
+  inventory: LookInventoryItem[],
+  {
+    vibe,
+    colorSeason,
+    bodyType,
+    tempF,
+  }: { vibe: string; colorSeason: string; bodyType: string; tempF?: number | null },
+): LookInventoryItem[] {
+  const allowed = VIBE_ATTIRE_GATES[vibe] ?? null;
+  const byCategory = new Map<string, LookInventoryItem[]>();
+
+  for (const item of inventory) {
+    if (allowed && item.attire.length > 0 && !item.attire.some((a) => allowed.includes(a))) {
+      continue;
+    }
+    if (item.category === "Outerwear" && tempF != null && tempF > HOT_WEATHER_F) continue;
+    const list = byCategory.get(item.category) ?? [];
+    list.push(item);
+    byCategory.set(item.category, list);
+  }
+
+  const out: LookInventoryItem[] = [];
+  for (const [category, items] of byCategory) {
+    const take = FALLBACK_SHORTLIST_QUOTAS[category] ?? 2;
+    out.push(
+      ...items
+        .map((item) => ({ item, score: scoreProduct(item, colorSeason, bodyType) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, take)
+        .map((x) => x.item),
+    );
+  }
+  return out;
+}
+
 /** True when the weather calls for outerwear and none of the given picks
  * carry it — the gap pickWeatherBackfill exists to close. */
 export function needsColdWeatherOuterwear(
