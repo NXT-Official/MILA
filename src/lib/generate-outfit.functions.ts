@@ -440,9 +440,25 @@ Every garment and pair of shoes named in 'description' MUST appear in shoppable_
 Always call the report_daily_look tool.`;
 }
 
+/**
+ * Model prose with a hard ceiling that TRUNCATES instead of rejecting.
+ * Confirmed live twice: a 1000-char cap and then a 3000-char cap each
+ * silently rejected a complete, valid look over one overlong string (most
+ * recently hair.execution_tip), surfacing to the member as "Mila couldn't
+ * compose a look" for output that was fine everywhere except its length.
+ * Length is cosmetic — nothing downstream parses these strings — so the
+ * boundary clamps, the same way vibe_alignment_score clamps. Empty strings
+ * still fail.
+ */
+const prose = (max: number) =>
+  z
+    .string()
+    .min(1)
+    .transform((s) => (s.length > max ? s.slice(0, max) : s));
+
 export const DailyLookSchema = z.object({
   outfit: z.object({
-    headline: z.string().min(1).max(300),
+    headline: prose(300),
     // Confirmed live: deepseek's real output for description/styling_notes
     // routinely exceeds 1000 chars once it's justifying color choices against
     // skin depth/undertone and season family — the prompt asks for that
@@ -451,21 +467,21 @@ export const DailyLookSchema = z.object({
     // valid model output with no logging, breaking every generation. Raised
     // with real headroom; still bounded, just not razor-tight against actual
     // prose length.
-    description: z.string().min(1).max(3000),
-    styling_notes: z.string().min(1).max(3000),
+    description: prose(3000),
+    styling_notes: prose(3000),
   }),
   hair: z.object({
     // Confirmed live (third round): style got the same justification-heavy
     // prose treatment (cross-referenced against face shape + hair type) that
     // already forced description/styling_notes/execution_tip/details to
     // 3000. Matching that same cap instead of another guessed number.
-    style: z.string().min(1).max(3000),
-    execution_tip: z.string().min(1).max(3000),
+    style: prose(3000),
+    execution_tip: prose(3000),
   }),
   makeup: z
     .object({
-      palette: z.string().min(1).max(600),
-      details: z.string().min(1).max(3000),
+      palette: prose(600),
+      details: prose(3000),
     })
     .nullable(),
   // Confirmed live (2026-10-05): deepseek occasionally emits 0 for the score —
@@ -497,7 +513,7 @@ export const DailyLookSchema = z.object({
         // Same justification-heavy prose treatment as the other fields
         // above (names concretely why the pick suits face shape + skin
         // tone/undertone) — matching their 3000 cap.
-        rationale: z.string().min(1).max(3000),
+        rationale: prose(3000),
         // Which shelf this pick belongs on: "planned" = a piece of the
         // composed outfit (and what the style-sheet render actually wears);
         // "similar" = an extra shoppable option beside the look. Optional so

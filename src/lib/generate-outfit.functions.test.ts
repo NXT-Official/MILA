@@ -285,6 +285,27 @@ describe("DailyLookSchema vibe_alignment_score", () => {
   });
 });
 
+describe("DailyLookSchema prose caps", () => {
+  test("truncates an overlong field instead of rejecting the whole look", () => {
+    const result = DailyLookSchema.safeParse({
+      ...baseArgs,
+      makeup: null,
+      hair: { ...baseArgs.hair, execution_tip: "x".repeat(5000) },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.hair.execution_tip.length).toBe(3000);
+  });
+
+  test("empty prose still fails", () => {
+    const result = DailyLookSchema.safeParse({
+      ...baseArgs,
+      makeup: null,
+      hair: { ...baseArgs.hair, execution_tip: "" },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe("DailyLookSchema shoppable pick shelving", () => {
   const pick = {
     id: "prod-1",
