@@ -37,6 +37,7 @@ describe("OpenRouter outfit image generation", () => {
       expect(body.model).toBe("meta/muse-image");
       expect(body.output_format).toBe("jpeg");
       expect(body.prompt).toContain("The Architectural Linen Silhouette");
+      expect(body.prompt).toContain("No headwear of any kind");
       return Response.json({
         data: [{ b64_json: "abc123", media_type: "image/jpeg" }],
         usage: { cost: 0.0042, prompt_tokens: 120, completion_tokens: 340, total_tokens: 460 },

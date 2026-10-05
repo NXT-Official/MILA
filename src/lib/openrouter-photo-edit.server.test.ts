@@ -125,6 +125,7 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
       expect(body.prompt).toContain("female-presenting");
       expect(body.prompt).toContain("never shift apparent gender");
       expect(body.prompt).toContain("Avoid:");
+      expect(body.prompt).toContain("any headwear");
       return Response.json({
         data: [{ b64_json: "edited123", media_type: "image/jpeg" }],
         usage: { cost: 0.01 },

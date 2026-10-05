@@ -112,7 +112,8 @@ Accurate fabric textures and garment colors.
 Elegant neutral studio background.
 Soft professional editorial lighting.
 Single subject, centered composition.
-No collage, no text, no captions, no logos, no watermark.`;
+No collage, no text, no captions, no logos, no watermark.
+No headwear of any kind — no hats, caps, beanies, visors, headscarves, or anything covering the hair; the model's styled hair must stay fully visible.`;
 
   const fixedLength = buildPrompt("", "", "").length;
   const variableBudget = Math.max(0, MAX_PROMPT_LENGTH - fixedLength);

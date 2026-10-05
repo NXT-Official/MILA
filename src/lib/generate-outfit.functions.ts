@@ -359,11 +359,12 @@ HOW TO REVIEW:
 - Judge EVERY row against the profile (seasonal palette, body shape, build proportions, gender presentation), today's occasion, and the climate rules below. Most rows carry no [P]/[S] tag — read the row description and judge it yourself; a tag is a hint, not a requirement.
 - Shortlist pieces that can be styled together into ONE cohesive head-to-toe look — colors/tones that harmonize with each other inside the palette and proportions that work as a single outfit, not just good rows in isolation.
 - Coverage (aim, not a quota): 3–4 tops; 3–4 bottoms or dresses (both when layering suits the weather); 2–3 pairs of shoes; 2–3 outerwear pieces ONLY when the weather calls for layering; 2 bags; 2 jewelry; 2 accessories. Order each category best-first. At most ${MAX_REVIEW_SHORTLIST} rows in total, each reason a single short clause (max 15 words) — brevity keeps this stage fast. Skip a slot only when nothing in the inventory genuinely suits it.
+- ATTIRE REGISTERS: most rows carry their register(s) right before the description (e.g. "Business Professional/Business Casual"); rows without one are unsorted. The occasion sets the acceptable register — never shortlist a row that fights it: business occasions (Business Attire, Business Casual, Work or School) take Business Professional / Business Casual / Smart Casual and NEVER Athletic or sport-styled rows; Active Day takes Athletic; Date Night / Dinner / Party take Evening / Smart Casual; Formal Event takes Formal / Evening; Everyday Casual / Travel / Brunch take Casual / Smart Casual. Versatile basics that fit any register (plain tees, plain socks, minimal jewelry) may serve any occasion.
 
 HARD CLIMATE RULES (non-negotiable):
 ${CLIMATE_RULES}
 
-THE LIVE SHOP INVENTORY (${inventoryCount} numbered rows — answer with these numbers; [P] = tagged for this client's palette, [S] = tagged for the client's body shape):
+THE LIVE SHOP INVENTORY (${inventoryCount} numbered rows — answer with these numbers; [P] = tagged for this client's palette, [S] = tagged for the client's body shape; attire register(s) appear before the description when known):
 ${inventoryBlock}`;
 }
 

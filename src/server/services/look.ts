@@ -35,7 +35,6 @@ import {
   formatInventoryForPrompt,
   loadLookInventory,
   needsColdWeatherOuterwear,
-  pickSimilarAdditions,
   pickWeatherBackfill,
   resolveShortlist,
   type LookInventoryItem,
@@ -55,15 +54,19 @@ export type LookImageResult = {
  * the mobile `POST /api/v1/look/generate` route — this is the entire body
  * that used to live inside `generateDailyLook`'s handler.
  *
- * The pipeline is four steps, all in this one request:
+ * The pipeline is three steps, all in this one request:
  *   1. loadLookInventory — the whole eligible shop catalog for this client.
  *   2. Inventory review (deepseek v4.1 flash) — checks every row against the
  *      style profile + occasion and reports a shortlist by row index.
  *   3. Outfit plan (deepseek v4.1 flash) — composes the look from the
  *      shortlist, naming real pieces; shoppable_picks = the outfit's pieces.
- *   4. Shop-the-look — pickSimilarAdditions adds more live pieces similar to
- *      the planned ones, tagged source "similar" (no extra AI call). The
- *      client's next call renders the plan's visual with muse-image.
+ *
+ * The shop shelf carries ONLY the outfit's own pieces — the rows the
+ * style-sheet visual wears, plus the deterministic weather backfill below.
+ * "More like this" additions (source "similar") were removed on purpose:
+ * category-only matching surfaced pieces the generated image never shows,
+ * which read as a random shop dump beside the look. The client's next call
+ * renders the plan's visual with muse-image.
  */
 export async function generateLookForUser(
   supabase: MilaSupabaseClient,
@@ -276,15 +279,22 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       trendLine +
       hairLengthRule;
 
-    // Step 3 — outfit plan: the shortlist, with full descriptions, is the
-    // only material the outfit may be composed from. Only shortlist ids are
-    // in the tool enum (hallucination guard), and the full rows are what
-    // hydrateShoppablePicks joins back to.
+    // Step 3 — outfit plan: the shortlist, with full descriptions and attire
+    // registers, is the only material the outfit may be composed from. Only
+    // shortlist ids are in the tool enum (hallucination guard), and the full
+    // rows are what hydrateShoppablePicks joins back to.
     const shortlistBlock =
       shortlistProducts.length > 0
         ? shortlistProducts
             .map((p) =>
-              [`id="${p.id}"`, p.category, p.title, `${p.price} ${p.currency}`, p.description]
+              [
+                `id="${p.id}"`,
+                p.category,
+                p.title,
+                `${p.price} ${p.currency}`,
+                p.attire.length > 0 ? p.attire.join("/") : null,
+                p.description,
+              ]
                 .filter((part): part is string => part != null && part !== "")
                 .join(" | "),
             )
@@ -351,23 +361,12 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         ]
       : hydratedPicks;
 
-    // Step 4 — the shop-the-look shelf: beside the composed outfit's pieces,
-    // add more live rows similar to them (same category, ranked like the
-    // catalog matcher, no AI, no extra DB read). Tagged source "similar" so
-    // the outfit's actual pieces stay distinguishable — the style-sheet
-    // prompt only ever wears the planned ones.
-    const similarAdditions = pickSimilarAdditions(picksWithWeatherBackfill, inventory, {
-      colorSeason: colorSeasonValue,
-      bodyType: data.bodyType,
-    });
-    const picksWithSimilar: ShoppablePick[] = [
-      ...picksWithWeatherBackfill,
-      ...similarAdditions.map(({ product, rationale }) => ({
-        ...product,
-        rationale,
-        source: "similar" as const,
-      })),
-    ];
+    // The shop shelf: ONLY the outfit's own pieces — exactly what the
+    // generated visual wears (plan + weather backfill). Do NOT re-add
+    // same-category "similar" rows here: category-only matching surfaces
+    // pieces the image never shows (sportswear beside a tailored look),
+    // which reads as a random shop dump instead of the look itself.
+    const shelfPicks: ShoppablePick[] = picksWithWeatherBackfill;
 
     // Force makeup to null when disabled regardless of what the model
     // returned — the tool schema already omits it, but this is the hard
@@ -375,7 +374,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     const argsWithMakeup = {
       ...rawArgs,
       makeup: makeupEnabled ? (rawArgs.makeup ?? null) : null,
-      shoppable_picks: picksWithSimilar,
+      shoppable_picks: shelfPicks,
       forecastRetrievedAt,
       fallback_gender_direction: fallbackGenderDirection,
     };

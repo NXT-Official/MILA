@@ -32,6 +32,7 @@ type ProductRow = {
   description?: string | null;
   seasonal_palettes: string[];
   body_shapes: string[];
+  attire: string[];
   available_regions: string[];
   verification_status: string;
   last_verified_at: string | null;
@@ -51,6 +52,7 @@ const PRODUCTS: ProductRow[] = [
     affiliate_link: "https://shop.example.com/top-match",
     seasonal_palettes: ["Warm Autumn"],
     body_shapes: ["Hourglass"],
+    attire: [],
     available_regions: [],
     verification_status: "verified",
     last_verified_at: "2026-01-01T00:00:00.000Z",
@@ -68,6 +70,7 @@ const PRODUCTS: ProductRow[] = [
     affiliate_link: "https://shop.example.com/top-no-match",
     seasonal_palettes: ["Cool Winter"],
     body_shapes: ["Pear"],
+    attire: [],
     available_regions: [],
     verification_status: "verified",
     last_verified_at: "2026-01-01T00:00:00.000Z",
@@ -85,6 +88,7 @@ const PRODUCTS: ProductRow[] = [
     affiliate_link: "https://shop.example.com/outerwear-match",
     seasonal_palettes: ["Warm Autumn"],
     body_shapes: ["Hourglass"],
+    attire: [],
     available_regions: [],
     verification_status: "verified",
     last_verified_at: "2026-01-01T00:00:00.000Z",
@@ -106,6 +110,7 @@ function untagged(id: string, category: string, overrides: Partial<ProductRow> =
     affiliate_link: `https://shop.example.com/${id}`,
     seasonal_palettes: [],
     body_shapes: [],
+    attire: [],
     available_regions: [],
     verification_status: "verified",
     last_verified_at: "2026-01-01T00:00:00.000Z",
@@ -364,6 +369,7 @@ function inventoryItem(id: string, overrides: Partial<LookInventoryItem> = {}): 
     description: null,
     seasonal_palettes: [],
     body_shapes: [],
+    attire: [],
     ...overrides,
   };
 }
@@ -482,6 +488,27 @@ describe("formatInventoryForPrompt", () => {
         "1 | Jeane Skirt | 132 USD",
       ].join("\n"),
     );
+  });
+
+  test("includes the attire register segment before the description when present", () => {
+    const inventory = [
+      inventoryItem("prod-1", {
+        title: "Wool Suit Trouser",
+        category: "Bottoms",
+        attire: ["Business Professional", "Business Casual"],
+        description: "Tailored wool trousers.",
+      }),
+    ];
+
+    const block = formatInventoryForPrompt(inventory, {
+      colorSeason: "Warm Autumn",
+      bodyType: "Hourglass",
+    });
+    expect(block).toContain(
+      "0 | Wool Suit Trouser | 100 USD | Business Professional/Business Casual | Tailored wool trousers.",
+    );
+    // Untagged rows keep the old shape — no empty segment.
+    expect(block).not.toContain("| |");
   });
 
   test("clips a long description at a word boundary with an ellipsis", () => {
