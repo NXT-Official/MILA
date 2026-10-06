@@ -1,0 +1,57 @@
+src/routes/_authenticated/_app/account.tsx
+  s_755964b2e0c3da::t_fc3372e49dd2c8 15-20
+  s_755964b2e0c3da::t_40177e679ed1a7 57-58,60
+  s_755964b2e0c3da::t_b97434c38ba2d1 32-36
+  s_755964b2e0c3da::t_c702a08da10c58 45,52-56,59,61-71
+  s_755964b2e0c3da::t_55caabb13086fc 157-166,168,171-173,176-186
+  s_755964b2e0c3da::t_6cb1131bc74c61 279-282
+  s_755964b2e0c3da::t_a2f78225d00db3 3
+src/components/account/drawer-views/location-view.test.tsx
+  s_755964b2e0c3da::t_9f1781fe245883 95-97,99
+  s_755964b2e0c3da::t_69105cd0f55384 1-2,18-36,55,59-63,68-94,98,100-103,106-108
+src/lib/account-export.ts
+  s_755964b2e0c3da::t_9705af6c1df6f9 30-62,84-85,89-99
+  s_755964b2e0c3da::t_c58f3587ac60f8 141-151
+  s_755964b2e0c3da::t_6c9f7c0c11b49b 130,139-140,152
+src/hooks/use-min-width.test.tsx
+  s_755964b2e0c3da::t_00e2db4dd789bb 1-87
+src/lib/default-hub.test.ts
+  s_755964b2e0c3da::t_69105cd0f55384 3,107-143
+  s_755964b2e0c3da::t_9af493e24b8179 144
+src/hooks/use-min-width.ts
+  s_755964b2e0c3da::t_849967eace9bf0 3-14,16-18,20-28,33-50
+src/lib/account-export.test.ts
+  s_755964b2e0c3da::t_ca311091a00c83 1
+  s_755964b2e0c3da::t_b6e3e4ec9beae5 157,163-181,183-187,189-254
+  s_755964b2e0c3da::t_d23d36a7f93c2b 182,188
+src/components/account/drawer-views/location-view.tsx
+  s_755964b2e0c3da::t_bd81acb562745a 39-43
+  s_755964b2e0c3da::t_54eac9ae09c4c5 54-61
+src/components/account/account-sections.test.ts
+  s_755964b2e0c3da::t_130a2858a331ec 58-60,69,72-74,77-78,81-84,86-89
+  s_755964b2e0c3da::t_bd0da3e638e145 2-12,54-57,61-68,70-71,75-76,79-80,85
+  s_755964b2e0c3da::t_4ac2b8f0c4b872 1,13-53,90-91
+src/components/account/account-menu.tsx
+  s_755964b2e0c3da::t_bd1c1cc6e9d5da 82-84
+src/components/account/account-sections.ts
+  s_755964b2e0c3da::t_46f4f4ab18a172 19-40
+src/lib/default-hub.ts
+  s_755964b2e0c3da::t_f17c741b8dc018 74-86
+  s_755964b2e0c3da::t_fb50ece6432030 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d29198b86dadfbe192769b54176a44091c879873",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
