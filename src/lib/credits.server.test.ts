@@ -1,5 +1,11 @@
 import { describe, expect, mock, test } from "bun:test";
-import { consumeAiCredit, grantAiCredits, payForLookImage, withAiCredit } from "./credits.server";
+import {
+  consumeAiCredit,
+  grantAiCredits,
+  isPaidStyleMember,
+  payForLookImage,
+  withAiCredit,
+} from "./credits.server";
 import { InsufficientCreditsError } from "./credits";
 import { MemoryCreditStore } from "../../tests/helpers/memory-credit-store";
 
@@ -274,5 +280,64 @@ describe("grantAiCredits", () => {
     const store = new MemoryCreditStore(() => "2026-07-24");
     const remaining = await grantAiCredits(supabase, "user-1", 10, store.grant);
     expect(remaining).toBe(10); // free tier grants nothing of its own
+  });
+});
+
+describe("isPaidStyleMember", () => {
+  function fakeMember(
+    subscription: Record<string, unknown> | null,
+    purchasedCredits: number | null,
+  ) {
+    let table = "";
+    const chain = {
+      select: () => chain,
+      eq: () => chain,
+      in: () => chain,
+      order: () => chain,
+      limit: () => chain,
+      maybeSingle: async () => ({
+        data:
+          table === "subscriptions"
+            ? subscription
+            : purchasedCredits == null
+              ? null
+              : { purchased_credits: purchasedCredits },
+        error: null,
+      }),
+    };
+    return {
+      from: (t: string) => {
+        table = t;
+        return chain;
+      },
+    } as unknown as Parameters<typeof isPaidStyleMember>[0];
+  }
+  const live = {
+    plan_id: "plan-1",
+    status: "active",
+    current_period_end: "2999-01-01T00:00:00Z",
+    cancel_at_period_end: false,
+  };
+
+  test("a live subscriber is paid even with no purchased credits", async () => {
+    expect(await isPaidStyleMember(fakeMember(live, 0), "u")).toBe(true);
+  });
+
+  test("purchased style credits make a non-subscriber paid", async () => {
+    expect(await isPaidStyleMember(fakeMember(null, 3), "u")).toBe(true);
+  });
+
+  test("no subscription and no purchased credits is a free member", async () => {
+    expect(await isPaidStyleMember(fakeMember(null, 0), "u")).toBe(false);
+    expect(await isPaidStyleMember(fakeMember(null, null), "u")).toBe(false);
+  });
+
+  test("a subscription past its paid period does not count", async () => {
+    const lapsed = {
+      ...live,
+      cancel_at_period_end: true,
+      current_period_end: "2000-01-01T00:00:00Z",
+    };
+    expect(await isPaidStyleMember(fakeMember(lapsed, 0), "u")).toBe(false);
   });
 });

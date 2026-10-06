@@ -103,6 +103,15 @@ function toDataUri(image: { bytes: Uint8Array; contentType: string }): string {
   return `data:${image.contentType};base64,${Buffer.from(image.bytes).toString("base64")}`;
 }
 
+export type PhotoEditDeps = {
+  rateLimitStore?: RateLimitStore;
+  /** Count this render against the site-wide daily quota. False for paid
+   * members (isPaidStyleMember): their own credits are the only limit. */
+  enforceSiteQuota?: boolean;
+  /** Budget for this render; the caller clamps it to the function's time left. */
+  timeoutMs?: number;
+};
+
 /**
  * userPhoto / referenceImages are raw image bytes (already fetched by the
  * caller — this module is provider-only, it doesn't fetch storage or
@@ -126,25 +135,27 @@ export async function editOutfitPhoto(
     hairLength: string | null;
     gender: string | null;
   },
-  deps: { rateLimitStore?: RateLimitStore } = {},
+  deps: PhotoEditDeps = {},
 ): Promise<PhotoEditResult> {
   const { OPENROUTER_API_KEY } = requireEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   });
 
-  try {
-    await consumeRateLimit(
-      `openrouter_photo_edit_daily:${utcDateKey()}`,
-      { limit: SITE_DAILY_LIMIT, windowSeconds: SITE_WINDOW_SECONDS },
-      deps.rateLimitStore,
-    );
-  } catch (err) {
-    if (err instanceof RateLimitExceededError) {
-      throw new ImageProviderRateLimitError(
-        "Mila's daily free photo-preview quota is used up. Please try again tomorrow.",
+  if (deps.enforceSiteQuota !== false) {
+    try {
+      await consumeRateLimit(
+        `openrouter_photo_edit_daily:${utcDateKey()}`,
+        { limit: SITE_DAILY_LIMIT, windowSeconds: SITE_WINDOW_SECONDS },
+        deps.rateLimitStore,
       );
+    } catch (err) {
+      if (err instanceof RateLimitExceededError) {
+        throw new ImageProviderRateLimitError(
+          "Mila's daily free photo-preview quota is used up. Please try again tomorrow.",
+        );
+      }
+      throw err;
     }
-    throw err;
   }
 
   const references = referenceImages.slice(0, MAX_REFERENCE_IMAGES);
@@ -183,7 +194,7 @@ export async function editOutfitPhoto(
         // JPEG — the model defaults to webp otherwise (confirmed live).
         output_format: "jpeg",
       }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(Math.max(1, deps.timeoutMs ?? TIMEOUT_MS)),
     });
   } catch {
     throw new Error("Couldn't reach the OpenRouter photo-edit service.");

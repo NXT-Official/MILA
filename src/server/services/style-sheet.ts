@@ -2,13 +2,24 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { aiChatCompletion, isAiConfigured } from "@/lib/ai.server";
 import { logAiSpend } from "@/lib/ai-spend.server";
-import { payForLookImage } from "@/lib/credits.server";
+import { isPaidStyleMember, payForLookImage } from "@/lib/credits.server";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
 import { generateStyleSheet, STYLE_SHEET_PROVIDER } from "@/lib/openrouter-style-sheet.server";
 import { ImageProviderRateLimitError } from "@/lib/openrouter-image.server";
 import { errorMessage } from "@/lib/utils";
+import { createRenderBudget } from "./render-budget";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
+
+/** Per-call ceilings for the 5-panel render and the two-image QA call.
+ * Measured live 2026-10-06: renders 17–38s, QA 12–27s — a whole attempt is
+ * typically 30–65s, so three fit the budget when nothing stalls. */
+const STYLE_SHEET_RENDER_MS = 150_000;
+const STYLE_SHEET_VERIFY_MS = 110_000;
+/** Kept back from the render so its QA call always gets a real chance. */
+const STYLE_SHEET_VERIFY_RESERVE_MS = 40_000;
+/** Don't start an attempt that can't plausibly render AND verify in time. */
+const STYLE_SHEET_MIN_ATTEMPT_MS = 90_000;
 
 const verifyTool = {
   function: {
@@ -49,8 +60,11 @@ async function verifyStyleSheet(
   sheetDataUri: string,
   outfitDescription: string,
   caller: { supabase: Parameters<typeof aiChatCompletion>[2]["supabase"]; userId: string },
-): Promise<{ passes: boolean; reason: string }> {
-  if (!isAiConfigured()) return { passes: false, reason: "Verification service not configured." };
+  timeoutMs?: number,
+): Promise<StyleSheetCheck> {
+  if (!isAiConfigured()) {
+    return { passes: false, ran: false, reason: "Verification service not configured." };
+  }
   const result = await aiChatCompletion(
     [
       {
@@ -70,14 +84,21 @@ async function verifyStyleSheet(
     ],
     verifyTool,
     caller,
+    { timeoutMs },
   );
-  if (!result.ok) return { passes: false, reason: "Verification check failed to run." };
+  if (!result.ok) return { passes: false, ran: false, reason: "Verification check failed to run." };
   const parsed = result.args as { passes?: unknown; reason?: unknown };
   return {
     passes: parsed.passes === true,
+    ran: true,
     reason: typeof parsed.reason === "string" ? parsed.reason : "No reason given.",
   };
 }
+
+/** `ran: false` = the QA call itself failed (timeout, provider error) — the
+ * sheet was never judged, so re-checking the same paid render beats
+ * discarding it. `ran: true, passes: false` = a real rejection. */
+type StyleSheetCheck = { passes: boolean; ran: boolean; reason: string };
 
 function bytesFromArrayBuffer(buf: ArrayBuffer): Uint8Array {
   return new Uint8Array(buf);
@@ -116,6 +137,11 @@ export async function renderStyleSheetForUser(
     return { imageDataUri: null, mode: "unavailable", reason: "No consented photo on file." };
   }
 
+  // Decided before payForLookImage spends a credit, so a member's last
+  // purchased credit still counts them as paid.
+  const paidMember = await isPaidStyleMember(supabase, userId);
+  const budget = createRenderBudget();
+
   return payForLookImage(supabase, userId, async (): Promise<StyleSheetPreviewResult> => {
     try {
       const { data: photoBlob, error: downloadError } = await supabase.storage
@@ -133,27 +159,16 @@ export async function renderStyleSheetForUser(
 
       // meta/muse-image's identity preservation is inconsistent run-to-run
       // (no fixed seed) — same retry-before-giving-up approach as
-      // renderPhotoPreview. Never skip verification on a retry.
+      // renderPhotoPreview. Never skip verification on a retry. Each attempt
+      // runs on the time actually left (createRenderBudget): a thrown error
+      // or failed QA moves on to the next attempt only when a whole render +
+      // check can still finish before Vercel's 300s kill.
       const MAX_ATTEMPTS = 3;
-      // Confirmed live: a single slow/aborted generateStyleSheet or
-      // verifyStyleSheet call threw straight out of this loop into the
-      // outer catch below, ending the whole function on attempt 1 and
-      // wasting the other 2 attempts this retry loop exists for. Vercel's
-      // function budget is 300s; one attempt (up to 150s image + 110s
-      // verify — ai.server.ts TIMEOUT_MS) can eat most of that, so an inner
-      // try/catch treats a thrown error as a failed attempt (retry) instead
-      // of a fatal one, and the elapsed-time check stops before starting an
-      // attempt that can't finish inside the remaining budget — returning
-      // our own clean "unavailable" message instead of letting the platform
-      // hard-kill the request.
-      const startedAt = Date.now();
-      const FUNCTION_BUDGET_MS = 280_000;
-      const ATTEMPT_ESTIMATE_MS = 150_000 + 110_000;
       let lastReason = "Your style sheet couldn't be verified safe this time.";
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        if (Date.now() - startedAt + ATTEMPT_ESTIMATE_MS > FUNCTION_BUDGET_MS) {
+        if (!budget.canStart(STYLE_SHEET_MIN_ATTEMPT_MS)) {
           console.warn(
-            `[renderStyleSheetForUser] stopping before attempt ${attempt}/${MAX_ATTEMPTS} — not enough time left in the function budget`,
+            `[renderStyleSheetForUser] stopping before attempt ${attempt}/${MAX_ATTEMPTS} — ${Math.round(budget.remainingMs() / 1000)}s left in the function budget`,
           );
           break;
         }
@@ -162,18 +177,17 @@ export async function renderStyleSheetForUser(
             imageUrl,
             model: imageModel,
             costUsd,
-          } = await generateStyleSheet({
-            userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
-            outfit: data.outfit,
-            shoppablePicks,
-            gender: profileRow.gender,
-          });
-
-          const verification = await verifyStyleSheet(
-            originalDataUri,
-            imageUrl,
-            outfitDescription,
-            { supabase, userId },
+          } = await generateStyleSheet(
+            {
+              userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
+              outfit: data.outfit,
+              shoppablePicks,
+              gender: profileRow.gender,
+            },
+            {
+              enforceSiteQuota: !paidMember,
+              timeoutMs: budget.clamp(STYLE_SHEET_RENDER_MS, STYLE_SHEET_VERIFY_RESERVE_MS),
+            },
           );
 
           await logAiSpend(supabase, userId, {
@@ -185,6 +199,22 @@ export async function renderStyleSheetForUser(
             completionTokens: null,
             totalTokens: null,
           });
+
+          const check = () =>
+            verifyStyleSheet(
+              originalDataUri,
+              imageUrl,
+              outfitDescription,
+              { supabase, userId },
+              budget.clamp(STYLE_SHEET_VERIFY_MS),
+            );
+          let verification = await check();
+          if (!verification.ran && budget.canStart(STYLE_SHEET_VERIFY_RESERVE_MS)) {
+            console.warn(
+              `[renderStyleSheetForUser] QA call failed to run (attempt ${attempt}/${MAX_ATTEMPTS}) — re-checking the same sheet`,
+            );
+            verification = await check();
+          }
 
           if (verification.passes) {
             return { imageDataUri: imageUrl, mode: "style_sheet" };
