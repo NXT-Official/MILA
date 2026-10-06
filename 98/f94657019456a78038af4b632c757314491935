@@ -1,0 +1,35 @@
+src/lib/account-export.test.ts
+  s_755964b2e0c3da::t_334bece8a1eac2 171-184
+src/routes/_authenticated/_app/account.tsx
+  s_755964b2e0c3da::t_77c2256ac8bc19 10,34
+  s_755964b2e0c3da::t_6193d3c6e58d45 66-68
+  s_755964b2e0c3da::t_406c9b3ab147ff 171-172,175-178,181-184
+src/hooks/use-live-value.ts
+  s_755964b2e0c3da::t_9240a53c034d75 1-25
+src/components/account/account-sections.test.ts
+  s_755964b2e0c3da::t_2a629406b02c56 10,13,94-159
+  s_755964b2e0c3da::t_f09d5738a3fa4f 160
+src/hooks/use-live-value.test.ts
+  s_755964b2e0c3da::t_2a629406b02c56 1-23,26,33-54
+  s_755964b2e0c3da::t_eca7ef46d8b172 24-25,27-32
+src/lib/account-export.ts
+  s_755964b2e0c3da::t_b7869758c385a8 150
+src/components/account/account-sections.ts
+  s_755964b2e0c3da::t_6c6dbc05022d87 29-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "98f94657019456a78038af4b632c757314491935",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
