@@ -1,0 +1,34 @@
+src/components/style-profile/studio-portfolio-view.tsx
+  s_755964b2e0c3da::t_201c0ecebba50b 12
+  s_755964b2e0c3da::t_0500b8e57910b8 159-163
+  s_755964b2e0c3da::t_537f0a08940cac 34
+  s_755964b2e0c3da::t_f21b777b814231 316,318-330,333-337
+  s_755964b2e0c3da::t_a34101d157db3c 277-279,283
+  s_755964b2e0c3da::t_aba118d85ba881 116-126
+  s_755964b2e0c3da::t_9fd814d7f8f992 136
+  s_755964b2e0c3da::t_92eff25023bf30 191
+src/components/style-profile/dossier-display.ts
+  s_755964b2e0c3da::t_55cda2960a1e5e 29-39,42-64
+  s_755964b2e0c3da::t_6a19657e112c5e 110-113,115-133,136-137,139
+src/components/style-profile/studio-portfolio-view.test.tsx
+  s_755964b2e0c3da::t_46115380c756cb 7
+  s_755964b2e0c3da::t_6b988a7f924bb3 27-28,37,41,43-66,78-80,82,86-106,132-138,141,148-155
+src/components/style-profile/dossier-display.test.ts
+  s_755964b2e0c3da::t_babe77ff63d341 9,56-87,131-132,134,138,145-146,150-151,155-160,165-168,171-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "87db2d01c03c4ab95a00a82baf05d85ddc9a9545",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
