@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { CreditsUsageMeter } from "@/components/account/credits-usage-meter";
+import { conciergeAccess } from "@/lib/concierge-access";
 import { DEFAULT_AI_CREDITS } from "@/lib/credits";
 import { STAFF_GRANTED_SUBSCRIPTION_NOTICE } from "@/constants/subscriptions";
 import type { MySubscription } from "@/lib/queries/subscriptions";
@@ -12,7 +13,7 @@ import type { MySubscription } from "@/lib/queries/subscriptions";
 interface MembershipViewProps {
   user: {
     fullName: string;
-    username: string;
+    username: string | null;
     season: string | null;
     faceShape: string | null;
     hairType: string | null;
@@ -41,6 +42,7 @@ export function MembershipView({
     !user.faceShape && "Face Shape",
     !user.hairType && "Hair Type",
   ].filter(Boolean) as string[];
+  const access = conciergeAccess({ hasPlan: Boolean(subscription), credits });
 
   return (
     <div className="space-y-8">
@@ -48,14 +50,16 @@ export function MembershipView({
         <div className="relative grid grid-cols-[auto_1fr_auto] items-center gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <AvatarInitial name={user.fullName || user.username} className="size-14 shrink-0" />
+              <AvatarInitial name={user.fullName} className="size-14 shrink-0" />
 
               <div className="min-w-0 flex flex-col">
                 <p className="flex items-center gap-1.5 font-serif text-lg text-ink">
                   <span className="truncate">{user.fullName}</span>
                   {subscription && <VerifiedBadge className="size-4" />}
                 </p>
-                <p className="truncate text-label text-stone">@{user.username}</p>
+                {user.username && (
+                  <p className="truncate text-label text-stone">@{user.username}</p>
+                )}
               </div>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5 text-pico uppercase tracking-label-tight">
@@ -109,9 +113,9 @@ export function MembershipView({
             <div className="flex items-end justify-between">
               <span className="atelier-label">Concierge Access</span>
               <div className="text-right">
-                <div className="font-serif text-2xl text-ink leading-none">Atelier</div>
+                <div className="font-serif text-2xl text-ink leading-none">{access.headline}</div>
                 <div className="text-micro uppercase tracking-label text-stone mt-1">
-                  Membership
+                  {access.caption}
                 </div>
               </div>
             </div>

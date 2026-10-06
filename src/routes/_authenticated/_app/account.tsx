@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { cn, errorMessage } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useMemberIdentity } from "@/hooks/use-member-identity";
 import { supabase } from "@/integrations/supabase/client";
 import { useCaptcha } from "@/components/login/use-captcha";
 import { HUBS } from "@/constants/climate";
@@ -230,8 +231,7 @@ function AccountPage() {
     }
   }
 
-  const displayName = profile?.full_name?.trim() || authUser?.email?.split("@")[0] || "Member";
-  const username = authUser?.email?.split("@")[0] ?? "member";
+  const { displayName, handle } = useMemberIdentity();
 
   return (
     <div className="atelier-page">
@@ -266,7 +266,7 @@ function AccountPage() {
             <MembershipView
               user={{
                 fullName: displayName,
-                username,
+                username: handle,
                 season: profile?.color_season ?? null,
                 faceShape: profile?.face_shape ?? null,
                 hairType: profile?.hair_type ?? null,
