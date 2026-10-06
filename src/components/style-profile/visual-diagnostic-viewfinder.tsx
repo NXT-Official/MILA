@@ -35,7 +35,10 @@ import {
   SEASONS_MASTER_DATA,
 } from "@/constants/style-profile";
 import { errorMessage } from "@/lib/utils";
+import { describeColorReadError } from "@/lib/color-read-errors";
+import { centeredSquareCrop } from "@/lib/square-crop";
 import { useModalA11y } from "@/hooks/use-modal-a11y";
+import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 
 // Intentionally theme-independent — mimics a native camera app's chrome, not a themed surface.
 const CAMERA_CHROME_BG = "#0B0B0B";
@@ -69,6 +72,24 @@ function BriefingRule({
   );
 }
 
+/**
+ * Shown over the video when the camera can't open. It paints below the camera
+ * chrome (the header's close button and the footer's "Upload a photo instead",
+ * both z-20) on purpose: a member with a blocked camera must still be able to
+ * leave or upload, and the copy is padded clear of both bars.
+ */
+export function CameraErrorNotice({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-center px-8 pt-16 pb-44 bg-black/85 text-white"
+    >
+      <Camera className="size-6" />
+      <p className="text-xs leading-relaxed max-w-xs">{message}</p>
+    </div>
+  );
+}
+
 export function VisualDiagnosticViewfinder({
   onClose,
   onComplete,
@@ -96,6 +117,7 @@ export function VisualDiagnosticViewfinder({
   const [telemetryOpen, setTelemetryOpen] = useState(true);
   const [pipelineLog, setPipelineLog] = useState<string[]>(["Waiting for the right light…"]);
   const [manualCalibrateOpen, setManualCalibrateOpen] = useState(false);
+  const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
   const analyze = useServerFn(analyzeStudioColor);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -211,7 +233,10 @@ export function VisualDiagnosticViewfinder({
       return;
     }
     ctx.clearRect(0, 0, 400, 400);
-    ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, 400, 400);
+    // Centre-crop to a square first: drawing the whole 16:9 frame into the
+    // square canvas would stretch the face, and this frame is saved as the selfie.
+    const { sx, sy, size } = centeredSquareCrop(video.videoWidth, video.videoHeight);
+    ctx.drawImage(video, sx, sy, size, size, 0, 0, 400, 400);
     const base64 = canvas.toDataURL("image/jpeg", 0.7).split(",")[1];
     if (!base64 || base64.length < 1024) {
       toast.error("Captured frame was empty. Please try again.");
@@ -220,6 +245,19 @@ export function VisualDiagnosticViewfinder({
     }
     pushLog(`Captured. Looking at your photo now…`);
     await runAnalyze(base64, opts, "image/jpeg");
+  }
+
+  // The server answers with codes; members only ever see the mapped copy, and
+  // running out of credits opens the upgrade dialog the rest of the app uses.
+  function reportReadFailure(code: string | undefined) {
+    const failure = describeColorReadError(code);
+    pushLog(failure.message);
+    if (failure.outOfCredits) {
+      setCreditPaywallOpen(true);
+    } else {
+      toast.error(failure.message);
+    }
+    setAnalyzing(false);
   }
 
   async function runAnalyze(
@@ -245,12 +283,7 @@ export function VisualDiagnosticViewfinder({
       });
       if (!result.success) {
         console.error("Studio error details:", result);
-        toast.error(
-          result.error ||
-            "Let's try that again. Make sure the lighting is clear so I can catch the right tones.",
-        );
-        pushLog(`Something went wrong: ${result.error ?? "unknown"}.`);
-        setAnalyzing(false);
+        reportReadFailure(result.error);
         return;
       }
       const profile = result.profile;
@@ -271,13 +304,7 @@ export function VisualDiagnosticViewfinder({
       await onComplete(profile, telemetry);
     } catch (error) {
       console.error("Studio error details:", error);
-      const message = errorMessage(
-        error,
-        "Let's try that again. Make sure the lighting is clear so I can catch the right tones.",
-      );
-      toast.error(message);
-      pushLog(`Something went wrong: ${message}.`);
-      setAnalyzing(false);
+      reportReadFailure(errorMessage(error, ""));
     } finally {
       // A reading costs a credit (refunded if it failed) — resync the badge.
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
@@ -553,12 +580,7 @@ export function VisualDiagnosticViewfinder({
           </div>
         </div>
 
-        {streamErr && !analyzing && (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 text-center px-8 bg-black/85 text-white">
-            <Camera className="size-6" />
-            <p className="text-xs leading-relaxed max-w-xs">{streamErr}</p>
-          </div>
-        )}
+        {streamErr && !analyzing && <CameraErrorNotice message={streamErr} />}
 
         {analyzing && (
           <div
@@ -609,7 +631,7 @@ export function VisualDiagnosticViewfinder({
         </button>
       </div>
 
-      {!analyzing && (
+      {!analyzing && !streamErr && (
         <div className="absolute bottom-44 inset-x-0 z-10 flex justify-center pointer-events-none">
           <p className="text-micro uppercase tracking-label-xwide text-white/70 font-serif italic">
             Align your profile boundaries within the guide
@@ -646,6 +668,8 @@ export function VisualDiagnosticViewfinder({
           </button>
         </div>
       )}
+
+      <UpgradeSlotsDialog open={creditPaywallOpen} onOpenChange={setCreditPaywallOpen} />
 
       <Sheet open={manualCalibrateOpen} onOpenChange={setManualCalibrateOpen}>
         <SheetContent
