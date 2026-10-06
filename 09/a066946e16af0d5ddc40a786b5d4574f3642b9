@@ -1,0 +1,58 @@
+src/components/style-profile/dossier-display.ts
+  s_755964b2e0c3da::t_186a721b126d37 1-6,8,11-13,22-23,26-37,57-80,82-85,90-104,106-141
+  s_755964b2e0c3da::t_6303c57cbcefaf 7
+  s_755964b2e0c3da::t_bddfbd81d9214a 9-10,14-21,24-25
+  s_755964b2e0c3da::t_da662e8d8edc0f 38-39,42-56
+  s_755964b2e0c3da::t_617a12a76ba104 40-41
+  s_755964b2e0c3da::t_a39c311f4d7d26 81,86-89,105
+src/components/style-profile/member-body-type.test.ts
+  s_755964b2e0c3da::t_cd62ad91725ae3 1-44
+src/components/style-profile/member-body-type.ts
+  s_755964b2e0c3da::t_b22e35b6aca6da 1-25
+src/components/style-profile/studio-portfolio-view.tsx
+  s_755964b2e0c3da::t_b0357dce6b21d4 18-19
+  s_755964b2e0c3da::t_ce02d85e7008a5 225
+  s_755964b2e0c3da::t_393f4bafc1897f 258-265,267-287,289,291-296,298-301,303-328,330,333
+  s_755964b2e0c3da::t_6c5e1939948ad3 34-37
+  s_755964b2e0c3da::t_f98a3ffaacd525 11-16
+  s_755964b2e0c3da::t_4f7458d66cbcdd 42-43
+  s_755964b2e0c3da::t_ad6b4767f97b0f 379
+  s_755964b2e0c3da::t_4979255e0dd6b4 526-529
+  s_755964b2e0c3da::t_b600a40d7a37a3 128
+  s_755964b2e0c3da::t_7b6e4f1c94239f 17,530-531
+src/components/onboarding/steps/color-result-step.test.tsx
+  s_755964b2e0c3da::t_6e1e093d803f79 1-56
+src/components/style-profile/shared.tsx
+  s_755964b2e0c3da::t_a69201108c76be 72,78
+  s_755964b2e0c3da::t_3496cdd92c485b 3
+src/components/style-profile/studio-portfolio-view.test.tsx
+  s_755964b2e0c3da::t_c8e68f1a5f80b1 70-77
+  s_755964b2e0c3da::t_426651b03115bb 1-9,11-69,78-107
+  s_755964b2e0c3da::t_f12ec7e59ae66a 10
+src/components/style-profile/style-profile-page.tsx
+  s_755964b2e0c3da::t_0ca48842bdde48 41
+  s_755964b2e0c3da::t_f7852188a21bdd 169
+  s_755964b2e0c3da::t_6d664c5a239aca 109
+  s_755964b2e0c3da::t_ce96123db4f716 316-321
+src/components/style-profile/dossier-display.test.ts
+  s_755964b2e0c3da::t_a5acc002ba965b 11
+  s_755964b2e0c3da::t_a2da45a54f2be8 2-6
+  s_755964b2e0c3da::t_b9155001e4598f 1,7-10,12-54,73-167
+  s_755964b2e0c3da::t_505711eb0daf2b 55-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "09a066946e16af0d5ddc40a786b5d4574f3642b9",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
