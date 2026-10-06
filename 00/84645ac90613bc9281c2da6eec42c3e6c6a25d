@@ -1,0 +1,24 @@
+src/components/account/drawer-views/membership-view.test.tsx
+  s_755964b2e0c3da::t_33422ccc6305fc 29-30
+  s_755964b2e0c3da::t_01e97d1952c6cb 56
+src/lib/member-identity.test.ts
+  s_755964b2e0c3da::t_4d19758bc8233d 26-27
+  s_755964b2e0c3da::t_b5dcdb53b69809 20-21
+  s_755964b2e0c3da::t_a4df060c973069 13-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0084645ac90613bc9281c2da6eec42c3e6c6a25d",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
