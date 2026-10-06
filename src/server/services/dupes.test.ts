@@ -81,6 +81,33 @@ function fakeSupabase(rows: ProductRow[]): SupabaseClient<Database> {
   return { from } as unknown as SupabaseClient<Database>;
 }
 
+/** Stand-in that behaves like the catalogue query on the one filter this
+ * suite cares about: `ilike("category", x)` keeps only rows whose category
+ * equals x, case-insensitively. Records every ilike so a test can also assert
+ * which category was searched. */
+function catalogueSupabase(rows: ProductRow[]) {
+  const searches: { column: string; pattern: string }[] = [];
+  const from = () => {
+    let matching = rows;
+    const chain = {
+      select: () => chain,
+      ilike: (column: string, pattern: string) => {
+        searches.push({ column, pattern });
+        matching = matching.filter((r) => r.category.toLowerCase() === pattern.toLowerCase());
+        return chain;
+      },
+      neq: () => chain,
+      eq: () => chain,
+      limit: () => chain,
+      then: (resolve: (v: { data: ProductRow[]; error: null }) => void) => {
+        resolve({ data: matching, error: null });
+      },
+    };
+    return chain;
+  };
+  return { supabase: { from } as unknown as SupabaseClient<Database>, searches };
+}
+
 describe("extractBudgetTag", () => {
   test("returns the first recognized budget tag", () => {
     expect(extractBudgetTag(["Relaxed Fit", "Mid-Range", "Sneakers Preferred"])).toBe("Mid-Range");
@@ -197,5 +224,40 @@ describe("rankDupes maxBudget", () => {
     const results = await rankDupes(supabase, INSPIRATION, 10, undefined, "Investment Pieces", 60);
     expect(results.map((r) => r.id)).not.toContain("pricey");
     expect(results[0].id).toBe("mid");
+  });
+});
+
+describe("rankDupes category search", () => {
+  const BAG: ClothingAttributes = { ...INSPIRATION, category: "Bags" };
+  const NECKLACE: ClothingAttributes = {
+    ...INSPIRATION,
+    name: "Quilted gold pendant necklace",
+    category: "Jewelry",
+  };
+
+  const CATALOGUE = [
+    product("tote", { category: "Bags", title: "Quilted Tote" }),
+    product("necklace", { category: "Jewelry", title: "Quilted Pendant Necklace" }),
+    product("socks", { category: "Accessories", title: "Quilted Socks" }),
+  ];
+
+  test("a bag searches the Bags rows, never the Accessories ones", async () => {
+    const { supabase, searches } = catalogueSupabase(CATALOGUE);
+    const results = await rankDupes(supabase, BAG, 10);
+    expect(searches).toEqual([{ column: "category", pattern: "Bags" }]);
+    expect(results.map((r) => r.id)).toEqual(["tote"]);
+  });
+
+  test("jewellery searches the Jewelry rows, never the Accessories ones", async () => {
+    const { supabase, searches } = catalogueSupabase(CATALOGUE);
+    const results = await rankDupes(supabase, NECKLACE, 10);
+    expect(searches).toEqual([{ column: "category", pattern: "Jewelry" }]);
+    expect(results.map((r) => r.id)).toEqual(["necklace"]);
+  });
+
+  test("a belt or hat still searches the Accessories rows", async () => {
+    const { supabase } = catalogueSupabase(CATALOGUE);
+    const results = await rankDupes(supabase, INSPIRATION, 10);
+    expect(results.map((r) => r.id)).toEqual(["socks"]);
   });
 });

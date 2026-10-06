@@ -79,7 +79,12 @@ const tool = {
           type: "string",
           description: "Vivid luxury descriptor, e.g. 'cream quilted top-handle vanity case'.",
         },
-        category: { type: "string", enum: CATEGORIES as unknown as string[] },
+        category: {
+          type: "string",
+          enum: CATEGORIES as unknown as string[],
+          description:
+            "Bags for handbags, totes and backpacks; Jewelry for necklaces, earrings, bracelets and rings; Accessories only for belts, hats, scarves and socks.",
+        },
         primary_color: { type: "string" },
         color_undertone: { type: "string", enum: UNDERTONES as unknown as string[] },
         silhouette_tags: {
