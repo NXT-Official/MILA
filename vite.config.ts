@@ -39,6 +39,12 @@ function buildCsp(supabaseUrl: string | undefined): string {
       "https://*.hcaptcha.com",
       "https://*.ingest.sentry.io",
       "https://*.sentry.io",
+      // PostHog — product analytics. Capture and feature-flag traffic goes to
+      // the ingest host; the assets host serves feature bundles when those
+      // products are enabled. The SDK is bundled, so script-src needs nothing.
+      // Update both origins if the project ever moves regions.
+      "https://us.i.posthog.com",
+      "https://us-assets.i.posthog.com",
     ],
     "frame-src": [
       "https://hcaptcha.com",
