@@ -1,0 +1,37 @@
+supabase/drafts/DA-2_products_column_grants.sql
+  s_755964b2e0c3da::t_168911fa18d04e 1-61
+supabase/drafts/README.md
+  s_755964b2e0c3da::t_1a0f60a8226c0e 20-24
+  s_755964b2e0c3da::t_1476c731c94528 397
+  s_755964b2e0c3da::t_d9a85962a7e2bf 1-19,25-28,30-32,35-279,281-396,398-413
+  s_755964b2e0c3da::t_8a407ab717cc4c 29
+  s_755964b2e0c3da::t_25f4a91f11f271 33-34
+  s_755964b2e0c3da::t_5e9e8da8e433d8 280
+supabase/migrations/20260812093000_add_style_goals.sql
+  s_755964b2e0c3da::t_94d5e1f22d01c3 11-35
+  s_755964b2e0c3da::t_21d480d331add5 1-10,36-45
+supabase/drafts/DA-L_tighten_member_writes.sql
+  s_755964b2e0c3da::t_76fafac8d1c69f 1-113
+supabase/drafts/SEC-3_posts_image_path_owner_check.sql
+  s_755964b2e0c3da::t_26a5839878fe6d 1-86
+supabase/drafts/SEC-2_posts_update_caption_only.sql
+  s_755964b2e0c3da::t_bae85925f05f89 1-30
+supabase/drafts/DA-1_members_read_subscribed_plan.sql
+  s_755964b2e0c3da::t_8674822c8f962d 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a72b8d5ab27c495c76d30977617fb56c7098a373",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
