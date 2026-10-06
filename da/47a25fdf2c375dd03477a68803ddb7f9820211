@@ -1,0 +1,76 @@
+tests/e2e/auth-session.spec.ts
+  s_755964b2e0c3da::t_8be350b656257e 87-94,122-125,381-433,435-446
+  s_755964b2e0c3da::t_95da4e02ba6278 434,447
+src/lib/queries/auth.ts
+  s_755964b2e0c3da::t_b9ec9b077e9d07 88-94,101-104
+  s_755964b2e0c3da::t_f8df1a8a1e51dd 3,9-15,17,28-48,54-56,60-61,66-87,98,100,105-108,111-113,115-128,131-134
+  s_755964b2e0c3da::t_b93a33498875fa 49-53,57-59,62-65
+src/integrations/supabase/member-fetch-guard.test.ts
+  s_755964b2e0c3da::t_4912f89f6dd24c 1-55,57-202,205-234
+  s_755964b2e0c3da::t_0ba77aabc1645c 203-204
+  s_755964b2e0c3da::t_0d80410af7216d 235-247
+  s_755964b2e0c3da::t_543b9ecfa4387a 56
+src/integrations/supabase/member-fetch-guard.ts
+  s_755964b2e0c3da::t_936c7b005a9a2e 29-32,82-83,85-88,97
+  s_755964b2e0c3da::t_39ee7f2982a514 1-28,33-81,84,89-96
+src/integrations/supabase/client.ts
+  s_755964b2e0c3da::t_594ce09d145b9d 4-13,22-24,27,31-38,46-49
+  s_755964b2e0c3da::t_6aa2a2e170eaf5 39-45
+src/lib/auth-session.ts
+  s_755964b2e0c3da::t_253dd9bb90dea3 247-248
+  s_755964b2e0c3da::t_952a991e808542 175-209
+  s_755964b2e0c3da::t_4b228132b9dbcf 174,210-223
+src/lib/auth-handler.server.ts
+  s_755964b2e0c3da::t_6ee5153ccf8b19 32-36
+  s_755964b2e0c3da::t_4bec6bbc2c83b8 37-40,48
+src/routes/_authenticated/_app.tsx
+  s_755964b2e0c3da::t_7073e4f6f2be3f 5,12-16,19,21,33-35,48,50,53-54,57-63,65
+src/components/style-profile/profile-load.test.ts
+  s_755964b2e0c3da::t_80db2592260931 1-21
+src/components/style-profile/profile-load.ts
+  s_755964b2e0c3da::t_06389579febe79 1-9
+src/components/style-profile/style-profile-page.tsx
+  s_755964b2e0c3da::t_26d3d470f826c1 45-48,61-66,105,107-115,208,224-226,457-465
+src/components/layout/session-notice.test.tsx
+  s_755964b2e0c3da::t_58155b67598a54 1-24
+src/components/layout/session-notice.tsx
+  s_755964b2e0c3da::t_e41dabd3b976ad 1-43
+src/components/layout/auth-provider.tsx
+  s_755964b2e0c3da::t_e4e822a3678309 16,19,21,25,28,54-80,120-125
+src/components/layout/auth-reconnecting.tsx
+  s_755964b2e0c3da::t_69f9aab5dc2dbf 15,19-20,22,32-38,41-43
+src/components/layout/suspended-gate.tsx
+  s_755964b2e0c3da::t_d49a5d857a149e 17-22,44-48
+src/hooks/use-login-redirect.ts
+  s_755964b2e0c3da::t_9d5964498d2a89 4,17,21-24,28-32
+src/lib/auth-session.test.ts
+  s_755964b2e0c3da::t_cdb856d215447c 19-21,744-788
+src/lib/auth.functions.test.ts
+  s_755964b2e0c3da::t_0534bf5e865698 233-246
+src/lib/queries/auth.test.ts
+  s_755964b2e0c3da::t_33521e9b5518dd 1-11,22-160
+src/routes/_authenticated/onboarding.tsx
+  s_755964b2e0c3da::t_1b219680f21652 5-6,27-30,37,41,43-48
+src/routes/auth/callback.tsx
+  s_755964b2e0c3da::t_441912d810ddb2 5-9,12,31-32,43,52-53,56-60
+src/routes/index.tsx
+  s_755964b2e0c3da::t_3bf6d99c621b5f 5-9,17,26-27,58,64-66,69-75
+src/routes/login/index.tsx
+  s_755964b2e0c3da::t_f3e4c1d2c49d74 4,17-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "da47a25fdf2c375dd03477a68803ddb7f9820211",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
