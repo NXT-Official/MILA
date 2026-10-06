@@ -1,0 +1,46 @@
+src/components/login/auth-errors.ts
+  s_755964b2e0c3da::t_a362ebada3e920 28-29
+  s_755964b2e0c3da::t_f2386ce3ee9816 1,20-27,30-39,41-44
+src/components/login/signup-outcome.test.ts
+  s_755964b2e0c3da::t_3bb6c257b16ca9 3,11,18-36
+tests/e2e/auth-forms.spec.ts
+  s_755964b2e0c3da::t_2d636142f3be67 1-35,53-77,84-88,95-145,150-220
+  s_755964b2e0c3da::t_a362ebada3e920 78-83,89-94,146-149
+  s_755964b2e0c3da::t_c5d7b5108f1387 36-52
+src/components/login/signup-form.tsx
+  s_755964b2e0c3da::t_a362ebada3e920 1,15,49-55,78-89,91-98,225
+src/components/login/field-error.test.tsx
+  s_755964b2e0c3da::t_048678922a04af 1-28,34-35,37-41,45-46
+  s_755964b2e0c3da::t_685f186e95bf17 36
+  s_755964b2e0c3da::t_fadbbf2fb57435 29-33
+  s_755964b2e0c3da::t_a362ebada3e920 42-44
+src/components/login/signup-flow.test.ts
+  s_755964b2e0c3da::t_ae15cc88fac25e 1-113
+src/components/login/signup-flow.ts
+  s_755964b2e0c3da::t_c15042c2a9aa22 1-53
+src/components/login/auth-errors.test.ts
+  s_755964b2e0c3da::t_6ed1061e12d638 3-9,63-66,69-111
+src/components/login/signup-outcome.ts
+  s_755964b2e0c3da::t_ccd0d098f67fed 11,14-21
+src/components/login/field-error.tsx
+  s_755964b2e0c3da::t_3f0811a5cd7803 28
+  s_755964b2e0c3da::t_91bf624a124b63 1-2,6-10,14-20,22-23,25-27,29
+src/components/login/auth-forms.test.tsx
+  s_755964b2e0c3da::t_998ade543c98bb 118-130,132-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1f81345df963ea0d5e227e01181e5bfaea429543",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
