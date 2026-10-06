@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
-import { aiChatCompletion, isAiConfigured } from "@/lib/ai.server";
+import { aiChatCompletion, isAiConfigured, type AiResult } from "@/lib/ai.server";
 import { consumeRateLimit, RateLimitExceededError } from "@/lib/rate-limit.server";
 import { withAiCredit } from "@/lib/credits.server";
 import { INSUFFICIENT_CREDITS, isInsufficientCreditsError } from "@/lib/credits";
@@ -77,17 +77,46 @@ const StudioColorProfileSchema = z.object({
 
 export type StudioColorProfile = z.infer<typeof StudioColorProfileSchema>;
 
+// The two schemas below read the model's reply. Structured output is
+// requested, but not every provider behind a model enforces it, so a reply
+// can carry a right answer in the wrong form: "Autumn Deep" for AUTUMN_DEEP,
+// "Oval" for "Oval Frame", 0.82 for 82. Those forms are mapped to the
+// canonical value; anything that maps to nothing, or to more than one value,
+// is still refused.
+const canonical = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+function modelEnum<const T extends readonly [string, ...string[]]>(values: T) {
+  return z.preprocess((raw) => {
+    if (typeof raw !== "string") return raw;
+    const key = canonical(raw);
+    const exact = values.find((value) => canonical(value) === key);
+    if (exact) return exact;
+    const byFirstWord = values.filter((value) => canonical(value.split(/[\s_-]/)[0]) === key);
+    return byFirstWord.length === 1 ? byFirstWord[0] : raw;
+  }, z.enum(values));
+}
+
+/** A 1–100 score: numeric strings are read as numbers, a 0–1 fraction as a
+ * percentage, and anything else is rounded and clamped into range. The
+ * Pass-2 prompt itself asks for contrast to be cut by 40 points or 30%,
+ * which can land at or below zero. */
+const modelScore = z.preprocess((raw) => {
+  const n = typeof raw === "string" && raw.trim() !== "" ? Number(raw) : raw;
+  if (typeof n !== "number" || !Number.isFinite(n)) return raw;
+  const percent = n > 0 && n < 1 ? n * 100 : n;
+  return Math.min(100, Math.max(1, Math.round(percent)));
+}, z.number().min(1).max(100));
+
 const SlimVisionSchema = z.object({
-  season: z.enum(SEASON_KEYS),
-  contrastScore: z.number().min(1).max(100),
-  undertone: z.enum(["Warm", "Cool", "Neutral"]),
-  faceShape: z.enum(FACE_SHAPES),
-  bodyType: z.enum(BODY_TYPES),
+  season: modelEnum(SEASON_KEYS),
+  contrastScore: modelScore,
+  undertone: modelEnum(["Warm", "Cool", "Neutral"]),
+  faceShape: modelEnum(FACE_SHAPES),
+  bodyType: modelEnum(BODY_TYPES),
   stylistNote: z.string().min(1),
   detectedLighting: z.string().min(1),
   calculatedUndertone: z.string().min(1),
-  confidenceScore: z.number().min(1).max(100),
-  confidenceLabel: z.string().optional(),
+  confidenceScore: modelScore,
 });
 
 const AMBIENT_LIGHTING_VALUES = [
@@ -108,9 +137,9 @@ const BIOLOGICAL_UNDERTONE_VALUES = [
 const COMPUTED_CONTRAST_VALUES = ["low", "low-medium", "medium", "high"] as const;
 
 const CalibrationSchema = z.object({
-  ambientLighting: z.enum(AMBIENT_LIGHTING_VALUES),
-  biologicalUndertone: z.enum(BIOLOGICAL_UNDERTONE_VALUES),
-  computedContrast: z.enum(COMPUTED_CONTRAST_VALUES),
+  ambientLighting: modelEnum(AMBIENT_LIGHTING_VALUES),
+  biologicalUndertone: modelEnum(BIOLOGICAL_UNDERTONE_VALUES),
+  computedContrast: modelEnum(COMPUTED_CONTRAST_VALUES),
 });
 type Calibration = z.infer<typeof CalibrationSchema> & {
   sensorClippingEvent: boolean;
@@ -234,11 +263,39 @@ export type ColorAnalysisResult =
     }
   | { success: false; error: string };
 
+const PARSING_FAILED: ColorAnalysisResult = { success: false, error: "ANALYSIS_PARSING_FAILED" };
+
 function analysisFailure(status: number): ColorAnalysisResult {
   if (status === 429) return { success: false, error: "ANALYSIS_RATE_LIMITED" };
   if (status === 402) return { success: false, error: "ANALYSIS_CREDITS_EXHAUSTED" };
-  if (status === 502) return { success: false, error: "ANALYSIS_PARSING_FAILED" };
+  if (status === 502) return PARSING_FAILED;
   return { success: false, error: "ANALYSIS_GATEWAY_FAILURE" };
+}
+
+/** Both passes plus the one retry stay inside this, leaving room under the
+ * 300s function ceiling the other AI routes assume for the profile writes. */
+const COLOR_READ_DEADLINE_MS = 240_000;
+/** The gateway's own per-call ceiling (TIMEOUT_MS in ai.server). */
+const PASS_TIMEOUT_MS = 110_000;
+/** Below this a vision call can't plausibly finish (the 43s QA read made two). */
+const MIN_PASS_MS = 30_000;
+
+/** The clock the two passes share, started when the read begins. */
+function createColorReadBudget(now: () => number) {
+  const startedAt = now();
+  const remainingMs = () => COLOR_READ_DEADLINE_MS - (now() - startedAt);
+  let retryUsed = false;
+  return {
+    /** A pass's timeout: the gateway's ceiling, clamped to what's left. */
+    passTimeout: () => Math.max(MIN_PASS_MS, Math.min(PASS_TIMEOUT_MS, remainingMs())),
+    /** Claims the read's single retry, or null when it is spent or no
+     * plausible attempt fits in what's left. */
+    takeRetry: (): number | null => {
+      if (retryUsed || remainingMs() < MIN_PASS_MS) return null;
+      retryUsed = true;
+      return Math.min(PASS_TIMEOUT_MS, remainingMs());
+    },
+  };
 }
 
 export const PersonalColorAnalysisInput = z.object({
@@ -257,19 +314,59 @@ export const PersonalColorAnalysisInput = z.object({
 });
 export type PersonalColorAnalysisInputData = z.infer<typeof PersonalColorAnalysisInput>;
 
+/** Writes the founding-read marker with the service role. Never throws: a
+ * failed write is logged, and the member keeps the read they already have. */
+async function markFoundingReadUsed(userId: string): Promise<void> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: marked, error: markerError } = await supabaseAdmin
+      .from("profiles")
+      .update({ founding_color_read_at: new Date().toISOString() })
+      .eq("id", userId)
+      .select("id");
+    if (markerError) {
+      console.error("[analyzePersonalColor] founding marker write failed:", markerError);
+    } else if (!marked?.length) {
+      console.error("[analyzePersonalColor] founding marker write matched no profile row");
+    }
+  } catch (markerEx) {
+    console.error("[analyzePersonalColor] founding marker write threw:", markerEx);
+  }
+}
+
+/** The collaborators the read calls out to, injectable for the tests. */
+export type PersonalColorAnalysisDeps = {
+  aiChatCompletion: typeof aiChatCompletion;
+  isAiConfigured: typeof isAiConfigured;
+  consumeRateLimit: typeof consumeRateLimit;
+  withAiCredit: typeof withAiCredit;
+  markFoundingRead: (userId: string) => Promise<void>;
+  now: () => number;
+};
+
+const defaultDeps: PersonalColorAnalysisDeps = {
+  aiChatCompletion,
+  isAiConfigured,
+  consumeRateLimit,
+  withAiCredit,
+  markFoundingRead: markFoundingReadUsed,
+  now: Date.now,
+};
+
 export async function analyzePersonalColorForUser(
   supabase: MilaSupabaseClient,
   userId: string,
   data: PersonalColorAnalysisInputData,
+  deps: PersonalColorAnalysisDeps = defaultDeps,
 ): Promise<ColorAnalysisResult> {
   try {
-    if (!isAiConfigured()) {
+    if (!deps.isAiConfigured()) {
       console.error("[analyzePersonalColor] AI provider not configured (OPENROUTER_API_KEY)");
       return { success: false, error: "CONFIG_MISSING_API_KEY" };
     }
 
     try {
-      await consumeRateLimit(`ai:analyzePersonalColor:${userId}`, {
+      await deps.consumeRateLimit(`ai:analyzePersonalColor:${userId}`, {
         limit: 10,
         windowSeconds: 3600,
       });
@@ -281,11 +378,14 @@ export async function analyzePersonalColorForUser(
     }
 
     try {
-      const { data: profileRow } = await supabase
+      const { data: profileRow, error: profileError } = await supabase
         .from("profiles")
         .select("skin_undertone, color_season, color_profile, founding_color_read_at")
         .eq("id", userId)
         .maybeSingle();
+      if (profileError) {
+        console.error("[analyzePersonalColor] founding-read check failed:", profileError);
+      }
 
       // The founding read is free — once, ever. Whether it was used is read
       // from `profiles.founding_color_read_at`, a service-role-only column:
@@ -299,12 +399,14 @@ export async function analyzePersonalColorForUser(
       const foundingRead = !profileRow?.founding_color_read_at;
 
       const produce = async (): Promise<ColorAnalysisResult> => {
+        const budget = createColorReadBudget(deps.now);
         const callGateway = (
           systemPrompt: string,
           userText: string,
           toolDef: typeof slimTool | typeof calibrationTool,
+          timeoutMs: number,
         ) =>
-          aiChatCompletion(
+          deps.aiChatCompletion(
             [
               { role: "system", content: systemPrompt },
               {
@@ -320,7 +422,43 @@ export async function analyzePersonalColorForUser(
             ],
             toolDef,
             { supabase: supabase, userId: userId },
+            { timeoutMs },
           );
+
+        // One pass of the read. A reply that can't be used — no text, not
+        // JSON, or JSON outside the schema (the gateway reports the first two
+        // as 502) — gets the read's single retry while the budget allows;
+        // timeouts, rate limits and provider credit errors are final.
+        const runPass = async <T>(
+          label: string,
+          schema: z.ZodType<T, z.ZodTypeDef, unknown>,
+          call: (timeoutMs: number) => Promise<AiResult>,
+        ): Promise<{ ok: true; data: T } | { ok: false; failure: ColorAnalysisResult }> => {
+          const attempt = async (timeoutMs: number) => {
+            const res = await call(timeoutMs);
+            if (!res.ok) {
+              return {
+                ok: false as const,
+                failure: analysisFailure(res.status),
+                retryable: res.status === 502,
+              };
+            }
+            const parsed = schema.safeParse(res.args);
+            if (parsed.success) return { ok: true as const, data: parsed.data };
+            console.error(
+              `[analyzePersonalColor] ${label} schema mismatch`,
+              parsed.error.flatten(),
+            );
+            return { ok: false as const, failure: PARSING_FAILED, retryable: true };
+          };
+
+          const first = await attempt(budget.passTimeout());
+          if (first.ok || !first.retryable) return first;
+          const retryTimeoutMs = budget.takeRetry();
+          if (retryTimeoutMs === null) return first;
+          console.warn(`[analyzePersonalColor] ${label} reply was unusable; retrying once`);
+          return attempt(retryTimeoutMs);
+        };
 
         const forced = data.diagnostics?.forceCalibration;
         let pass1Parsed: { success: true; data: z.infer<typeof CalibrationSchema> };
@@ -336,19 +474,16 @@ Execute silently:
 
 Return ONLY by calling the report_calibration tool.`;
 
-          const pass1Res = await callGateway(
-            calibrationPrompt,
-            "Run the Pass-1 calibration read on this portrait.",
-            calibrationTool,
+          const pass1 = await runPass("Pass1", CalibrationSchema, (timeoutMs) =>
+            callGateway(
+              calibrationPrompt,
+              "Run the Pass-1 calibration read on this portrait.",
+              calibrationTool,
+              timeoutMs,
+            ),
           );
-          if (!pass1Res.ok) return analysisFailure(pass1Res.status);
-
-          const parsed1 = CalibrationSchema.safeParse(pass1Res.args);
-          if (!parsed1.success) {
-            console.error("[analyzePersonalColor] Pass1 schema mismatch", parsed1.error.flatten());
-            return { success: false, error: "ANALYSIS_PARSING_FAILED" };
-          }
-          pass1Parsed = parsed1;
+          if (!pass1.ok) return pass1.failure;
+          pass1Parsed = { success: true, data: pass1.data };
         }
 
         const pass1Raw = { ...pass1Parsed.data };
@@ -582,19 +717,15 @@ Populate the tool payload exactly so the UI can log the system's thought process
 === OUTPUT ===
 Return ONLY the slim raw vision read by calling the report_studio_color_profile tool. Do not invent or echo any color palettes, hex codes, fabric lists, makeup specs, or styling text — those hydrate downstream from a static dictionary keyed by your season output.`;
 
-        const res = await callGateway(
-          systemPrompt,
-          "Run the Pass-2 PCCS routing using the validated calibration data above. Map this portrait to its strict seasonal key.",
-          slimTool,
+        const slim = await runPass("Slim", SlimVisionSchema, (timeoutMs) =>
+          callGateway(
+            systemPrompt,
+            "Run the Pass-2 PCCS routing using the validated calibration data above. Map this portrait to its strict seasonal key.",
+            slimTool,
+            timeoutMs,
+          ),
         );
-
-        if (!res.ok) return analysisFailure(res.status);
-
-        const slim = SlimVisionSchema.safeParse(res.args);
-        if (!slim.success) {
-          console.error("[analyzePersonalColor] Slim schema mismatch", slim.error.flatten());
-          return { success: false, error: "ANALYSIS_PARSING_FAILED" };
-        }
+        if (!slim.ok) return slim.failure;
 
         const spec = SEASONS_MASTER_DATA[slim.data.season];
         const hydrated: StudioColorProfile = {
@@ -685,30 +816,27 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
           );
           if (persistError) {
             console.error("[analyzePersonalColor] profiles upsert failed:", persistError);
-          } else if (foundingRead) {
-            // Burn the once-ever free read only after the dossier actually
-            // persisted. The marker column carries no `authenticated` grant,
-            // so a member cannot clear it the way they can clear the dossier
-            // columns (QA MW-10).
-            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-            const { error: markerError } = await supabaseAdmin
-              .from("profiles")
-              .update({ founding_color_read_at: new Date().toISOString() })
-              .eq("id", userId);
-            if (markerError) {
-              console.error("[analyzePersonalColor] founding marker write failed:", markerError);
-            }
           }
         } catch (persistEx) {
           console.error("[analyzePersonalColor] profiles upsert threw:", persistEx);
         }
+
+        // A successful founding read spends the once-ever free read. The
+        // marker column carries no `authenticated` grant, so a member cannot
+        // clear it the way they can clear the dossier columns (QA MW-10). It
+        // is not gated on the upsert above: Postgres checks the profiles
+        // INSERT policy on every proposed upsert row, which a member's
+        // username-less row fails, so that gate left the marker unset and the
+        // free read repeatable. The member holds the read either way — both
+        // web flows save the dossier from the client.
+        if (foundingRead) await deps.markFoundingRead(userId);
 
         return { success: true, profile: parsed.data, telemetry };
       };
 
       if (foundingRead) return await produce();
 
-      return await withAiCredit<ColorAnalysisResult>(supabase, userId, produce, {
+      return await deps.withAiCredit<ColorAnalysisResult>(supabase, userId, produce, {
         refundIf: (r) => !r.success,
       });
     } catch (err) {

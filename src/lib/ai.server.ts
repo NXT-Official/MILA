@@ -74,6 +74,55 @@ function stripJsonFence(text: string): string {
   return text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
 }
 
+/** Each complete top-level `{…}` in `text`, in order. Quotes are tracked only
+ * inside an object, so prose around it can't flip the string state. */
+function* topLevelObjects(text: string): Generator<string> {
+  let depth = 0;
+  let start = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+    } else if (ch === '"') {
+      inString = depth > 0;
+    } else if (ch === "{") {
+      if (depth === 0) start = i;
+      depth += 1;
+    } else if (ch === "}" && depth > 0) {
+      depth -= 1;
+      if (depth === 0) yield text.slice(start, i + 1);
+    }
+  }
+}
+
+/**
+ * The JSON in a model reply. Structured output is requested, but not every
+ * provider behind a model enforces it, so the object can also arrive after a
+ * reasoning block or inside a sentence of prose (fenced or not). Only a whole
+ * top-level object is taken: a truncated reply stays unparseable rather than
+ * yielding a nested fragment of itself, and an unfinished reasoning block is
+ * dropped, never mined for a draft. Throws when there is no JSON to take.
+ */
+function parseModelJson(text: string): unknown {
+  const body = stripJsonFence(text.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, ""));
+  try {
+    return JSON.parse(body);
+  } catch (err) {
+    for (const candidate of topLevelObjects(body)) {
+      try {
+        return JSON.parse(candidate) as unknown;
+      } catch {
+        // Braces in prose ("{like this}"): move on to the next object.
+      }
+    }
+    throw err;
+  }
+}
+
 /** True when the provider rejected the MODEL ID itself — a typo'd or retired
  * model — as opposed to any other failure. OpenRouter answers these with a
  * 400/404 whose body names the model (e.g. "No endpoints found for …").
@@ -141,7 +190,7 @@ async function requestCompletion(
   // call answered the member with INTERNAL/500 instead of the retryable
   // AI_UNAVAILABLE the mobile taxonomy expects.
   let json: {
-    choices?: Array<{ message?: { content?: string } }>;
+    choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
     usage?: {
       cost?: number;
       prompt_tokens?: number;
@@ -182,9 +231,13 @@ async function requestCompletion(
   });
 
   try {
-    return { ok: true, args: JSON.parse(stripJsonFence(text)) };
+    return { ok: true, args: parseModelJson(text) };
   } catch {
-    console.error("[ai] provider returned unparseable JSON", { length: text.length });
+    // finish_reason "length" = cut off by the token limit, not malformed.
+    console.error("[ai] provider returned unparseable JSON", {
+      length: text.length,
+      finishReason: json.choices?.[0]?.finish_reason,
+    });
     return { ok: false, status: 502 };
   }
 }

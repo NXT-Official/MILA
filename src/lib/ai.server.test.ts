@@ -97,6 +97,77 @@ describe("OpenRouter chat gateway", () => {
     });
   });
 
+  test("finds the JSON object in a reply wrapped in prose", async () => {
+    // Not every provider behind a model honours the structured-output request.
+    stubProvider(
+      Response.json({
+        choices: [{ message: { content: 'Here is the read:\n{"value":"ok"}\nHope that helps.' } }],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
+      ok: true,
+      args: { value: "ok" },
+    });
+  });
+
+  test("finds a fenced block that sits inside prose", async () => {
+    stubProvider(
+      Response.json({
+        choices: [{ message: { content: 'Sure.\n```json\n{"value":"ok"}\n```\nDone.' } }],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
+      ok: true,
+      args: { value: "ok" },
+    });
+  });
+
+  test("skips a reasoning block before the answer", async () => {
+    stubProvider(
+      Response.json({
+        choices: [
+          {
+            message: {
+              content: '<think>Draft: {"value":"draft"}. Better:</think>\n{"value":"ok"}',
+            },
+          },
+        ],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
+      ok: true,
+      args: { value: "ok" },
+    });
+  });
+
+  test("a brace inside a string does not end the object early", async () => {
+    stubProvider(
+      Response.json({ choices: [{ message: { content: 'Result: {"value":"a } b"}' } }] }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
+      ok: true,
+      args: { value: "a } b" },
+    });
+  });
+
+  test("a truncated reply never yields a nested fragment of itself", async () => {
+    stubProvider(
+      Response.json({
+        choices: [{ message: { content: '{"outer":{"value":"ok"},"more":' } }],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+  });
+
+  test("an unfinished reasoning block is never mined for a draft answer", async () => {
+    stubProvider(
+      Response.json({
+        choices: [{ message: { content: '<think>Maybe {"value":"draft"} but let me check' } }],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+  });
+
   test("surfaces the provider status instead of throwing", async () => {
     stubProvider(new Response("slow down", { status: 429 }));
     expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 429 });
