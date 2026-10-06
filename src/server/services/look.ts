@@ -41,6 +41,7 @@ import {
   type LookInventoryItem,
 } from "@/lib/look-products.functions";
 import { AiUnavailableError, DomainValidationError } from "@/server/http/api-errors";
+import { createRenderBudget, type RenderBudget } from "./render-budget";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
@@ -68,6 +69,43 @@ const PLAN_CALL_TIMEOUT_MS = 105_000;
  * Bounded waits in the same probe still returned full, valid payloads. */
 const REVIEW_REASONING_TOKENS = 1024;
 const PLAN_REASONING_TOKENS = 4096;
+/** Minimum room the schema-repair plan attempt needs before it starts — same
+ * family as canRetryComposeCall's floor: below this the deadline is better
+ * spent resolving than starting an attempt that can't finish. */
+const REPAIR_MIN_ATTEMPT_MS = 45_000;
+
+export type LookComposeDeps = {
+  /** The provider chat call — tests inject fakes; production uses
+   * aiChatCompletion. */
+  ai?: typeof aiChatCompletion;
+  /** The credit wrapper — tests inject a pass-through; production uses
+   * withAiCredit. */
+  withCredit?: typeof withAiCredit;
+  /** Marks the first-render-free claim — tests inject a spy; production
+   * writes through supabaseAdmin. */
+  markPending?: (userId: string) => Promise<void>;
+};
+
+/** `path: message` pairs (capped) describing why a plan payload failed
+ * DailyLookSchema — the diagnostic the repair turn hands back to the model.
+ * Exported for tests. */
+export function planSchemaIssues(error: {
+  issues: Array<{ path: Array<string | number>; message: string }>;
+}): string[] {
+  return error.issues
+    .slice(0, 8)
+    .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`);
+}
+
+/** The repair turn's text: one more chance to emit a schema-valid look.
+ * Exported for tests. */
+export function buildPlanRepairMessage(issues: string[]): string {
+  return [
+    "That report_daily_look response was rejected by schema validation:",
+    ...issues.map((issue) => `- ${issue}`),
+    "Call report_daily_look again with the COMPLETE corrected look: every required field present and non-empty, correct types, and every shoppable_picks product_id from the shortlist enum. Keep the same outfit concept — this is a correction, not a re-style.",
+  ].join("\n");
+}
 
 export type LookImageResult = {
   imageDataUri: string | null;
@@ -98,8 +136,12 @@ export async function generateLookForUser(
   supabase: MilaSupabaseClient,
   userId: string,
   data: GenerateLookInputData,
+  deps: LookComposeDeps = {},
 ): Promise<DailyLook> {
-  return withAiCredit(supabase, userId, async () => {
+  const ai = deps.ai ?? aiChatCompletion;
+  const withCredit = deps.withCredit ?? withAiCredit;
+  const markPending = deps.markPending ?? markLookImagePending;
+  return withCredit(supabase, userId, async () => {
     const { data: profileRow } = await supabase
       .from("profiles")
       .select(
@@ -278,12 +320,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
         reasoningMaxTokens: REVIEW_REASONING_TOKENS,
       };
-      let reviewed = await aiChatCompletion(
-        reviewMessages,
-        reviewTool,
-        { supabase, userId },
-        reviewOptions,
-      );
+      let reviewed = await ai(reviewMessages, reviewTool, { supabase, userId }, reviewOptions);
       if (!reviewed.ok && canRetryComposeCall(REVIEW_CALL_TIMEOUT_MS + 45_000)) {
         // A second review attempt only when the first died early enough to
         // leave ~85s + plan headroom; otherwise the deterministic fallback
@@ -291,7 +328,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         console.warn(
           `[generateLookForUser] review call failed (status=${reviewed.status}) — retrying with ${Math.round(remainingComposeMs() / 1000)}s left`,
         );
-        reviewed = await aiChatCompletion(
+        reviewed = await ai(
           reviewMessages,
           reviewTool,
           { supabase, userId },
@@ -332,7 +369,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
           inventory.length >= REVIEW_MIN_SHORTLIST * 2 &&
           remainingComposeMs() > 90_000
         ) {
-          const recheck = await aiChatCompletion(
+          const recheck = await ai(
             [
               { role: "system", content: reviewPrompt },
               { role: "user", content: "Check the full inventory and report the shortlist." },
@@ -438,7 +475,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       { role: "user", content: "Compose today's complete look." },
     ];
     const planTool = buildDailyLookTool(makeupEnabled, shortlistIds);
-    let composed = await aiChatCompletion(
+    let composed = await ai(
       planMessages,
       planTool,
       { supabase, userId },
@@ -451,7 +488,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       console.warn(
         `[generateLookForUser] plan call failed (status=${composed.status}) — retrying with ${Math.round(remainingComposeMs() / 1000)}s left`,
       );
-      composed = await aiChatCompletion(
+      composed = await ai(
         planMessages,
         planTool,
         { supabase, userId },
@@ -466,54 +503,61 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     // Hydrate the model's product_id/rationale picks into full, real product
     // rows — price/link/title the client sees always come from here, never
     // from model text (see hydrateShoppablePicks for the drop-unknown-id logic).
-    const rawArgs = composed.args as Record<string, unknown>;
-    const hydratedPicks = hydrateShoppablePicks(rawArgs.shoppable_picks, shortlistProducts);
+    //
+    // A closure so the schema-repair retry below runs the IDENTICAL
+    // hydration/backfill/validation on its second attempt — the repair path
+    // can never drift from the primary one.
+    const finalizePlanOutput = (rawArgs: Record<string, unknown>) => {
+      const hydratedPicks = hydrateShoppablePicks(rawArgs.shoppable_picks, shortlistProducts);
 
-    // Climate backstop: CLIMATE_RULES asks deepseek (in prompt text) to
-    // include outerwear below COLD_WEATHER_F, but prompt compliance isn't
-    // guaranteed. Deterministically add the best-scoring available Outerwear
-    // row when the plan came back without one — no extra DB read, no AI call.
-    const weatherBackfill = pickWeatherBackfill(hydratedPicks, inventory, {
-      tempF,
-      colorSeason: colorSeasonValue,
-      bodyType: data.bodyType,
-    });
-    if (!weatherBackfill && needsColdWeatherOuterwear(hydratedPicks, tempF)) {
-      // Diagnosable: nothing to backfill with, so this look ships without
-      // outerwear despite the cold — leave a trace of why.
-      console.warn(
-        `[generateLookForUser] cold-weather outfit missing Outerwear and none available in inventory (tempF=${tempF})`,
-      );
-    }
-    const picksWithWeatherBackfill: ShoppablePick[] = weatherBackfill
-      ? [
-          ...hydratedPicks,
-          {
-            ...weatherBackfill.product,
-            rationale: weatherBackfill.rationale,
-            source: "planned" as const,
-          },
-        ]
-      : hydratedPicks;
+      // Climate backstop: CLIMATE_RULES asks deepseek (in prompt text) to
+      // include outerwear below COLD_WEATHER_F, but prompt compliance isn't
+      // guaranteed. Deterministically add the best-scoring available Outerwear
+      // row when the plan came back without one — no extra DB read, no AI call.
+      const weatherBackfill = pickWeatherBackfill(hydratedPicks, inventory, {
+        tempF,
+        colorSeason: colorSeasonValue,
+        bodyType: data.bodyType,
+      });
+      if (!weatherBackfill && needsColdWeatherOuterwear(hydratedPicks, tempF)) {
+        // Diagnosable: nothing to backfill with, so this look ships without
+        // outerwear despite the cold — leave a trace of why.
+        console.warn(
+          `[generateLookForUser] cold-weather outfit missing Outerwear and none available in inventory (tempF=${tempF})`,
+        );
+      }
+      const picksWithWeatherBackfill: ShoppablePick[] = weatherBackfill
+        ? [
+            ...hydratedPicks,
+            {
+              ...weatherBackfill.product,
+              rationale: weatherBackfill.rationale,
+              source: "planned" as const,
+            },
+          ]
+        : hydratedPicks;
 
-    // The shop shelf: ONLY the outfit's own pieces — exactly what the
-    // generated visual wears (plan + weather backfill). Do NOT re-add
-    // same-category "similar" rows here: category-only matching surfaces
-    // pieces the image never shows (sportswear beside a tailored look),
-    // which reads as a random shop dump instead of the look itself.
-    const shelfPicks: ShoppablePick[] = picksWithWeatherBackfill;
+      // The shop shelf: ONLY the outfit's own pieces — exactly what the
+      // generated visual wears (plan + weather backfill). Do NOT re-add
+      // same-category "similar" rows here: category-only matching surfaces
+      // pieces the image never shows (sportswear beside a tailored look),
+      // which reads as a random shop dump instead of the look itself.
+      const shelfPicks: ShoppablePick[] = picksWithWeatherBackfill;
 
-    // Force makeup to null when disabled regardless of what the model
-    // returned — the tool schema already omits it, but this is the hard
-    // server-side boundary, not a suggestion to the model.
-    const argsWithMakeup = {
-      ...rawArgs,
-      makeup: makeupEnabled ? (rawArgs.makeup ?? null) : null,
-      shoppable_picks: shelfPicks,
-      forecastRetrievedAt,
-      fallback_gender_direction: fallbackGenderDirection,
+      // Force makeup to null when disabled regardless of what the model
+      // returned — the tool schema already omits it, but this is the hard
+      // server-side boundary, not a suggestion to the model.
+      const argsWithMakeup = {
+        ...rawArgs,
+        makeup: makeupEnabled ? (rawArgs.makeup ?? null) : null,
+        shoppable_picks: shelfPicks,
+        forecastRetrievedAt,
+        fallback_gender_direction: fallbackGenderDirection,
+      };
+      return DailyLookSchema.safeParse(argsWithMakeup);
     };
-    const look = DailyLookSchema.safeParse(argsWithMakeup);
+
+    let look = finalizePlanOutput(composed.args as Record<string, unknown>);
     if (!look.success) {
       // Confirmed live: this threw the same generic message for both a real
       // provider failure and a valid-but-schema-rejected model output (e.g.
@@ -524,14 +568,77 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         "[generateLookForUser] DailyLookSchema rejected model output",
         JSON.stringify(look.error.issues),
       );
-      throw new AiUnavailableError(failure);
+
+      // Schema-repair retry: a payload that dies on validation — a missing
+      // field, an empty string, a wrong type — used to fail the whole
+      // generation even though the model was one sampled correction away
+      // from a valid look. When a real plan attempt still fits the deadline,
+      // re-ask once with the issues spelled out and keep the repaired payload
+      // if it validates.
+      if (canRetryComposeCall(REPAIR_MIN_ATTEMPT_MS)) {
+        console.warn(
+          `[generateLookForUser] plan output failed schema validation — re-asking once with ${Math.round(remainingComposeMs() / 1000)}s left`,
+        );
+        const repair = await ai(
+          [
+            ...planMessages,
+            { role: "user", content: buildPlanRepairMessage(planSchemaIssues(look.error)) },
+          ],
+          planTool,
+          { supabase, userId },
+          {
+            timeoutMs: composeCallTimeout(PLAN_CALL_TIMEOUT_MS),
+            reasoningMaxTokens: PLAN_REASONING_TOKENS,
+          },
+        );
+        if (repair.ok) {
+          const repaired = finalizePlanOutput(repair.args as Record<string, unknown>);
+          if (repaired.success) {
+            look = repaired;
+          } else {
+            console.error(
+              "[generateLookForUser] schema-repair attempt also failed validation",
+              JSON.stringify(repaired.error.issues),
+            );
+          }
+        } else {
+          console.warn(
+            `[generateLookForUser] schema-repair attempt failed to run (status=${repair.status})`,
+          );
+        }
+      }
     }
+    if (!look.success) throw new AiUnavailableError(failure);
     // The credit charged above covers this look's first visual, rendered by the
     // separate renderLookImageForUser call the client makes next.
-    await markLookImagePending(userId);
+    await markPending(userId);
     return look.data;
   });
 }
+
+/** The outfit-visual render runs its own tighter budget than the style-sheet/
+ * photo-preview paths: this route's original contract is one quick render,
+ * and its clients budget ~90s. Two attempts, each clamped to what the render
+ * budget has left, keep a transient timeout/5xx from failing the visual
+ * outright while still resolving inside that arena. Confirmed live: one
+ * muse-image attempt runs 30–65s. */
+const LOOK_IMAGE_MAX_ATTEMPTS = 2;
+const LOOK_IMAGE_ATTEMPT_MS = 75_000;
+const LOOK_IMAGE_BUDGET_MS = 150_000;
+/** Don't start an attempt that can't plausibly finish. */
+const LOOK_IMAGE_MIN_ATTEMPT_MS = 40_000;
+
+export type LookImageRenderDeps = {
+  /** The provider render — tests inject fakes; production uses
+   * generateOutfitImage. */
+  generateImage?: typeof generateOutfitImage;
+  /** The free-first-claim/credit wrapper — tests inject a pass-through;
+   * production uses payForLookImage with the supabaseAdmin stores. */
+  payFor?: typeof payForLookImage;
+  /** Render budget — tests inject a controlled one; production gets a fresh
+   * LOOK_IMAGE_BUDGET_MS budget. */
+  budget?: RenderBudget;
+};
 
 /**
  * Renders (or claims the free first render of) a Daily Look's visual. Shared
@@ -541,56 +648,84 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
  * A failed render is not an exception here — it is a first-class partial
  * result (`imageDataUri: null` + `imageGenerationError`), matching what
  * `payForLookImage` needs to decide whether to refund/re-mark the free slot.
+ * A thrown provider error (timeout, transient 5xx) retries once within the
+ * render budget before reporting that partial result; a rate limit never
+ * retries (it would burn the second attempt for the same 429).
  */
 export async function renderLookImageForUser(
   supabase: MilaSupabaseClient,
   userId: string,
   data: DailyLook,
+  deps: LookImageRenderDeps = {},
 ): Promise<LookImageResult> {
-  return payForLookImage(supabase, userId, async () => {
-    try {
-      const { data: profileRow } = await supabase
-        .from("profiles")
-        .select("gender,skin_depth,height_cm")
-        .eq("id", userId)
-        .maybeSingle();
-      const {
-        imageUrl,
-        model: imageModel,
-        costUsd,
-        promptTokens,
-        completionTokens,
-        totalTokens,
-      } = await generateOutfitImage(data, {
-        gender: profileRow?.gender,
-        skinDepth: profileRow?.skin_depth,
-        heightCm: profileRow?.height_cm,
-        fallbackGenderDirection: data.fallback_gender_direction ?? null,
-      });
-      await logAiSpend(supabase, userId, {
-        provider: IMAGE_PROVIDER,
-        // The model that actually rendered it — staff can switch the image
-        // model from the admin console, so a constant here would misattribute
-        // spend from the moment it changes.
-        model: imageModel,
-        costUsd,
-        promptTokens,
-        completionTokens,
-        totalTokens,
-      });
-      return { imageDataUri: imageUrl };
-    } catch (error) {
-      console.error("[generateOutfitImage] failed:", errorMessage(error, "Unknown error"));
-      return {
-        imageDataUri: null,
-        // Surface the specific reason (site-wide quota vs. provider rate
-        // limit) rather than a one-size-fits-all message — both messages
-        // from openrouter-image.server.ts are already user-appropriate.
-        imageGenerationError:
-          error instanceof ImageProviderRateLimitError
-            ? error.message
-            : "The outfit was created, but its visual could not be generated.",
-      };
+  const generateImage = deps.generateImage ?? generateOutfitImage;
+  const payFor = deps.payFor ?? payForLookImage;
+  const budget = deps.budget ?? createRenderBudget(LOOK_IMAGE_BUDGET_MS);
+
+  return payFor(supabase, userId, async () => {
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("gender,skin_depth,height_cm")
+      .eq("id", userId)
+      .maybeSingle();
+
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= LOOK_IMAGE_MAX_ATTEMPTS; attempt++) {
+      if (!budget.canStart(LOOK_IMAGE_MIN_ATTEMPT_MS)) {
+        console.warn(
+          `[renderLookImageForUser] stopping before attempt ${attempt}/${LOOK_IMAGE_MAX_ATTEMPTS} — ${Math.round(budget.remainingMs() / 1000)}s left in the render budget`,
+        );
+        break;
+      }
+      try {
+        const {
+          imageUrl,
+          model: imageModel,
+          costUsd,
+          promptTokens,
+          completionTokens,
+          totalTokens,
+        } = await generateImage(data, {
+          gender: profileRow?.gender,
+          skinDepth: profileRow?.skin_depth,
+          heightCm: profileRow?.height_cm,
+          fallbackGenderDirection: data.fallback_gender_direction ?? null,
+          timeoutMs: budget.clamp(LOOK_IMAGE_ATTEMPT_MS),
+        });
+        await logAiSpend(supabase, userId, {
+          provider: IMAGE_PROVIDER,
+          // The model that actually rendered it — staff can switch the image
+          // model from the admin console, so a constant here would misattribute
+          // spend from the moment it changes.
+          model: imageModel,
+          costUsd,
+          promptTokens,
+          completionTokens,
+          totalTokens,
+        });
+        return { imageDataUri: imageUrl };
+      } catch (error) {
+        lastError = error;
+        // A rate limit is not a sampling accident — a 429 re-fires
+        // immediately, so give up the retry and surface its message.
+        if (error instanceof ImageProviderRateLimitError) break;
+        console.warn(
+          `[renderLookImageForUser] attempt ${attempt}/${LOOK_IMAGE_MAX_ATTEMPTS} failed:`,
+          errorMessage(error, "Unknown error"),
+        );
+      }
     }
+
+    console.error("[generateOutfitImage] failed:", errorMessage(lastError, "Unknown error"));
+    return {
+      imageDataUri: null,
+      // Surface the specific reason (site-wide quota vs. provider rate
+      // limit) rather than a one-size-fits-all message — both messages
+      // from openrouter-image.server.ts are already user-appropriate.
+      imageGenerationError:
+        lastError instanceof ImageProviderRateLimitError
+          ? lastError.message
+          : "The outfit was created, but its visual could not be generated.",
+    };
   });
 }
