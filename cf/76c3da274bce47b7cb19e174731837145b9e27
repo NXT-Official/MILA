@@ -1,0 +1,26 @@
+src/server/services/dupes.ts
+  s_755964b2e0c3da::t_c824a84f755eae 82-87
+src/constants/wardrobe.test.ts
+  s_755964b2e0c3da::t_1359f559cec7a2 1-47
+src/server/services/dupes.test.ts
+  s_755964b2e0c3da::t_3819aacfde5c2b 84-110
+  s_755964b2e0c3da::t_52979ae99da2d4 229-263
+src/constants/wardrobe.ts
+  s_755964b2e0c3da::t_cda02ce68ca2d4 8-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf76c3da274bce47b7cb19e174731837145b9e27",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
