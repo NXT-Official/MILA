@@ -1,0 +1,39 @@
+src/lib/square-crop.ts
+  s_755964b2e0c3da::t_9c6d0a95fa54fe 1-20
+src/components/style-profile/visual-diagnostic-viewfinder.tsx
+  s_755964b2e0c3da::t_b38c21027a14bf 634
+  s_755964b2e0c3da::t_de0bf135e4c896 75-92
+  s_755964b2e0c3da::t_cd84d94f1210e0 236-239
+  s_755964b2e0c3da::t_70fea3ff0906b2 672
+  s_755964b2e0c3da::t_3057878bb61c27 286
+  s_755964b2e0c3da::t_61b61c212a0f44 307
+  s_755964b2e0c3da::t_045677e642f483 250-260
+  s_755964b2e0c3da::t_1e840214f16d65 583
+  s_755964b2e0c3da::t_7f81e0d372e1e0 120
+  s_755964b2e0c3da::t_ea587a2efe872f 38-39,41
+  s_755964b2e0c3da::t_8d3bf2e459734f 261-262,673
+src/lib/color-read-errors.test.ts
+  s_755964b2e0c3da::t_ded2d9c9a2df87 1-80
+src/components/style-profile/visual-diagnostic-viewfinder.test.tsx
+  s_755964b2e0c3da::t_b5d2001983aacf 1-32
+src/lib/color-read-errors.ts
+  s_755964b2e0c3da::t_b09aa3f29f7bc0 1-58
+src/lib/square-crop.test.ts
+  s_755964b2e0c3da::t_73dcfe11328da8 1-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "74d890b7e22f9345eeccacacfab20e3623f0c713",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
