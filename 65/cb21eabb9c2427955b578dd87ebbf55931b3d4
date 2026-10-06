@@ -1,0 +1,78 @@
+src/lib/default-hub.test.ts
+  s_755964b2e0c3da::t_55f8de9276571b 1-84
+  s_755964b2e0c3da::t_2ce19b561ad741 85-106
+src/lib/auth-identities.test.ts
+  s_755964b2e0c3da::t_cbb7a5b662d8c2 1-86
+src/components/account/drawer-views/privacy-view.tsx
+  s_755964b2e0c3da::t_741930115d63bc 34
+src/lib/account-export.ts
+  s_755964b2e0c3da::t_67e21e81a70ae8 1-101
+src/lib/account-errors.test.ts
+  s_755964b2e0c3da::t_166aaf1ce78e39 1-78
+src/components/account/account-menu.tsx
+  s_755964b2e0c3da::t_1f772b6dfa6824 36
+  s_755964b2e0c3da::t_e919c0fa75e116 1,3,5-35,37-128
+  s_755964b2e0c3da::t_91e41dee2eae37 2,4
+src/components/account/drawer-views/location-view.test.tsx
+  s_755964b2e0c3da::t_57c1cbe0913df2 27-30
+  s_755964b2e0c3da::t_5d2dbb149e0b34 39
+  s_755964b2e0c3da::t_c0507d38ad03d6 1-26,31-38,40-48
+src/components/onboarding/steps/location-step.test.tsx
+  s_755964b2e0c3da::t_8e2310a854b595 1-60
+src/lib/auth-identities.ts
+  s_755964b2e0c3da::t_45bb173fa35a01 1-45
+src/components/account/drawer-views/security-view.test.tsx
+  s_755964b2e0c3da::t_0c9bf5fbc1ca84 46,48-49,51
+  s_755964b2e0c3da::t_4deb5800eb2451 1-45,47,50,52-78
+src/components/account/drawer-views/location-view.tsx
+  s_755964b2e0c3da::t_9d3e82de592b49 39
+  s_755964b2e0c3da::t_2f60a8ee7afc4c 1-2,8-11,14-22,26-38,40-46,49-55,59-63,68-70
+src/components/account/account-sections.ts
+  s_755964b2e0c3da::t_1294357b768d9b 1-18
+src/components/account/account-menu.test.tsx
+  s_755964b2e0c3da::t_d83686c4f86b9d 66-75
+  s_755964b2e0c3da::t_9447f8bbba118b 1-26,30-65,76-104,107-133
+  s_755964b2e0c3da::t_3372e4686b8a96 27-29
+  s_755964b2e0c3da::t_bee4177d523a71 105-106
+src/lib/account-errors.ts
+  s_755964b2e0c3da::t_2a1d12cdfb6384 1-34
+src/lib/account-export.test.ts
+  s_755964b2e0c3da::t_af0d1185c36d94 1-162
+  s_755964b2e0c3da::t_bb34e33d354f3c 163-164
+src/routes/_authenticated/_app/account.tsx
+  s_755964b2e0c3da::t_156c15c3fff027 264,267-308
+  s_755964b2e0c3da::t_7916931257275b 326-333
+  s_755964b2e0c3da::t_d08825dc9edc85 229-239,241
+  s_755964b2e0c3da::t_fe300f280135a2 26
+  s_755964b2e0c3da::t_f779c30017ce05 42-44
+  s_755964b2e0c3da::t_ace2c8e51efca5 91-92,95-99,101-104,109-113,115-119,123-142
+  s_755964b2e0c3da::t_1784879a64fc06 7,10,15-18
+  s_755964b2e0c3da::t_1e92656fd35b1e 27,45,143-145,203,240,243,256-257,309-325,334-337
+src/components/onboarding/steps/location-step.tsx
+  s_755964b2e0c3da::t_8690c71a0a10d1 6,23,28-31,33,35-37,40-70,74-75,86,100,102-103,109-110,118,120
+src/components/account/drawer-views/security-view.tsx
+  s_755964b2e0c3da::t_36cdf55c7133f5 12-15,35-40,47-48,75-76,93-162,164-170
+  s_755964b2e0c3da::t_419454bd29b35b 163
+src/lib/default-hub.ts
+  s_755964b2e0c3da::t_915f51e6c908aa 72-86
+  s_755964b2e0c3da::t_af9c68a9bd091d 30-32,36-58,62,64-67
+  s_755964b2e0c3da::t_adc42f0eb047b3 71
+src/hooks/use-min-width.ts
+  s_755964b2e0c3da::t_146518f9bf71de 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "65cb21eabb9c2427955b578dd87ebbf55931b3d4",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
