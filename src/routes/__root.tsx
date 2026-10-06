@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -14,6 +16,7 @@ import { ThemeProvider } from "@/components/layout/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorState } from "@/components/ui/error-state";
 import { captureClientException } from "@/lib/sentry-client";
+import { capturePageview } from "@/lib/posthog-client";
 
 function NotFoundComponent() {
   return (
@@ -46,6 +49,16 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   );
 }
 
+// Captures an SPA pageview on every route change, including the initial
+// load, so PostHog sees the same navigation the member does.
+function PostHogPageviews() {
+  const location = useRouterState({ select: (s) => s.location });
+  useEffect(() => {
+    capturePageview(window.location.href);
+  }, [location.href]);
+  return null;
+}
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
@@ -64,7 +77,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Mila composes your daily look around your colour season, your silhouette, and the weather outside.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "twitter:card", content: "summary" },
     ],
     links: [
       {
@@ -109,6 +122,7 @@ function RootComponent() {
       <ThemeProvider>
         <AuthProvider>
           <Outlet />
+          <PostHogPageviews />
           <Toaster />
         </AuthProvider>
       </ThemeProvider>
