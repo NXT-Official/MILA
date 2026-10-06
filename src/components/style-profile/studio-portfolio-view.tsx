@@ -8,6 +8,15 @@ import {
   FACE_FULL_TO_SHORT,
 } from "@/constants/style-profile";
 import { DisruptiveToneCard } from "@/components/style-profile/shared";
+import {
+  denimShade,
+  fabricFeel,
+  mostVivid,
+  toneRole,
+} from "@/components/style-profile/dossier-display";
+
+/** Topstitching on every denim swatch. */
+const DENIM_THREAD = "oklch(0.75 0.15 65)";
 
 export function StudioPortfolioView({
   profile,
@@ -22,15 +31,16 @@ export function StudioPortfolioView({
   const [telemetryOpen, setTelemetryOpen] = useState(false);
   const dossierNumber = `${profile.season.slice(0, 2).toUpperCase()}–${faceShort.slice(0, 2).toUpperCase()}`;
   const primaryBlocks = profile.primarySwatches.slice(0, 4);
-  const accentBlocks = (
-    profile.accentSwatches && profile.accentSwatches.length > 0
-      ? profile.accentSwatches
-      : profile.secondarySwatches
-  ).slice(0, 2);
+  // Accents are the boldest colours in the read's own secondary palette.
+  // `accentSwatches` is never filled by a read — it only ever holds a stock
+  // set — so showing it would put another season's colours on this dossier.
+  const accentBlocks = mostVivid(profile.secondarySwatches, 2);
   const accentCopy = [
     "Apply near the face via luxury knitwear, silks, or lapel accents.",
     "Perfect for hardware choices, soft evening tailoring, and foundational silk linings.",
   ];
+  const fabrics = profile.fabrication.slice(0, 4);
+  const denimWashes = profile.denimRegistry.slice(0, 3);
   const omitTones = profile.avoidColors.slice(0, 3).map((line) => {
     const [name] = line.split(/[—(]/);
     return name.trim();
@@ -115,10 +125,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
               >
                 {primaryBlocks.map((block, i) => {
                   const ink = readableInk(block.hex);
-                  const role =
-                    ["Base Silhouette", "Contrast Highlight", "Soft Structure", "Midnight Anchor"][
-                      i
-                    ] ?? "Signature Tone";
+                  const role = toneRole(block.hex);
                   return (
                     <div
                       key={`${block.hex}-${i}`}
@@ -215,11 +222,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
         <PaletteCard
           title={profile.subSeason}
           fullPalette={profile.fullPalette}
-          swatches={[
-            ...profile.primarySwatches,
-            ...profile.secondarySwatches,
-            ...(profile.accentSwatches ?? []),
-          ]}
+          swatches={[...profile.primarySwatches, ...profile.secondarySwatches]}
         />
       </SectionBlock>
 
@@ -252,114 +255,82 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
         </div>
       </div>
 
-      <div className="space-y-4 px-9 pt-8 border-t border-porcelain/30">
-        <div className="flex justify-between items-end mb-4">
-          <h3 className="atelier-section-label">Textile Drape & Weight</h3>
-          <span className="text-micro text-stone uppercase tracking-widest">
-            Recommended Core Materials
-          </span>
-        </div>
+      {fabrics.length > 0 && (
+        <div className="space-y-4 px-9 pt-8 border-t border-porcelain/30">
+          <div className="flex justify-between items-end mb-4">
+            <h3 className="atelier-section-label">Textile Drape & Weight</h3>
+            <span className="text-micro text-stone uppercase tracking-widest">
+              Recommended Core Materials
+            </span>
+          </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            {
-              material: profile.fabrication[0] ?? "Heavy Silk",
-              drape: "Fluid & Luminous",
-              color: "bg-card",
-              border: "border-border",
-            },
-            {
-              material: profile.fabrication[1] ?? "Crisp Linen",
-              drape: "Structured & Matte",
-              color: "bg-card",
-              border: "border-border",
-            },
-            {
-              material: profile.fabrication[2] ?? "Worsted Wool",
-              drape: "Tailored & Dense",
-              color: "bg-card",
-              border: "border-border",
-            },
-            {
-              material: profile.fabrication[3] ?? "Cashmere Blend",
-              drape: "Soft & Haloed",
-              color: "bg-card",
-              border: "border-border",
-            },
-          ].map((fabric, idx) => (
-            <div
-              key={idx}
-              className={`relative p-5 rounded-2xl border ${fabric.border} ${fabric.color} shadow-atelier-soft h-32 flex flex-col justify-end group transition-all duration-300 hover:shadow-md`}
-            >
-              <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent rounded-2xl pointer-events-none" />
-              <div className="relative z-10">
-                <h4 className="font-serif text-lg leading-tight text-ink">{fabric.material}</h4>
-                <span className="text-nano uppercase tracking-label-tight block mt-1 text-stone">
-                  {fabric.drape}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-4 px-9 py-8">
-        <p className="text-micro uppercase tracking-label-xwide text-accent">
-          Recommended Textiles · Denim
-        </p>
-        <h3 className="atelier-section-label">The Denim Archive</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            {
-              wash: profile.denimRegistry[0] ?? "Raw Indigo",
-              finish: "Untreated, crisp finish",
-              swatch: "oklch(0.25 0.05 250)",
-              thread: "oklch(0.75 0.15 65)",
-            },
-            {
-              wash: profile.denimRegistry[1] ?? "Vintage Mid-Wash",
-              finish: "Softened, natural fade",
-              swatch: "oklch(0.55 0.08 245)",
-              thread: "oklch(0.60 0.05 250)",
-            },
-            {
-              wash: profile.denimRegistry[2] ?? "Bone Ecru",
-              finish: "Unbleached natural cotton",
-              swatch: "oklch(0.92 0.02 95)",
-              thread: "oklch(0.85 0.03 90)",
-            },
-          ].map((denim, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-4 p-3 rounded-2xl bg-surface dark:bg-card border border-stone/10 shadow-atelier-soft"
-            >
-              <div
-                className="size-16 rounded-full shrink-0 relative overflow-hidden shadow-inner border border-stone/10"
-                style={{ backgroundColor: denim.swatch }}
-              >
+          <div className={`grid grid-cols-2 ${mdCols(fabrics.length, 4)} gap-3`}>
+            {fabrics.map((material, idx) => {
+              const feel = fabricFeel(material);
+              return (
                 <div
-                  className="absolute left-3 top-0 bottom-0 w-px border-l border-dashed opacity-60"
-                  style={{ borderColor: denim.thread }}
-                />
-                <div
-                  className="absolute left-4 top-0 bottom-0 w-px border-l border-dashed opacity-60"
-                  style={{ borderColor: denim.thread }}
-                />
-              </div>
-              <div>
-                <h4 className="font-serif text-base text-ink">{denim.wash}</h4>
-                <p className="text-micro uppercase tracking-widest text-stone mt-1">
-                  {denim.finish}
-                </p>
-              </div>
-            </div>
-          ))}
+                  key={`${material}-${idx}`}
+                  className="relative p-5 rounded-2xl border border-border bg-card shadow-atelier-soft h-32 flex flex-col justify-end group transition-all duration-300 hover:shadow-md"
+                >
+                  <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent rounded-2xl pointer-events-none" />
+                  <div className="relative z-10">
+                    <h4 className="font-serif text-lg leading-tight text-ink">{material}</h4>
+                    {feel && (
+                      <span className="text-nano uppercase tracking-label-tight block mt-1 text-stone">
+                        {feel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {denimWashes.length > 0 && (
+        <div className="space-y-4 px-9 py-8">
+          <p className="text-micro uppercase tracking-label-xwide text-accent">
+            Recommended Textiles · Denim
+          </p>
+          <h3 className="atelier-section-label">The Denim Archive</h3>
+
+          <div className={`grid grid-cols-1 ${mdCols(denimWashes.length, 3)} gap-4`}>
+            {denimWashes.map((wash, idx) => {
+              const shade = denimShade(wash);
+              return (
+                <div
+                  key={`${wash}-${idx}`}
+                  className="flex items-center gap-4 p-3 rounded-2xl bg-surface dark:bg-card border border-stone/10 shadow-atelier-soft"
+                >
+                  <div
+                    className="size-16 rounded-full shrink-0 relative overflow-hidden shadow-inner border border-stone/10"
+                    style={{ backgroundColor: shade.swatch }}
+                  >
+                    <div
+                      className="absolute left-3 top-0 bottom-0 w-px border-l border-dashed opacity-60"
+                      style={{ borderColor: DENIM_THREAD }}
+                    />
+                    <div
+                      className="absolute left-4 top-0 bottom-0 w-px border-l border-dashed opacity-60"
+                      style={{ borderColor: DENIM_THREAD }}
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-serif text-base text-ink">{wash}</h4>
+                    <p className="text-micro uppercase tracking-widest text-stone mt-1">
+                      {shade.finish}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <SectionBlock
-        numeral="V"
+        numeral="II"
         title="Colors to Avoid"
         accent="destructive"
         info="Tones that compete with your natural coloring, which can make your complexion look tired, shadowed, or washed out under standard lighting."
@@ -405,7 +376,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
 
       <section className="px-6 sm:px-10 py-8 border-t-[0.5px] border-border">
         <p className="text-nano uppercase tracking-label-xwide text-accent">
-          VI · Analyst's Personal Critique
+          III · Analyst's Personal Critique
         </p>
         <div className="mt-4 ml-2 sm:ml-6 border-[0.5px] border-border bg-accent-soft border-l-[3px] border-l-accent px-6 py-6">
           <blockquote className="font-serif text-base sm:text-lg italic leading-relaxed text-foreground">
@@ -550,6 +521,12 @@ function PaletteCard({
       </p>
     </div>
   );
+}
+
+/** A literal `md:grid-cols-*` class (so Tailwind sees it) for `count` cards, capped at `max`. */
+function mdCols(count: number, max: number): string {
+  const cols = ["md:grid-cols-1", "md:grid-cols-2", "md:grid-cols-3", "md:grid-cols-4"];
+  return cols[Math.min(Math.max(count, 1), max) - 1];
 }
 
 function readableInk(hex: string): "#ffffff" | "#0a0a0a" {

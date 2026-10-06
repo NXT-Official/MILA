@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { BEAUTY_PREFERENCE_TAGS, type MatrixOption } from "@/constants/style-profile";
+import { avoidSwatchHex } from "@/components/style-profile/dossier-display";
 
 export function SyncBadge({ status }: { status: "idle" | "syncing" | "synced" | "error" }) {
   const label =
@@ -67,37 +68,14 @@ export function PillRow({
   );
 }
 
-const DISRUPTIVE_TONE_HEX: Record<string, string> = {
-  "High-Contrast Black": "#0B0B0F",
-  "Bleached White": "#F4F4F0",
-  "Vivid Primaries": "#D72638",
-  "Harsh Chartreuse": "#B6C24A",
-  "Warm Orange": "#D97A3A",
-  "Heavy Rust": "#7A3A24",
-  Mustard: "#C9A227",
-  Magenta: "#B23A7A",
-  "Pure Black": "#0B0B0F",
-  Black: "#0B0B0F",
-  "Pure White": "#F4F4F0",
-};
-
-function hexForTone(name: string): string {
-  if (DISRUPTIVE_TONE_HEX[name]) return DISRUPTIVE_TONE_HEX[name];
-  const lower = name.toLowerCase();
-  for (const [k, v] of Object.entries(DISRUPTIVE_TONE_HEX)) {
-    if (lower.includes(k.toLowerCase())) return v;
-  }
-  return "#8A6F6F";
-}
-
 export function DisruptiveToneCard({ name, height = 56 }: { name: string; height?: number }) {
-  const hex = hexForTone(name);
+  const hex = avoidSwatchHex(name);
   return (
     <div
       className="w-full rounded-xl overflow-hidden flex items-stretch border border-destructive/20 bg-destructive/10"
       style={{ minHeight: height }}
     >
-      <div className="w-1/4 shrink-0" style={{ backgroundColor: hex }} />
+      {hex && <div className="w-1/4 shrink-0" style={{ backgroundColor: hex }} />}
       <div className="flex-1 flex items-center justify-between gap-3 px-4 py-3">
         <span className="text-label uppercase tracking-label-wide text-foreground font-medium leading-tight">
           {name}

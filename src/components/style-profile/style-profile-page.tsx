@@ -38,6 +38,7 @@ import { StyleAnalysisNudge } from "@/components/style-profile/style-analysis-nu
 import { VisualDiagnosticViewfinder } from "@/components/style-profile/visual-diagnostic-viewfinder";
 import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio-view";
 import { studioToDossier, normalizeStoredProfile } from "@/lib/style-profile/studio-dossier";
+import { memberBodyType, withChosenBodyType } from "@/components/style-profile/member-body-type";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteMyProfilePhoto } from "@/lib/profile-photo.functions";
 import { Trash2 } from "lucide-react";
@@ -105,7 +106,7 @@ export function StyleProfile() {
               data.skin_undertone ??
               "",
             color_season: readString(json.season) ?? data.color_season ?? "",
-            body_type: readString(json.bodyType) ?? data.body_type ?? "",
+            body_type: memberBodyType(data.body_type, json.bodyType) ?? "",
             selected_aesthetic: readString(json.selectedAesthetic) ?? "",
           });
           const topFace = data.face_shape;
@@ -165,7 +166,7 @@ export function StyleProfile() {
               readString(json.calculatedUndertone) ??
               data.skin_undertone,
             color_season: persistedSeason,
-            body_type: (json?.bodyType ?? data.body_type) || null,
+            body_type: memberBodyType(data.body_type, json.bodyType),
             face_shape: resolvedFace,
             hair_type: resolvedHair,
             beauty_preferences: Array.isArray(bp)
@@ -312,7 +313,12 @@ export function StyleProfile() {
   async function handleStudioComplete(p: StudioColorProfile, t?: StudioTelemetry) {
     if (!user) return;
     localStudioUpdateRef.current = true;
-    const next = studioToDossier(p, hasRealDossier ? dossier : undefined);
+    // A new read guesses a silhouette from a face-only selfie; it never
+    // replaces the one the member picked.
+    const next = withChosenBodyType(
+      studioToDossier(p, hasRealDossier ? dossier : undefined),
+      form.body_type,
+    );
     const undertone = (["Spring", "Autumn"] as string[]).includes(next.season) ? "Warm" : "Cool";
 
     setDiagOpen(false);

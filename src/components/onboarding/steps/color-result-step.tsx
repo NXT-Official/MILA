@@ -8,7 +8,6 @@ import {
   type StudioTelemetry,
 } from "@/constants/style-profile";
 import { studioToDossier } from "@/lib/style-profile/studio-dossier";
-import { ColorDossierSection } from "@/components/studio/style-profile";
 import { StudioPortfolioView } from "@/components/style-profile/studio-portfolio-view";
 import { StepFooter } from "@/components/onboarding/step-shell";
 import { useUpdateStyleProfile } from "@/lib/queries/profile-mutations";
@@ -75,9 +74,6 @@ export function ColorResultStep({
         This is what Mila will use to color your recommendations — palette, undertone, and the
         colors to soften or avoid.
       </p>
-      <div className="mt-6">
-        <ColorDossierSection colorSeason={dossier.season} />
-      </div>
       <div className="mt-6">
         <StudioPortfolioView profile={dossier} isDemo={false} telemetry={telemetry ?? null} />
       </div>
