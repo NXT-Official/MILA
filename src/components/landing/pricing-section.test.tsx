@@ -8,6 +8,7 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AuthContext } from "@/hooks/use-auth";
 import type { PricingContent } from "@/lib/landing-content";
 import { LANDING_FALLBACK } from "@/lib/landing-content.fallback";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
@@ -49,13 +50,23 @@ function clientWith(plans: PublicSubscriptionPlan[]) {
   return client;
 }
 
-/** The section needs a router (useNavigate, Link) and a query client. */
+/** The section needs a router (useNavigate, Link), a query client and the auth context. */
 async function renderPricing(client: QueryClient, content: PricingContent) {
   const rootRoute = createRootRoute({
     component: () => (
-      <QueryClientProvider client={client}>
-        <PricingSection content={content} />
-      </QueryClientProvider>
+      <AuthContext.Provider
+        value={{
+          user: null,
+          session: null,
+          loading: false,
+          signingOut: false,
+          signOut: async () => {},
+        }}
+      >
+        <QueryClientProvider client={client}>
+          <PricingSection content={content} />
+        </QueryClientProvider>
+      </AuthContext.Provider>
     ),
   });
   const router = createRouter({
@@ -191,5 +202,66 @@ describe("PricingSection without plans", () => {
     expect(out).toContain(`>${text("Couldn't load membership plans")}</p>`);
     expect(out).toContain("Try Again");
     expect(prices(out)).toEqual([]);
+  });
+});
+
+describe("PricingSection after the plans request ends in error (MW-12)", () => {
+  /** A client whose plans query has used up its retries on an aborted request. */
+  async function clientAfterRetries(attempts: { count: number }) {
+    const client = new QueryClient({ defaultOptions: { queries: { retryOnMount: false } } });
+    await client.prefetchQuery({
+      queryKey: PLANS_KEY,
+      queryFn: async (): Promise<PublicSubscriptionPlan[]> => {
+        attempts.count += 1;
+        throw new DOMException("The operation was aborted.", "AbortError");
+      },
+      retry: 2,
+      retryDelay: 1,
+    });
+    return client;
+  }
+
+  test("the retries run out and the section still says so and offers a retry", async () => {
+    const attempts = { count: 0 };
+    const client = await clientAfterRetries(attempts);
+    // Guard: the request was tried again before giving up, and the query ended in error.
+    expect(attempts.count).toBe(3);
+    expect(client.getQueryState(PLANS_KEY)?.status).toBe("error");
+
+    const out = await renderPricing(client, EDITED);
+    expect(out).toContain(`>${text(EDITED.heading)}</h2>`);
+    expect(out).toContain(`>${text("Couldn't load membership plans")}</p>`);
+    expect(out).toContain('role="alert"');
+    expect(out).toContain("Try Again");
+    expect(count(out, PLACEHOLDER)).toBe(0);
+    expect(prices(out)).toEqual([]);
+  });
+
+  test("while it is still retrying the section shows placeholders, not a blank", async () => {
+    const client = new QueryClient();
+    void client.prefetchQuery({
+      queryKey: PLANS_KEY,
+      queryFn: () => new Promise<PublicSubscriptionPlan[]>(() => {}),
+    });
+    expect(client.getQueryState(PLANS_KEY)?.fetchStatus).toBe("fetching");
+
+    const out = await renderPricing(client, EDITED);
+    expect(count(out, PLACEHOLDER)).toBe(3);
+  });
+});
+
+describe("PricingSection gives up on a failing plans request in bounded time (MW-12)", () => {
+  test("it adds no retries of its own on top of the Supabase client's", async () => {
+    // Each plans request is already retried with backoff (~7s) inside the Supabase
+    // client. Stacking react-query's default three retries on top kept a visitor
+    // on the placeholders for ~35s before the retry panel appeared (measured on
+    // the live site with the request aborted), longer than a crawler or an
+    // impatient member waits.
+    const client = new QueryClient();
+    await renderPricing(client, EDITED);
+
+    const query = client.getQueryCache().find({ queryKey: PLANS_KEY });
+    expect(query).toBeDefined();
+    expect(query?.options.retry).toBe(false);
   });
 });

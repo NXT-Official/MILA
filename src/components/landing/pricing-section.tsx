@@ -6,6 +6,8 @@ import { PricingCard } from "@/components/pricing/pricing-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadErrorPanel } from "@/components/ui/error-state";
+import { choosePlanPath } from "@/components/landing/choose-plan-path";
+import { useAuth } from "@/hooks/use-auth";
 import { LANDING_FALLBACK } from "@/lib/landing-content.fallback";
 import type { PricingContent } from "@/lib/landing-content";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
@@ -22,7 +24,14 @@ export function PricingSection({
   content?: PricingContent;
 }) {
   const navigate = useNavigate();
-  const { data, isLoading, isError, refetch } = useQuery(publicSubscriptionPlansQueryOptions());
+  const { user } = useAuth();
+  // The Supabase client already retries a failed request with backoff (~7s).
+  // react-query's default three retries on top kept the placeholders up for
+  // ~35s before the retry panel appeared, so this section adds none of its own.
+  const { data, isLoading, isError, refetch } = useQuery({
+    ...publicSubscriptionPlansQueryOptions(),
+    retry: false,
+  });
 
   // Never return null here: /membership renders this section as its only
   // content, and a failed or empty plans query used to leave a blank page
@@ -58,7 +67,7 @@ export function PricingSection({
             <PricingCard
               key={plan.id}
               plan={plan}
-              onChoosePlan={() => navigate({ to: "/login" })}
+              onChoosePlan={() => navigate({ to: choosePlanPath(!!user) })}
             />
           ))}
         </ul>

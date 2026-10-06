@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordVisibilityButton } from "@/components/ui/password-visibility-button";
 import { useCaptcha } from "@/components/login/use-captcha";
+import { signupSuccessMessage } from "@/components/login/signup-outcome";
 import { passwordChecks } from "@/constants/password";
 import { signUpWithPassword } from "@/lib/auth.functions";
 import { errorMessage } from "@/lib/utils";
@@ -88,7 +89,7 @@ export function SignupForm({
         await supabase.auth.setSession(session);
         trackEvent(supabase, session.user.id, "signup_completed");
       }
-      toast.success("Studio profile created. Check your inbox to confirm.");
+      toast.success(signupSuccessMessage(session));
     } catch (err) {
       toast.error(errorMessage(err, "Authentication failed"));
     } finally {

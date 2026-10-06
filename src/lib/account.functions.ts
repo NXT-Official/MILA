@@ -3,7 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
-import { IN_FORCE_SUBSCRIPTION_STATUSES } from "@/constants/subscriptions";
+import {
+  IN_FORCE_SUBSCRIPTION_STATUSES,
+  isStaffGrantedSubscription,
+} from "@/constants/subscriptions";
 import { cancelViaPaddleApi } from "./subscriptions.functions";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
@@ -20,7 +23,25 @@ export type DeleteAccountDeps = {
   notifyAccountDeleted: (input: { email: string; name: string | null }) => Promise<unknown>;
 };
 
+/**
+ * Never throws: whatever goes wrong comes back as a `{ error }` the member can
+ * read, never as the raw message of a missing key or a failed query.
+ */
 export async function deleteAccountForUser(
+  db: MilaSupabaseClient,
+  userId: string,
+  typedEmail: string,
+  deps: DeleteAccountDeps,
+): Promise<DeleteAccountResult> {
+  try {
+    return await deleteAccount(db, userId, typedEmail, deps);
+  } catch (cause) {
+    console.error("[deleteMyAccount] delete failed", cause);
+    return { error: "We couldn't delete your account just now. Please try again." };
+  }
+}
+
+async function deleteAccount(
   db: MilaSupabaseClient,
   userId: string,
   typedEmail: string,
@@ -32,7 +53,7 @@ export async function deleteAccountForUser(
   }
   const name = await deps.getProfileName(userId).catch(() => null);
 
-  const { data: subscription } = await db
+  const { data: subscription, error: lookupError } = await db
     .from("subscriptions")
     .select("paddle_subscription_id")
     .eq("user_id", userId)
@@ -40,9 +61,18 @@ export async function deleteAccountForUser(
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  // An unreadable membership is not "no membership": deleting on that guess
+  // could leave a paid plan billing against an account that no longer exists.
+  if (lookupError) throw lookupError;
 
-  if (subscription) {
-    const canceled = await deps.cancelSubscription(subscription.paddle_subscription_id);
+  // A plan staff granted has no Paddle subscription behind it; nothing to stop.
+  if (subscription && !isStaffGrantedSubscription(subscription.paddle_subscription_id)) {
+    const canceled = await deps
+      .cancelSubscription(subscription.paddle_subscription_id)
+      .catch((cause) => {
+        console.error("[deleteMyAccount] billing cancel threw", cause);
+        return false;
+      });
     if (!canceled) {
       return {
         error: "We couldn't stop your billing just now, so nothing was deleted. Please try again.",

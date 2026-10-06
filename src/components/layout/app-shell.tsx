@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
+import { saveLensAnalysis } from "@/components/layout/save-lens-analysis";
 import { StudioCameraDrawer } from "@/components/dashboard/studio-camera-drawer";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 import { ConciergeContext, type ConciergeLook } from "@/hooks/use-concierge";
@@ -83,24 +84,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         },
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user.id) });
-      const { data: savedLook } = await supabase
-        .from("outfits")
-        .insert({
-          user_id: user.id,
-          image_url: publicUrl,
-          analysis_result: result,
-          match_score: result.overall_score,
-        })
-        .select("id")
-        .single();
+      const savedLook = await saveLensAnalysis(supabase, {
+        user_id: user.id,
+        image_url: publicUrl,
+        analysis_result: result,
+        match_score: result.overall_score,
+      });
+      if (!savedLook) {
+        toast.error("We couldn't save this analysis to your history. Please try again.", {
+          id: toastId,
+        });
+        return;
+      }
       toast.success("Analysis saved to your history.", {
         id: toastId,
-        action: savedLook
-          ? {
-              label: "Go to History",
-              onClick: () => navigate({ to: "/history", search: { look: savedLook.id } }),
-            }
-          : undefined,
+        action: {
+          label: "Go to History",
+          onClick: () => navigate({ to: "/history", search: { look: savedLook.id } }),
+        },
       });
     } catch (e) {
       if (isInsufficientCreditsError(e)) {
