@@ -24,6 +24,7 @@ import { isInsufficientCreditsError } from "@/lib/credits";
 import { queryKeys } from "@/constants/query-keys";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { prepareImageForUpload } from "@/lib/prepare-image-for-upload";
 
 type StudioCameraMode = "look-analysis" | "dupe-hunter";
 
@@ -96,23 +97,23 @@ export function StudioCameraDrawer({
     setDupeLoading(false);
   }
 
-  async function runDupeHunt(file: File) {
+  async function runDupeHunt(picked: File) {
     if (!userId) {
       toast.error("Sign in to use the Dupe Hunter.");
       return;
     }
     setDupeResult(null);
     setDupeLoading(true);
-    if (inspirationPreviewRef.current) URL.revokeObjectURL(inspirationPreviewRef.current);
-    const localPreview = URL.createObjectURL(file);
-    inspirationPreviewRef.current = localPreview;
-    setInspirationPreview(localPreview);
     try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+      const file = await prepareImageForUpload(picked);
+      if (inspirationPreviewRef.current) URL.revokeObjectURL(inspirationPreviewRef.current);
+      const localPreview = URL.createObjectURL(file);
+      inspirationPreviewRef.current = localPreview;
+      setInspirationPreview(localPreview);
+      const path = `${userId}/${crypto.randomUUID()}.jpg`;
       const { error: upErr } = await supabase.storage
         .from("outfits")
-        .upload(path, file, { contentType: file.type || "image/jpeg" });
+        .upload(path, file, { contentType: file.type });
       if (upErr) throw upErr;
       const {
         data: { publicUrl },
@@ -335,7 +336,7 @@ export function StudioCameraDrawer({
                 <input
                   ref={dupeFileRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];

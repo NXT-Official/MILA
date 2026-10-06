@@ -11,6 +11,7 @@ import {
 } from "@/lib/profile-photo.functions";
 import { queryKeys } from "@/constants/query-keys";
 import { errorMessage } from "@/lib/utils";
+import { prepareImageForUpload } from "@/lib/prepare-image-for-upload";
 
 function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -50,10 +51,11 @@ export function SelfiePhotoWidget({
     staleTime: 60_000,
   });
 
-  async function persist(dataUri: string) {
+  async function persist(file: File) {
     setSaving(true);
     try {
-      await savePhoto({ data: { imageDataUri: dataUri } });
+      const prepared = await prepareImageForUpload(file);
+      await savePhoto({ data: { imageDataUri: await fileToDataUri(prepared) } });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.profile(userId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.profilePhotoUrl(userId) }),
@@ -75,7 +77,7 @@ export function SelfiePhotoWidget({
         queryClient.invalidateQueries({ queryKey: queryKeys.profile(userId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.profilePhotoUrl(userId) }),
       ]);
-      toast.success("Selfie removed — looks will use a generic model instead.");
+      toast.success("Selfie removed. Add a new one to see yourself in your looks.");
     } catch (err) {
       toast.error(errorMessage(err, "Couldn't remove that photo. Please try again."));
     } finally {
@@ -147,23 +149,19 @@ export function SelfiePhotoWidget({
         title="Take a selfie"
         subtitle="Face the camera in even light. This photo is used only for your looks."
         analyzing={saving}
-        onCapture={async (file) => persist(await fileToDataUri(file))}
+        onCapture={(file) => persist(file)}
         onPickGallery={() => fileRef.current?.click()}
       />
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
         className="hidden"
         onChange={async (e) => {
           const file = e.target.files?.[0];
           e.target.value = "";
           if (!file) return;
-          if (!file.type.startsWith("image/")) {
-            toast.error("Please choose an image file.");
-            return;
-          }
-          await persist(await fileToDataUri(file));
+          await persist(file);
         }}
       />
       <div className="flex items-center justify-center gap-1 text-micro text-muted-foreground">

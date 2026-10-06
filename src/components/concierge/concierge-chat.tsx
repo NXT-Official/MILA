@@ -24,6 +24,7 @@ import { queryKeys } from "@/constants/query-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn, errorMessage } from "@/lib/utils";
+import { prepareImageForUpload } from "@/lib/prepare-image-for-upload";
 import type { Msg } from "@/components/concierge/types";
 import { LookThumbnail } from "@/components/concierge/look-thumbnail";
 import { MessageBubble } from "@/components/concierge/message-bubble";
@@ -490,17 +491,18 @@ export function ConciergeChat({
             <input
               ref={attachRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
               className="hidden"
-              onChange={(e) => {
+              onChange={async (e) => {
                 const f = e.target.files?.[0];
                 e.target.value = "";
                 if (!f) return;
-                if (!f.type.startsWith("image/")) {
-                  toast.error("Images only, please.");
-                  return;
+                try {
+                  const prepared = await prepareImageForUpload(f);
+                  setAttachment({ file: prepared, preview: URL.createObjectURL(prepared) });
+                } catch (err) {
+                  toast.error(errorMessage(err, "Couldn't attach that photo. Please try again."));
                 }
-                setAttachment({ file: f, preview: URL.createObjectURL(f) });
               }}
             />
             <Button
