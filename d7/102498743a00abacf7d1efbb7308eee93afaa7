@@ -1,0 +1,37 @@
+src/lib/ai.server.ts
+  s_755964b2e0c3da::t_8febdc5426def6 102-109,113-122,125-127,129-136
+src/lib/ai.server.test.ts
+  s_755964b2e0c3da::t_2a2e42bf3a9dab 153-189
+src/server/services/personal-color-analysis.test.ts
+  s_755964b2e0c3da::t_d893ef79c362d5 249,302,304,308,312,314,321-341,345,350-353,357-361
+  s_755964b2e0c3da::t_47a9b3946904b2 87-88
+  s_755964b2e0c3da::t_399f689841ef48 112,120-123
+  s_755964b2e0c3da::t_931d85d43eb65e 342-344,346-349,354-356
+  s_755964b2e0c3da::t_ab2a04911b6a6f 238-248
+  s_755964b2e0c3da::t_a49b5cd74d16b5 46-48
+  s_755964b2e0c3da::t_4620ca6c6f79b6 124,362
+src/server/services/personal-color-analysis.ts
+  s_755964b2e0c3da::t_edec5c8720e064 489
+  s_755964b2e0c3da::t_4ec04468834694 469
+  s_755964b2e0c3da::t_ad58680c7de8e5 121-122
+  s_755964b2e0c3da::t_276904ac5ed8e3 440-442,446
+  s_755964b2e0c3da::t_6ec0b94ce8bce8 88-95,100
+  s_755964b2e0c3da::t_7461ea55887984 732
+  s_755964b2e0c3da::t_d25009c01791ec 282-285,299-304,306
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d7102498743a00abacf7d1efbb7308eee93afaa7",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
