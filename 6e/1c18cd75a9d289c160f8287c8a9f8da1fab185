@@ -1,0 +1,36 @@
+src/lib/credits.server.test.ts
+  s_755964b2e0c3da::t_112c46d2bb2205 4,9-10,12
+  s_755964b2e0c3da::t_06db22b7e42b2e 5
+  s_755964b2e0c3da::t_a2d9996a4d8ae4 266-604
+  s_755964b2e0c3da::t_b2ed943ce148aa 605
+tests/helpers/memory-credit-store.ts
+  s_755964b2e0c3da::t_9f89a24df43758 1-15,19-23,27-28,36-53,91-154
+  s_755964b2e0c3da::t_34d8ec475ea304 155
+src/lib/credits.server.ts
+  s_755964b2e0c3da::t_7b33aa88b0dc33 381-383,386-388
+  s_755964b2e0c3da::t_98c32a161f0eac 261-318,325
+  s_755964b2e0c3da::t_63cf6c06bbc9e2 115-250,255-258
+  s_755964b2e0c3da::t_9d1e2844efc3ec 344-345
+scripts/verify-tracked-ai-credits-races.sh
+  s_755964b2e0c3da::t_b22b0cd668660b 1-142
+supabase/migrations/20261007170000_tracked_ai_credit_refunds.sql
+  s_755964b2e0c3da::t_fdf3b10fab2604 1-377
+scripts/verify-tracked-ai-credits.sql
+  s_755964b2e0c3da::t_91c3a95d87df79 1-358
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6e1c18cd75a9d289c160f8287c8a9f8da1fab185",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
