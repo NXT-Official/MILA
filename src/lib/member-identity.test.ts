@@ -10,21 +10,21 @@ describe("memberIdentity", () => {
   });
 
   test("with no name set, the username stands in as the display name", () => {
-    expect(memberIdentity({ fullName: "", username: "milaqa_1006" })).toEqual({
-      displayName: "milaqa_1006",
-      handle: "milaqa_1006",
+    expect(memberIdentity({ fullName: "", username: "stylist_demo" })).toEqual({
+      displayName: "stylist_demo",
+      handle: "stylist_demo",
     });
   });
 
   test("a name that is only whitespace counts as no name", () => {
-    expect(memberIdentity({ fullName: "   ", username: "milaqa_1006" }).displayName).toBe(
-      "milaqa_1006",
+    expect(memberIdentity({ fullName: "   ", username: "stylist_demo" }).displayName).toBe(
+      "stylist_demo",
     );
   });
 
   test("a null name falls back to the username", () => {
-    expect(memberIdentity({ fullName: null, username: "milaqa_1006" }).displayName).toBe(
-      "milaqa_1006",
+    expect(memberIdentity({ fullName: null, username: "stylist_demo" }).displayName).toBe(
+      "stylist_demo",
     );
   });
 

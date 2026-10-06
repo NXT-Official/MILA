@@ -26,8 +26,8 @@ type View = Parameters<typeof MembershipView>[0];
 async function renderView(overrides: Partial<View>) {
   const props: View = {
     user: {
-      fullName: "milaqa_1006",
-      username: "milaqa_1006",
+      fullName: "stylist_demo",
+      username: "stylist_demo",
       season: null,
       faceShape: null,
       hairType: null,
@@ -53,7 +53,7 @@ async function renderView(overrides: Partial<View>) {
 describe("MembershipView identity", () => {
   test("shows the handle it is given", async () => {
     const out = await renderView({});
-    expect(out).toContain("@milaqa_1006");
+    expect(out).toContain("@stylist_demo");
   });
 
   test("a member with no username gets no handle line, not '@null'", async () => {
