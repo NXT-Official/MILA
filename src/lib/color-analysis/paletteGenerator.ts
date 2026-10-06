@@ -95,12 +95,17 @@ const CURATED_MIXES: readonly CuratedMix[] = [
  * The stored season is free text — a sub-season name ("Soft Autumn"), a full
  * profile label ("Winter Deep / Dark Winter"), an id ("cool_summer") or a bare
  * family ("Spring") — so match on the family word wherever it sits.
+ *
+ * No lookbehind: Safari before 16.4 can't parse one, and a SyntaxError would
+ * take the whole dashboard chunk down. The leading group consumes the
+ * character before the word, which shifts a match's position by one but can't
+ * reorder two families, so "the family named first wins" still holds.
  */
 const FAMILY_WORDS: ReadonlyArray<{ pattern: RegExp; family: SeasonFamily }> = [
-  { pattern: /(?<![a-z])spring(?![a-z])/i, family: "Spring" },
-  { pattern: /(?<![a-z])summer(?![a-z])/i, family: "Summer" },
-  { pattern: /(?<![a-z])(?:autumn|fall)(?![a-z])/i, family: "Autumn" },
-  { pattern: /(?<![a-z])winter(?![a-z])/i, family: "Winter" },
+  { pattern: /(?:^|[^a-z])spring(?![a-z])/i, family: "Spring" },
+  { pattern: /(?:^|[^a-z])summer(?![a-z])/i, family: "Summer" },
+  { pattern: /(?:^|[^a-z])(?:autumn|fall)(?![a-z])/i, family: "Autumn" },
+  { pattern: /(?:^|[^a-z])winter(?![a-z])/i, family: "Winter" },
 ];
 
 function seasonFamilyOf(season: string | null | undefined): SeasonFamily | null {

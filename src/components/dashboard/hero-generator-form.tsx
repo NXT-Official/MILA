@@ -9,7 +9,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ClimateState } from "@/constants/climate";
-import { STYLE_SHEET_BUSY_REASON } from "@/components/dashboard/style-sheet-run";
+import { isUnavailableClimate } from "@/components/dashboard/climate-fetch";
+import {
+  PHOTO_PREVIEW_BUSY_REASON,
+  STYLE_SHEET_BUSY_REASON,
+} from "@/components/dashboard/style-sheet-run";
 
 const VIBES = [
   "Everyday Casual",
@@ -39,6 +43,7 @@ export function HeroGeneratorForm({
   climate,
   generating,
   styleSheetLoading,
+  photoPreviewLoading,
   profileComplete,
   blockedReason,
   onGenerate,
@@ -54,13 +59,20 @@ export function HeroGeneratorForm({
   climate: ClimateState | null;
   generating: boolean;
   styleSheetLoading: boolean;
+  photoPreviewLoading: boolean;
   profileComplete: boolean;
   blockedReason: string | null;
   onGenerate: () => void;
 }) {
-  // A new look must wait for the style sheet still drawing, or the old
-  // look's sheet would land on the new look's text.
-  const unavailableReason = blockedReason ?? (styleSheetLoading ? STYLE_SHEET_BUSY_REASON : null);
+  // A new look must wait for the style sheet or portrait still drawing, or the
+  // old look's picture would land on the new look's text.
+  const unavailableReason =
+    blockedReason ??
+    (styleSheetLoading
+      ? STYLE_SHEET_BUSY_REASON
+      : photoPreviewLoading
+        ? PHOTO_PREVIEW_BUSY_REASON
+        : null);
 
   return (
     <div className="mt-6 space-y-3">
@@ -155,7 +167,9 @@ export function HeroGeneratorForm({
       <div className="flex flex-wrap items-center gap-3">
         <Button
           onClick={onGenerate}
-          disabled={generating || styleSheetLoading || !profileComplete || !climate}
+          disabled={
+            generating || styleSheetLoading || photoPreviewLoading || !profileComplete || !climate
+          }
           aria-describedby={unavailableReason ? "generate-blocked" : undefined}
           size="pill"
           className="w-full sm:w-auto whitespace-normal text-center leading-snug"
@@ -164,7 +178,7 @@ export function HeroGeneratorForm({
             <>
               <Loader2 className="animate-spin" aria-hidden="true" /> Composing…
             </>
-          ) : climate ? (
+          ) : climate && !isUnavailableClimate(climate) ? (
             <>
               <Wand2 className="text-accent" aria-hidden="true" /> Create my look — {climate.tempC}
               °C {climate.condition}

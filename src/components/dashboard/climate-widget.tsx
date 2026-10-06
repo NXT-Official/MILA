@@ -11,7 +11,11 @@ import { HUBS, type ClimateIcon, type ClimateState } from "@/constants/climate";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchDefaultHubId, localDefaultHubId } from "@/lib/default-hub";
 import { cn } from "@/lib/utils";
-import { fetchClimate, unavailableClimate } from "@/components/dashboard/climate-fetch";
+import {
+  climateOnFailedRead,
+  fetchClimate,
+  unavailableClimate,
+} from "@/components/dashboard/climate-fetch";
 
 function ClimateGlyph({ icon, className }: { icon: ClimateIcon; className?: string }) {
   const cls = className ?? "size-4";
@@ -92,10 +96,15 @@ export function ClimateWidget({
         }
       },
       () => {
-        if (req === seq.current) {
-          setError(true);
-          setLoading(false);
-        }
+        if (req !== seq.current) return;
+        setError(true);
+        setLoading(false);
+        // Pressing the button retired any hub read still on its way, so with
+        // no weather yet nothing else will arrive. Fall back to the hub that
+        // was picked rather than leave Create my look waiting.
+        const hub = HUBS.find((h) => h.id === hubId) ?? HUBS[0];
+        const fallback = climateOnFailedRead(value, hub.city, hub.country);
+        if (fallback) onChange(fallback);
       },
       { timeout: 8000, maximumAge: 5 * 60 * 1000 },
     );

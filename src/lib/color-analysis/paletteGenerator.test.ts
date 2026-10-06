@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { generateDailyPalette, type DailyPalette } from "./paletteGenerator";
 
 const DRAWS = 400;
@@ -107,5 +108,25 @@ describe("generateDailyPalette shuffling", () => {
       expect(field.length).toBeGreaterThan(0);
     }
     expect(p.isSisterSeasonIncluded).toBe(false);
+  });
+});
+
+describe("season matching in older browsers", () => {
+  test("uses no regex lookbehind, which Safari before 16.4 refuses to parse", () => {
+    // A SyntaxError here would take the whole dashboard chunk down with it.
+    const source = readFileSync(new URL("./paletteGenerator.ts", import.meta.url), "utf8");
+    expect(source).not.toMatch(/\(\?<[=!]/);
+  });
+
+  test("a family word only counts as a whole word", () => {
+    for (const season of ["Midsummer", "MIDSUMMER", "Wintergreen", "Springtime", "Offall"]) {
+      const seen = bases(season);
+      expect(seen.size).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  test("the family named first wins when a label names two", () => {
+    for (const base of bases("Autumn / Winter")) expect(SUITED_BASES.Autumn).toContain(base);
+    for (const base of bases("Winter / Autumn")) expect(SUITED_BASES.Winter).toContain(base);
   });
 });

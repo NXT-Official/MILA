@@ -67,4 +67,40 @@ describe("createLatestRun", () => {
     expect(sheetOnScreen).toBe("sheet-for-new-look");
     expect(drawing).toBe(false);
   });
+
+  test("a portrait preview and a style sheet are tracked independently", () => {
+    const sheet = createLatestRun();
+    const portrait = createLatestRun();
+    const sheetRun = sheet.start();
+    const portraitRun = portrait.start();
+
+    // A new sheet must not retire the portrait that is still rendering, and a
+    // new portrait must not retire the sheet.
+    sheet.start();
+    expect(sheet.isCurrent(sheetRun)).toBe(false);
+    expect(portrait.isCurrent(portraitRun)).toBe(true);
+
+    portrait.invalidate();
+    expect(portrait.isCurrent(portraitRun)).toBe(false);
+  });
+
+  test("a late portrait from the old look never lands on the new look", async () => {
+    const runs = createLatestRun();
+    let portraitOnScreen: string | null = null;
+
+    async function render(request: Promise<string>) {
+      const run = runs.start();
+      const portrait = await request;
+      if (!runs.isCurrent(run)) return;
+      portraitOnScreen = portrait;
+    }
+
+    const oldLook = deferred<string>();
+    const oldRender = render(oldLook.promise);
+    // Composing the new look retires whatever portrait is still rendering.
+    runs.invalidate();
+    oldLook.resolve("portrait-for-old-look");
+    await oldRender;
+    expect(portraitOnScreen).toBeNull();
+  });
 });

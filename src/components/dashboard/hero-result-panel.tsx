@@ -23,7 +23,10 @@ import { EmptyMediaState } from "@/components/dashboard/empty-media-state";
 import type { GeneratedLook } from "@/lib/generate-outfit.functions";
 import type { DashboardProfile } from "@/lib/queries/profile";
 import type { Vibe } from "@/components/dashboard/hero-generator-form";
-import { STYLE_SHEET_BUSY_REASON } from "@/components/dashboard/style-sheet-run";
+import {
+  PHOTO_PREVIEW_BUSY_REASON,
+  STYLE_SHEET_BUSY_REASON,
+} from "@/components/dashboard/style-sheet-run";
 
 export function HeroResultPanel({
   generating,
@@ -86,6 +89,14 @@ export function HeroResultPanel({
       </div>
     );
   }
+
+  // A new look must wait for the style sheet or portrait still drawing, or the
+  // old look's picture would land on the new look.
+  const newLookBlockedReason = styleSheetLoading
+    ? STYLE_SHEET_BUSY_REASON
+    : photoPreviewLoading
+      ? PHOTO_PREVIEW_BUSY_REASON
+      : null;
 
   const saveBlockedReason =
     !styleSheetImageDataUri && !look.imageDataUri && !savingLook && !lookSaved
@@ -265,9 +276,9 @@ export function HeroResultPanel({
           <Button
             variant="ghost"
             onClick={onGenerateAnother}
-            disabled={styleSheetLoading}
-            aria-describedby={styleSheetLoading ? "look-actions-blocked" : undefined}
-            title={styleSheetLoading ? STYLE_SHEET_BUSY_REASON : undefined}
+            disabled={newLookBlockedReason !== null}
+            aria-describedby={newLookBlockedReason ? "look-actions-blocked" : undefined}
+            title={newLookBlockedReason ?? undefined}
             size="pill"
           >
             <Sparkles aria-hidden="true" /> Try another look
@@ -288,9 +299,9 @@ export function HeroResultPanel({
             {saveBlockedReason}
           </p>
         )}
-        {styleSheetLoading && (
+        {newLookBlockedReason && (
           <p id="look-actions-blocked" className="mt-3 text-xs text-muted-foreground">
-            {STYLE_SHEET_BUSY_REASON}
+            {newLookBlockedReason}
           </p>
         )}
         <p className="mt-3 text-xs text-muted-foreground">

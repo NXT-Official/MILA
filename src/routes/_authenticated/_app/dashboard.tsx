@@ -67,6 +67,9 @@ const TIMEOUT_MESSAGE = "This is taking longer than expected. Please refresh and
 // keeps running after the member leaves this tab, so a fresh Dashboard mount
 // must still be able to retire a sheet an earlier mount started.
 const styleSheetRun = createLatestRun();
+// Same reasoning for the portrait preview, tracked apart from the sheet so a
+// new sheet never retires a portrait that is still rendering.
+const photoPreviewRun = createLatestRun();
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -163,8 +166,8 @@ function Dashboard() {
   }) {
     const run = styleSheetRun.start();
     setStyleSheetLoading(true);
-    requestNotificationPermission();
     try {
+      requestNotificationPermission();
       const res = await withTimeout(
         generateStyleSheetFn({ data: { outfit: outfitForSheet } }),
         VISUAL_TIMEOUT_MS,
@@ -202,7 +205,7 @@ function Dashboard() {
   }
 
   async function generateLook() {
-    if (generating || styleSheetLoading) return;
+    if (generating || styleSheetLoading || photoPreviewLoading) return;
     if (!user || !profile?.body_type || !profile?.color_season) {
       toast.error("Complete your Style Profile first.");
       return;
@@ -212,9 +215,12 @@ function Dashboard() {
       return;
     }
     setGenerating(true);
-    // Whatever sheet is still in flight belongs to the look being replaced.
+    // Whatever sheet or portrait is still in flight belongs to the look being
+    // replaced.
     styleSheetRun.invalidate();
     setStyleSheetLoading(false);
+    photoPreviewRun.invalidate();
+    setPhotoPreviewLoading(false);
     setLook(null);
     setSavedLook(null);
     setStyleSheetImageDataUri(null);
@@ -287,9 +293,10 @@ function Dashboard() {
 
   async function previewOnMyPhoto() {
     if (!look || photoPreviewLoading || generating) return;
+    const run = photoPreviewRun.start();
     setPhotoPreviewLoading(true);
-    requestNotificationPermission();
     try {
+      requestNotificationPermission();
       const { outfit, hair, makeup, vibe_alignment_score } = look;
       const res = await withTimeout(
         generatePhotoPreviewFn({
@@ -297,6 +304,9 @@ function Dashboard() {
         }),
         VISUAL_TIMEOUT_MS,
       );
+      // A portrait drawn for a look that has since been replaced must not land
+      // on the new look or be saved against its text.
+      if (!photoPreviewRun.isCurrent(run)) return;
       if (res.mode === "photo_edit") {
         setLook((prev) => (prev ? { ...prev, imageDataUri: res.imageDataUri } : prev));
         setSavedLook(null);
@@ -309,6 +319,7 @@ function Dashboard() {
         toast.error(res.reason);
       }
     } catch (e) {
+      if (!photoPreviewRun.isCurrent(run)) return;
       if (e instanceof TimeoutError) {
         toast.error(TIMEOUT_MESSAGE);
       } else if (isStaleBundleError(e)) {
@@ -319,7 +330,7 @@ function Dashboard() {
         toast.error(errorMessage(e, "Couldn't create a photo preview. Please try again."));
       }
     } finally {
-      setPhotoPreviewLoading(false);
+      if (photoPreviewRun.isCurrent(run)) setPhotoPreviewLoading(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
@@ -485,6 +496,7 @@ function Dashboard() {
               climate={climate}
               generating={generating}
               styleSheetLoading={styleSheetLoading}
+              photoPreviewLoading={photoPreviewLoading}
               profileComplete={profileComplete}
               blockedReason={blockedReason}
               onGenerate={generateLook}

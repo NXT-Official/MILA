@@ -51,13 +51,15 @@ export async function fetchClimate(
   }
 }
 
+const UNAVAILABLE_CLIMATE_LABEL = "Weather unavailable — styling for mild conditions";
+
 /**
  * Stand-in for a weather read that failed. The label says so plainly; the
  * numbers are a neutral, mild day so Create my look still works.
  */
 export function unavailableClimate(location: string, country: string): ClimateState {
   return {
-    label: "Weather unavailable — styling for mild conditions",
+    label: UNAVAILABLE_CLIMATE_LABEL,
     location,
     country,
     icon: "cloud",
@@ -65,4 +67,23 @@ export function unavailableClimate(location: string, country: string): ClimateSt
     tempF: 68,
     condition: "Cloudy",
   };
+}
+
+/** True for the stand-in above, so the screen never presents its numbers as a real reading. */
+export function isUnavailableClimate(climate: ClimateState): boolean {
+  return climate.label === UNAVAILABLE_CLIMATE_LABEL;
+}
+
+/**
+ * What to hand the dashboard when a weather read fails: nothing when it already
+ * has a reading (an earlier real one beats a placeholder), otherwise the
+ * stand-in, so Create my look is never left waiting on a forecast that isn't
+ * coming.
+ */
+export function climateOnFailedRead(
+  current: ClimateState | null,
+  location: string,
+  country: string,
+): ClimateState | null {
+  return current ? null : unavailableClimate(location, country);
 }

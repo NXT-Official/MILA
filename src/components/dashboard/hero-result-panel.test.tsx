@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-router";
 import type { GeneratedLook } from "@/lib/generate-outfit.functions";
 import { HeroResultPanel } from "./hero-result-panel";
-import { STYLE_SHEET_BUSY_REASON } from "./style-sheet-run";
+import { PHOTO_PREVIEW_BUSY_REASON, STYLE_SHEET_BUSY_REASON } from "./style-sheet-run";
 
 const LOOK: GeneratedLook = {
   outfit: {
@@ -22,7 +22,7 @@ const LOOK: GeneratedLook = {
   imageDataUri: null,
 };
 
-async function renderPanel(styleSheetLoading: boolean) {
+async function renderPanel(busy: { styleSheetLoading?: boolean; photoPreviewLoading?: boolean }) {
   const rootRoute = createRootRoute({
     component: () => (
       <HeroResultPanel
@@ -31,9 +31,9 @@ async function renderPanel(styleSheetLoading: boolean) {
         vibe="Everyday Casual"
         climate={null}
         profile={{ photo_consent_at: "2026-10-01T00:00:00Z" }}
-        styleSheetLoading={styleSheetLoading}
+        styleSheetLoading={busy.styleSheetLoading ?? false}
         styleSheetImageDataUri={null}
-        photoPreviewLoading={false}
+        photoPreviewLoading={busy.photoPreviewLoading ?? false}
         savingLook={false}
         lookSaved={false}
         savedLook={null}
@@ -66,7 +66,7 @@ function openingTagOfButton(markup: string, label: string) {
 
 describe("HeroResultPanel while a style sheet is drawing", () => {
   test("Try another look is disabled and says why", async () => {
-    const out = await renderPanel(true);
+    const out = await renderPanel({ styleSheetLoading: true });
     const tag = openingTagOfButton(out, "Try another look");
     expect(tag).toContain(' disabled=""');
     expect(tag).toContain('aria-describedby="look-actions-blocked"');
@@ -75,15 +75,41 @@ describe("HeroResultPanel while a style sheet is drawing", () => {
   });
 
   test("the style sheet's own redraw button is disabled too", async () => {
-    const out = await renderPanel(true);
+    const out = await renderPanel({ styleSheetLoading: true });
     expect(openingTagOfButton(out, "Drawing…")).toContain(' disabled=""');
   });
 
   test("Try another look is enabled once the sheet is done", async () => {
-    const out = await renderPanel(false);
+    const out = await renderPanel({});
     const tag = openingTagOfButton(out, "Try another look");
     expect(tag).not.toContain(' disabled=""');
     expect(tag).not.toContain("aria-describedby");
     expect(out).not.toContain(STYLE_SHEET_BUSY_REASON);
+  });
+});
+
+describe("HeroResultPanel while a portrait preview is rendering", () => {
+  test("Try another look is disabled and says why", async () => {
+    const out = await renderPanel({ photoPreviewLoading: true });
+    const tag = openingTagOfButton(out, "Try another look");
+    expect(tag).toContain(' disabled=""');
+    expect(tag).toContain('aria-describedby="look-actions-blocked"');
+    expect(out).toContain(`<p id="look-actions-blocked"`);
+    expect(out).toContain(PHOTO_PREVIEW_BUSY_REASON);
+    expect(out).not.toContain(STYLE_SHEET_BUSY_REASON);
+  });
+
+  test("a sheet and a portrait drawing together report the sheet", async () => {
+    const out = await renderPanel({ styleSheetLoading: true, photoPreviewLoading: true });
+    expect(out).toContain(STYLE_SHEET_BUSY_REASON);
+    expect(out).not.toContain(PHOTO_PREVIEW_BUSY_REASON);
+  });
+
+  test("Try another look is enabled once the portrait is done", async () => {
+    const out = await renderPanel({});
+    const tag = openingTagOfButton(out, "Try another look");
+    expect(tag).not.toContain(' disabled=""');
+    expect(tag).not.toContain("aria-describedby");
+    expect(out).not.toContain(PHOTO_PREVIEW_BUSY_REASON);
   });
 });

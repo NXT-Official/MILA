@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { fetchClimate, unavailableClimate } from "./climate-fetch";
+import type { ClimateState } from "@/constants/climate";
+import {
+  climateOnFailedRead,
+  fetchClimate,
+  isUnavailableClimate,
+  unavailableClimate,
+} from "./climate-fetch";
 
 const realFetch = globalThis.fetch;
 
@@ -130,5 +136,45 @@ describe("unavailableClimate", () => {
     expect(climate.condition).toBe("Cloudy");
     expect(climate.tempC).toBe(20);
     expect(climate.tempF).toBe(68);
+  });
+});
+
+describe("isUnavailableClimate", () => {
+  test("recognises the fallback, wherever it was made for", () => {
+    expect(isUnavailableClimate(unavailableClimate("Tokyo", "JP"))).toBe(true);
+    expect(isUnavailableClimate(unavailableClimate("Your location", ""))).toBe(true);
+  });
+
+  test("never mistakes a real reading for it, even a 20°C cloudy one", () => {
+    const real: ClimateState = {
+      label: "20°C Partly Cloudy",
+      location: "Manila",
+      country: "PH",
+      icon: "cloud",
+      tempC: 20,
+      tempF: 68,
+      condition: "Cloudy",
+    };
+    expect(isUnavailableClimate(real)).toBe(false);
+  });
+});
+
+describe("climateOnFailedRead", () => {
+  const manila: ClimateState = {
+    label: "31°C Clear Sky",
+    location: "Manila",
+    country: "PH",
+    icon: "sun",
+    tempC: 31,
+    tempF: 88,
+    condition: "Sunny",
+  };
+
+  test("with no weather yet, hands over the fallback so Create my look isn't left waiting", () => {
+    expect(climateOnFailedRead(null, "Manila", "PH")).toEqual(unavailableClimate("Manila", "PH"));
+  });
+
+  test("with a reading already on screen, leaves it alone", () => {
+    expect(climateOnFailedRead(manila, "Manila", "PH")).toBeNull();
   });
 });
