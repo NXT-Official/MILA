@@ -1,0 +1,37 @@
+supabase/migrations/20261007143000_generation_jobs.sql
+  s_755964b2e0c3da::t_c3da0ef955b468 267-274,279-281,283-286,293
+  s_755964b2e0c3da::t_5cb01653038f4f 1-47,50-53,56,58-62,65,72-76,97-128,131-150,152-155,158-162,166-176,180-266,275-278,282,287-292,294-358,370-376,380-391,394-396,399-414,427-428,431-613
+  s_755964b2e0c3da::t_85dfda5023bed0 177-179
+  s_755964b2e0c3da::t_9fbb3e32e059e2 359-369,377-379
+  s_755964b2e0c3da::t_81bb48a3f39d70 392-393,397-398
+  s_755964b2e0c3da::t_d71d47fb2a9880 415-426,429-430
+  s_755964b2e0c3da::t_1a33602be61cd3 163-165
+  s_755964b2e0c3da::t_0fec86526d773b 48-49
+  s_755964b2e0c3da::t_dfc6b4438f7761 151
+  s_755964b2e0c3da::t_9d2eaaa56ddef8 129-130
+  s_755964b2e0c3da::t_7c5e7492edca6e 156-157
+  s_755964b2e0c3da::t_36270c37f63a22 54-55,57,63-64,66-71,77-96
+scripts/verify-generation-jobs.sql
+  s_755964b2e0c3da::t_78a3688abb0aa8 320-332
+  s_755964b2e0c3da::t_6648c0ea480394 353,356-358,360-365,368-371
+  s_755964b2e0c3da::t_b89c1214adda37 515-519
+  s_755964b2e0c3da::t_3f3e7af1e5403a 405-406,409-431,437,439-456
+  s_755964b2e0c3da::t_1be583707c63bf 1-227,231-232,234-235,268-319,333-352,354-355,359,366-367,372-404,407-408,432-436,438,457-514,520-579
+  s_755964b2e0c3da::t_f720b82d0deee3 228-230,233,236-267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "92c3eaf21f0a2fdadaa26e0067c70e67c6b80ec7",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "unknown"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
