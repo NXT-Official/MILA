@@ -9,10 +9,10 @@ import {
 } from "@/constants/style-profile";
 import { DisruptiveToneCard } from "@/components/style-profile/shared";
 import {
+  coreToneLabels,
   denimShade,
   fabricFeel,
   mostVivid,
-  toneRole,
 } from "@/components/style-profile/dossier-display";
 
 /** Topstitching on every denim swatch. */
@@ -31,6 +31,7 @@ export function StudioPortfolioView({
   const [telemetryOpen, setTelemetryOpen] = useState(false);
   const dossierNumber = `${profile.season.slice(0, 2).toUpperCase()}–${faceShort.slice(0, 2).toUpperCase()}`;
   const primaryBlocks = profile.primarySwatches.slice(0, 4);
+  const coreLabels = coreToneLabels(primaryBlocks.map((block) => block.hex));
   // Accents are the boldest colours in the read's own secondary palette.
   // `accentSwatches` is never filled by a read — it only ever holds a stock
   // set — so showing it would put another season's colours on this dossier.
@@ -112,10 +113,17 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
 
           {primaryBlocks.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-micro uppercase tracking-label-xwide text-foreground font-medium inline-flex items-center gap-1.5">
-                Primary Core Tones
-                <InfoDot text="The specific color families that naturally complement your skin undertone, bringing out a healthy, radiant glow." />
-              </h3>
+              <div className="flex items-end justify-between gap-3">
+                <h3 className="text-micro uppercase tracking-label-xwide text-foreground font-medium inline-flex items-center gap-1.5">
+                  Primary Core Tones
+                  <InfoDot text="The specific color families that naturally complement your skin undertone, bringing out a healthy, radiant glow." />
+                </h3>
+                {coreLabels.caption && (
+                  <span className="text-micro text-stone uppercase tracking-widest">
+                    {coreLabels.caption}
+                  </span>
+                )}
+              </div>
               <div
                 className={`grid grid-cols-1 sm:grid-cols-2 ${
                   { 1: "md:grid-cols-1", 2: "md:grid-cols-2", 3: "md:grid-cols-3" }[
@@ -125,7 +133,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
               >
                 {primaryBlocks.map((block, i) => {
                   const ink = readableInk(block.hex);
-                  const role = toneRole(block.hex);
+                  const role = coreLabels.roles[i];
                   return (
                     <div
                       key={`${block.hex}-${i}`}
@@ -148,9 +156,11 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
                             {block.name}
                           </h4>
                         </div>
-                        <div className="text-nano uppercase tracking-label-xwide text-accent font-medium">
-                          {role}
-                        </div>
+                        {role && (
+                          <div className="text-nano uppercase tracking-label-xwide text-accent font-medium">
+                            {role}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -178,10 +188,7 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
                     />
                     <div className="w-2/3 bg-card p-5 flex flex-col justify-between">
                       <div>
-                        <span className="text-nano uppercase tracking-label text-accent font-semibold">
-                          {i === 0 ? "Aura Tone" : "Illuminator"}
-                        </span>
-                        <h4 className="font-serif text-lg text-foreground mt-0.5 leading-tight">
+                        <h4 className="font-serif text-lg text-foreground leading-tight">
                           {block.name}
                         </h4>
                       </div>
@@ -267,10 +274,13 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
           <div className={`grid grid-cols-2 ${mdCols(fabrics.length, 4)} gap-3`}>
             {fabrics.map((material, idx) => {
               const feel = fabricFeel(material);
+              // On the two-column phone grid an odd last card spans the row
+              // rather than sitting alone in half of it.
+              const orphan = fabrics.length % 2 === 1 && idx === fabrics.length - 1;
               return (
                 <div
                   key={`${material}-${idx}`}
-                  className="relative p-5 rounded-2xl border border-border bg-card shadow-atelier-soft h-32 flex flex-col justify-end group transition-all duration-300 hover:shadow-md"
+                  className={`relative p-5 rounded-2xl border border-border bg-card shadow-atelier-soft h-32 flex flex-col justify-end group transition-all duration-300 hover:shadow-md${orphan ? " col-span-2 md:col-span-1" : ""}`}
                 >
                   <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent rounded-2xl pointer-events-none" />
                   <div className="relative z-10">
@@ -303,24 +313,28 @@ Stylist's notes          : ${telemetry.gatekeeperNotes.length ? telemetry.gateke
                   key={`${wash}-${idx}`}
                   className="flex items-center gap-4 p-3 rounded-2xl bg-surface dark:bg-card border border-stone/10 shadow-atelier-soft"
                 >
-                  <div
-                    className="size-16 rounded-full shrink-0 relative overflow-hidden shadow-inner border border-stone/10"
-                    style={{ backgroundColor: shade.swatch }}
-                  >
+                  {shade && (
                     <div
-                      className="absolute left-3 top-0 bottom-0 w-px border-l border-dashed opacity-60"
-                      style={{ borderColor: DENIM_THREAD }}
-                    />
-                    <div
-                      className="absolute left-4 top-0 bottom-0 w-px border-l border-dashed opacity-60"
-                      style={{ borderColor: DENIM_THREAD }}
-                    />
-                  </div>
+                      className="size-16 rounded-full shrink-0 relative overflow-hidden shadow-inner border border-stone/10"
+                      style={{ backgroundColor: shade.swatch }}
+                    >
+                      <div
+                        className="absolute left-3 top-0 bottom-0 w-px border-l border-dashed opacity-60"
+                        style={{ borderColor: DENIM_THREAD }}
+                      />
+                      <div
+                        className="absolute left-4 top-0 bottom-0 w-px border-l border-dashed opacity-60"
+                        style={{ borderColor: DENIM_THREAD }}
+                      />
+                    </div>
+                  )}
                   <div>
                     <h4 className="font-serif text-base text-ink">{wash}</h4>
-                    <p className="text-micro uppercase tracking-widest text-stone mt-1">
-                      {shade.finish}
-                    </p>
+                    {shade && (
+                      <p className="text-micro uppercase tracking-widest text-stone mt-1">
+                        {shade.finish}
+                      </p>
+                    )}
                   </div>
                 </div>
               );

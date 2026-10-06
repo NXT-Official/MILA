@@ -6,6 +6,7 @@ import {
 } from "@/constants/style-profile";
 import {
   avoidSwatchHex,
+  coreToneLabels,
   denimShade,
   fabricFeel,
   mostVivid,
@@ -52,6 +53,38 @@ describe("toneRole — the label under a core tone comes from the swatch itself"
   });
 });
 
+describe("coreToneLabels — a row never prints the same label four times", () => {
+  const hexes = (key: keyof typeof SEASONS_MASTER_DATA) =>
+    SEASONS_MASTER_DATA[key].primarySwatches.map((s) => s.hex);
+
+  test("an all-light row gets one caption and no per-card labels", () => {
+    expect(coreToneLabels(hexes("SPRING_LIGHT"))).toEqual({
+      caption: "All light tones",
+      roles: [null, null, null, null],
+    });
+  });
+
+  test("an all-deep row gets one caption and no per-card labels", () => {
+    expect(coreToneLabels(hexes("WINTER_DEEP"))).toEqual({
+      caption: "All deep tones",
+      roles: [null, null, null, null],
+    });
+  });
+
+  test("a mixed row labels each card from its own swatch, never by rank", () => {
+    const row = hexes("AUTUMN_TRUE");
+    expect(coreToneLabels(row)).toEqual({ caption: null, roles: row.map(toneRole) });
+  });
+
+  test("a single card keeps its own label", () => {
+    expect(coreToneLabels(["#D4EDDA"])).toEqual({ caption: null, roles: ["Light Tone"] });
+  });
+
+  test("a row it can't read gets neither labels nor a caption", () => {
+    expect(coreToneLabels(["navy", "teal"])).toEqual({ caption: null, roles: [null, null] });
+  });
+});
+
 describe("mostVivid — accents are the boldest colours in her own palette", () => {
   test("picks the two most colourful swatches, in palette order on a tie", () => {
     const picks = mostVivid(SEASONS_MASTER_DATA.SPRING_LIGHT.secondarySwatches, 2);
@@ -95,35 +128,54 @@ describe("fabricFeel — the drape line matches the fabric it sits under", () =>
 });
 
 describe("denimShade — the swatch is the wash it is named for", () => {
+  const swatchOf = (wash: string) => denimShade(wash)?.swatch ?? "";
+
   test("a bleached blue is light, not dark navy", () => {
-    expect(swatchLightness(denimShade("Soft Bleached Blue Denim").swatch)).toBeGreaterThan(70);
+    expect(swatchLightness(swatchOf("Soft Bleached Blue Denim"))).toBeGreaterThan(70);
   });
 
   test("a light gray is light and gray, not mid blue", () => {
-    const { swatch } = denimShade("Pure Light Gray Denim");
+    const swatch = swatchOf("Pure Light Gray Denim");
     const { r, b } = channels(swatch);
     expect(swatchLightness(swatch)).toBeGreaterThan(70);
     expect(Math.abs(r - b)).toBeLessThan(16);
   });
 
   test("raw and inky washes are dark", () => {
-    expect(swatchLightness(denimShade("Dark Indigo Raw Denim").swatch)).toBeLessThan(30);
-    expect(swatchLightness(denimShade("Crisp Inky Black Denim").swatch)).toBeLessThan(30);
+    expect(swatchLightness(swatchOf("Dark Indigo Raw Denim"))).toBeLessThan(30);
+    expect(swatchLightness(swatchOf("Crisp Inky Black Denim"))).toBeLessThan(30);
   });
 
   test("white denim is white and brown washes are warm", () => {
-    expect(swatchLightness(denimShade("Crisp White Denim").swatch)).toBeGreaterThan(90);
-    const { r, b } = channels(denimShade("Espresso Brown Denim").swatch);
+    expect(swatchLightness(swatchOf("Crisp White Denim"))).toBeGreaterThan(90);
+    const { r, b } = channels(swatchOf("Espresso Brown Denim"));
     expect(r).toBeGreaterThan(b);
   });
 
-  test("every denim in the season library gets a finish line", () => {
+  test("mid washes are named as mid washes", () => {
+    expect(denimShade("Sunlit Mid-Wash Blue")?.finish).toBe("Mid wash");
+    expect(denimShade("Warm Stone-Washed Denim")?.finish).toBe("Mid wash");
+  });
+
+  test("every denim in the season library gets a swatch and a finish line", () => {
     for (const wash of [
       ...SPECS.flatMap((s) => s.denimRegistry),
       ...MOOD_COLLECT_DEFAULT.denimRegistry,
     ]) {
-      expect(denimShade(wash).finish.length).toBeGreaterThan(0);
+      expect({ wash, shade: denimShade(wash) }).toEqual({
+        wash,
+        shade: { swatch: expect.any(String), finish: expect.any(String) },
+      });
     }
+  });
+
+  test("a wash it doesn't know gets no swatch rather than a guessed one", () => {
+    expect(denimShade("Moonlit Selvage Twill")).toBeNull();
+  });
+
+  test("words only count whole: straw is not raw, a skylight is not sky", () => {
+    expect(denimShade("Straw Denim")).toBeNull();
+    expect(denimShade("Skylight Denim")).toBeNull();
   });
 });
 

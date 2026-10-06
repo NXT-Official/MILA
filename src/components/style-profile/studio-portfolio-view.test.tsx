@@ -4,6 +4,7 @@ import {
   MOOD_COLLECT_DEFAULT,
   SEASONS_MASTER_DATA,
   SEASON_HEX_MATRIX,
+  type DetailedColorProfile,
   type SeasonKey,
 } from "@/constants/style-profile";
 import { studioToDossier } from "@/lib/style-profile/studio-dossier";
@@ -23,8 +24,8 @@ function readFor(key: SeasonKey) {
   });
 }
 
-function render(key: SeasonKey) {
-  const profile = readFor(key);
+function render(key: SeasonKey, change: Partial<DetailedColorProfile> = {}) {
+  const profile = { ...readFor(key), ...change };
   return { profile, markup: renderToStaticMarkup(<StudioPortfolioView profile={profile} />) };
 }
 
@@ -33,13 +34,36 @@ function text(copy: string) {
   return renderToStaticMarkup(<>{copy}</>);
 }
 
-/** Each primary core-tone card as rendered: its hex, its name and the role under it. */
+/** Each primary core-tone card as rendered: its hex, its name and the role under it (if any). */
 function coreToneCards(markup: string) {
   return [
     ...markup.matchAll(
-      /(#[0-9A-F]{6})<\/span><\/div>[\s\S]*?<h4[^>]*>([^<]*)<\/h4>[\s\S]*?<div[^>]*>([^<]*)<\/div>/g,
+      /(#[0-9A-F]{6})<\/span><\/div><div[^>]*><div[^>]*><h4[^>]*>([^<]*)<\/h4><\/div>(?:<div[^>]*>([^<]*)<\/div>)?<\/div>/g,
     ),
-  ].map(([, hex, name, role]) => ({ hex, name, role }));
+  ].map(([, hex, name, role]): { hex: string; name: string; role: string | null } => ({
+    hex,
+    name,
+    role: role ?? null,
+  }));
+}
+
+/** Each accent card as rendered: its name and the label above it (if any). */
+function accentCards(markup: string) {
+  const section = markup.split("Seasonal Accent Infusions")[1]?.split("Tone Type")[0] ?? "";
+  return [
+    ...section.matchAll(
+      /<div class="w-2\/3[^"]*"><div>(?:<span[^>]*>([^<]*)<\/span>)?<h4[^>]*>([^<]*)<\/h4>/g,
+    ),
+  ].map(([, label, name]): { name: string; label: string | null } => ({
+    name,
+    label: label ?? null,
+  }));
+}
+
+/** Each textile card's class list, in order. */
+function textileCards(markup: string) {
+  const section = markup.split("Textile Drape")[1]?.split("The Denim Archive")[0] ?? "";
+  return [...section.matchAll(/<div class="(relative p-5 [^"]*)"/g)].map(([, cls]) => cls);
 }
 
 /** Section numerals in the order they appear. */
@@ -51,15 +75,35 @@ describe("StudioPortfolioView tells one story, drawn from the read", () => {
   const { profile, markup } = render("SPRING_LIGHT");
 
   test("each core tone's role describes its own swatch", () => {
-    const cards = coreToneCards(markup);
-    expect(cards.map((c) => c.name)).toEqual(profile.primarySwatches.map((s) => s.name));
+    const { profile: autumn, markup: autumnMarkup } = render("AUTUMN_TRUE");
+    const cards = coreToneCards(autumnMarkup);
+    expect(cards.map((c) => c.name)).toEqual(autumn.primarySwatches.map((s) => s.name));
     for (const card of cards) expect(card.role).toBe(toneRole(card.hex));
+    expect(cards.find((c) => c.name === "Forest Olive")?.role).toBe("Deep Tone");
     expect(markup).not.toContain("Midnight Anchor");
   });
 
-  test("a deep palette gets deep roles", () => {
-    const winter = coreToneCards(render("WINTER_COOL").markup);
-    expect(winter.find((c) => c.name === "Royal Navy")?.role).toBe("Deep Tone");
+  test("an all-light palette gets one caption, not four identical labels", () => {
+    const cards = coreToneCards(markup);
+    expect(cards.map((c) => c.name)).toEqual(profile.primarySwatches.map((s) => s.name));
+    expect(cards.map((c) => c.role)).toEqual([null, null, null, null]);
+    expect(markup.split(">All light tones<").length - 1).toBe(1);
+  });
+
+  test("an all-deep palette gets one caption, not four identical labels", () => {
+    const winter = render("WINTER_DEEP").markup;
+    expect(coreToneCards(winter).map((c) => c.role)).toEqual([null, null, null, null]);
+    expect(winter.split(">All deep tones<").length - 1).toBe(1);
+  });
+
+  test("accent labels never go by position", () => {
+    for (const key of ["WINTER_TRUE", "AUTUMN_DEEP", "SPRING_LIGHT"] as const) {
+      const cards = accentCards(render(key).markup);
+      expect(cards.map((c) => c.name)).toEqual(
+        mostVivid(SEASONS_MASTER_DATA[key].secondarySwatches, 2).map((s) => s.name),
+      );
+      expect(cards.map((c) => c.label)).toEqual([null, null]);
+    }
   });
 
   test("accent infusions come from the read's palette, not a stock set", () => {
@@ -85,13 +129,28 @@ describe("StudioPortfolioView tells one story, drawn from the read", () => {
     expect(markup).not.toContain("Cashmere Blend");
   });
 
+  test("three textile cards don't leave an orphan on a phone", () => {
+    const cards = textileCards(markup);
+    expect(cards).toHaveLength(3);
+    expect(cards[2]).toContain("col-span-2 md:col-span-1");
+    expect(cards[0]).not.toContain("col-span-2");
+  });
+
   test("denim swatches match their names, with no stock filler", () => {
     for (const wash of profile.denimRegistry) {
-      expect(markup).toContain(`background-color:${denimShade(wash).swatch}`);
+      expect(markup).toContain(`background-color:${denimShade(wash)?.swatch}`);
       expect(markup).toContain(wash);
     }
     expect(markup).not.toContain("Bone Ecru");
     expect(markup).not.toContain("oklch(0.25 0.05 250)");
+  });
+
+  test("a denim it doesn't know shows its name with no guessed swatch", () => {
+    const odd = render("SPRING_LIGHT", { denimRegistry: ["Straw Selvage Twill"] }).markup;
+    const section = odd.split("The Denim Archive")[1]?.split("Colors to Avoid")[0] ?? "";
+    expect(section).toContain("Straw Selvage Twill");
+    expect(section).not.toContain("background-color");
+    expect(section).not.toContain("wash<");
   });
 
   test("avoid swatches show the colour they name", () => {

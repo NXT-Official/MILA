@@ -26,13 +26,42 @@ export function swatchLightness(hex: string): number | null {
   return y > 216 / 24389 ? 116 * Math.cbrt(y) - 16 : (24389 / 27) * y;
 }
 
+type ToneBand = "Light" | "Mid" | "Deep";
+
+/** How light a swatch actually is, as a band. Null when it isn't a colour we can read. */
+function toneBand(hex: string): ToneBand | null {
+  const lightness = swatchLightness(hex);
+  if (lightness === null) return null;
+  if (lightness >= 75) return "Light";
+  if (lightness >= 45) return "Mid";
+  return "Deep";
+}
+
 /** The role printed under a core tone, from how light the swatch actually is. */
 export function toneRole(hex: string): string {
-  const lightness = swatchLightness(hex);
-  if (lightness === null) return "Signature Tone";
-  if (lightness >= 75) return "Light Tone";
-  if (lightness >= 45) return "Mid Tone";
-  return "Deep Tone";
+  const band = toneBand(hex);
+  return band ? `${band} Tone` : "Signature Tone";
+}
+
+/**
+ * Labels for a row of core tones. Each card is labelled from its own swatch —
+ * never ranked against its neighbours — but when every card would say the
+ * same thing, the row gets one caption instead: four identical labels read as
+ * placeholders.
+ */
+export function coreToneLabels(hexes: string[]): {
+  caption: string | null;
+  roles: (string | null)[];
+} {
+  const bands = hexes.map(toneBand);
+  const [first] = bands;
+  if (hexes.length > 1 && bands.every((band) => band === first)) {
+    return {
+      caption: first ? `All ${first.toLowerCase()} tones` : null,
+      roles: hexes.map(() => null),
+    };
+  }
+  return { caption: null, roles: hexes.map(toneRole) };
 }
 
 /** How colourful a `#RRGGBB` swatch is: the spread between its strongest and weakest channel. */
@@ -78,31 +107,36 @@ export function fabricFeel(material: string): string | null {
 
 export type DenimShade = { swatch: string; finish: string };
 
-/** First match wins: black and white before any blue, a named tint before the wash depth. */
+/**
+ * First match wins: black and white before any blue, a named tint before the
+ * wash depth. Whole words only, so "straw" is not "raw" and "skylight" is not "sky".
+ */
 const DENIM_SHADES: ReadonlyArray<readonly [RegExp, DenimShade]> = [
-  [/black/, { swatch: "#1E1E24", finish: "Black wash" }],
-  [/white/, { swatch: "#F2F0EA", finish: "White denim" }],
-  [/ecru|bone|cream/, { swatch: "#E6E1D3", finish: "Undyed ecru" }],
-  [/(dark|deep|charcoal).*gr[ae]y/, { swatch: "#4A4E55", finish: "Dark gray wash" }],
-  [/(light|pale|soft).*gr[ae]y/, { swatch: "#C9CCD0", finish: "Light gray wash" }],
-  [/gr[ae]y/, { swatch: "#9A9EA4", finish: "Gray wash" }],
-  [/(dark|deep).*indigo|indigo.*(raw|selvedge)/, { swatch: "#1F2A44", finish: "Dark wash" }],
-  [/indigo/, { swatch: "#2E4470", finish: "Indigo wash" }],
-  [/espresso/, { swatch: "#4A3328", finish: "Warm tinted wash" }],
-  [/khaki/, { swatch: "#B5A47E", finish: "Warm tinted wash" }],
-  [/rust|russet/, { swatch: "#9A5B3C", finish: "Warm tinted wash" }],
-  [/tobacco|brown/, { swatch: "#7A5A3E", finish: "Warm tinted wash" }],
-  [/periwinkle/, { swatch: "#8F9FD6", finish: "Tinted wash" }],
-  [/bleached|light|pale|icy|sky/, { swatch: "#A9C3DD", finish: "Light wash" }],
-  [/dark|deep|raw|inky|selvedge/, { swatch: "#1F2A44", finish: "Dark wash" }],
+  [/\bblack\b/, { swatch: "#1E1E24", finish: "Black wash" }],
+  [/\bwhite\b/, { swatch: "#F2F0EA", finish: "White denim" }],
+  [/\b(ecru|bone|cream)\b/, { swatch: "#E6E1D3", finish: "Undyed ecru" }],
+  [/\b(dark|deep|charcoal)\b.*\bgr[ae]y\b/, { swatch: "#4A4E55", finish: "Dark gray wash" }],
+  [/\b(light|pale|soft)\b.*\bgr[ae]y\b/, { swatch: "#C9CCD0", finish: "Light gray wash" }],
+  [/\bgr[ae]y\b/, { swatch: "#9A9EA4", finish: "Gray wash" }],
+  [
+    /\b(dark|deep)\b.*\bindigo\b|\bindigo\b.*\b(raw|selvedge)\b/,
+    { swatch: "#1F2A44", finish: "Dark wash" },
+  ],
+  [/\bindigo\b/, { swatch: "#2E4470", finish: "Indigo wash" }],
+  [/\bespresso\b/, { swatch: "#4A3328", finish: "Warm tinted wash" }],
+  [/\bkhaki\b/, { swatch: "#B5A47E", finish: "Warm tinted wash" }],
+  [/\b(rust|russet)\b/, { swatch: "#9A5B3C", finish: "Warm tinted wash" }],
+  [/\b(tobacco|brown)\b/, { swatch: "#7A5A3E", finish: "Warm tinted wash" }],
+  [/\bperiwinkle\b/, { swatch: "#8F9FD6", finish: "Tinted wash" }],
+  [/\b(bleached|light|pale|icy|sky)\b/, { swatch: "#A9C3DD", finish: "Light wash" }],
+  [/\b(dark|deep|raw|inky|selvedge)\b/, { swatch: "#1F2A44", finish: "Dark wash" }],
+  [/\b(mid|medium|faded|stone|slate)\b/, { swatch: "#5B7A9E", finish: "Mid wash" }],
 ];
 
-const MID_DENIM: DenimShade = { swatch: "#5B7A9E", finish: "Mid wash" };
-
-/** The swatch and finish line for a denim wash, from its name. */
-export function denimShade(wash: string): DenimShade {
+/** The swatch and finish line for a denim wash, from its name. Null when the wash isn't one we know. */
+export function denimShade(wash: string): DenimShade | null {
   const name = wash.toLowerCase();
-  return DENIM_SHADES.find(([pattern]) => pattern.test(name))?.[1] ?? MID_DENIM;
+  return DENIM_SHADES.find(([pattern]) => pattern.test(name))?.[1] ?? null;
 }
 
 /** First match wins: "burnt orange" before "orange", "magenta" before "pink". */
