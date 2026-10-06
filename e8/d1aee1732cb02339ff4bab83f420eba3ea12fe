@@ -1,0 +1,38 @@
+src/lib/color-analysis/paletteGenerator.test.ts
+  s_755964b2e0c3da::t_3ce4c063a4f938 1-111
+src/components/wardrobe/DailyPaletteGenerator.tsx
+  s_755964b2e0c3da::t_f07b33bd53d149 71,74
+  s_755964b2e0c3da::t_5f2eced72e02cd 32
+  s_755964b2e0c3da::t_4f96bf571bfe82 171
+src/components/dashboard/climate-fetch.ts
+  s_755964b2e0c3da::t_819d945f41b5d9 35-38
+  s_755964b2e0c3da::t_174aa06fe400ef 1-2,15-19,21,52
+  s_755964b2e0c3da::t_12c44b152e0b59 53,58-68
+  s_755964b2e0c3da::t_baf616341e04c9 3-14,20,22-34,39-51,54-57
+src/components/dashboard/climate-fetch.test.ts
+  s_755964b2e0c3da::t_b6c47e090be2d1 1-134
+src/lib/color-analysis/paletteGenerator.ts
+  s_755964b2e0c3da::t_64e10ad2917dc8 1,15,17,22-27,33-34,41-42,49-50,57-58,65-90,94-104,106-113,120-125,127-144,155
+  s_755964b2e0c3da::t_826dcf3174d485 116-119
+src/components/dashboard/climate-widget.tsx
+  s_755964b2e0c3da::t_64443838431f89 71-76,81-82,86-89
+  s_755964b2e0c3da::t_2856d43e9fae7f 10
+  s_755964b2e0c3da::t_c8e0fce7aeecac 51-56
+  s_755964b2e0c3da::t_5700163ec9e550 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e8d1aee1732cb02339ff4bab83f420eba3ea12fe",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
