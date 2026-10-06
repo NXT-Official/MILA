@@ -2,14 +2,24 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { aiChatCompletion, isAiConfigured } from "@/lib/ai.server";
 import { logAiSpend } from "@/lib/ai-spend.server";
-import { payForLookImage } from "@/lib/credits.server";
+import { isPaidStyleMember, payForLookImage } from "@/lib/credits.server";
 import { computeMakeupEligibility, type DailyLook } from "@/lib/generate-outfit.functions";
 import { verifyFaceMatch } from "@/lib/face-match.server";
 import { ImageProviderRateLimitError } from "@/lib/openrouter-image.server";
 import { editOutfitPhoto, PHOTO_EDIT_PROVIDER } from "@/lib/openrouter-photo-edit.server";
 import { errorMessage } from "@/lib/utils";
+import { createRenderBudget } from "./render-budget";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
+
+/** Per-call ceilings: the single-photo edit (openrouter-photo-edit's 75s) and
+ * the two-image QA call. */
+const PHOTO_EDIT_MS = 75_000;
+const PHOTO_VERIFY_MS = 110_000;
+/** Kept back from the edit so its QA call always gets a real chance. */
+const PHOTO_VERIFY_RESERVE_MS = 40_000;
+/** Don't start an attempt that can't plausibly edit AND verify in time. */
+const PHOTO_MIN_ATTEMPT_MS = 70_000;
 
 const verifyTool = {
   function: {
@@ -37,8 +47,11 @@ async function verifyProtectedRegions(
   originalDataUri: string,
   editedDataUri: string,
   caller: { supabase: Parameters<typeof aiChatCompletion>[2]["supabase"]; userId: string },
-): Promise<{ passes: boolean; reason: string }> {
-  if (!isAiConfigured()) return { passes: false, reason: "Verification service not configured." };
+  timeoutMs?: number,
+): Promise<{ passes: boolean; ran: boolean; reason: string }> {
+  if (!isAiConfigured()) {
+    return { passes: false, ran: false, reason: "Verification service not configured." };
+  }
   const result = await aiChatCompletion(
     [
       {
@@ -58,11 +71,13 @@ async function verifyProtectedRegions(
     ],
     verifyTool,
     caller,
+    { timeoutMs },
   );
-  if (!result.ok) return { passes: false, reason: "Verification check failed to run." };
+  if (!result.ok) return { passes: false, ran: false, reason: "Verification check failed to run." };
   const parsed = result.args as { passes?: unknown; reason?: unknown };
   return {
     passes: parsed.passes === true,
+    ran: true,
     reason: typeof parsed.reason === "string" ? parsed.reason : "No reason given.",
   };
 }
@@ -108,6 +123,11 @@ export async function renderPhotoPreviewForUser(
     return { imageDataUri: null, mode: "unavailable", reason: "No consented photo on file." };
   }
 
+  // Decided before payForLookImage spends a credit, so a member's last
+  // purchased credit still counts them as paid.
+  const paidMember = await isPaidStyleMember(supabase, userId);
+  const budget = createRenderBudget();
+
   return payForLookImage(supabase, userId, async (): Promise<PhotoPreviewResult> => {
     try {
       const { data: photoBlob, error: downloadError } = await supabase.storage
@@ -150,24 +170,47 @@ export async function renderPhotoPreviewForUser(
       // verification and the loop moves on.
       let lastReason = "Your photo preview couldn't be verified safe this time.";
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        // Same budget rule as renderStyleSheetForUser: never start an attempt
+        // Vercel's 300s kill would cut off mid-render.
+        if (!budget.canStart(PHOTO_MIN_ATTEMPT_MS)) {
+          console.warn(
+            `[renderPhotoPreviewForUser] stopping before attempt ${attempt}/${MAX_ATTEMPTS} — ${Math.round(budget.remainingMs() / 1000)}s left in the function budget`,
+          );
+          break;
+        }
         try {
           const {
             imageUrl,
             model: imageModel,
             costUsd,
-          } = await editOutfitPhoto({
-            userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
-            referenceImages: [],
-            outfit: data.outfit,
-            makeupEnabled,
-            hairLength: profileRow.hair_length,
-            gender: profileRow.gender,
-          });
+          } = await editOutfitPhoto(
+            {
+              userPhoto: { bytes: userPhotoBytes, contentType: userPhotoContentType },
+              referenceImages: [],
+              outfit: data.outfit,
+              makeupEnabled,
+              hairLength: profileRow.hair_length,
+              gender: profileRow.gender,
+            },
+            {
+              enforceSiteQuota: !paidMember,
+              timeoutMs: budget.clamp(PHOTO_EDIT_MS, PHOTO_VERIFY_RESERVE_MS),
+            },
+          );
 
-          const verification = await verifyProtectedRegions(originalDataUri, imageUrl, {
-            supabase,
-            userId,
-          });
+          const check = () =>
+            verifyProtectedRegions(
+              originalDataUri,
+              imageUrl,
+              { supabase, userId },
+              budget.clamp(PHOTO_VERIFY_MS),
+            );
+          let verification = await check();
+          if (!verification.ran && budget.canStart(PHOTO_VERIFY_RESERVE_MS)) {
+            // The QA call failed to run — the edit was never judged, so
+            // re-check the same paid render instead of discarding it.
+            verification = await check();
+          }
 
           await logAiSpend(supabase, userId, {
             provider: PHOTO_EDIT_PROVIDER,

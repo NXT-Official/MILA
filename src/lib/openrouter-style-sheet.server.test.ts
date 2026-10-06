@@ -1,9 +1,12 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 import {
   buildStyleSheetPrompt,
   buildWardrobeLine,
+  generateStyleSheet,
   isFaceObscuringAccessory,
 } from "./openrouter-style-sheet.server";
+import { ImageProviderRateLimitError } from "./openrouter-image.server";
+import type { RateLimitStore } from "@/lib/rate-limit.server";
 import type { DailyLook, ShoppablePick } from "./generate-outfit.functions";
 import { STYLE_SHEET_QA_PROMPT } from "@/server/services/style-sheet";
 
@@ -131,5 +134,78 @@ describe("STYLE_SHEET_QA_PROMPT", () => {
     expect(STYLE_SHEET_QA_PROMPT).toContain("never fail a sheet because a hat");
     expect(STYLE_SHEET_QA_PROMPT).toContain("same face, skin tone, hair");
     expect(STYLE_SHEET_QA_PROMPT).toContain("or when a garment named in the outfit is missing");
+  });
+});
+
+describe("generateStyleSheet site-wide daily quota", () => {
+  const denyStore: RateLimitStore = async () => ({
+    allowed: false,
+    remaining: 0,
+    reset_at: new Date().toISOString(),
+    retry_after_seconds: 3_600,
+  });
+  const args = {
+    userPhoto: { bytes: new Uint8Array([1, 2, 3]), contentType: "image/jpeg" },
+    outfit,
+    shoppablePicks: [],
+    gender: "Female",
+  };
+  const originalKey = process.env.OPENROUTER_API_KEY;
+  const originalFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = originalKey;
+  });
+
+  test("a free member is stopped once the quota is used up", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    globalThis.fetch = mock(async () => {
+      throw new Error("must not render once the free quota is exhausted");
+    }) as unknown as typeof fetch;
+    await expect(generateStyleSheet(args, { rateLimitStore: denyStore })).rejects.toThrow(
+      ImageProviderRateLimitError,
+    );
+  });
+
+  test("a paid member renders even when the quota is used up, without counting against it", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    globalThis.fetch = mock(async () =>
+      Response.json({ data: [{ b64_json: "x", media_type: "image/jpeg" }], usage: { cost: 0.01 } }),
+    ) as unknown as typeof fetch;
+    const store = mock(denyStore);
+    await expect(
+      generateStyleSheet(args, { rateLimitStore: store, enforceSiteQuota: false }),
+    ).resolves.toMatchObject({ imageUrl: "data:image/jpeg;base64,x", costUsd: 0.01 });
+    expect(store).not.toHaveBeenCalled();
+  });
+
+  test("the fallback-resolution request shares the caller's time budget", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    const signals: AbortSignal[] = [];
+    let call = 0;
+    globalThis.fetch = mock(async (_url: unknown, init?: RequestInit) => {
+      signals.push(init!.signal!);
+      call += 1;
+      if (call === 1) return new Response("unsupported resolution", { status: 400 });
+      await new Promise((r) => setTimeout(r, 80));
+      if (init!.signal!.aborted) throw new DOMException("timed out", "TimeoutError");
+      return Response.json({ data: [{ b64_json: "x", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+    await expect(
+      generateStyleSheet(args, { enforceSiteQuota: false, timeoutMs: 40 }),
+    ).rejects.toThrow();
+    expect(signals.length).toBe(2);
+  });
+
+  test("renders at 2K first — 4K drifts the face and fails identity QA", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    let resolution: unknown;
+    globalThis.fetch = mock(async (_url: unknown, init?: RequestInit) => {
+      resolution = JSON.parse(String(init!.body)).resolution;
+      return Response.json({ data: [{ b64_json: "x", media_type: "image/jpeg" }] });
+    }) as unknown as typeof fetch;
+    await generateStyleSheet(args, { enforceSiteQuota: false });
+    expect(resolution).toBe("2K");
   });
 });

@@ -8,10 +8,10 @@ export type ConsumeCreditStore = (
   dailyAllowance: number,
 ) => Promise<{ allowed: boolean; remaining: number }>;
 
-async function resolveDailyCreditAllowance(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<number> {
+/** The member's subscription when it is still live, else null. A cancelled
+ * subscription keeps its in-force status until Paddle's webhook or the daily
+ * sweep catches up, so the paid period being over is what actually decides. */
+async function loadLiveSubscription(supabase: SupabaseClient, userId: string) {
   const { data: sub } = await supabase
     .from("subscriptions")
     .select("plan_id, status, current_period_end, cancel_at_period_end")
@@ -20,10 +20,15 @@ async function resolveDailyCreditAllowance(
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  // A cancelled subscription keeps its in-force status until Paddle's webhook
-  // or the daily sweep catches up, so the paid period being over is what
-  // actually decides whether today's allowance is still owed.
-  if (!sub || !isSubscriptionLive(sub)) return DEFAULT_AI_CREDITS;
+  return sub && isSubscriptionLive(sub) ? sub : null;
+}
+
+async function resolveDailyCreditAllowance(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<number> {
+  const sub = await loadLiveSubscription(supabase, userId);
+  if (!sub) return DEFAULT_AI_CREDITS;
 
   const { data: plan } = await supabase
     .from("subscription_plans")
@@ -31,6 +36,26 @@ async function resolveDailyCreditAllowance(
     .eq("id", sub.plan_id)
     .maybeSingle();
   return plan?.credits_included ?? DEFAULT_AI_CREDITS;
+}
+
+/**
+ * True when the member pays for styling: a live subscription, or purchased
+ * style credits on hand. These members are bounded by their own credits only —
+ * the site-wide daily render quotas exist to cap spend from free accounts and
+ * must never block someone who paid. Read BEFORE a credit is consumed, so the
+ * member's last purchased credit still counts.
+ */
+export async function isPaidStyleMember(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  if (await loadLiveSubscription(supabase, userId)) return true;
+  const { data: ent } = await supabase
+    .from("user_entitlements")
+    .select("purchased_credits")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return (ent?.purchased_credits ?? 0) > 0;
 }
 
 async function supabaseConsumeCreditStore(

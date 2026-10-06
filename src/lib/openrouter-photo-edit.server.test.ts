@@ -183,6 +183,18 @@ describe("OpenRouter photo edit (image-to-image, meta/muse-image)", () => {
     );
   });
 
+  test("a paid member renders even when the site-wide daily quota is exhausted", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    globalThis.fetch = mock(async () =>
+      Response.json({ data: [{ b64_json: "x", media_type: "image/jpeg" }] }),
+    ) as unknown as typeof fetch;
+    const store = mock(denyStore);
+    await expect(
+      editOutfitPhoto(editArgs(), { rateLimitStore: store, enforceSiteQuota: false }),
+    ).resolves.toMatchObject({ imageUrl: "data:image/jpeg;base64,x" });
+    expect(store).not.toHaveBeenCalled();
+  });
+
   test("throws ImageProviderRateLimitError on 429", async () => {
     process.env.OPENROUTER_API_KEY = "test-key";
     globalThis.fetch = mock(

@@ -14,8 +14,8 @@ import { resolveImageModel } from "./platform-settings.server";
 import type { DailyLook, ShoppablePick } from "./generate-outfit.functions";
 
 // Confirmed live: renderStyleSheetForUser was aborting mid-request with "The
-// operation was aborted due to timeout" — this call renders 5 panels at up
-// to 4K resolution in one request, a much heavier generation than the
+// operation was aborted due to timeout" — this call renders 5 panels in one
+// request, a much heavier generation than the
 // single-image edit/inspiration paths that share this same 75s budget.
 // Raised to give it room to actually finish instead of racing it.
 const TIMEOUT_MS = 150_000;
@@ -23,7 +23,7 @@ const MAX_PROMPT_LENGTH = 4096;
 const MAX_REFERENCE_IMAGES = 3;
 
 // Unlike the single-photo edit path (30/day, cheaper 2K single image), the
-// style sheet renders 5 panels at up to 4K resolution per attempt and can
+// style sheet renders 5 panels per attempt and can
 // retry up to 3x on failed QA (renderStyleSheetForUser) — meaningfully more
 // expensive per call. Capped lower for the same reason the edit path is
 // capped at all: bound worst-case sitewide spend from repeated QA failures.
@@ -43,10 +43,14 @@ export const STYLE_SHEET_PROVIDER = "openrouter";
 
 // OpenRouter's Images API exposes `resolution` as a discrete enum tier
 // ("1K"/"2K"/"4K" observed live for image models on the platform, including
-// muse-image) — there is no "16K" tier for any model on the platform. "4K"
-// is the real ceiling; fall back to "2K" once if the provider rejects it.
-const PRIMARY_RESOLUTION = "4K";
-const FALLBACK_RESOLUTION = "2K";
+// muse-image). 2K, not 4K: measured live 2026-10-06 on the same selfie, look,
+// and QA prompt, muse-image passed the identity check 9/9 at 2K but only 4/9
+// at 4K (the 4K faces drift — "slimmer, paler, more angular"). Same cost,
+// same speed, and a 2048x1152 sheet is still more than any screen shows —
+// with a far smaller data URI for phones to decode. Fall back to 1K once if
+// the provider rejects 2K.
+const PRIMARY_RESOLUTION = "2K";
+const FALLBACK_RESOLUTION = "1K";
 const ASPECT_RATIO = "16:9";
 
 /**
@@ -154,6 +158,7 @@ async function requestStyleSheet(
   prompt: string,
   inputReferences: Array<{ type: string; image_url: { url: string } }>,
   resolution: string,
+  timeoutMs: number,
 ): Promise<Response> {
   return fetch(OPENROUTER_IMAGES_URL, {
     method: "POST",
@@ -169,9 +174,19 @@ async function requestStyleSheet(
       aspect_ratio: ASPECT_RATIO,
       output_format: "jpeg",
     }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
   });
 }
+
+export type StyleSheetDeps = {
+  rateLimitStore?: RateLimitStore;
+  /** Count this render against the site-wide daily quota. False for paid
+   * members (isPaidStyleMember): their own credits are the only limit. */
+  enforceSiteQuota?: boolean;
+  /** Total budget for this render, including the 2K fallback request. The
+   * caller clamps it to what is left of the function's time. */
+  timeoutMs?: number;
+};
 
 /**
  * userPhoto is the consented selfie's raw bytes (fetched by the caller —
@@ -195,26 +210,29 @@ export async function generateStyleSheet(
     shoppablePicks: ShoppablePick[];
     gender: string | null;
   },
-  deps: { rateLimitStore?: RateLimitStore } = {},
+  deps: StyleSheetDeps = {},
 ): Promise<StyleSheetResult> {
   const { OPENROUTER_API_KEY } = requireEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   });
 
-  try {
-    await consumeRateLimit(
-      `openrouter_style_sheet_daily:${utcDateKey()}`,
-      { limit: SITE_DAILY_LIMIT, windowSeconds: SITE_WINDOW_SECONDS },
-      deps.rateLimitStore,
-    );
-  } catch (err) {
-    if (err instanceof RateLimitExceededError) {
-      throw new ImageProviderRateLimitError(
-        "Mila's daily free style-sheet quota is used up. Please try again tomorrow.",
+  if (deps.enforceSiteQuota !== false) {
+    try {
+      await consumeRateLimit(
+        `openrouter_style_sheet_daily:${utcDateKey()}`,
+        { limit: SITE_DAILY_LIMIT, windowSeconds: SITE_WINDOW_SECONDS },
+        deps.rateLimitStore,
       );
+    } catch (err) {
+      if (err instanceof RateLimitExceededError) {
+        throw new ImageProviderRateLimitError(
+          "Mila's daily free style-sheet quota is used up. Please try again tomorrow.",
+        );
+      }
+      throw err;
     }
-    throw err;
   }
+  const deadline = Date.now() + (deps.timeoutMs ?? TIMEOUT_MS);
 
   const prompt = buildStyleSheetPrompt({ outfit, shoppablePicks, gender });
   const model = await resolveImageModel();
@@ -231,6 +249,7 @@ export async function generateStyleSheet(
       prompt,
       inputReferences,
       PRIMARY_RESOLUTION,
+      deadline - Date.now(),
     );
     if (!res.ok && res.status !== 429) {
       const body = await res.text();
@@ -241,6 +260,7 @@ export async function generateStyleSheet(
           prompt,
           inputReferences,
           FALLBACK_RESOLUTION,
+          deadline - Date.now(),
         );
       } else {
         throw new Error(`OpenRouter style-sheet request failed (${res.status}): ${body}`);
