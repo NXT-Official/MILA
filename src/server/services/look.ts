@@ -63,11 +63,51 @@ const COMPOSE_DEADLINE_MS = 215_000;
  * Measured live: provider calls run 35–60s normally, with stalls past 100s. */
 const REVIEW_CALL_TIMEOUT_MS = 85_000;
 const PLAN_CALL_TIMEOUT_MS = 105_000;
+/** Every compose call keeps this back from the deadline, so even an attempt
+ * that times out leaves time to answer the member inside COMPOSE_DEADLINE_MS. */
+const COMPOSE_MARGIN_MS = 5_000;
+/** The shortest attempt that can still plausibly finish. */
+const MIN_COMPOSE_ATTEMPT_MS = 45_000;
+/** Floor for a clamped attempt, so a late one still gets a real chance rather
+ * than a 3-second spasm. */
+const MIN_COMPOSE_CALL_MS = 12_000;
 /** OpenRouter reasoning budgets: these calls otherwise spend ~10k reasoning
  * tokens to produce a ~1.5k answer (live probe), dominating latency and cost.
  * Bounded waits in the same probe still returned full, valid payloads. */
 const REVIEW_REASONING_TOKENS = 1024;
 const PLAN_REASONING_TOKENS = 4096;
+
+export type ComposeBudget = {
+  remainingMs: () => number;
+  /** Per-attempt timeouts: the stage's budget, clamped to what's left. */
+  reviewTimeout: () => number;
+  planTimeout: () => number;
+  /** May the review stage make another call (a retry after a failed attempt,
+   * or the thin-shortlist recheck)? Only when a whole review attempt fits AND
+   * the plan, which has no fallback, still keeps its minimum attempt after
+   * it — otherwise the shortlist in hand (or the deterministic fallback) goes
+   * straight to the plan. */
+  canRetryReview: () => boolean;
+  /** May the plan retry after a failed attempt? Whenever a clamped attempt
+   * can still plausibly finish. */
+  canRetryPlan: () => boolean;
+};
+
+/** The clock the compose stages share, started once the catalog is loaded. */
+export function createComposeBudget(now: () => number = Date.now): ComposeBudget {
+  const startedAt = now();
+  const remainingMs = () => COMPOSE_DEADLINE_MS - (now() - startedAt);
+  const callTimeout = (preferredMs: number) =>
+    Math.max(MIN_COMPOSE_CALL_MS, Math.min(preferredMs, remainingMs() - COMPOSE_MARGIN_MS));
+  const fits = (attemptMs: number) => remainingMs() - COMPOSE_MARGIN_MS >= attemptMs;
+  return {
+    remainingMs,
+    reviewTimeout: () => callTimeout(REVIEW_CALL_TIMEOUT_MS),
+    planTimeout: () => callTimeout(PLAN_CALL_TIMEOUT_MS),
+    canRetryReview: () => fits(REVIEW_CALL_TIMEOUT_MS + MIN_COMPOSE_ATTEMPT_MS),
+    canRetryPlan: () => fits(MIN_COMPOSE_ATTEMPT_MS),
+  };
+}
 
 export type LookImageResult = {
   imageDataUri: string | null;
@@ -246,16 +286,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     // isn't a live row from the same list, so the plan stage below can only
     // ever choose pieces that actually exist in the shop.
     let shortlistProducts: LookInventoryItem[] = [];
-    const composeStartedAt = Date.now();
-    const remainingComposeMs = () => COMPOSE_DEADLINE_MS - (Date.now() - composeStartedAt);
-    /** Clamp a per-attempt budget to what's left, with a small floor so a
-     * late attempt still gets a real chance rather than a 3-second spasm. */
-    const composeCallTimeout = (preferredMs: number) =>
-      Math.max(12_000, Math.min(preferredMs, remainingComposeMs() - 5_000));
-    /** A retry is worth it only when the attempt it would buy can be long
-     * enough to plausibly finish inside the deadline. */
-    const canRetryComposeCall = (minAttemptMs: number) =>
-      remainingComposeMs() - 5_000 >= Math.min(minAttemptMs, 45_000);
+    const budget = createComposeBudget();
     if (inventory.length > 0) {
       const reviewPrompt = buildInventoryReviewPrompt({
         profileLines,
@@ -275,7 +306,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       ];
       const reviewTool = buildInventoryReviewTool(inventory.length - 1);
       const reviewOptions = {
-        timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
+        timeoutMs: budget.reviewTimeout(),
         reasoningMaxTokens: REVIEW_REASONING_TOKENS,
       };
       let reviewed = await aiChatCompletion(
@@ -284,19 +315,20 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         { supabase, userId },
         reviewOptions,
       );
-      if (!reviewed.ok && canRetryComposeCall(REVIEW_CALL_TIMEOUT_MS + 45_000)) {
+      if (!reviewed.ok && budget.canRetryReview()) {
         // A second review attempt only when the first died early enough to
-        // leave ~85s + plan headroom; otherwise the deterministic fallback
-        // below takes over and the plan keeps the rest of the budget.
+        // leave a whole review attempt + the plan's minimum; otherwise the
+        // deterministic fallback below takes over and the plan keeps the rest
+        // of the budget.
         console.warn(
-          `[generateLookForUser] review call failed (status=${reviewed.status}) — retrying with ${Math.round(remainingComposeMs() / 1000)}s left`,
+          `[generateLookForUser] review call failed (status=${reviewed.status}) — retrying with ${Math.round(budget.remainingMs() / 1000)}s left`,
         );
         reviewed = await aiChatCompletion(
           reviewMessages,
           reviewTool,
           { supabase, userId },
           {
-            timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
+            timeoutMs: budget.reviewTimeout(),
             reasoningMaxTokens: REVIEW_REASONING_TOKENS,
           },
         );
@@ -326,11 +358,13 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
         // Business Attire run returned ONE row, and the plan stage then composed
         // a one-garment "look" — the plan can only choose from what this stage
         // returns). When the inventory clearly supports a full look, re-ask once
-        // rather than shipping a thin one; the better shortlist wins.
+        // rather than shipping a thin one; the better shortlist wins. The
+        // recheck is another review call, so it shares the retry's budget rule:
+        // a thin shortlist beats a plan with no time left to use it.
         if (
           shortlistProducts.length < REVIEW_MIN_SHORTLIST &&
           inventory.length >= REVIEW_MIN_SHORTLIST * 2 &&
-          remainingComposeMs() > 90_000
+          budget.canRetryReview()
         ) {
           const recheck = await aiChatCompletion(
             [
@@ -344,7 +378,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
             reviewTool,
             { supabase, userId },
             {
-              timeoutMs: composeCallTimeout(REVIEW_CALL_TIMEOUT_MS),
+              timeoutMs: budget.reviewTimeout(),
               reasoningMaxTokens: REVIEW_REASONING_TOKENS,
             },
           );
@@ -443,20 +477,20 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       planTool,
       { supabase, userId },
       {
-        timeoutMs: composeCallTimeout(PLAN_CALL_TIMEOUT_MS),
+        timeoutMs: budget.planTimeout(),
         reasoningMaxTokens: PLAN_REASONING_TOKENS,
       },
     );
-    if (!composed.ok && canRetryComposeCall(PLAN_CALL_TIMEOUT_MS + 5_000)) {
+    if (!composed.ok && budget.canRetryPlan()) {
       console.warn(
-        `[generateLookForUser] plan call failed (status=${composed.status}) — retrying with ${Math.round(remainingComposeMs() / 1000)}s left`,
+        `[generateLookForUser] plan call failed (status=${composed.status}) — retrying with ${Math.round(budget.remainingMs() / 1000)}s left`,
       );
       composed = await aiChatCompletion(
         planMessages,
         planTool,
         { supabase, userId },
         {
-          timeoutMs: composeCallTimeout(PLAN_CALL_TIMEOUT_MS),
+          timeoutMs: budget.planTimeout(),
           reasoningMaxTokens: PLAN_REASONING_TOKENS,
         },
       );
