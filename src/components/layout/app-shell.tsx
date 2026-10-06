@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { useMemberIdentity } from "@/hooks/use-member-identity";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
@@ -18,6 +19,7 @@ import { CurrentLookContext, type CurrentLookSavedRef } from "@/hooks/use-curren
 import type { GeneratedLook } from "@/lib/generate-outfit.functions";
 import { analyzeOutfit } from "@/lib/analyze-outfit.functions";
 import { isInsufficientCreditsError } from "@/lib/credits";
+import { PHOTO_PICKER_ACCEPT, preparePickedPhoto } from "@/lib/picked-photo";
 import { profileQueryOptions } from "@/lib/queries/profile";
 import { creditsQueryOptions } from "@/lib/queries/credits";
 import { queryKeys } from "@/constants/query-keys";
@@ -58,6 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   });
 
   const { data: credits } = useQuery(creditsQueryOptions(user?.id));
+  const { displayName } = useMemberIdentity();
 
   async function runLensCapture(file: File) {
     if (!user) return;
@@ -112,8 +115,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
     }
   }
-
-  const displayName = profile?.full_name?.trim() || user?.email?.split("@")[0] || "Member";
 
   function openConcierge(look?: ConciergeLook | null) {
     setConciergeLook(look ?? null);
@@ -213,14 +214,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept={PHOTO_PICKER_ACCEPT}
             className="hidden"
-            onChange={(e) => {
+            onChange={async (e) => {
               const f = e.target.files?.[0];
-              if (f) {
-                runLensCapture(f);
-                e.target.value = "";
+              e.target.value = "";
+              if (!f) return;
+              const picked = await preparePickedPhoto(f);
+              if (!picked.ok) {
+                toast.error(picked.message);
+                return;
               }
+              await runLensCapture(picked.file);
             }}
           />
         </div>

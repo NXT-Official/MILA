@@ -58,3 +58,62 @@ describe("saveLensAnalysis", () => {
     expect(await saveLensAnalysis(db, ROW)).toBeNull();
   });
 });
+
+// `outfits.match_score` is an INTEGER with a 0-100 CHECK, and the credit for the
+// read is already spent by the time the row is written, so a score the model
+// reports as 82.6, 140 or "n/a" must be made safe before the insert, not refused by it.
+describe("saveLensAnalysis score", () => {
+  let errorSpy: ReturnType<typeof spyOn>;
+
+  beforeEach(() => {
+    errorSpy = spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    errorSpy.mockRestore();
+  });
+
+  async function scoreWritten(matchScore: unknown): Promise<unknown> {
+    const { db, insert } = fakeDb({ data: { id: "look-1" }, error: null });
+    await saveLensAnalysis(db, { ...ROW, match_score: matchScore as number });
+    const written = insert.mock.calls[0]?.[0] as { match_score: unknown };
+    return written.match_score;
+  }
+
+  test.each([
+    [82.6, 83],
+    [82.4, 82],
+    [100.4, 100],
+    [0, 0],
+    [100, 100],
+  ])("a score of %p is stored as the integer %p", async (given, stored) => {
+    expect(await scoreWritten(given)).toBe(stored);
+  });
+
+  test.each([
+    [140, 100],
+    [-8, 0],
+    [Infinity, 100],
+    [-Infinity, 0],
+  ])("a score of %p is held inside 0-100 as %p", async (given, stored) => {
+    expect(await scoreWritten(given)).toBe(stored);
+  });
+
+  test("a numeric string is read as its number", async () => {
+    expect(await scoreWritten("77")).toBe(77);
+  });
+
+  test.each([[Number.NaN], [null], [undefined], ["n/a"], [""], [{}]])(
+    "a score of %p that is no number at all is stored as no score",
+    async (given) => {
+      expect(await scoreWritten(given)).toBeNull();
+    },
+  );
+
+  test("the rest of the row is written untouched", async () => {
+    const { db, insert } = fakeDb({ data: { id: "look-1" }, error: null });
+
+    await saveLensAnalysis(db, { ...ROW, match_score: 91.7 });
+
+    expect(insert).toHaveBeenCalledWith({ ...ROW, match_score: 92 });
+  });
+});

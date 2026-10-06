@@ -36,6 +36,13 @@ import {
 } from "@/constants/style-profile";
 import { errorMessage } from "@/lib/utils";
 import { describeColorReadError } from "@/lib/color-read-errors";
+import {
+  CAMERA_BLOCKED_MESSAGE,
+  CAMERA_PERMISSION_HINT,
+  PERMISSION_HINT_DELAY_MS,
+  describeCameraError,
+} from "@/lib/camera-errors";
+import { PHOTO_PICKER_ACCEPT, preparePickedPhoto } from "@/lib/picked-photo";
 import { centeredSquareCrop } from "@/lib/square-crop";
 import { useModalA11y } from "@/hooks/use-modal-a11y";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
@@ -90,6 +97,81 @@ export function CameraErrorNotice({ message }: { message: string }) {
   );
 }
 
+/**
+ * Shown while the browser's own camera prompt sits unanswered, so a member who
+ * missed it knows what to do. Same layer rules as the error notice: below the
+ * camera chrome, and it lets taps through to the upload button.
+ */
+export function CameraPermissionHint() {
+  return (
+    <div className="absolute bottom-44 inset-x-0 z-10 flex justify-center px-8 pointer-events-none">
+      <p role="status" className="max-w-xs text-center text-xs leading-relaxed text-white/80">
+        {CAMERA_PERMISSION_HINT}
+      </p>
+    </div>
+  );
+}
+
+function StudioNotesPanel({ notes }: { notes: string[] }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="absolute top-16 right-4 z-30 w-70 max-w-[78vw] hidden sm:block">
+      <div className="border-[0.5px] border-white/20 bg-black/55 backdrop-blur-md text-white">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-full flex items-center justify-between px-3 py-2 text-nano uppercase tracking-label-xwide hover:bg-white/5"
+          aria-expanded={open}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <FlaskConical className="size-3" /> Studio notes
+          </span>
+          <ChevronDown className={`size-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <pre className="max-h-64 overflow-y-auto px-3 pb-3 pt-0 font-mono text-nano leading-relaxed text-white/75 whitespace-pre-wrap wrap-break-word">
+            {notes.length ? notes.join("\n") : "Waiting…"}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Everything written over the live video: the studio notes, and one of the
+ * camera error, the permission hint or the framing guide. The notes (z-30)
+ * step aside while the error shows, or at 640-910px they paint over it (z-10).
+ */
+export function CameraStatusLayer({
+  streamErr,
+  analyzing,
+  permissionHint,
+  notes,
+}: {
+  streamErr: string | null;
+  analyzing: boolean;
+  permissionHint: boolean;
+  notes: string[];
+}) {
+  const notice = analyzing ? null : streamErr;
+  const idle = !analyzing && !streamErr;
+  return (
+    <>
+      {!notice && <StudioNotesPanel notes={notes} />}
+      {notice && <CameraErrorNotice message={notice} />}
+      {idle && permissionHint && <CameraPermissionHint />}
+      {idle && !permissionHint && (
+        <div className="absolute bottom-44 inset-x-0 z-10 flex justify-center pointer-events-none">
+          <p className="text-micro uppercase tracking-label-xwide text-white/70 font-serif italic">
+            Align your profile boundaries within the guide
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function VisualDiagnosticViewfinder({
   onClose,
   onComplete,
@@ -113,8 +195,8 @@ export function VisualDiagnosticViewfinder({
   const [calibrated, setCalibrated] = useState(false);
   const [lightingConfirmed, setLightingConfirmed] = useState(false);
   const [photoConsent, setPhotoConsent] = useState(false);
+  const [permissionHint, setPermissionHint] = useState(false);
   const savePhoto = useServerFn(saveConsentedProfilePhoto);
-  const [telemetryOpen, setTelemetryOpen] = useState(true);
   const [pipelineLog, setPipelineLog] = useState<string[]>(["Waiting for the right light…"]);
   const [manualCalibrateOpen, setManualCalibrateOpen] = useState(false);
   const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
@@ -152,13 +234,18 @@ export function VisualDiagnosticViewfinder({
     if (!calibrated) return;
     let cancelled = false;
     setStreamErr(null);
+    setPermissionHint(false);
     pushLog("Opening the camera…");
     if (!navigator?.mediaDevices?.getUserMedia) {
-      setStreamErr(
-        "Camera Access Restricted. Please verify your browser site settings allow lens access and ensure you are using an HTTPS connection.",
-      );
+      setStreamErr(CAMERA_BLOCKED_MESSAGE);
       pushLog("Camera isn't available on this device.");
       return;
+    }
+    // The browser's permission prompt can sit unanswered; say what to do after a few seconds.
+    const hintTimer = setTimeout(() => setPermissionHint(true), PERMISSION_HINT_DELAY_MS);
+    function promptAnswered() {
+      clearTimeout(hintTimer);
+      if (!cancelled) setPermissionHint(false);
     }
     (async () => {
       try {
@@ -166,6 +253,7 @@ export function VisualDiagnosticViewfinder({
           video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
+        promptAnswered();
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -177,25 +265,15 @@ export function VisualDiagnosticViewfinder({
         }
         pushLog("Camera is on. Let's see you.");
       } catch (error) {
-        const name = error instanceof Error ? error.name : "";
-        if (
-          name === "NotAllowedError" ||
-          name === "SecurityError" ||
-          name === "PermissionDeniedError"
-        ) {
-          setStreamErr(
-            "Camera Access Restricted. Please verify your browser site settings allow lens access and ensure you are using an HTTPS connection.",
-          );
-        } else if (name === "NotFoundError" || name === "OverconstrainedError") {
-          setStreamErr("No compatible camera was detected on this device.");
-        } else {
-          setStreamErr(errorMessage(error, "Camera unavailable. Please grant permission."));
-        }
-        pushLog(`Couldn't open the camera (${name || "unknown"}).`);
+        promptAnswered();
+        console.error("[VisualDiagnosticViewfinder] camera failed to open:", error);
+        setStreamErr(describeCameraError(error));
+        pushLog("Couldn't open the camera.");
       }
     })();
     return () => {
       cancelled = true;
+      clearTimeout(hintTimer);
       stopCamera();
     };
   }, [calibrated, facing]);
@@ -312,15 +390,19 @@ export function VisualDiagnosticViewfinder({
   }
 
   async function handleFile(file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file from your studio archive.");
-      return;
-    }
     setAnalyzing(true);
     setDrapeIdx(0);
     setLabelIdx(0);
     setElapsed(0);
     pushLog(`Looking at ${file.name}…`);
+    // Downscaled, upright JPEG: phone photos and HEIC would otherwise go up raw.
+    // Anything the browser can't open as an image is refused here, with a plain line.
+    const picked = await preparePickedPhoto(file);
+    if (!picked.ok) {
+      toast.error(picked.message);
+      setAnalyzing(false);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = String(reader.result || "");
@@ -330,13 +412,13 @@ export function VisualDiagnosticViewfinder({
         setAnalyzing(false);
         return;
       }
-      await runAnalyze(base64, { source: "upload" }, file.type);
+      await runAnalyze(base64, { source: "upload" }, picked.file.type);
     };
     reader.onerror = () => {
       toast.error("Failed to read archive image.");
       setAnalyzing(false);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(picked.file);
   }
 
   async function applyManualCalibration(key: keyof typeof SEASONS_MASTER_DATA, label: string) {
@@ -443,7 +525,7 @@ export function VisualDiagnosticViewfinder({
             <span className="text-xs text-muted-foreground leading-relaxed">
               Save this photo so Mila can put your own face in your generated looks — private,
               deletable anytime from Account Settings. Unchecked, the photo is analyzed and
-              discarded immediately, and looks use a generic model instead.
+              discarded right away.
             </span>
           </label>
           <Button
@@ -557,30 +639,12 @@ export function VisualDiagnosticViewfinder({
           />
         </svg>
 
-        <div className="absolute top-16 right-4 z-30 w-70 max-w-[78vw] hidden sm:block">
-          <div className="border-[0.5px] border-white/20 bg-black/55 backdrop-blur-md text-white">
-            <button
-              type="button"
-              onClick={() => setTelemetryOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-3 py-2 text-nano uppercase tracking-label-xwide hover:bg-white/5"
-              aria-expanded={telemetryOpen}
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <FlaskConical className="size-3" /> Studio notes
-              </span>
-              <ChevronDown
-                className={`size-3 transition-transform ${telemetryOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-            {telemetryOpen && (
-              <pre className="max-h-64 overflow-y-auto px-3 pb-3 pt-0 font-mono text-nano leading-relaxed text-white/75 whitespace-pre-wrap wrap-break-word">
-                {pipelineLog.length ? pipelineLog.join("\n") : "Waiting…"}
-              </pre>
-            )}
-          </div>
-        </div>
-
-        {streamErr && !analyzing && <CameraErrorNotice message={streamErr} />}
+        <CameraStatusLayer
+          streamErr={streamErr}
+          analyzing={analyzing}
+          permissionHint={permissionHint}
+          notes={pipelineLog}
+        />
 
         {analyzing && (
           <div
@@ -631,20 +695,12 @@ export function VisualDiagnosticViewfinder({
         </button>
       </div>
 
-      {!analyzing && !streamErr && (
-        <div className="absolute bottom-44 inset-x-0 z-10 flex justify-center pointer-events-none">
-          <p className="text-micro uppercase tracking-label-xwide text-white/70 font-serif italic">
-            Align your profile boundaries within the guide
-          </p>
-        </div>
-      )}
-
       {!analyzing && (
         <div className="absolute bottom-6 inset-x-0 z-20 flex flex-col items-center gap-2 px-6">
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept={PHOTO_PICKER_ACCEPT}
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
