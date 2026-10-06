@@ -1,0 +1,154 @@
+src/components/layout/suspended-gate.tsx
+  s_755964b2e0c3da::t_fdaf9228ae6e3c 21-24,28-30,33
+  s_755964b2e0c3da::t_405690b534f2f3 9-10
+src/routes/auth/callback.test.ts
+  s_755964b2e0c3da::t_c245173192da8a 24-27
+  s_755964b2e0c3da::t_270579804a1d3c 1-23,28-30
+src/lib/queries/profile.ts
+  s_755964b2e0c3da::t_4b9ca3bf2935d3 3-4,127-130,136-138,143
+  s_755964b2e0c3da::t_6caf89a031b158 123,131
+src/lib/landing-member-guard.test.ts
+  s_755964b2e0c3da::t_2687c38208a2a3 153
+  s_755964b2e0c3da::t_1814fe8d813a37 144,188-190
+  s_755964b2e0c3da::t_bf69e436377298 3-4,130-133,139-140,143,159-187
+  s_755964b2e0c3da::t_c245173192da8a 141-142
+  s_755964b2e0c3da::t_a1d9d012ed8d3f 145
+src/components/layout/auth-provider.tsx
+  s_755964b2e0c3da::t_55ad3b2c2eaa00 9,17-18,21,27-28,30-32,34,43-48,52-53,56-65,82
+  s_755964b2e0c3da::t_50bf44e79f2f87 33
+src/components/login/signup-form.tsx
+  s_755964b2e0c3da::t_c23097c1782bb5 15,27-28,36,84
+src/lib/queries/member-query.ts
+  s_755964b2e0c3da::t_95ea4678863615 1-22
+src/routes/auth/callback.tsx
+  s_755964b2e0c3da::t_ba8e0d0e1508d3 9-10,12
+  s_755964b2e0c3da::t_f5e1a027484a47 6
+src/components/login/signup-flow.test.ts
+  s_755964b2e0c3da::t_c245173192da8a 131-134
+  s_755964b2e0c3da::t_1814fe8d813a37 135-136
+  s_755964b2e0c3da::t_b488a4feafa106 4,114-130
+src/lib/auth-session.ts
+  s_755964b2e0c3da::t_c3cec11b32cef6 338
+  s_755964b2e0c3da::t_270f0c67a18d7a 228-229
+  s_755964b2e0c3da::t_3bea8c9dc3fef6 166-201
+  s_755964b2e0c3da::t_080d78e3105d0e 352
+  s_755964b2e0c3da::t_c9b2662257f8a4 212-217,220-221
+  s_755964b2e0c3da::t_53d021cd976db4 202,317,400,403,406,408-409,412,416-446
+  s_755964b2e0c3da::t_ae058962ffcafe 306,309-311,315-316
+  s_755964b2e0c3da::t_ceddde031c5af7 61-91,97-101
+  s_755964b2e0c3da::t_16c3bcd65b35fa 379-399
+  s_755964b2e0c3da::t_9bccfcef2741af 203
+  s_755964b2e0c3da::t_687d577a631ec8 222
+  s_755964b2e0c3da::t_e99c9d2103a244 318
+  s_755964b2e0c3da::t_f85a3ed3d2b91e 401
+src/routes/login/index.tsx
+  s_755964b2e0c3da::t_c6dc4a7364f897 10
+  s_755964b2e0c3da::t_c23097c1782bb5 37
+  s_755964b2e0c3da::t_7b1dd808883644 3
+src/components/login/google-sign-in.test.ts
+  s_755964b2e0c3da::t_c245173192da8a 20-24,29-30
+  s_755964b2e0c3da::t_a33b5146eb6d12 1-19,25-28,31-59
+src/lib/queries/credits.test.ts
+  s_755964b2e0c3da::t_016063a534fc7a 22-24
+  s_755964b2e0c3da::t_6265e38b2179d5 1-21,25-38,43-65,70-75,77-106,112-116
+  s_755964b2e0c3da::t_1814fe8d813a37 39-41,76
+  s_755964b2e0c3da::t_c245173192da8a 42,66-69,107-111
+src/lib/queries/saved-products.ts
+  s_755964b2e0c3da::t_3b7f6de729d073 305-310,312
+  s_755964b2e0c3da::t_8703491ed2fce7 5-6
+  s_755964b2e0c3da::t_069177e9107929 100-101,103,108-110
+  s_755964b2e0c3da::t_6caf89a031b158 299-302
+src/lib/safe-redirect.test.ts
+  s_755964b2e0c3da::t_b78ee4c52951a6 7,260-282
+  s_755964b2e0c3da::t_8e486204ec0f44 240-242,244-245,247,249-252,254-259
+  s_755964b2e0c3da::t_c9da51c0b14903 2-6,8,186-225,228-239,243
+  s_755964b2e0c3da::t_d9ba1c1980993e 246,248,253
+  s_755964b2e0c3da::t_1814fe8d813a37 283-284
+  s_755964b2e0c3da::t_c245173192da8a 226-227
+src/components/login/google-sign-in.ts
+  s_755964b2e0c3da::t_97401a2892b0b1 1-18
+src/lib/auth.functions.test.ts
+  s_755964b2e0c3da::t_c245173192da8a 65-67,80-82
+  s_755964b2e0c3da::t_fe1dd7afb9a23a 25-26,48-52,56-64,68-79,83-86
+  s_755964b2e0c3da::t_c72ed437c70d38 87
+src/lib/queries/saved-palettes.ts
+  s_755964b2e0c3da::t_6caf89a031b158 35,42
+  s_755964b2e0c3da::t_4b9ca3bf2935d3 3-4,40-41,46-47
+  s_755964b2e0c3da::t_6273e6b45ea3fc 57
+src/components/login/signup-flow.ts
+  s_755964b2e0c3da::t_40058b74a6362c 2,55-73
+  s_755964b2e0c3da::t_61bcffe86a55b1 74
+src/components/login/auth-card.tsx
+  s_755964b2e0c3da::t_c23097c1782bb5 11,13,15,22-23,42,98
+src/lib/landing-member-guard.ts
+  s_755964b2e0c3da::t_2a9c7593b306d5 67-76,78-79,81,92-102
+  s_755964b2e0c3da::t_d3e97b962931ef 103
+src/lib/queries/profile-username.ts
+  s_755964b2e0c3da::t_6caf89a031b158 7,13
+  s_755964b2e0c3da::t_4b9ca3bf2935d3 3-4,11-12,17-18,24
+src/lib/queries/subscriptions.ts
+  s_755964b2e0c3da::t_4b9ca3bf2935d3 9-10,34-35,44-48,52,58-61,76
+  s_755964b2e0c3da::t_6caf89a031b158 29,37,54
+src/lib/safe-redirect.ts
+  s_755964b2e0c3da::t_aabd8fc5a61dce 90-100
+  s_755964b2e0c3da::t_703d9840020e8c 101-114
+  s_755964b2e0c3da::t_c399a9d5bb32f3 24-25
+  s_755964b2e0c3da::t_f75dd6a61c6461 71
+src/lib/auth-input.ts
+  s_755964b2e0c3da::t_d97603865424a8 17-19
+src/lib/queries/credits.ts
+  s_755964b2e0c3da::t_50bf44e79f2f87 21,34,47
+  s_755964b2e0c3da::t_e1af3e22127e83 5,7,9,13-17,22-25,27,35-36,43,48-49,62
+src/lib/queries/member-queries.test.ts
+  s_755964b2e0c3da::t_d3e08624db71dd 113-122
+  s_755964b2e0c3da::t_570b0382f63155 1-112,123-124
+src/lib/queries/dashboard-stats.ts
+  s_755964b2e0c3da::t_4b9ca3bf2935d3 3-4,74-75,84-85,90-91,106
+  s_755964b2e0c3da::t_6caf89a031b158 67,79,86
+src/lib/auth-handler.server.ts
+  s_755964b2e0c3da::t_e19bb7028c68d7 16
+  s_755964b2e0c3da::t_29f5d4401e0d3c 85-88
+src/lib/auth-session.test.ts
+  s_755964b2e0c3da::t_d56e25b6325ff0 18,681-738
+  s_755964b2e0c3da::t_c245173192da8a 596-598
+  s_755964b2e0c3da::t_425b4d59795e10 86-120
+  s_755964b2e0c3da::t_216cc8a7245414 16-17,590-595,599-680
+  s_755964b2e0c3da::t_bc5d2ab12158f2 19-20,543-589
+  s_755964b2e0c3da::t_1814fe8d813a37 739-740
+tests/e2e/auth-session.spec.ts
+  s_755964b2e0c3da::t_769c6a6dacae42 87,112
+  s_755964b2e0c3da::t_1814fe8d813a37 369
+  s_755964b2e0c3da::t_1485e531a0511a 307-345,350-355,365-366,368
+  s_755964b2e0c3da::t_47967a982270ad 356-364
+  s_755964b2e0c3da::t_470c14bf43e46d 107-111,113-114,116-118
+  s_755964b2e0c3da::t_ddb3a8d8141cdc 346-349
+  s_755964b2e0c3da::t_93c7cf1d110891 77-83,85-86
+  s_755964b2e0c3da::t_5974aab917df5d 22-28
+  s_755964b2e0c3da::t_581ef35899449d 367
+tests/helpers/fake-member-supabase.ts
+  s_25abc13ccfd424::t_53ebcee9dde2d8 1-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e7b8f748aeaf49e55107e677df72d93c8465f52",
+  "prompts": {},
+  "sessions": {
+    "s_25abc13ccfd424": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a56c629ccf293d974",
+        "model": "unknown"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    },
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
