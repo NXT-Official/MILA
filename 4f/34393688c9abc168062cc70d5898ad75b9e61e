@@ -1,0 +1,44 @@
+src/lib/ai.server.test.ts
+  s_755964b2e0c3da::t_96b601dfd83006 100-129,133-170
+  s_755964b2e0c3da::t_eb8158ea1177cb 130-132
+src/server/services/personal-color-analysis.test.ts
+  s_755964b2e0c3da::t_9fd0e3f0155889 1-207,212-314
+  s_755964b2e0c3da::t_eb8158ea1177cb 208-211
+src/server/services/personal-color-analysis.ts
+  s_755964b2e0c3da::t_bdc72da3df550b 381,386-388
+  s_755964b2e0c3da::t_ebc1bfef973ccb 299,317-355,360,363,369
+  s_755964b2e0c3da::t_9376b189653966 140-142
+  s_755964b2e0c3da::t_aa8a24b83bee16 452
+  s_755964b2e0c3da::t_eb8158ea1177cb 448-451
+  s_755964b2e0c3da::t_76458250a0c6bc 839
+  s_755964b2e0c3da::t_23ea01372d289f 824-832
+  s_755964b2e0c3da::t_c8b3d619152dbf 80-109,111-115,119
+  s_755964b2e0c3da::t_b9db4531fc9d55 4
+  s_755964b2e0c3da::t_96c9e487395673 275-298
+  s_755964b2e0c3da::t_99520f1a62eae0 720-726,728
+  s_755964b2e0c3da::t_700792660ad7dc 409
+  s_755964b2e0c3da::t_ed31a655569e1a 266-267,271
+  s_755964b2e0c3da::t_9f6f90097a6f33 402,407,425,428-447,453-461
+  s_755964b2e0c3da::t_3cf58aed46c641 477-483,485-486
+  s_755964b2e0c3da::t_96b8e4b8194b5b 300,462,833
+src/lib/ai.server.ts
+  s_755964b2e0c3da::t_d9b56509a1aa03 193
+  s_755964b2e0c3da::t_3936128ea068ee 77-125
+  s_755964b2e0c3da::t_98974a2d787301 234,236-240
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4f34393688c9abc168062cc70d5898ad75b9e61e",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
