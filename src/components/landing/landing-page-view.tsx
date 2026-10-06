@@ -21,7 +21,7 @@ export function LandingPageView({ content }: { content: LandingContent }) {
   // Section order is fixed in code; the Studio can only hide a section.
   return (
     <div className="min-h-screen">
-      <SiteHeader />
+      <SiteHeader wordmark={content.footer.wordmark} />
       <main className="overflow-x-clip">
         <HeroSection content={content.hero} cta={content.cta} />
         {!content.howItWorks.hidden && <HowItWorksSection content={content.howItWorks} />}

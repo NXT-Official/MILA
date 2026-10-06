@@ -462,6 +462,7 @@ export type Database = {
           default_location: string | null;
           delivery_country: string | null;
           face_shape: string | null;
+          founding_color_read_at: string | null;
           full_name: string | null;
           gender: string | null;
           hair_length: string | null;
@@ -491,6 +492,7 @@ export type Database = {
           default_location?: string | null;
           delivery_country?: string | null;
           face_shape?: string | null;
+          founding_color_read_at?: string | null;
           full_name?: string | null;
           gender?: string | null;
           hair_length?: string | null;
@@ -520,6 +522,7 @@ export type Database = {
           default_location?: string | null;
           delivery_country?: string | null;
           face_shape?: string | null;
+          founding_color_read_at?: string | null;
           full_name?: string | null;
           gender?: string | null;
           hair_length?: string | null;

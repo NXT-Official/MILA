@@ -1,5 +1,19 @@
 import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+/**
+ * The atelier text sizes (`text-pico|nano|micro|label` in src/styles.css) are
+ * custom utilities, so stock tailwind-merge reads them as text COLORS — a
+ * merge like cn("bg-ink text-surface", "text-label uppercase") then drops the
+ * real color as a false conflict. Register the sizes explicitly.
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [{ text: ["label", "micro", "nano", "pico"] }],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

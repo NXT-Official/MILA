@@ -10,11 +10,16 @@ export interface AiCallerContext {
 
 export type AiTool = { function: { name: string; parameters: Record<string, unknown> } };
 
-export type AiResult = { ok: true; args: unknown } | { ok: false; status: number };
+export type AiResult =
+  { ok: true; args: unknown } | { ok: false; status: number; modelRejected?: boolean };
 
 /** Optional per-call controls. Absent fields keep the shipped defaults, so
  * every pre-existing caller behaves exactly as before. */
 export interface AiChatOptions {
+  /** Pin a specific model for this call instead of reading the platform
+   * setting. Production callers leave it unset (the admin console decides);
+   * the regression tests use it to exercise the rejected-model fallback. */
+  model?: string;
   /** Per-attempt budget for the whole request INCLUDING the body read. */
   timeoutMs?: number;
   /** OpenRouter reasoning budget, in tokens. The big compose calls otherwise
@@ -69,20 +74,32 @@ function stripJsonFence(text: string): string {
   return text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
 }
 
-export async function aiChatCompletion(
+/** True when the provider rejected the MODEL ID itself — a typo'd or retired
+ * model — as opposed to any other failure. OpenRouter answers these with a
+ * 400/404 whose body names the model (e.g. "No endpoints found for …").
+ * Exported for the regression tests. */
+export function isModelRejection(status: number, bodyText: string): boolean {
+  return (
+    (status === 400 || status === 404) &&
+    /model/i.test(bodyText) &&
+    /not found|no endpoints|does not exist|unknown|invalid/i.test(bodyText)
+  );
+}
+
+/**
+ * One chat completion on one model. Callers go through
+ * {@link aiChatCompletion}, which owns model resolution and the
+ * rejected-model fallback.
+ */
+async function requestCompletion(
+  model: string,
   messages: Array<Record<string, unknown>>,
   tool: AiTool,
   caller: AiCallerContext,
-  options: AiChatOptions = {},
+  options: AiChatOptions,
+  apiKey: string,
+  timeoutMs: number,
 ): Promise<AiResult> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    throw new Error("AI provider not configured — set OPENROUTER_API_KEY");
-  }
-  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
-
-  const model = await resolveTextModel();
-
   let response: Response;
   try {
     response = await fetch(OPENROUTER_CHAT_URL, {
@@ -107,8 +124,13 @@ export async function aiChatCompletion(
     return { ok: false, status: 504 };
   }
   if (!response.ok) {
-    console.error("[ai] provider error", response.status, await response.text());
-    return { ok: false, status: response.status };
+    const bodyText = await response.text();
+    console.error("[ai] provider error", response.status, bodyText);
+    return {
+      ok: false,
+      status: response.status,
+      modelRejected: isModelRejection(response.status, bodyText) ? true : undefined,
+    };
   }
 
   // The body read is where a provider that overruns TIMEOUT_MS actually
@@ -165,4 +187,49 @@ export async function aiChatCompletion(
     console.error("[ai] provider returned unparseable JSON", { length: text.length });
     return { ok: false, status: 502 };
   }
+}
+
+export async function aiChatCompletion(
+  messages: Array<Record<string, unknown>>,
+  tool: AiTool,
+  caller: AiCallerContext,
+  options: AiChatOptions = {},
+): Promise<AiResult> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI provider not configured — set OPENROUTER_API_KEY");
+  }
+  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
+
+  const configuredModel = options.model ?? (await resolveTextModel());
+  const result = await requestCompletion(
+    configuredModel,
+    messages,
+    tool,
+    caller,
+    options,
+    apiKey,
+    timeoutMs,
+  );
+  // One retry on the shipped default when the provider rejected the CONFIGURED
+  // model id itself (a typo, or a model the provider has retired): a single bad
+  // admin setting must not take every AI surface down. Other failures — rate
+  // limits, outages, timeouts — are never retried here. (QA F-MA-007.)
+  if (!result.ok && result.modelRejected && configuredModel !== TEXT_MODEL) {
+    console.error(
+      "[ai] configured model was rejected by the provider; retrying with the shipped default",
+      TEXT_MODEL,
+    );
+    const retry = await requestCompletion(
+      TEXT_MODEL,
+      messages,
+      tool,
+      caller,
+      options,
+      apiKey,
+      timeoutMs,
+    );
+    return retry.ok ? retry : { ok: false, status: retry.status };
+  }
+  return result;
 }

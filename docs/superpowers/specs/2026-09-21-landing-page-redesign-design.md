@@ -2,13 +2,13 @@
 
 Status: **approved, not started.** Written 2026-09-21, follow-up to the UI/UX consistency
 refactor completed earlier the same day (see `MILA_CHANGELOG_2026-09-18_to_09-20.md` and
-`/Users/hoon/.claude/plans/sequential-toasting-cascade.md` for that prior pass).
+`~/.claude/plans/sequential-toasting-cascade.md` for that prior pass).
 
 ## Context
 
-The earlier refactor fixed the landing page's *mechanical* problems (missing mobile nav, missing
+The earlier refactor fixed the landing page's _mechanical_ problems (missing mobile nav, missing
 `md:` breakpoint causing stuck-2-column grids, text-overflow safeguards) but explicitly left its
-*visual* design untouched: 4 hand-rolled duplicate "card" recipes, 3 inconsistent heading clamp
+_visual_ design untouched: 4 hand-rolled duplicate "card" recipes, 3 inconsistent heading clamp
 scales, `hero-section.tsx` and `final-cta-section.tsx` bypassing the shared `Section` component,
 one-off `Button`/`IconTile` overrides. The user asked for a full redesign of those, not just the
 bug fixes.
@@ -28,7 +28,7 @@ treatment are in scope.
   (`src/lib/landing-content.ts` / `landing-content.functions.ts`) — no Sanity schema changes.
   Redesign is a full visual rebuild of each section, not a re-ordering or content restructure.
 - **Typography: keep Playfair Display (serif) + Inter (sans).** No font-family change. The
-  redesign fixes the *scale* inconsistency, not the typeface choice.
+  redesign fixes the _scale_ inconsistency, not the typeface choice.
 - **Imagery: no real photography.** The landing CMS schema
   (`src/lib/landing-content.functions.ts`'s `LANDING_QUERY`) has zero image fields, and the
   Sanity Studio/schema itself isn't in this repo — image fields can't be added from here. The
@@ -79,6 +79,7 @@ No new CSS var **values**. Any new utility classes added to `styles.css` are add
 ## Section-by-section redesign
 
 ### Hero (`hero-section.tsx`)
+
 Goes asymmetric two-column from the start, rather than stacked-and-centered: text (kicker,
 display headline, subhead, CTA, `ctaNote`) on the left; the outfit `preview` data on the right.
 The preview panel drops its current card border/shadow/hand-rolled `rounded-card` treatment and
@@ -89,6 +90,7 @@ blur kept but toned down/repositioned so it reads as a color wash rather than a 
 Collapses to a single stacked column (preview below text) below `lg`, same as today.
 
 ### How It Works (`how-it-works-section.tsx`)
+
 The 3 hover-lift bordered cards are replaced by an editorial numbered list: an oversized serif
 numeral (01 / 02 / 03) beside each step, `IconTile` shrinks to a secondary role next to the
 numeral rather than being the card's focal point, steps separated by a thin horizontal rule
@@ -97,6 +99,7 @@ rule dividers between steps (the `md:grid-cols-3` breakpoint fix from the prior 
 applies to whatever grid/flex structure replaces the current one).
 
 ### Dossier (`dossier-section.tsx`)
+
 Text column (via `SectionHeading`) stays on the left. The right-side data panel **stays a real
 card** — this is the one section where a bounded surface is genuinely correct (a data table),
 using the app's canonical `rounded-card` / `border-border` / `bg-card` / `shadow-paper` recipe
@@ -106,6 +109,7 @@ completion bar becomes a thinner accent-colored progress line instead of the cur
 explaining why that's unavoidable for a runtime value).
 
 ### Dupe Hunter (`dupe-hunter-section.tsx`)
+
 Currently two stacked `DupeRow`s inside one card. Redesign keeps the single contained card
 (comparison content also genuinely wants a bounded surface) but restructures it as a diptych: a
 vertical rule splits "inspiration" and "Mila match" side by side instead of stacking. Price
@@ -114,6 +118,7 @@ present) visual pairing made more deliberate at the new layout's scale. `min-w-0
 safeguard from the prior pass carries over unchanged.
 
 ### Community + Testimonials (`community-section.tsx`, `testimonials-section.tsx`)
+
 Community's season-tag chip row is unchanged (already identified as clean in the prior audit).
 Testimonials lose their 3rd duplicate hand-rolled card: become an editorial "quote wall" —
 oversized quote-mark glyph, testimonials separated by rules rather than boxed/shadowed, season
@@ -121,11 +126,13 @@ tag rendered as a small caption beneath each quote rather than inline in a card 
 wrapped in its own `Reveal` (added in the prior pass) — unaffected by this visual change.
 
 ### Final CTA (`final-cta-section.tsx`)
+
 Switches from hand-rolled `border-t` + `atelier-container py-28 sm:py-36 lg:py-44` + one-off
 heading scale to rendering through `Section` + `SectionHeading` like every other section (see
 Foundation §2 and §1). CTA button uses `size="pill"` directly (Foundation §4).
 
 ### Header / Footer (`site-header.tsx`, `site-footer.tsx`)
+
 No structural change — mobile nav sheet was already added in the prior pass. Only change is
 dropping the ad hoc button override per Foundation §4.
 
@@ -141,6 +148,7 @@ dropping the ad hoc button override per Foundation §4.
 ## Verification
 
 Same discipline as the prior refactor pass:
+
 - `tsc --noEmit` and `npm run build` clean after each file.
 - `git diff src/styles.css` shows only additive lines, zero changes inside `:root {}` / `.dark {}`.
 - Responsive check at 320 / 375 / 768 / 1024 / 1440 / 1920 for every touched section, via the dev

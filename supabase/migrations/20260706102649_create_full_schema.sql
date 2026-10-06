@@ -1053,22 +1053,16 @@ WHERE confirmation_token IS NULL OR recovery_token IS NULL
    OR email_change_token_current IS NULL OR phone_change IS NULL
    OR phone_change_token IS NULL OR reauthentication_token IS NULL;
 
-WITH seed(email, password, username, full_name, role) AS (
+-- SEED ACCOUNTS. This block once embedded the QA accounts' literal passwords
+-- and replayed as a password reset for existing users (Morpessa MA-2 — the
+-- file is public, so those values must be treated as compromised). Never
+-- re-apply credentials from a migration: existing accounts are left untouched,
+-- and a fresh environment gets unguessable random passwords that staff reset.
+WITH seed(email, username, full_name, role) AS (
   VALUES
-    ('milaadmin@gmail.com', 'Milaadmin@00',
-     'milaadmin', 'Mila Admin', 'admin'::public.app_role),
-    ('milamoderator@gmail.com', 'Milamoderator@00',
-     'milamoderator', 'Mila Moderator', 'moderator'::public.app_role),
-    ('milauser@gmail.com', 'Milauser@00',
-     'milauser', 'Mila User', 'user'::public.app_role)
-),
-reset AS (
-  -- keep already-seeded accounts in sync with the passwords above
-  UPDATE auth.users u
-  SET encrypted_password = extensions.crypt(s.password, extensions.gen_salt('bf')),
-      updated_at = now()
-  FROM seed s
-  WHERE u.email = s.email
+    ('milaadmin@gmail.com', 'milaadmin', 'Mila Admin', 'admin'::public.app_role),
+    ('milamoderator@gmail.com', 'milamoderator', 'Mila Moderator', 'moderator'::public.app_role),
+    ('milauser@gmail.com', 'milauser', 'Mila User', 'user'::public.app_role)
 ),
 created AS (
   INSERT INTO auth.users (
@@ -1085,7 +1079,7 @@ created AS (
     'authenticated',
     'authenticated',
     s.email,
-    extensions.crypt(s.password, extensions.gen_salt('bf')),
+    extensions.crypt(gen_random_uuid()::text, extensions.gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     jsonb_build_object('full_name', s.full_name, 'username', s.username),

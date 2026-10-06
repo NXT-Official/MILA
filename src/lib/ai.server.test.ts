@@ -152,4 +152,50 @@ describe("OpenRouter chat gateway", () => {
     );
     expect(second.reasoning).toBeUndefined();
   });
+
+  test("retries once on the shipped default when the provider rejects the configured model id", async () => {
+    // QA F-MA-007: the admin console accepts custom ids behind a format-only
+    // check, so one typo could otherwise fail every AI call until staff
+    // notice. The provider rejects the model with a 404 that names it; the
+    // gateway answers with one retry on the shipped default instead.
+    process.env.OPENROUTER_API_KEY = "test-key";
+    const fetchMock = mock(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+      if (body.model === "deepseek/deepseek-v4.1-flash") {
+        return Response.json({ choices: [{ message: { content: '{"value":"ok"}' } }], usage: {} });
+      }
+      return new Response(
+        JSON.stringify({ error: { message: `No endpoints found for ${body.model}.` } }),
+        { status: 404, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const result = await aiChatCompletion([{ role: "user", content: "hi" }], tool, fakeCaller, {
+      model: "vendor/typo-model",
+    });
+
+    expect(result).toEqual({ ok: true, args: { value: "ok" } });
+    expect(fetchMock.mock.calls.length).toBe(2);
+    const first = JSON.parse(
+      String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body),
+    );
+    const second = JSON.parse(
+      String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body),
+    );
+    expect(first.model).toBe("vendor/typo-model");
+    expect(second.model).toBe("deepseek/deepseek-v4.1-flash");
+  });
+
+  test("keeps a non-model 404 as-is — no retry, no double request", async () => {
+    process.env.OPENROUTER_API_KEY = "test-key";
+    const fetchMock = mock(async () => new Response("not here", { status: 404 }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    expect(await aiChatCompletion([], tool, fakeCaller, { model: "vendor/typo-model" })).toEqual({
+      ok: false,
+      status: 404,
+    });
+    expect(fetchMock.mock.calls.length).toBe(1);
+  });
 });

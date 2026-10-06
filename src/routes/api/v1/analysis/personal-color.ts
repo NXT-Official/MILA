@@ -21,7 +21,8 @@ const defaultDeps: HandleAnalysisPersonalColorDeps = {
  * `src/lib/analyzePersonalColor.functions.ts`, result shape included: failures
  * ride a **200** as `{ success: false, error }` (the §6 contract for this
  * endpoint), and the client maps the codes — `INSUFFICIENT_CREDITS` opens the
- * paywall, never a generic error. The founding read (no colour dossier yet) is
+ * paywall, never a generic error. The founding read (once ever, tracked
+ * server-side) is
  * free; re-reads cost **1 AI credit**; 10/hour either way. See
  * `MILA_MOBILE/src/services/api/analysis.ts` for the mobile contract.
  */

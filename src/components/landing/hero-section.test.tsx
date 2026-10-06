@@ -111,6 +111,15 @@ describe("HeroSection image", () => {
     expect(out).not.toContain(LANDING_FALLBACK.hero.image.src);
   });
 
+  test("the hero image is never served pre-hidden (the LCP must not wait for hydration)", async () => {
+    const out = await renderHero(EDITED);
+    const tag = out.match(/<img\b[^>]*>/g)?.find((t) => t.includes("hero-style-sheet")) ?? "";
+    // Guard: the hero image is present in the server HTML.
+    expect(tag).not.toBe("");
+    // Morpessa MW-14: an opacity-0 initial style kept the LCP invisible until JS ran.
+    expect(tag).not.toMatch(/opacity/);
+  });
+
   test.each([
     ["no image", {}],
     ["an image without alt text", { image: { url: CDN } }],

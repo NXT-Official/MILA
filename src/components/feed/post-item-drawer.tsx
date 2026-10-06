@@ -171,7 +171,7 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                         <div className="flex items-center gap-1.5">
                           <p className="atelier-label">
                             {formatPrice(match.price, match.currency)}
-                            {/* TODO: not yet implemented — convert to viewer's currency via a real FX source; currently displays the product's stored currency as-is */}
+                            {/* Prices render in the product's stored currency, labelled by formatPrice (Intl). FX conversion to a viewer currency is deliberately out of scope until a real rate source exists (Morpessa MW-9 resolved as "labelled"). */}
                           </p>
                           {match.is_verified_seller && (
                             <BadgeCheck

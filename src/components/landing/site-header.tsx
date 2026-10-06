@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useAuth } from "@/hooks/use-auth";
 import { MAIN_NAV_LINKS } from "@/constants/nav";
 
-export function SiteHeader() {
+export function SiteHeader({ wordmark = "MILA" }: { wordmark?: string }) {
   const { session } = useAuth();
   const [navOpen, setNavOpen] = useState(false);
   const destination = session ? "/dashboard" : "/login";
@@ -22,7 +22,7 @@ export function SiteHeader() {
           className="flex items-center gap-2.5 rounded-control font-serif text-xl font-bold tracking-label-xwide text-foreground"
         >
           <img src="/favicon.svg" alt="" width={24} height={24} className="size-6" />
-          MILA
+          {wordmark}
         </Link>
 
         <nav aria-label="Main" className="hidden lg:block">

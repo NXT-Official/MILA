@@ -58,8 +58,12 @@ export function HeroSection({ content, cta }: { content: HeroContent; cta?: CtaC
                 loading="eager"
                 fetchPriority="high"
                 className="w-full rounded-card border border-border shadow-paper"
-                initial={reduce ? false : { opacity: 0, scale: 0.97 }}
-                animate={{ opacity: 1, scale: 1 }}
+                // The hero image is the page's likely LCP element: starting it
+                // at opacity 0 on the server keeps the largest paint hidden
+                // until hydration (and forever without JS). Settle-in with
+                // transform only — the art is never invisible (Morpessa MW-14).
+                initial={reduce ? false : { scale: 0.97 }}
+                animate={{ scale: 1 }}
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
               />
               <p className="mt-3 text-micro uppercase tracking-label-xwide text-muted-foreground">

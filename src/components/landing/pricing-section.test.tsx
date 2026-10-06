@@ -22,9 +22,12 @@ function text(copy: string) {
   return renderToStaticMarkup(<>{copy}</>);
 }
 
-/** Every `<h2>` in the markup, in document order: the section heading, then one per plan. */
+/** The section `<h2>` and the per-plan `<h3>`s, in document order. */
 function headings(markup: string) {
-  return [...markup.matchAll(/<h2[^>]*>(.*?)<\/h2>/gs)].map(([, inner]) => inner);
+  return {
+    h2: [...markup.matchAll(/<h2[^>]*>(.*?)<\/h2>/gs)].map(([, inner]) => inner),
+    h3: [...markup.matchAll(/<h3[^>]*>(.*?)<\/h3>/gs)].map(([, inner]) => inner),
+  };
 }
 
 /** Everything in the markup that reads as a price, in document order. */
@@ -113,16 +116,17 @@ describe("PricingSection copy comes from content", () => {
 describe("PricingSection plans come only from the plans query", () => {
   test("plan names and prices are the query's, in the query's order", async () => {
     const out = await renderPricing(clientWith(PLANS), EDITED);
-    expect(headings(out)).toEqual([text(EDITED.heading), ...PLANS.map((plan) => text(plan.title))]);
+    const { h2, h3 } = headings(out);
+    expect(h2).toEqual([text(EDITED.heading)]);
+    expect(h3).toEqual(PLANS.map((plan) => text(plan.title)));
     expect(prices(out)).toEqual(SHOWN_PRICES);
     expect(count(out, PLACEHOLDER)).toBe(0);
 
     const reversedPlans = [...PLANS].reverse();
     const reversed = await renderPricing(clientWith(reversedPlans), EDITED);
-    expect(headings(reversed)).toEqual([
-      text(EDITED.heading),
-      ...reversedPlans.map((plan) => text(plan.title)),
-    ]);
+    const reversedHeadings = headings(reversed);
+    expect(reversedHeadings.h2).toEqual([text(EDITED.heading)]);
+    expect(reversedHeadings.h3).toEqual(reversedPlans.map((plan) => text(plan.title)));
     expect(prices(reversed)).toEqual([...SHOWN_PRICES].reverse());
   });
 
@@ -149,7 +153,7 @@ describe("PricingSection plans come only from the plans query", () => {
 describe("PricingSection without plans", () => {
   test("before the query has data: heading and body over three placeholders, no plan or price", async () => {
     const out = await renderPricing(new QueryClient(), EDITED);
-    expect(headings(out)).toEqual([text(EDITED.heading)]);
+    expect(headings(out).h2).toEqual([text(EDITED.heading)]);
     expect(out).toContain(`>${text(EDITED.body)}<`);
     expect(count(out, PLACEHOLDER)).toBe(3);
     expect(prices(out)).toEqual([]);
@@ -157,11 +161,18 @@ describe("PricingSection without plans", () => {
     expect(out).not.toContain("<button");
   });
 
-  test("the query returned no plans: the whole section is omitted, heading included", async () => {
-    expect(await renderPricing(clientWith([]), EDITED)).toBe("");
+  test("the query returned no plans: heading, body and a preparing state stand in for the plans", async () => {
+    const out = await renderPricing(clientWith([]), EDITED);
+    expect(out).toContain(`>${text(EDITED.heading)}</h2>`);
+    expect(out).toContain(`>${text(EDITED.body)}<`);
+    expect(out).toContain("Membership plans are being prepared.");
+    expect(out).toContain("Please check back soon.");
+    expect(prices(out)).toEqual([]);
+    expect(count(out, PLACEHOLDER)).toBe(0);
+    expect(out).not.toContain("<li");
   });
 
-  test("the query failed: the whole section is omitted, heading included", async () => {
+  test("the query failed: heading, body and a retry panel stand in for the plans", async () => {
     // `retryOnMount: false` keeps the failed result for the first render. With
     // the default, a newly mounted section shows the placeholders while it retries.
     const client = new QueryClient({ defaultOptions: { queries: { retryOnMount: false } } });
@@ -175,6 +186,10 @@ describe("PricingSection without plans", () => {
     // Guard: the query really is in its failed state.
     expect(client.getQueryState(PLANS_KEY)?.status).toBe("error");
 
-    expect(await renderPricing(client, EDITED)).toBe("");
+    const out = await renderPricing(client, EDITED);
+    expect(out).toContain(`>${text(EDITED.heading)}</h2>`);
+    expect(out).toContain(`>${text("Couldn't load membership plans")}</p>`);
+    expect(out).toContain("Try Again");
+    expect(prices(out)).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { errorMessage, relativeTime } from "./utils";
+import { cn, errorMessage, relativeTime } from "./utils";
 
 describe("relativeTime", () => {
   const now = Date.UTC(2026, 0, 15, 12, 0, 0);
@@ -46,5 +46,20 @@ describe("errorMessage", () => {
     expect(errorMessage({ message: 42 }, "fallback")).toBe("fallback");
     expect(errorMessage("just a string", "fallback")).toBe("fallback");
     expect(errorMessage(null, "fallback")).toBe("fallback");
+  });
+});
+
+describe("cn", () => {
+  it("keeps a real text colour when a custom text size is merged with it", () => {
+    // text-label is a custom size; as a stock colour class it would win the
+    // merge and drop text-surface entirely (Morpessa MW-13).
+    expect(cn("bg-ink text-surface", "text-label uppercase")).toBe(
+      "bg-ink text-surface text-label uppercase",
+    );
+  });
+
+  it("still resolves colour-vs-colour and size-vs-size conflicts", () => {
+    expect(cn("text-surface", "text-ink")).toBe("text-ink");
+    expect(cn("text-label", "text-micro")).toBe("text-micro");
   });
 });

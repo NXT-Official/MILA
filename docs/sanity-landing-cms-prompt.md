@@ -1,12 +1,12 @@
 # Prompt: move the landing page off hardcoded copy and onto Sanity
 
-Copy everything below the line into a fresh Claude Code session started from `/Users/user/nxt/MILA`
+Copy everything below the line into a fresh Claude Code session started from `<workspace>/MILA`
 (the **parent** folder — not `app`, so the Studio and the app are both visible).
 
 ---
 
 You are wiring Sanity CMS into the Mila marketing landing page. The app is at
-`/Users/user/nxt/MILA/app`. The Studio must live at `/Users/user/nxt/MILA/studio-mila` — a standalone
+`<workspace>/MILA/app`. The Studio must live at `<workspace>/MILA/studio-mila` — a standalone
 sibling folder. **Never** embed the Studio into the app, and never move it inside `app`.
 
 Read `.agents/skills/sanity-best-practices/references/get-started.md` before you start. Then read
@@ -15,14 +15,14 @@ write the schema.
 
 ## Project facts
 
-|                 |                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------- |
-| Sanity project  | Mila — `8bkzi9bn`                                                                  |
-| Dataset         | `production`                                                                       |
-| Studio path     | `/Users/user/nxt/MILA/studio-mila` (standalone, create it — it does not exist yet) |
-| App path        | `/Users/user/nxt/MILA/app`                                                         |
-| App stack       | React 19 · TanStack Start + Router · Vite 7 · Nitro · Tailwind v4 · Bun            |
-| Package manager | **bun** (`bun add`, `bun run`) — there is a `bun.lock`, no `package-lock.json`     |
+|                 |                                                                                |
+| --------------- | ------------------------------------------------------------------------------ |
+| Sanity project  | Mila — `8bkzi9bn`                                                              |
+| Dataset         | `production`                                                                   |
+| Studio path     | `<workspace>/MILA/studio-mila` (standalone, create it — it does not exist yet) |
+| App path        | `<workspace>/MILA/app`                                                         |
+| App stack       | React 19 · TanStack Start + Router · Vite 7 · Nitro · Tailwind v4 · Bun        |
+| Package manager | **bun** (`bun add`, `bun run`) — there is a `bun.lock`, no `package-lock.json` |
 
 ## Framework reality check — do not skip this
 
@@ -117,10 +117,10 @@ Rules:
 
 ## Steps
 
-1. **Verify the layout first.** Confirm both `/Users/user/nxt/MILA/studio-mila` (after you create it)
-   and `/Users/user/nxt/MILA/app` are visible from your working directory. If you can only see the
-   app's source, stop and ask to be restarted from `/Users/user/nxt/MILA`.
-2. **Create the Studio**, from `/Users/user/nxt/MILA`, never from inside `app`:
+1. **Verify the layout first.** Confirm both `<workspace>/MILA/studio-mila` (after you create it)
+   and `<workspace>/MILA/app` are visible from your working directory. If you can only see the
+   app's source, stop and ask to be restarted from `<workspace>/MILA`.
+2. **Create the Studio**, from `<workspace>/MILA`, never from inside `app`:
    ```bash
    npm create sanity@latest -- --project 8bkzi9bn --dataset production --template clean --typescript --output-path studio-mila
    ```

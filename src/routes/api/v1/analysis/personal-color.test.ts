@@ -113,13 +113,17 @@ describe("POST /api/v1/analysis/personal-color", () => {
     expect(deps.analyzePersonalColorForUser).not.toHaveBeenCalled();
   });
 
-  test("the service keeps the founding read free (source wiring)", () => {
+  test("the service keeps the founding read free — once, marker-based (source wiring)", () => {
     const src = readFileSync(
       join(import.meta.dir, "../../../../server/services/personal-color-analysis.ts"),
       "utf8",
     );
-    expect(src).toContain("const foundingRead = !hasColorDossier(profileRow);");
+    // QA MW-10: founding-ness is read from a service-role-only marker column,
+    // not from the member-writable dossier columns.
+    expect(src).toContain("const foundingRead = !profileRow?.founding_color_read_at;");
     expect(src).toContain("if (foundingRead) return await produce();");
     expect(src).toContain("DEFAULT_AI_CREDITS is 0");
+    expect(src).toContain("founding_color_read_at: new Date().toISOString()");
+    expect(src).not.toContain("foundingRead = !hasColorDossier");
   });
 });

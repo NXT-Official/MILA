@@ -17,7 +17,7 @@ export function MarketingSubpage({
 }) {
   return (
     <div className="min-h-screen">
-      <SiteHeader />
+      <SiteHeader wordmark={content.footer.wordmark} />
       <main className="overflow-x-clip">
         <h1 className="sr-only">{title}</h1>
 

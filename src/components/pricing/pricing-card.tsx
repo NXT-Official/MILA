@@ -48,7 +48,7 @@ export function PricingCard({
           </Badge>
         )}
 
-        <h2 className="font-serif text-2xl text-ink">{plan.title}</h2>
+        <h3 className="font-serif text-2xl text-ink">{plan.title}</h3>
         {plan.description && (
           <p className="mt-2 text-sm leading-relaxed text-muted">{plan.description}</p>
         )}

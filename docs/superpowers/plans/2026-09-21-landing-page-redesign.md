@@ -14,22 +14,26 @@
 
 ## Verification commands used throughout
 
-Every task's verification steps use these two commands (repo root: `/Users/hoon/NXT Official/MILA`):
+Every task's verification steps use these two commands (repo root: `<repo-root>`):
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use 22 && npx tsc --noEmit --pretty false
 ```
+
 Expected: no output (clean).
 
 ```bash
 source ~/.nvm/nvm.sh && nvm use 22 && npm run build
 ```
+
 Expected: ends with `✓ built in ...` and `[nitro] ✔ You can preview this build using npx vite preview`, no errors.
 
 Dev server for manual responsive checks (only needed once, keep it running across tasks):
+
 ```bash
 source ~/.nvm/nvm.sh && nvm use 22 && npm run dev
 ```
+
 Then open https://localhost:8080/ in a browser. Check each touched section at 320, 375, 768, 1024, 1440, 1920px widths — confirm no overflow/clipping, no orphaned single-column-of-3 layouts between breakpoints, and (where the section is redesigned in that task) that it matches the task's described layout.
 
 ---
@@ -37,6 +41,7 @@ Then open https://localhost:8080/ in a browser. Check each touched section at 32
 ### Task 1: Foundation primitives
 
 **Files:**
+
 - Modify: `src/components/landing/section.tsx`
 - Modify: `src/styles.css`
 - Modify: `src/components/ui/button.tsx`
@@ -46,9 +51,9 @@ Then open https://localhost:8080/ in a browser. Check each touched section at 32
 In `src/styles.css`, inside the existing `@layer components { ... }` block (it currently ends with `.atelier-focus-ring`), add a new class. Insert it right after the `.atelier-focus-ring` rule (before the closing `}` of `@layer components`):
 
 ```css
-  .landing-hero-heading {
-    @apply text-[clamp(3rem,8vw,5rem)] leading-[0.95] text-balance;
-  }
+.landing-hero-heading {
+  @apply text-[clamp(3rem,8vw,5rem)] leading-[0.95] text-balance;
+}
 ```
 
 This centralizes the hero's headline scale (previously an inline arbitrary string in `hero-section.tsx`) into one named class, and adds `text-balance` which the current inline version is missing (its body copy already uses `text-pretty`, the heading had nothing). The clamp values themselves are unchanged — same visual size as today, just centralized and balanced.
@@ -149,6 +154,7 @@ git commit -m "feat: add landing redesign foundation primitives (hero heading sc
 ### Task 2: Hero redesign
 
 **Files:**
+
 - Modify: `src/components/landing/hero-section.tsx`
 
 - [ ] **Step 1: Replace the file**
@@ -246,6 +252,7 @@ Run both verification commands. Both must be clean.
 - [ ] **Step 3: Manual check**
 
 With the dev server running, open `/` and check the hero at 320, 375, 768, 1024, 1440, 1920px:
+
 - Below 1024px (the `lg` breakpoint): single column, preview panel below the text block with a visible top rule, no card border/shadow around it.
 - At 1024px+: two columns side by side, preview panel has a left rule (no top rule), content vertically centered against the text column.
 - Headline wraps sensibly at all widths (that's what `text-balance` is for) — no orphaned single word on its own line at common widths.
@@ -262,6 +269,7 @@ git commit -m "feat: redesign landing hero as asymmetric editorial layout"
 ### Task 3: How It Works redesign
 
 **Files:**
+
 - Modify: `src/components/landing/how-it-works-section.tsx`
 
 - [ ] **Step 1: Replace the file**
@@ -313,6 +321,7 @@ Run both verification commands. Both must be clean.
 - [ ] **Step 3: Manual check**
 
 Check How It Works at all 6 breakpoints:
+
 - Below 768px: stacked rows separated by a horizontal rule, no card borders/shadows/hover-lift.
 - At 768px+: 3 equal columns separated by vertical rules, no stuck-2-column state at any width in the 768–1023px range (this was the exact bug fixed in the prior pass — confirm the redesign didn't reintroduce it).
 
@@ -328,6 +337,7 @@ git commit -m "feat: redesign how-it-works as rule-divided numbered list"
 ### Task 4: Dossier redesign
 
 **Files:**
+
 - Modify: `src/components/landing/dossier-section.tsx`
 
 - [ ] **Step 1: Replace the file**
@@ -377,7 +387,10 @@ export function DossierSection({ content }: { content: DossierContent }) {
             {/* ponytail: decorative bar — the percentage above already carries the value. */}
             <div className="mt-3 h-px overflow-hidden bg-border" aria-hidden="true">
               {/* Inline width — Tailwind cannot generate a class from a runtime value. */}
-              <div className="h-full bg-accent" style={{ width: `${content.completionPercent}%` }} />
+              <div
+                className="h-full bg-accent"
+                style={{ width: `${content.completionPercent}%` }}
+              />
             </div>
           </div>
         </div>
@@ -409,6 +422,7 @@ git commit -m "feat: migrate dossier card to canonical app card recipe, tighten 
 ### Task 5: Dupe Hunter redesign
 
 **Files:**
+
 - Modify: `src/components/landing/dupe-hunter-section.tsx`
 
 - [ ] **Step 1: Replace the file**
@@ -423,7 +437,12 @@ import type { DupeCard, DupeHunterContent } from "@/lib/landing-content";
 
 function DupeColumn({ card, isMatch }: { card: DupeCard; isMatch?: boolean }) {
   return (
-    <div className={cn("flex flex-1 min-w-0 flex-col gap-3 p-8 sm:p-10", isMatch && "bg-accent-soft/50")}>
+    <div
+      className={cn(
+        "flex flex-1 min-w-0 flex-col gap-3 p-8 sm:p-10",
+        isMatch && "bg-accent-soft/50",
+      )}
+    >
       <Eyebrow icon={isMatch ? BadgeCheck : Camera} className={isMatch ? "text-ink" : undefined}>
         {card.label}
       </Eyebrow>
@@ -465,6 +484,7 @@ Run both verification commands. Both must be clean.
 - [ ] **Step 3: Manual check**
 
 Check Dupe Hunter at all 6 breakpoints:
+
 - Below 640px (`sm`): the two columns stack vertically, divided by a horizontal rule.
 - At 640px+: side by side, divided by a vertical rule, both columns equal width (`flex-1`).
 - Long titles/prices don't force the row to overflow horizontally (the `min-w-0` fix).
@@ -481,6 +501,7 @@ git commit -m "feat: redesign dupe-hunter comparison as side-by-side diptych"
 ### Task 6: Testimonials redesign
 
 **Files:**
+
 - Modify: `src/components/landing/testimonials-section.tsx`
 
 - [ ] **Step 1: Replace the file**
@@ -498,10 +519,7 @@ export function TestimonialsSection({ testimonials }: { testimonials: Testimonia
     <Reveal>
       <ul className="mt-14 divide-y divide-border border-t border-border sm:mt-16 md:grid md:grid-cols-3 md:divide-y-0 md:divide-x md:border-b">
         {testimonials.map((t) => (
-          <li
-            key={t._key}
-            className="py-8 md:px-8 md:py-10 first:md:pl-0 last:md:pr-0"
-          >
+          <li key={t._key} className="py-8 md:px-8 md:py-10 first:md:pl-0 last:md:pr-0">
             <figure className="flex h-full flex-col gap-4">
               <Quote
                 className="size-8 shrink-0 fill-accent/20 text-accent"
@@ -545,6 +563,7 @@ git commit -m "feat: redesign testimonials as rule-divided quote wall"
 ### Task 7: Final CTA redesign
 
 **Files:**
+
 - Modify: `src/components/landing/final-cta-section.tsx`
 
 - [ ] **Step 1: Replace the file**
@@ -603,6 +622,7 @@ git commit -m "feat: migrate final-cta to shared Section/SectionHeading, fixing 
 ### Task 8: Header CTA + CtaButton cleanup
 
 **Files:**
+
 - Modify: `src/components/landing/site-header.tsx`
 - Modify: `src/components/landing/cta-button.tsx`
 
@@ -611,22 +631,22 @@ git commit -m "feat: migrate final-cta to shared Section/SectionHeading, fixing 
 In `src/components/landing/site-header.tsx`, replace:
 
 ```tsx
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="rounded-full px-4 text-label uppercase tracking-label sm:h-11 sm:px-5"
-          >
-            <Link to={destination}>{label}</Link>
-          </Button>
+<Button
+  asChild
+  variant="outline"
+  size="sm"
+  className="rounded-full px-4 text-label uppercase tracking-label sm:h-11 sm:px-5"
+>
+  <Link to={destination}>{label}</Link>
+</Button>
 ```
 
 with:
 
 ```tsx
-          <Button asChild variant="outline" size="pill">
-            <Link to={destination}>{label}</Link>
-          </Button>
+<Button asChild variant="outline" size="pill">
+  <Link to={destination}>{label}</Link>
+</Button>
 ```
 
 - [ ] **Step 2: Update `cta-button.tsx`**
@@ -683,11 +703,13 @@ Run both verification commands one final time from repo root. Both must be clean
 ```bash
 git diff src/styles.css
 ```
+
 Expected: only the additive `.landing-hero-heading` block from Task 1 appears as new lines inside `@layer components`. Zero changes inside any `:root {}` or `.dark {}` block. If anything else shows up, stop and investigate before proceeding.
 
 - [ ] **Step 3: Full responsive pass**
 
 With the dev server running (`nvm use 22 && npm run dev` → https://localhost:8080/), load `/` fresh and scroll through the entire page at 320, 375, 768, 1024, 1440, 1920px. Confirm:
+
 - No section has a stuck-2-column layout at any width in the 768–1023px range.
 - No horizontal scroll/overflow at any width.
 - Mobile nav (hamburger, added in the prior refactor pass) still opens/closes correctly and its links still scroll to the right sections.
@@ -702,6 +724,7 @@ In the browser, enable "prefers reduced motion" (OS-level or via devtools emulat
 ```bash
 git status --short
 ```
+
 If clean, nothing to do. If anything is unstaged (e.g. a fix made during manual verification), stage and commit it with a message describing what was fixed.
 
 ---

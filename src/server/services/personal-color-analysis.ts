@@ -11,8 +11,6 @@ import {
   SEASONS_MASTER_DATA,
   type SeasonKey,
 } from "@/constants/style-profile";
-import { UNDERTONES } from "@/constants/style-profile";
-import { isNonEmptyColorProfile } from "@/lib/style-profile/completion";
 
 type MilaSupabaseClient = SupabaseClient<Database>;
 
@@ -21,8 +19,9 @@ type MilaSupabaseClient = SupabaseClient<Database>;
  * `analyzePersonalColor` server function and the mobile
  * `POST /api/v1/analysis/personal-color` route.
  *
- * The founding read (no colour dossier on file yet) is free; re-reads cost
- * **1 AI credit**, 10/hour either way.
+ * The founding read — the once-ever free read, tracked in
+ * `profiles.founding_color_read_at` (service-role write only) — is free;
+ * re-reads cost **1 AI credit**, 10/hour either way.
  */
 
 const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
@@ -242,26 +241,6 @@ function analysisFailure(status: number): ColorAnalysisResult {
   return { success: false, error: "ANALYSIS_GATEWAY_FAILURE" };
 }
 
-/**
- * The server-side twin of `hasColorProfile` (`@/constants/steps`), reading the
- * raw `profiles` columns: the table stores the base family in `color_season`,
- * which the client query layer aliases to `color_season_base`.
- */
-function hasColorDossier(
-  row: {
-    skin_undertone: string | null;
-    color_season: string | null;
-    color_profile: unknown;
-  } | null,
-): boolean {
-  if (!row) return false;
-  return (
-    (UNDERTONES as readonly string[]).includes(row.skin_undertone ?? "") &&
-    (SEASONS as readonly string[]).includes(row.color_season ?? "") &&
-    isNonEmptyColorProfile(row.color_profile)
-  );
-}
-
 export const PersonalColorAnalysisInput = z.object({
   imageBase64: z.string().min(1).max(15_000_000),
   diagnostics: z
@@ -304,16 +283,20 @@ export async function analyzePersonalColorForUser(
     try {
       const { data: profileRow } = await supabase
         .from("profiles")
-        .select("skin_undertone, color_season, color_profile")
+        .select("skin_undertone, color_season, color_profile, founding_color_read_at")
         .eq("id", userId)
         .maybeSingle();
 
-      // The founding read is free. A member at onboarding step 1 has no
-      // subscription and DEFAULT_AI_CREDITS is 0, so charging the scan the whole
-      // dossier depends on would dead-end the flow that everything else builds on.
-      // Once a dossier exists, re-reads charge a credit as before (and refund it
-      // if the read fails).
-      const foundingRead = !hasColorDossier(profileRow);
+      // The founding read is free — once, ever. Whether it was used is read
+      // from `profiles.founding_color_read_at`, a service-role-only column:
+      // inferring it from the dossier columns themselves let a member clear
+      // them through PostgREST and farm the free AI read without a limit
+      // beyond the hourly rate cap (QA MW-10). A member at onboarding step 1
+      // has no subscription and DEFAULT_AI_CREDITS is 0, so charging the scan
+      // the whole dossier depends on would dead-end the flow that everything
+      // else builds on. Once the marker is set, re-reads charge a credit as
+      // before (and refund it if the read fails).
+      const foundingRead = !profileRow?.founding_color_read_at;
 
       const produce = async (): Promise<ColorAnalysisResult> => {
         const callGateway = (
@@ -702,6 +685,19 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
           );
           if (persistError) {
             console.error("[analyzePersonalColor] profiles upsert failed:", persistError);
+          } else if (foundingRead) {
+            // Burn the once-ever free read only after the dossier actually
+            // persisted. The marker column carries no `authenticated` grant,
+            // so a member cannot clear it the way they can clear the dossier
+            // columns (QA MW-10).
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { error: markerError } = await supabaseAdmin
+              .from("profiles")
+              .update({ founding_color_read_at: new Date().toISOString() })
+              .eq("id", userId);
+            if (markerError) {
+              console.error("[analyzePersonalColor] founding marker write failed:", markerError);
+            }
           }
         } catch (persistEx) {
           console.error("[analyzePersonalColor] profiles upsert threw:", persistEx);

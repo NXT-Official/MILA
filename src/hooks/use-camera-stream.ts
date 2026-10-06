@@ -75,6 +75,22 @@ export function useCameraStream(videoRef: React.RefObject<HTMLVideoElement | nul
     [videoRef, stopTracks],
   );
 
+  // The capture views mount their <video> only while `active` is true, so on
+  // the very first open() the element is not in the tree yet when start()
+  // resolves and its srcObject assignment silently misses — the preview then
+  // stays black until a camera switch re-runs start() with the element
+  // mounted. Attach the stream whenever an active stream and the element
+  // coexist.
+  useEffect(() => {
+    if (!active) return;
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (video && stream && video.srcObject !== stream) {
+      video.srcObject = stream;
+      void video.play().catch(() => {});
+    }
+  }, [active, videoRef]);
+
   const toggleTorch = useCallback(async () => {
     const [track] = streamRef.current?.getVideoTracks() ?? [];
     if (!track) return;

@@ -18,8 +18,8 @@ function text(copy: string) {
   return renderToStaticMarkup(<>{copy}</>);
 }
 
-/** The inner markup of the page's one `<main>` or `<footer>`. */
-function inside(markup: string, tag: "main" | "footer") {
+/** The inner markup of the page's one `<main>`, `<header>` or `<footer>`. */
+function inside(markup: string, tag: "main" | "footer" | "header") {
   return markup.match(new RegExp(`<${tag}\\b[^>]*>(.*)</${tag}>`, "s"))?.[1] ?? "";
 }
 
@@ -95,6 +95,11 @@ describe("MarketingSubpage", () => {
     const footer = inside(await renderSubpage(), "footer");
     expect(footer).toContain(`${text(EDITED.footer.wordmark)}<`);
     expect(footer).toContain(`>${text(EDITED.footer.tagline)}`);
+  });
+
+  test("the header wordmark comes from the same content as the footer (Morpessa MW-16)", async () => {
+    const header = inside(await renderSubpage(), "header");
+    expect(header).toContain(`${text(EDITED.footer.wordmark)}<`);
   });
 
   test("the footer's only links are the legal ones: /privacy, then /terms", async () => {
