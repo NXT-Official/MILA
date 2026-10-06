@@ -1,0 +1,32 @@
+src/server/services/look.test.ts
+  s_755964b2e0c3da::t_d7ef6dddc82165 52-53,60,63-70,72-73
+  s_755964b2e0c3da::t_32d8412e85fbf0 54
+  s_755964b2e0c3da::t_3b056fe0a860b8 1-51,55-59,61-62,71,74-92
+src/server/services/look.ts
+  s_755964b2e0c3da::t_a217cf349ccc9e 82-84,100-101,105-106
+  s_755964b2e0c3da::t_55b4964238ad15 289
+  s_755964b2e0c3da::t_4c835fc99cf9a1 66-73,80-81,85,90,93-99,103-104,109-110
+  s_755964b2e0c3da::t_cd570db6a54f66 309,331,381,480,493
+  s_755964b2e0c3da::t_adb36c11d3fdcd 484,486
+  s_755964b2e0c3da::t_3f45e3ce91186a 86-89,91-92,102,107-108
+  s_755964b2e0c3da::t_b0f582dd0fc45b 318,324
+  s_755964b2e0c3da::t_a755879dddd022 320-322
+  s_755964b2e0c3da::t_d4809d13a277f3 361-363,367
+  s_755964b2e0c3da::t_cdc4522f3a07a7 111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "708ab94430950d5372480bf3d1dc7b44587cd19f",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
