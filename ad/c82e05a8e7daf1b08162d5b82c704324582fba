@@ -1,0 +1,25 @@
+src/components/studio/style-profile.tsx
+  s_755964b2e0c3da::t_ba32b7573240b8 1-119
+src/components/style-profile/body-type-quiz.tsx
+  s_755964b2e0c3da::t_310bbfc4277bf6 1-211
+src/lib/color-analysis/schemaMigration.ts
+  s_755964b2e0c3da::t_117a54ab1c691c 1-18
+src/lib/color-analysis/seasonsData.ts
+  s_755964b2e0c3da::t_0291066bedab9c 1-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "adc82e05a8e7daf1b08162d5b82c704324582fba",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
