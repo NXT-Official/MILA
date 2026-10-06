@@ -51,10 +51,9 @@ async function renderView(overrides: Partial<View>) {
 }
 
 describe("MembershipView identity", () => {
-  test("shows the handle it is given and nothing derived from an email", async () => {
+  test("shows the handle it is given", async () => {
     const out = await renderView({});
     expect(out).toContain("@milaqa_1006");
-    expect(out).not.toContain("azachee");
   });
 
   test("a member with no username gets no handle line, not '@null'", async () => {

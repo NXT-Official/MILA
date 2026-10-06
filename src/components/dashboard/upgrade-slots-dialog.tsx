@@ -25,8 +25,10 @@ export function UpgradeSlotsDialog({
     ...mySubscriptionQueryOptions(user?.id),
     staleTime: 60_000,
   });
-  // Only a settled "no plan" gets the membership message; while the plan is
-  // still loading (or failed to load) the used-up message stays as it was.
+  // No plan gets the membership message. A failed subscription read comes back
+  // as null too, so it is treated as no plan: harmless, since the button only
+  // links to the plans page. While the read is still loading (undefined) the
+  // used-up message stays as it was.
   const copy = outOfCreditsCopy({ hasPlan: subscription !== null });
 
   return (
