@@ -1,0 +1,21 @@
+src/components/dashboard/upgrade-slots-dialog.tsx
+  s_755964b2e0c3da::t_ae6fdd8752cca6 28-31
+src/components/account/drawer-views/membership-view.test.tsx
+  s_755964b2e0c3da::t_9c850d378d2947 54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c51995c2ea69e59e52328a855ee8b283d87ac763",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
