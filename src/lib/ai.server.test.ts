@@ -150,6 +150,43 @@ describe("OpenRouter chat gateway", () => {
     });
   });
 
+  test("a draft and a final answer side by side are refused, not guessed between", async () => {
+    // Callers like the photo checks read `passes === true` with no schema:
+    // taking the first object would pass a check the model went on to reject.
+    stubProvider(
+      Response.json({
+        choices: [
+          { message: { content: 'Draft: {"passes":true}\nOn reflection: {"passes":false}' } },
+        ],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+  });
+
+  test("braces in the prose don't count as a second answer", async () => {
+    stubProvider(
+      Response.json({
+        choices: [{ message: { content: 'As asked {briefly}: {"value":"ok"}' } }],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
+      ok: true,
+      args: { value: "ok" },
+    });
+  });
+
+  test("a valid reply is parsed as-is, even with a literal <think> in a string", async () => {
+    stubProvider(
+      Response.json({
+        choices: [{ message: { content: '{"value":"I <think> this suits you"}' } }],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
+      ok: true,
+      args: { value: "I <think> this suits you" },
+    });
+  });
+
   test("a truncated reply never yields a nested fragment of itself", async () => {
     stubProvider(
       Response.json({

@@ -99,28 +99,41 @@ function* topLevelObjects(text: string): Generator<string> {
   }
 }
 
+function tryParseJson(text: string): { value: unknown } | null {
+  try {
+    return { value: JSON.parse(text) };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The JSON in a model reply. Structured output is requested, but not every
  * provider behind a model enforces it, so the object can also arrive after a
- * reasoning block or inside a sentence of prose (fenced or not). Only a whole
- * top-level object is taken: a truncated reply stays unparseable rather than
- * yielding a nested fragment of itself, and an unfinished reasoning block is
- * dropped, never mined for a draft. Throws when there is no JSON to take.
+ * reasoning block or inside a sentence of prose (fenced or not). In order:
+ *   1. the reply as-is (bare or fenced), so a valid reply is never altered;
+ *   2. the reply with reasoning blocks dropped — an unfinished one to the
+ *      end, never mined for a draft;
+ *   3. an object found in the prose, only when EXACTLY ONE complete
+ *      top-level object parses. A draft and a final answer side by side are
+ *      refused, not guessed between (some callers read `passes === true`
+ *      without a schema), and a truncated reply never yields a nested
+ *      fragment of itself.
+ * Throws when there is no single JSON answer to take.
  */
 function parseModelJson(text: string): unknown {
+  const asIs = tryParseJson(stripJsonFence(text));
+  if (asIs) return asIs.value;
+
   const body = stripJsonFence(text.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, ""));
-  try {
-    return JSON.parse(body);
-  } catch (err) {
-    for (const candidate of topLevelObjects(body)) {
-      try {
-        return JSON.parse(candidate) as unknown;
-      } catch {
-        // Braces in prose ("{like this}"): move on to the next object.
-      }
-    }
-    throw err;
-  }
+  const withoutReasoning = tryParseJson(body);
+  if (withoutReasoning) return withoutReasoning.value;
+
+  const found = Array.from(topLevelObjects(body), tryParseJson).filter(
+    (parsed): parsed is { value: unknown } => parsed !== null,
+  );
+  if (found.length === 1) return found[0].value;
+  throw new SyntaxError(`Expected one JSON object in the reply, found ${found.length}`);
 }
 
 /** True when the provider rejected the MODEL ID itself — a typo'd or retired

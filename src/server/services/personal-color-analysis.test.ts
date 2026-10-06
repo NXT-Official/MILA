@@ -43,8 +43,9 @@ type HarnessOptions = {
   /** Set = the founding read was already used, so this read is charged. */
   foundingReadAt?: string | null;
   upsertError?: { code: string; message: string } | null;
-  /** How long each successive AI call takes on the fake clock. */
-  callDurationsMs?: number[];
+  /** How long each successive AI call takes on the fake clock; "whole" runs
+   * it to the timeout it was given (the worst case). */
+  callDurationsMs?: Array<number | "whole">;
 };
 
 function harness(replies: AiResult[], opts: HarnessOptions = {}) {
@@ -83,7 +84,8 @@ function harness(replies: AiResult[], opts: HarnessOptions = {}) {
     aiChatCompletion: mock(async (...args: Parameters<typeof aiChatCompletion>) => {
       const [, tool, , options] = args;
       calls.push({ tool: tool.function.name, timeoutMs: options?.timeoutMs });
-      clock += durations.shift() ?? 20 * S;
+      const duration = durations.shift() ?? 20 * S;
+      clock += duration === "whole" ? (options?.timeoutMs ?? Infinity) : duration;
       const next = queue.shift();
       if (!next) throw new Error("unexpected extra AI call");
       return next;
@@ -107,12 +109,18 @@ function harness(replies: AiResult[], opts: HarnessOptions = {}) {
 
   return {
     run: () => analyzePersonalColorForUser(member, USER, IMAGE, deps),
+    elapsedMs: () => clock,
     calls,
     credits,
     upserts,
     markFoundingRead,
   };
 }
+
+/** Mobile's client gives up on the colour read at 180s
+ * (TIMEOUTS.personalColor); a read answering later still spends the
+ * founding read, so the service must answer before it. */
+const MOBILE_CLIENT_TIMEOUT_MS = 180 * S;
 
 describe("founding-read marker", () => {
   test("a successful founding read records the marker even when the member's dossier upsert is refused", async () => {
@@ -227,6 +235,18 @@ describe("tolerant parsing of the model's reply", () => {
 
     expect(await h.run()).toEqual({ success: false, error: "ANALYSIS_PARSING_FAILED" });
   });
+
+  test("a one-word lighting read is not stretched into a specific light source", async () => {
+    // "cool" light could be shade or overcast daylight as easily as a
+    // fluorescent tube — only case and spacing variants are mapped there.
+    const h = harness([
+      ok({ ...CALIBRATION, ambientLighting: "cool" }),
+      ok({ ...CALIBRATION, ambientLighting: "warm" }),
+    ]);
+
+    expect(await h.run()).toEqual({ success: false, error: "ANALYSIS_PARSING_FAILED" });
+    expect(h.calls).toHaveLength(2);
+  });
 });
 
 describe("one bounded retry for an unusable reply", () => {
@@ -279,23 +299,65 @@ describe("one bounded retry for an unusable reply", () => {
   });
 
   test("each call is bounded, and the retry gets only what is left of the read's budget", async () => {
-    // Pass 1 takes 30s, pass 2 fails after 120s: 150s used of the 240s budget.
+    // Live QA shape: pass 2 unusable at ~97s. 100s used of the 165s budget.
     const h = harness([ok(CALIBRATION), fail(502), ok(SLIM)], {
-      callDurationsMs: [30 * S, 120 * S, 20 * S],
+      callDurationsMs: [20 * S, 80 * S, 20 * S],
     });
 
     expect((await h.run()).success).toBe(true);
-    expect(h.calls.map((c) => c.timeoutMs)).toEqual([110 * S, 110 * S, 90 * S]);
+    expect(h.calls.map((c) => c.timeoutMs)).toEqual([110 * S, 110 * S, 65 * S]);
   });
 
   test("no retry once the budget can't fit a plausible attempt", async () => {
-    // 215s used: 25s left is below the 30s a vision call needs.
+    // 140s used: 25s left is below the 30s a vision call needs.
     const h = harness([ok(CALIBRATION), fail(502), ok(SLIM)], {
-      callDurationsMs: [105 * S, 110 * S],
+      callDurationsMs: [60 * S, 80 * S],
     });
 
     expect(await h.run()).toEqual({ success: false, error: "ANALYSIS_PARSING_FAILED" });
     expect(h.calls).toHaveLength(2);
+  });
+
+  test("a slow pass 1 shortens pass 2 instead of running past the budget", async () => {
+    const h = harness([ok(CALIBRATION), ok(SLIM)], { callDurationsMs: [100 * S, 20 * S] });
+
+    expect((await h.run()).success).toBe(true);
+    expect(h.calls.map((c) => c.timeoutMs)).toEqual([110 * S, 65 * S]);
+  });
+
+  test("a pass-1 retry keeps a whole attempt's room for pass 2", async () => {
+    // 100s used, 65s left: the retry gets 35s so pass 2 still has its 30s.
+    const h = harness([fail(502), ok(CALIBRATION), ok(SLIM)], {
+      callDurationsMs: [100 * S, "whole", "whole"],
+    });
+
+    expect((await h.run()).success).toBe(true);
+    expect(h.calls.map((c) => c.timeoutMs)).toEqual([110 * S, 35 * S, 30 * S]);
+  });
+
+  test("every read answers before mobile's client gives up, however the calls go", async () => {
+    // Worst cases: each call runs to its whole timeout, and a failure can
+    // land at any point of the first attempt of either pass.
+    const late: string[] = [];
+    for (let xMs = 5 * S; xMs <= 110 * S; xMs += 5 * S) {
+      const pass1Retry = [fail(502), ok(CALIBRATION), ok(SLIM)];
+      const pass2Retry = [ok(CALIBRATION), fail(502), ok(SLIM)];
+      const scenarios: Array<[string, AiResult[], Array<number | "whole">]> = [
+        ["pass 1 unusable at x", pass1Retry, [xMs, "whole", "whole"]],
+        ["pass 2 unusable x into it", pass2Retry, [20 * S, xMs, "whole"]],
+        ["pass 2 unusable after a pass 1 of x", pass2Retry, [xMs, "whole", "whole"]],
+        ["no retry, pass 1 of x", [ok(CALIBRATION), ok(SLIM)], [xMs, "whole"]],
+      ];
+      for (const [name, replies, durations] of scenarios) {
+        const h = harness(replies, { callDurationsMs: durations });
+        await h.run();
+        // 10s kept back for the profile reads and writes around the calls.
+        if (h.elapsedMs() > MOBILE_CLIENT_TIMEOUT_MS - 10 * S) {
+          late.push(`${name}=${xMs / S}s answered at ${h.elapsedMs() / S}s`);
+        }
+      }
+    }
+    expect(late).toEqual([]);
   });
 
   test("a charged re-read is charged once whether or not it needed the retry, and refunded if it still fails", async () => {

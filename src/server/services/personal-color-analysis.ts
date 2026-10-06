@@ -85,12 +85,19 @@ export type StudioColorProfile = z.infer<typeof StudioColorProfileSchema>;
 // is still refused.
 const canonical = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-function modelEnum<const T extends readonly [string, ...string[]]>(values: T) {
+/** Case and spacing variants always map. `byFirstWord` also maps a value's
+ * unique first word, for lists where that word alone names it ("Oval" is
+ * "Oval Frame") — never where it would pick one cause among several ("cool"
+ * light is not necessarily a fluorescent tube). */
+function modelEnum<const T extends readonly [string, ...string[]]>(
+  values: T,
+  options: { byFirstWord?: boolean } = {},
+) {
   return z.preprocess((raw) => {
     if (typeof raw !== "string") return raw;
     const key = canonical(raw);
     const exact = values.find((value) => canonical(value) === key);
-    if (exact) return exact;
+    if (exact || !options.byFirstWord) return exact ?? raw;
     const byFirstWord = values.filter((value) => canonical(value.split(/[\s_-]/)[0]) === key);
     return byFirstWord.length === 1 ? byFirstWord[0] : raw;
   }, z.enum(values));
@@ -111,8 +118,8 @@ const SlimVisionSchema = z.object({
   season: modelEnum(SEASON_KEYS),
   contrastScore: modelScore,
   undertone: modelEnum(["Warm", "Cool", "Neutral"]),
-  faceShape: modelEnum(FACE_SHAPES),
-  bodyType: modelEnum(BODY_TYPES),
+  faceShape: modelEnum(FACE_SHAPES, { byFirstWord: true }),
+  bodyType: modelEnum(BODY_TYPES, { byFirstWord: true }),
   stylistNote: z.string().min(1),
   detectedLighting: z.string().min(1),
   calculatedUndertone: z.string().min(1),
@@ -272,9 +279,10 @@ function analysisFailure(status: number): ColorAnalysisResult {
   return { success: false, error: "ANALYSIS_GATEWAY_FAILURE" };
 }
 
-/** Both passes plus the one retry stay inside this, leaving room under the
- * 300s function ceiling the other AI routes assume for the profile writes. */
-const COLOR_READ_DEADLINE_MS = 240_000;
+/** Both passes and the one retry finish inside this: under mobile's 180s
+ * client timeout, since a read that lands after the client gave up still
+ * spends the founding read. */
+const COLOR_READ_DEADLINE_MS = 165_000;
 /** The gateway's own per-call ceiling (TIMEOUT_MS in ai.server). */
 const PASS_TIMEOUT_MS = 110_000;
 /** Below this a vision call can't plausibly finish (the 43s QA read made two). */
@@ -288,12 +296,14 @@ function createColorReadBudget(now: () => number) {
   return {
     /** A pass's timeout: the gateway's ceiling, clamped to what's left. */
     passTimeout: () => Math.max(MIN_PASS_MS, Math.min(PASS_TIMEOUT_MS, remainingMs())),
-    /** Claims the read's single retry, or null when it is spent or no
-     * plausible attempt fits in what's left. */
-    takeRetry: (): number | null => {
-      if (retryUsed || remainingMs() < MIN_PASS_MS) return null;
+    /** Claims the read's single retry: its timeout, or null when the retry is
+     * spent or a plausible attempt doesn't fit beside `reserveMs`, the time
+     * kept back for the passes still to come. */
+    takeRetry: (reserveMs: number): number | null => {
+      const availableMs = remainingMs() - reserveMs;
+      if (retryUsed || availableMs < MIN_PASS_MS) return null;
       retryUsed = true;
-      return Math.min(PASS_TIMEOUT_MS, remainingMs());
+      return Math.min(PASS_TIMEOUT_MS, availableMs);
     },
   };
 }
@@ -427,11 +437,13 @@ export async function analyzePersonalColorForUser(
 
         // One pass of the read. A reply that can't be used — no text, not
         // JSON, or JSON outside the schema (the gateway reports the first two
-        // as 502) — gets the read's single retry while the budget allows;
-        // timeouts, rate limits and provider credit errors are final.
+        // as 502) — gets the read's single retry while the budget allows,
+        // keeping `reserveMs` back for the passes still to come; timeouts,
+        // rate limits and provider credit errors are final.
         const runPass = async <T>(
           label: string,
           schema: z.ZodType<T, z.ZodTypeDef, unknown>,
+          reserveMs: number,
           call: (timeoutMs: number) => Promise<AiResult>,
         ): Promise<{ ok: true; data: T } | { ok: false; failure: ColorAnalysisResult }> => {
           const attempt = async (timeoutMs: number) => {
@@ -454,7 +466,7 @@ export async function analyzePersonalColorForUser(
 
           const first = await attempt(budget.passTimeout());
           if (first.ok || !first.retryable) return first;
-          const retryTimeoutMs = budget.takeRetry();
+          const retryTimeoutMs = budget.takeRetry(reserveMs);
           if (retryTimeoutMs === null) return first;
           console.warn(`[analyzePersonalColor] ${label} reply was unusable; retrying once`);
           return attempt(retryTimeoutMs);
@@ -474,7 +486,7 @@ Execute silently:
 
 Return ONLY by calling the report_calibration tool.`;
 
-          const pass1 = await runPass("Pass1", CalibrationSchema, (timeoutMs) =>
+          const pass1 = await runPass("Pass1", CalibrationSchema, MIN_PASS_MS, (timeoutMs) =>
             callGateway(
               calibrationPrompt,
               "Run the Pass-1 calibration read on this portrait.",
@@ -717,7 +729,7 @@ Populate the tool payload exactly so the UI can log the system's thought process
 === OUTPUT ===
 Return ONLY the slim raw vision read by calling the report_studio_color_profile tool. Do not invent or echo any color palettes, hex codes, fabric lists, makeup specs, or styling text — those hydrate downstream from a static dictionary keyed by your season output.`;
 
-        const slim = await runPass("Slim", SlimVisionSchema, (timeoutMs) =>
+        const slim = await runPass("Slim", SlimVisionSchema, 0, (timeoutMs) =>
           callGateway(
             systemPrompt,
             "Run the Pass-2 PCCS routing using the validated calibration data above. Map this portrait to its strict seasonal key.",
