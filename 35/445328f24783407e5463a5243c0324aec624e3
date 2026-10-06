@@ -1,0 +1,111 @@
+src/components/layout/sidebar.tsx
+  s_755964b2e0c3da::t_1267e72d639d1d 7
+  s_755964b2e0c3da::t_31f673d712d0ee 24
+src/components/ui/product-card.tsx
+  s_755964b2e0c3da::t_06ee2400d9a6c8 9-16,19-27,33-44,51,53-54,57-60,62-64
+src/lib/queries/saved-products.ts
+  s_755964b2e0c3da::t_1f026b1f970048 5-11
+  s_755964b2e0c3da::t_8d726554430ceb 244-265
+  s_755964b2e0c3da::t_4644be1b782269 1-4,12-57,59-243,266-272,276-278
+  s_755964b2e0c3da::t_52e7e531bf2b68 58,273-275
+src/routeTree.gen.ts
+  s_755964b2e0c3da::t_64ef043eb16f05 36,183-187,337,385,437,488,536,587,821-827,1007,1020
+src/components/dashboard/dupe-hunter-results.tsx
+  s_755964b2e0c3da::t_6ee8aaac7dbfd8 95-114,116-144,146,148-153
+  s_755964b2e0c3da::t_ac4bb67ded935c 8-10,92-94,154-155
+src/components/ui/save-product-button.test.tsx
+  s_755964b2e0c3da::t_83dd746fa45e39 1-59,61-83
+  s_755964b2e0c3da::t_52e7e531bf2b68 60
+src/lib/garment-label.test.ts
+  s_755964b2e0c3da::t_9ecb9dbfd4743b 9-10
+  s_755964b2e0c3da::t_5553c4775f10a7 125
+  s_755964b2e0c3da::t_9a686bd2e9d5d3 156-183
+  s_755964b2e0c3da::t_56a63c9f710719 1-8,11-124,126-155,184-196
+src/lib/garment-glyphs.ts
+  s_755964b2e0c3da::t_e8b2cd95b962f7 1-276
+src/lib/track-event.ts
+  s_755964b2e0c3da::t_b19e57e400ad9d 3,5-10
+src/lib/queries/saved-products.test.ts
+  s_755964b2e0c3da::t_9bec1467ab51eb 3
+  s_755964b2e0c3da::t_2ff4977bbea10c 1-2,4-249,251-274,315-358
+  s_755964b2e0c3da::t_52e7e531bf2b68 250
+  s_755964b2e0c3da::t_b35d84af846ca5 275-314
+src/components/feed/post-item-match-card.test.tsx
+  s_755964b2e0c3da::t_3435447132637c 58-69
+  s_755964b2e0c3da::t_818bad7321da12 1,3,5-57,70-76
+  s_755964b2e0c3da::t_7460c411d729b1 2,4
+src/components/dashboard/dupe-hunter-results.test.tsx
+  s_755964b2e0c3da::t_c180f63ff03e78 2,4
+  s_755964b2e0c3da::t_6d8c05cdde6406 1,3,5-76,94-100
+  s_755964b2e0c3da::t_e50d378710753c 77-93
+src/components/ui/garment-badge.tsx
+  s_755964b2e0c3da::t_85601151b5793c 1-15,17-24
+  s_755964b2e0c3da::t_438d3c8a00f413 16
+src/components/ui/garment-badge.test.tsx
+  s_755964b2e0c3da::t_77d8ceb4d75acc 1-6,10-36
+  s_755964b2e0c3da::t_52e7e531bf2b68 7-9
+src/components/ui/save-product-button.tsx
+  s_755964b2e0c3da::t_fbb940ffae44e6 1-95
+src/routes/_authenticated/_app/saved.tsx
+  s_755964b2e0c3da::t_ecc0e1c1f9a3aa 1-74
+src/components/dashboard/shop-look-grid.tsx
+  s_755964b2e0c3da::t_2a17ba2fe54e10 4-5,7
+  s_755964b2e0c3da::t_e5f3e537f28402 62-65,71
+  s_755964b2e0c3da::t_57d533d30e4329 32-45
+  s_755964b2e0c3da::t_15981aaf38edfd 80-81
+  s_755964b2e0c3da::t_9ec624f05674bc 11-18,46-61,66-70,72-73,75-79
+supabase/migrations/20261007120000_saved_products.sql
+  s_755964b2e0c3da::t_44fe8e656d25df 1-142
+src/lib/garment-glyphs.test.tsx
+  s_755964b2e0c3da::t_bbe65f11d9e8aa 1-40
+tests/helpers/render-app-markup.tsx
+  s_755964b2e0c3da::t_7cd2ab1e7ad7cd 1-50
+src/lib/saved-product-toggle.ts
+  s_755964b2e0c3da::t_52e7e531bf2b68 23
+  s_755964b2e0c3da::t_9d3e4c30869657 1-22,24-88
+src/components/dashboard/shop-look-grid.test.tsx
+  s_755964b2e0c3da::t_b1e29425654dab 1,3,5-52,56-60,84-88
+  s_755964b2e0c3da::t_9ef9d0250d632a 61-83
+  s_755964b2e0c3da::t_1e1697608f5eed 2,4
+  s_755964b2e0c3da::t_52e7e531bf2b68 53-55
+src/components/ui/product-card.test.tsx
+  s_755964b2e0c3da::t_829a3ff7d3ce5a 5-7
+  s_755964b2e0c3da::t_d48fff000db8f9 1-4,8-79
+src/lib/garment-label.ts
+  s_755964b2e0c3da::t_620009e5c35220 235-244
+  s_755964b2e0c3da::t_4f24f1c0921c0e 1-72,78-209,214-234,245-272
+  s_755964b2e0c3da::t_52e7e531bf2b68 73-77,210-213
+src/lib/saved-product-toggle.test.ts
+  s_755964b2e0c3da::t_7f06904bab066e 82-85
+  s_755964b2e0c3da::t_0f3bca7776835f 1-81,86-207
+src/components/saved/saved-pieces-view.tsx
+  s_755964b2e0c3da::t_52e7e531bf2b68 89
+  s_755964b2e0c3da::t_333837ec2c150b 1-88,90-210
+src/components/saved/saved-pieces-view.test.tsx
+  s_755964b2e0c3da::t_68a897c8a0dc87 1-126,130-143,149-152,158-174
+  s_755964b2e0c3da::t_52e7e531bf2b68 127-129,144-148,153-157
+src/components/feed/post-item-drawer.tsx
+  s_755964b2e0c3da::t_78b787b4474208 22-23,26-27
+  s_755964b2e0c3da::t_e74306e9402a35 36-110
+  s_755964b2e0c3da::t_a9ee8350ebb54a 220
+src/components/layout/sidebar.test.tsx
+  s_755964b2e0c3da::t_2ff7a374aa5114 1-48
+src/integrations/supabase/types.ts
+  s_755964b2e0c3da::t_22d72203811524 689-743
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "35445328f24783407e5463a5243c0324aec624e3",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
