@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { RefreshCw, Sparkles, Bookmark } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { generateDailyPalette } from "@/lib/color-analysis/paletteGenerator";
-import { migrateLegacySeason } from "@/lib/color-analysis/schemaMigration";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +13,6 @@ import {
 } from "@/lib/queries/saved-palettes";
 import { errorMessage } from "@/lib/utils";
 import { Link, useNavigate } from "@tanstack/react-router";
-import type { SeasonId } from "@/lib/color-analysis/types";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 
@@ -31,10 +29,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
   const [mixCount, setMixCount] = useState(1);
   const reduce = useReducedMotion() ?? false;
 
-  const normalizedSeason = userColorSeason
-    ? migrateLegacySeason(userColorSeason)
-    : ("cool_summer" as SeasonId);
-  const [look, setLook] = useState(() => generateDailyPalette(normalizedSeason));
+  const [look, setLook] = useState(() => generateDailyPalette(userColorSeason));
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -73,11 +68,10 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
     setIsRotating(true);
     setMixCount((c) => c + 1);
     shuffleTimeoutRef.current = setTimeout(() => {
-      const next = generateDailyPalette(normalizedSeason);
-      setLook(next);
+      setLook((current) => generateDailyPalette(userColorSeason, current));
       setIsRotating(false);
     }, 700);
-  }, [normalizedSeason]);
+  }, [userColorSeason]);
 
   const [pending, setPending] = useState(false);
   const toggleSaved = useCallback(async () => {
@@ -174,7 +168,7 @@ export function DailyPaletteGenerator({ userColorSeason }: { userColorSeason: st
 
         <Button onClick={handleShuffle} loading={isRotating} className="flex-1">
           <RefreshCw className="size-3.5" aria-hidden="true" />
-          <span>Generate Next Look</span>
+          <span>Shuffle palette</span>
         </Button>
       </div>
 

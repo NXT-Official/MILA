@@ -7,41 +7,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  HUBS,
-  climateForWeatherCode,
-  type ClimateIcon,
-  type ClimateState,
-} from "@/constants/climate";
+import { HUBS, type ClimateIcon, type ClimateState } from "@/constants/climate";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchDefaultHubId, localDefaultHubId } from "@/lib/default-hub";
 import { cn } from "@/lib/utils";
-
-async function fetchClimate(
-  lat: number,
-  lon: number,
-  location: string,
-  country: string,
-): Promise<ClimateState> {
-  const r = await fetch(
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m`,
-  );
-  const j = await r.json();
-  const temp = Math.round(j?.current?.temperature_2m ?? 20);
-  const wind = Math.round(j?.current?.wind_speed_10m ?? 0);
-  const code = j?.current?.weather_code ?? 2;
-  const weather = climateForWeatherCode(code, wind);
-  const windy = wind >= 25 ? " & Windy" : "";
-  return {
-    label: `${temp}°C ${weather.description}${windy}`,
-    location,
-    country,
-    icon: weather.icon,
-    tempC: temp,
-    tempF: Math.round((temp * 9) / 5 + 32),
-    condition: weather.condition,
-  };
-}
+import { fetchClimate, unavailableClimate } from "@/components/dashboard/climate-fetch";
 
 function ClimateGlyph({ icon, className }: { icon: ClimateIcon; className?: string }) {
   const cls = className ?? "size-4";
@@ -78,7 +48,12 @@ export function ClimateWidget({
         const live = await fetchClimate(hub.lat, hub.lon, hub.city, hub.country);
         if (req === seq.current) onChange(live);
       } catch {
-        if (req === seq.current) setError(true);
+        // A failed read must not leave Create my look waiting on a forecast
+        // that isn't coming, so hand over a clearly labelled mild default.
+        if (req === seq.current) {
+          setError(true);
+          onChange(unavailableClimate(hub.city, hub.country));
+        }
       } finally {
         if (req === seq.current) setLoading(false);
       }
@@ -93,20 +68,25 @@ export function ClimateWidget({
     setError(false);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        const location = "Your location";
+        // Raw browser geolocation gives no country — no reverse-geocoding
+        // service is wired up. Empty string means "unknown", which the
+        // shoppable-products matcher treats as unfiltered rather than
+        // guessing a region.
+        const country = "";
         try {
           const live = await fetchClimate(
             pos.coords.latitude,
             pos.coords.longitude,
-            "Your location",
-            // Raw browser geolocation gives no country — no reverse-geocoding
-            // service is wired up. Empty string means "unknown", which the
-            // shoppable-products matcher treats as unfiltered rather than
-            // guessing a region.
-            "",
+            location,
+            country,
           );
           if (req === seq.current) onChange(live);
         } catch {
-          if (req === seq.current) setError(true);
+          if (req === seq.current) {
+            setError(true);
+            onChange(unavailableClimate(location, country));
+          }
         } finally {
           if (req === seq.current) setLoading(false);
         }
