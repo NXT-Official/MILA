@@ -1,0 +1,34 @@
+src/components/dashboard/selfie-photo-widget.tsx
+  s_755964b2e0c3da::t_6c1388b28744ef 14
+  s_755964b2e0c3da::t_ef9df88b0887f5 80
+  s_755964b2e0c3da::t_033bbff630d1dc 54,57-58
+  s_755964b2e0c3da::t_8006e756bfe7b0 152
+  s_755964b2e0c3da::t_149dd9963fd14d 158,164
+src/components/dashboard/studio-camera-drawer.tsx
+  s_755964b2e0c3da::t_98eef2421b8cc6 100,108-113,116
+  s_755964b2e0c3da::t_c4331795bb67b6 339
+  s_755964b2e0c3da::t_f7ffcd83f81acd 27
+src/lib/prepare-image-for-upload.test.ts
+  s_755964b2e0c3da::t_83283958f9b405 1-222
+src/components/concierge/concierge-chat.tsx
+  s_755964b2e0c3da::t_f8d6773e937291 27
+  s_755964b2e0c3da::t_a0c6c7dccaff4b 494,496,500-504
+src/lib/prepare-image-for-upload.ts
+  s_755964b2e0c3da::t_a377a7e44c59b5 1-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9a6a0fa31b62a9a6d5a6469be54f9a656ad47655",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
