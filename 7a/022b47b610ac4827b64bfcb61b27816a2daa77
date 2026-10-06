@@ -1,0 +1,50 @@
+src/components/dashboard/hero-result-panel.tsx
+  s_755964b2e0c3da::t_9dd2fe451db7dd 26-29,93-100,279-281,302,304
+src/routes/_authenticated/_app/dashboard.test.ts
+  s_755964b2e0c3da::t_af7c6656c150d0 1-61
+src/components/dashboard/style-sheet-run.test.ts
+  s_755964b2e0c3da::t_eeb898b8e95352 70-105
+src/components/dashboard/climate-fetch.test.ts
+  s_755964b2e0c3da::t_eeb898b8e95352 2-8,141-180
+src/components/dashboard/hero-generator-form.test.tsx
+  s_755964b2e0c3da::t_77572dd3beae3b 4,6,18-23,34,37,45-46,51-65,85-113
+src/lib/color-analysis/paletteGenerator.ts
+  s_755964b2e0c3da::t_cb387422749bec 98-100
+  s_755964b2e0c3da::t_170f06f1e633d9 105-108
+  s_755964b2e0c3da::t_57543aff0853c6 101-102
+src/components/dashboard/climate-fetch.ts
+  s_755964b2e0c3da::t_170f06f1e633d9 54-55,62,71-89
+src/routes/_authenticated/_app/dashboard.tsx
+  s_755964b2e0c3da::t_5b8180d91970cb 70-72,170,208,218-219,222-223,296,299,307-309,322,333,499
+src/components/dashboard/hero-result-panel.test.tsx
+  s_755964b2e0c3da::t_5dcac414be1319 11,25,34,36,69,78,83,90-114
+  s_755964b2e0c3da::t_070be13435cf0d 115
+src/components/dashboard/hero-generator-form.tsx
+  s_755964b2e0c3da::t_99515b4b227a36 12-16,46,62,67-75,181
+  s_755964b2e0c3da::t_e657d6ebc45147 170-172
+src/components/dashboard/style-sheet-run.ts
+  s_755964b2e0c3da::t_170f06f1e633d9 4-6,8-9,12-14
+src/lib/color-analysis/paletteGenerator.test.ts
+  s_755964b2e0c3da::t_eeb898b8e95352 2,113-121,123-131
+  s_755964b2e0c3da::t_cb387422749bec 122
+  s_755964b2e0c3da::t_98b9e8672b1b26 132
+src/components/dashboard/climate-widget.tsx
+  s_755964b2e0c3da::t_e657d6ebc45147 103-104
+  s_755964b2e0c3da::t_1bf1869c22956a 14-18,99-102,105-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a022b47b610ac4827b64bfcb61b27816a2daa77",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
