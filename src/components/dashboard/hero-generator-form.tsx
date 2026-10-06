@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ClimateState } from "@/constants/climate";
+import { STYLE_SHEET_BUSY_REASON } from "@/components/dashboard/style-sheet-run";
 
 const VIBES = [
   "Everyday Casual",
@@ -37,6 +38,7 @@ export function HeroGeneratorForm({
   onIndoorOutdoorChange,
   climate,
   generating,
+  styleSheetLoading,
   profileComplete,
   blockedReason,
   onGenerate,
@@ -51,10 +53,15 @@ export function HeroGeneratorForm({
   onIndoorOutdoorChange: (v: "Indoor" | "Outdoor" | "Mixed") => void;
   climate: ClimateState | null;
   generating: boolean;
+  styleSheetLoading: boolean;
   profileComplete: boolean;
   blockedReason: string | null;
   onGenerate: () => void;
 }) {
+  // A new look must wait for the style sheet still drawing, or the old
+  // look's sheet would land on the new look's text.
+  const unavailableReason = blockedReason ?? (styleSheetLoading ? STYLE_SHEET_BUSY_REASON : null);
+
   return (
     <div className="mt-6 space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -148,8 +155,8 @@ export function HeroGeneratorForm({
       <div className="flex flex-wrap items-center gap-3">
         <Button
           onClick={onGenerate}
-          disabled={generating || !profileComplete || !climate}
-          aria-describedby={blockedReason ? "generate-blocked" : undefined}
+          disabled={generating || styleSheetLoading || !profileComplete || !climate}
+          aria-describedby={unavailableReason ? "generate-blocked" : undefined}
           size="pill"
           className="w-full sm:w-auto whitespace-normal text-center leading-snug"
         >
@@ -168,9 +175,9 @@ export function HeroGeneratorForm({
             </>
           )}
         </Button>
-        {blockedReason && (
+        {unavailableReason && (
           <span id="generate-blocked" className="text-sm text-muted-foreground text-pretty">
-            {blockedReason}
+            {unavailableReason}
           </span>
         )}
       </div>

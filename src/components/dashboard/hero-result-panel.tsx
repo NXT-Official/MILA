@@ -23,6 +23,7 @@ import { EmptyMediaState } from "@/components/dashboard/empty-media-state";
 import type { GeneratedLook } from "@/lib/generate-outfit.functions";
 import type { DashboardProfile } from "@/lib/queries/profile";
 import type { Vibe } from "@/components/dashboard/hero-generator-form";
+import { STYLE_SHEET_BUSY_REASON } from "@/components/dashboard/style-sheet-run";
 
 export function HeroResultPanel({
   generating,
@@ -261,7 +262,14 @@ export function HeroResultPanel({
               )}
             </Button>
           ) : null}
-          <Button variant="ghost" onClick={onGenerateAnother} size="pill">
+          <Button
+            variant="ghost"
+            onClick={onGenerateAnother}
+            disabled={styleSheetLoading}
+            aria-describedby={styleSheetLoading ? "look-actions-blocked" : undefined}
+            title={styleSheetLoading ? STYLE_SHEET_BUSY_REASON : undefined}
+            size="pill"
+          >
             <Sparkles aria-hidden="true" /> Try another look
           </Button>
           {savedLook && (
@@ -278,6 +286,11 @@ export function HeroResultPanel({
         {saveBlockedReason && (
           <p id="save-blocked" className="sr-only">
             {saveBlockedReason}
+          </p>
+        )}
+        {styleSheetLoading && (
+          <p id="look-actions-blocked" className="mt-3 text-xs text-muted-foreground">
+            {STYLE_SHEET_BUSY_REASON}
           </p>
         )}
         <p className="mt-3 text-xs text-muted-foreground">

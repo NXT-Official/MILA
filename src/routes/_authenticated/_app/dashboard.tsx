@@ -9,6 +9,7 @@ import { generateDailyLook, type DailyLook } from "@/lib/generate-outfit.functio
 import { saveOutfitToHistory } from "@/lib/save-outfit.functions";
 import { HeroGeneratorForm, type Vibe } from "@/components/dashboard/hero-generator-form";
 import { HeroResultPanel } from "@/components/dashboard/hero-result-panel";
+import { createLatestRun } from "@/components/dashboard/style-sheet-run";
 import { generatePhotoPreview } from "@/lib/photo-preview.functions";
 import { generateStyleSheetPreview } from "@/lib/style-sheet.functions";
 import { SelfiePhotoWidget } from "@/components/dashboard/selfie-photo-widget";
@@ -61,6 +62,11 @@ const LOOK_TIMEOUT_MS = 240_000;
 const VISUAL_TIMEOUT_MS = 290_000;
 
 const TIMEOUT_MESSAGE = "This is taking longer than expected. Please refresh and try again.";
+
+// Module-level, not per-mount: the look lives in the app shell and a render
+// keeps running after the member leaves this tab, so a fresh Dashboard mount
+// must still be able to retire a sheet an earlier mount started.
+const styleSheetRun = createLatestRun();
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -155,6 +161,7 @@ function Dashboard() {
     shoppable_picks: DailyLook["shoppable_picks"];
     forecastRetrievedAt: DailyLook["forecastRetrievedAt"];
   }) {
+    const run = styleSheetRun.start();
     setStyleSheetLoading(true);
     requestNotificationPermission();
     try {
@@ -162,6 +169,9 @@ function Dashboard() {
         generateStyleSheetFn({ data: { outfit: outfitForSheet } }),
         VISUAL_TIMEOUT_MS,
       );
+      // A sheet drawn for a look that has since been replaced must not land
+      // on the new look, stop its spinner, or be saved against its text.
+      if (!styleSheetRun.isCurrent(run)) return false;
       if (res.mode === "style_sheet") {
         setStyleSheetImageDataUri(res.imageDataUri);
         setSavedLook(null);
@@ -174,6 +184,7 @@ function Dashboard() {
       toast.error(res.reason);
       return false;
     } catch (e) {
+      if (!styleSheetRun.isCurrent(run)) return false;
       if (e instanceof TimeoutError) {
         toast.error(TIMEOUT_MESSAGE);
       } else if (isStaleBundleError(e)) {
@@ -185,13 +196,13 @@ function Dashboard() {
       }
       return false;
     } finally {
-      setStyleSheetLoading(false);
+      if (styleSheetRun.isCurrent(run)) setStyleSheetLoading(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
     }
   }
 
   async function generateLook() {
-    if (generating) return;
+    if (generating || styleSheetLoading) return;
     if (!user || !profile?.body_type || !profile?.color_season) {
       toast.error("Complete your Style Profile first.");
       return;
@@ -201,6 +212,9 @@ function Dashboard() {
       return;
     }
     setGenerating(true);
+    // Whatever sheet is still in flight belongs to the look being replaced.
+    styleSheetRun.invalidate();
+    setStyleSheetLoading(false);
     setLook(null);
     setSavedLook(null);
     setStyleSheetImageDataUri(null);
@@ -470,6 +484,7 @@ function Dashboard() {
               onIndoorOutdoorChange={setIndoorOutdoor}
               climate={climate}
               generating={generating}
+              styleSheetLoading={styleSheetLoading}
               profileComplete={profileComplete}
               blockedReason={blockedReason}
               onGenerate={generateLook}
