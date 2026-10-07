@@ -1,0 +1,58 @@
+src/routes/privacy.tsx
+  s_755964b2e0c3da::t_0abb0808f072e8 2,6-7,14-15
+  s_755964b2e0c3da::t_f618cd3f9f8536 8-13
+src/lib/site-context.server.ts
+  s_755964b2e0c3da::t_86eefb41fba9ae 1-13
+src/lib/site-seo.test.ts
+  s_755964b2e0c3da::t_279d426dc44c9d 40,43,63-66,71-120,157,163,185-187
+  s_755964b2e0c3da::t_e80c2b376e27bc 4-14
+src/lib/site-seo.ts
+  s_755964b2e0c3da::t_f618cd3f9f8536 15-65,93-94
+src/routes/site-context.test.tsx
+  s_755964b2e0c3da::t_ea3ec4933942ad 1-158
+src/routes/how-it-works.tsx
+  s_755964b2e0c3da::t_f618cd3f9f8536 2,11-15
+src/routes/style-dossier.tsx
+  s_755964b2e0c3da::t_f618cd3f9f8536 2,11-15
+vite.config.ts
+  s_755964b2e0c3da::t_2550d7323af452 14-16,22
+  s_755964b2e0c3da::t_3b4dc2706e488b 9-13,17-21,23,177
+src/routes/__root.tsx
+  s_755964b2e0c3da::t_0abb0808f072e8 20-21,62-66,107-108
+  s_755964b2e0c3da::t_f618cd3f9f8536 67-106
+src/routes/login.tsx
+  s_755964b2e0c3da::t_0abb0808f072e8 6-7
+src/routes/terms.tsx
+  s_755964b2e0c3da::t_f618cd3f9f8536 8-13
+  s_755964b2e0c3da::t_0abb0808f072e8 2,6-7,14-15
+src/routes/index.tsx
+  s_755964b2e0c3da::t_13a81645174de8 43-53
+  s_755964b2e0c3da::t_0abb0808f072e8 15,39,41,54
+  s_755964b2e0c3da::t_7c643fdd322e6d 40,42
+src/lib/site-context.functions.ts
+  s_755964b2e0c3da::t_86eefb41fba9ae 1-11
+src/routes/community.tsx
+  s_755964b2e0c3da::t_e0ffc45df6d14f 2,11-12
+src/routes/dupe-hunter.tsx
+  s_755964b2e0c3da::t_1e6a8e85bba4cd 2,11-12
+src/routes/membership.tsx
+  s_755964b2e0c3da::t_ef1232fbffe6e3 2,11-12
+src/routes/seo-head.test.tsx
+  s_755964b2e0c3da::t_a680818fca295c 31,46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "54749df48cb8d4662de6bea0e4d5f805e450ce5d",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
