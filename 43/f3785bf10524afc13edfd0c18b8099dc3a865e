@@ -1,0 +1,28 @@
+src/lib/concierge-title.test.ts
+  s_755964b2e0c3da::t_cb51c6f85a2db9 2,25-49
+  s_755964b2e0c3da::t_e1d698a6a46663 50-51
+src/server/services/concierge-turns.ts
+  s_755964b2e0c3da::t_ada53c296932ec 29,48-49
+src/lib/concierge-title.ts
+  s_755964b2e0c3da::t_ada53c296932ec 15-33
+src/server/services/concierge.ts
+  s_755964b2e0c3da::t_e1d698a6a46663 15,119
+src/server/services/concierge-turns.test.ts
+  s_755964b2e0c3da::t_ada53c296932ec 159-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "43f3785bf10524afc13edfd0c18b8099dc3a865e",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
