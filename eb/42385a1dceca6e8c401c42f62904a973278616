@@ -1,0 +1,27 @@
+supabase/migrations/20261007170000_tracked_ai_credit_refunds.sql
+  s_755964b2e0c3da::t_5a9e7fca5acfad 82-86
+  s_755964b2e0c3da::t_4ee512c0494b07 49-55
+  s_755964b2e0c3da::t_a32addfd8fd831 241-245
+supabase/migrations/20261007143000_generation_jobs.sql
+  s_755964b2e0c3da::t_cea66132e64f06 387-391
+  s_755964b2e0c3da::t_302d88d3d0b877 138-142
+  s_755964b2e0c3da::t_abcd10df3ffd48 78-84
+src/lib/generation-jobs.server.ts
+  s_755964b2e0c3da::t_fb32facdec121c 4,168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb42385a1dceca6e8c401c42f62904a973278616",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
