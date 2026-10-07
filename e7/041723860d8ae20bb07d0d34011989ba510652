@@ -1,0 +1,36 @@
+src/server/services/dupe-match.ts
+  s_755964b2e0c3da::t_86697fab4a798f 1182-1192
+  s_755964b2e0c3da::t_8e90fc279f4527 461
+  s_755964b2e0c3da::t_0c8244da06ce76 32-37
+  s_755964b2e0c3da::t_d5f5884e47ce98 967-970
+  s_755964b2e0c3da::t_a375c8d45801fb 234-237
+  s_755964b2e0c3da::t_9f6359889e60d5 1236-1241
+  s_755964b2e0c3da::t_542b23609e31a1 637-641
+  s_755964b2e0c3da::t_5069afc483815e 57-59
+  s_755964b2e0c3da::t_96f3b20ff8a58e 254,262-268,270,273-278
+  s_755964b2e0c3da::t_378a796a7d56e6 631-636,643-644,646-654,659,664-666,670-703
+  s_755964b2e0c3da::t_0cd7fc80eaca8c 642
+src/server/services/dupe-match.test.ts
+  s_755964b2e0c3da::t_56c1eddb430444 898-1003,1027-1130
+  s_755964b2e0c3da::t_985296d649ead9 1004-1026
+  s_755964b2e0c3da::t_81f3d5f2d66ec5 22
+  s_755964b2e0c3da::t_838437b1fce570 1131
+src/server/services/dupes.fixtures.ts
+  s_755964b2e0c3da::t_890ede3a002851 580-667
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e7041723860d8ae20bb07d0d34011989ba510652",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
