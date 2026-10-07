@@ -1,0 +1,25 @@
+src/lib/generation-jobs.server.ts
+  s_755964b2e0c3da::t_4aca2d246212d6 182-187
+  s_755964b2e0c3da::t_a0571e6eb07bac 316-318
+  s_755964b2e0c3da::t_602ddbc84b6d88 724-727
+  s_755964b2e0c3da::t_04b81af0e7b869 687-690,697-699,702-706
+  s_755964b2e0c3da::t_d3d5253491ce7b 166-168,171-173
+src/lib/generation-jobs.server.test.ts
+  s_755964b2e0c3da::t_dfb897ede99fd0 2309-2336
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e271b5c4ee9a5e2222583038256262186f11b5ab",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
