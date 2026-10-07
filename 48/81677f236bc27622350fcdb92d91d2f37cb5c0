@@ -1,0 +1,78 @@
+tests/helpers/fake-generation-jobs-supabase.ts
+  s_755964b2e0c3da::t_c998f48660e849 1-142
+src/lib/queries/generation-jobs.ts
+  s_755964b2e0c3da::t_4c3a992494af83 250,449-451,476,495,608
+  s_755964b2e0c3da::t_6bd430b6623beb 281-297
+  s_755964b2e0c3da::t_999c511d60bba6 2,4-59,107-249,251-280,319-448,452-475,477-494,496-541,547-573,575-607,609-616,618-622,626-686,700-703,705-706,712-747
+  s_755964b2e0c3da::t_0b9bc2f1ef785f 617,623-625
+  s_755964b2e0c3da::t_0137874d1fbb03 1,3
+  s_755964b2e0c3da::t_9d80936244d314 60-106
+  s_755964b2e0c3da::t_ec7e0fc4dd369e 574
+  s_755964b2e0c3da::t_745dd6b8aa1522 298-318
+  s_755964b2e0c3da::t_1143f08305d89f 542-546
+  s_755964b2e0c3da::t_a03d0d7a283408 687-699,704,707-711
+src/lib/queries/generation-jobs.test.ts
+  s_755964b2e0c3da::t_4c3a992494af83 18,29,150-153,436,455-457,463-465,567-569,674-722
+  s_755964b2e0c3da::t_517b98125967f7 591-594
+  s_755964b2e0c3da::t_55544311ad9c2e 1-17,19-28,30-149,154-435,437-454,458-462,466-566,570-590,595-673,723-724
+tests/e2e/generation-recovery.spec.ts
+  s_755964b2e0c3da::t_c3ceab641b7dc4 1-118,125-190,193-194,196-246,248-310,337-395
+  s_755964b2e0c3da::t_76f7fbae5a9a20 247
+  s_755964b2e0c3da::t_b42ca6c3344ea8 191-192,195
+  s_755964b2e0c3da::t_14a0475ecf8edf 119-124
+  s_755964b2e0c3da::t_4c3a992494af83 325-327
+  s_755964b2e0c3da::t_b589da40eec17d 311-324,328-336
+src/components/dashboard/hero-result-panel.tsx
+  s_755964b2e0c3da::t_ae2123c8f48a58 256
+  s_755964b2e0c3da::t_1c858ab837118e 199-213
+  s_755964b2e0c3da::t_f250efc50c4ecb 51-54
+  s_755964b2e0c3da::t_8483c5e4aa35a7 164-166,168-170
+  s_755964b2e0c3da::t_8576dbe5dfa8b9 74-83,85
+  s_755964b2e0c3da::t_df5eaee83e61e6 25
+src/hooks/use-generation-jobs.test.ts
+  s_755964b2e0c3da::t_227d7d91238d3b 1-82,87-156,160-196,202-210
+  s_755964b2e0c3da::t_e45680326dc5bb 83-86
+  s_755964b2e0c3da::t_4c3a992494af83 157-159,197-201
+src/routes/_authenticated/_app/dashboard.test.ts
+  s_755964b2e0c3da::t_03f1bb3f2f4593 89,91-93,99-101
+  s_755964b2e0c3da::t_4c3a992494af83 68
+  s_755964b2e0c3da::t_43b75215583028 33
+  s_755964b2e0c3da::t_0b405eb079213c 44
+  s_755964b2e0c3da::t_cc814c0a6b65a7 19-32,34-43,45-67,69-73
+src/components/dashboard/outfit-result-skeleton.tsx
+  s_755964b2e0c3da::t_1ead2182e079c3 27-35,38,44-46,48
+src/hooks/use-generation-jobs.ts
+  s_755964b2e0c3da::t_0bdbd287bab1fc 1-105
+src/routes/_authenticated/_app/dashboard.tsx
+  s_755964b2e0c3da::t_5a31a090b05d29 108-141,235,246,260,276,279,283,304,322
+  s_755964b2e0c3da::t_c108ec8595efd6 873-876
+  s_755964b2e0c3da::t_4a2451fbe1c324 2,4,8-43
+  s_755964b2e0c3da::t_73392b63d5420b 267-271
+  s_755964b2e0c3da::t_9531f91513ab24 324-367
+  s_755964b2e0c3da::t_4c3a992494af83 319,398,415,423,555,563,580-583,585,600,614-700
+  s_755964b2e0c3da::t_31a549635b7156 142,224-234,236-245,247-259,261-266,272-275,277-278,280-282,284-303,305-318,320-321,323,368-397,399-407,409-410,412-414,418-422,424,440-442,444,460-462,475,479-499,501-502,505-510,547-548,550-554,558-562,564
+src/components/dashboard/outfit-visual.tsx
+  s_755964b2e0c3da::t_e872cb5fd96755 15,24-25,33-38
+src/components/dashboard/hero-generator-form.tsx
+  s_755964b2e0c3da::t_0faa0d1ff7a9ff 192-193
+src/components/dashboard/hero-generator-form.test.tsx
+  s_755964b2e0c3da::t_b080733c61d22a 114-124
+src/components/dashboard/hero-result-panel.test.tsx
+  s_755964b2e0c3da::t_e5e0db0762f058 116-206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4881677f236bc27622350fcdb92d91d2f37cb5c0",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
