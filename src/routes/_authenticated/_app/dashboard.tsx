@@ -372,6 +372,10 @@ function Dashboard() {
           vibe_alignment_score: look.vibe_alignment_score,
           forecastRetrievedAt: look.forecastRetrievedAt ?? null,
           productIds: (look.shoppable_picks ?? []).map((item) => item.id),
+          // The items themselves (titles, prices, links) — saved so History
+          // can show the suggested pieces under the saved look. Sanitized
+          // server-side before the row is written.
+          shoppable_picks: look.shoppable_picks,
           previewMode: styleSheetImageDataUri ? "style_sheet" : "photo_edit",
         },
       });

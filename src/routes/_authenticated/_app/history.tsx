@@ -11,10 +11,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LoadErrorPanel } from "@/components/ui/error-state";
 import { GeneratedLookDetail } from "@/components/dashboard/generated-look-detail";
 import { LookSection } from "@/components/dashboard/look-section";
+import { ShopThisLookGrid } from "@/components/dashboard/shop-look-grid";
 import { useConcierge } from "@/hooks/use-concierge";
 import { cn } from "@/lib/utils";
 import { downloadImage } from "@/lib/download-image";
-import type { DailyLook } from "@/lib/generate-outfit.functions";
+import type { DailyLook, ShoppablePick } from "@/lib/generate-outfit.functions";
+import { normalizeSavedPicks } from "@/lib/saved-picks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
@@ -49,6 +51,10 @@ interface DailyLookAnalysis {
   outfit: DailyLook["outfit"];
   hair: DailyLook["hair"];
   makeup: DailyLook["makeup"];
+  /** The suggested items saved with the look, normalized from the row.
+   * `undefined` = the row predates the field (section hidden); `[]` = the
+   * look genuinely had no picks (grid shows its empty copy). */
+  shoppable_picks?: ShoppablePick[];
 }
 
 type NormalizedAnalysis =
@@ -78,7 +84,16 @@ function normalizeAnalysisResult(raw: unknown): NormalizedAnalysis {
     isPlainObject(value.hair) &&
     (value.makeup === null || isPlainObject(value.makeup))
   ) {
-    return { kind: "daily_look", data: value as unknown as DailyLookAnalysis };
+    return {
+      kind: "daily_look",
+      data: {
+        ...(value as unknown as DailyLookAnalysis),
+        // Not a blind cast for the picks: the stored shape is tolerated
+        // field-by-field, and a pick whose link is not http(s) never becomes
+        // a row in the History grid.
+        shoppable_picks: normalizeSavedPicks(value.shoppable_picks),
+      },
+    };
   }
 
   if (
@@ -166,7 +181,8 @@ function HistoryCard({ item, onOpen }: { item: OutfitRow; onOpen: () => void }) 
 
 function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: NormalizedAnalysis }) {
   if (analysis.kind === "daily_look") {
-    const { outfit, hair, makeup, weather, vibe, vibe_alignment_score } = analysis.data;
+    const { outfit, hair, makeup, weather, vibe, vibe_alignment_score, shoppable_picks } =
+      analysis.data;
     return (
       <div className="space-y-6">
         {(vibe || vibe_alignment_score != null || weather) && (
@@ -200,6 +216,11 @@ function HistoryDetailBody({ item, analysis }: { item: OutfitRow; analysis: Norm
             />
           }
         />
+        {/* The suggested items saved with this look, exactly as the dashboard
+            showed them — real titles, prices, and links. Hidden for rows saved
+            before the field existed; the shared grid renders its own empty
+            copy when the saved look genuinely had no picks. */}
+        <ShopThisLookGrid items={shoppable_picks ?? null} />
       </div>
     );
   }

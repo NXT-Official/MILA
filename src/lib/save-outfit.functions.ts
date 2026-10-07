@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { DailyLookSchema, computeMakeupEligibility } from "./generate-outfit.functions";
+import { sanitizePicksForSave } from "./saved-picks";
 import { uploadGeneratedOutfitImage, deleteOutfitImage } from "./outfit-image-storage.server";
 
 const SaveOutfitInput = DailyLookSchema.extend({
@@ -36,6 +37,7 @@ export const saveOutfitToHistory = createServerFn({ method: "POST" })
       vibe_alignment_score,
       forecastRetrievedAt,
       productIds,
+      shoppable_picks,
       previewMode,
     } = data;
 
@@ -73,6 +75,10 @@ export const saveOutfitToHistory = createServerFn({ method: "POST" })
           makeup,
           forecastRetrievedAt: forecastRetrievedAt ?? null,
           productIds: productIds ?? [],
+          // The suggested items themselves, with their links — what History
+          // re-renders under the look. Sanitized server-side: the row shape is
+          // client-supplied, and the links are rendered as hrefs.
+          shoppable_picks: sanitizePicksForSave(shoppable_picks),
           previewMode: previewMode ?? "inspiration",
           gender: profileRow?.gender ?? null,
           makeupEnabled,
