@@ -1,0 +1,41 @@
+src/lib/palette-recent.ts
+  s_755964b2e0c3da::t_06fbbc2567d921 1-74
+src/components/wardrobe/DailyPaletteGenerator.test.tsx
+  s_755964b2e0c3da::t_c4d5577ec62f94 1-108
+  s_755964b2e0c3da::t_b33b695715b38f 109-110
+src/lib/color-analysis/paletteGenerator.ts
+  s_755964b2e0c3da::t_2be22e9d982d8a 59,75,91
+  s_755964b2e0c3da::t_b03cfb84a2fad4 13-14,162
+src/routes/_authenticated/_app/palettes.test.tsx
+  s_755964b2e0c3da::t_bf588e75fba940 1-66
+src/lib/color-analysis/daily-palette.ts
+  s_755964b2e0c3da::t_ec0e6ca3536ef1 1-152
+src/components/wardrobe/DailyPaletteGenerator.tsx
+  s_755964b2e0c3da::t_97517bc4ed2660 4-18,41-60,63,67-97,133-153,155-163,166,191,193-200,215-225,227-229
+  s_755964b2e0c3da::t_e1328367a00a83 230-259,265,273-288
+src/routes/_authenticated/_app/palettes.tsx
+  s_755964b2e0c3da::t_b3d0c9f67c6fe1 1,20,26-32,36-43,49,70,104-114
+  s_755964b2e0c3da::t_0d9541a48aa7ab 115-120,163
+src/lib/color-analysis/daily-palette.test.ts
+  s_755964b2e0c3da::t_16006075d02e0b 1-131
+src/lib/color-analysis/paletteGenerator.test.ts
+  s_755964b2e0c3da::t_4782b0816ac42c 133-148
+src/lib/palette-recent.test.ts
+  s_755964b2e0c3da::t_0f1bfb41e5fe3d 1-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b23db4c1883235805db6b3c41a16321ef31de469",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
