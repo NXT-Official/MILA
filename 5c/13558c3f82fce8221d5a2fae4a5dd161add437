@@ -1,0 +1,90 @@
+src/lib/color-analysis/member-swatches.ts
+  s_755964b2e0c3da::t_212e24ebd64f9d 1-44,49-57
+  s_755964b2e0c3da::t_30691013edb6ff 45-48
+src/server/services/profile-extras.server.test.ts
+  s_755964b2e0c3da::t_71daf994194df5 1-18,21-122
+  s_755964b2e0c3da::t_162c96acc5998c 19-20
+src/lib/color-analysis/member-swatches.test.ts
+  s_755964b2e0c3da::t_9cb1e3116508d1 1-90
+src/lib/queries/profile-extras.ts
+  s_755964b2e0c3da::t_37058e29f396b7 1-152
+src/integrations/supabase/types.ts
+  s_755964b2e0c3da::t_d8965e876eb5c3 589,593,598
+  s_755964b2e0c3da::t_a886a05a03c1ca 942
+  s_755964b2e0c3da::t_be261f7e915100 556,560,565
+  s_755964b2e0c3da::t_855eebde6e8c12 523,527,532
+  s_755964b2e0c3da::t_28bf317345198a 932
+  s_755964b2e0c3da::t_05467abcfa92c1 952
+  s_755964b2e0c3da::t_5784d5a5f71dec 1096-1098
+  s_755964b2e0c3da::t_c63ab49f895680 1099
+src/lib/color-analysis/colour-math.test.ts
+  s_755964b2e0c3da::t_60908101d5f4bd 1-57,68-71
+  s_755964b2e0c3da::t_162c96acc5998c 58-67
+supabase/migrations/20261008090000_quick_rescan_hair_colour.sql
+  s_755964b2e0c3da::t_512ccd80efcc12 1-66
+src/lib/quick-rescan-migration.test.ts
+  s_755964b2e0c3da::t_162c96acc5998c 13-18
+  s_755964b2e0c3da::t_5e9d017d1964f9 21-26,28-48
+  s_755964b2e0c3da::t_9a0e27117b64aa 1-12,19-20,27,49-136
+src/constants/style-profile/index.ts
+  s_755964b2e0c3da::t_b49e04ee475ade 7
+scripts/verify-quick-rescan.sql
+  s_755964b2e0c3da::t_9019cc83bb6428 1-351
+src/lib/rate-limit.server.ts
+  s_755964b2e0c3da::t_11d9b2eb5965c4 1-2
+  s_755964b2e0c3da::t_31c559f59a5a42 59-120
+  s_755964b2e0c3da::t_a8f6bd1f237001 121
+src/lib/analysis-job-offer.test.ts
+  s_755964b2e0c3da::t_f2d16df7ba73a2 1-90,94-144
+  s_755964b2e0c3da::t_162c96acc5998c 91-93
+src/lib/wave-d-availability.test.ts
+  s_755964b2e0c3da::t_9d2dd588ad8f5b 1-39
+src/lib/queries/analysis-jobs.ts
+  s_755964b2e0c3da::t_162c96acc5998c 129-131
+  s_755964b2e0c3da::t_cc39de6f49d167 1-128,132-134
+src/lib/color-analysis/colour-math.ts
+  s_755964b2e0c3da::t_71001461f2731c 1-5,13-70
+  s_755964b2e0c3da::t_f152d37cdc032e 6-12
+src/lib/analysis-job-offer.ts
+  s_755964b2e0c3da::t_9b20dd08755056 1-97
+src/constants/style-profile/types.ts
+  s_755964b2e0c3da::t_bc0f62423bdc7d 37-40
+src/lib/rate-limit.server.test.ts
+  s_755964b2e0c3da::t_ca827382615645 2
+  s_755964b2e0c3da::t_80a1151dc676d7 76-91,96-98,104-113,117-124,128-138,147-160
+  s_755964b2e0c3da::t_162c96acc5998c 92-95,99-103,114-116,125-127,139-146
+  s_755964b2e0c3da::t_6d581d8fc90c59 161
+src/server/services/profile-extras.server.ts
+  s_755964b2e0c3da::t_271900ed6447ff 1-38,46-80
+  s_755964b2e0c3da::t_162c96acc5998c 39-45
+src/constants/style-profile/hair-colors.test.ts
+  s_755964b2e0c3da::t_043937b39e4c93 1-77
+src/lib/wave-d-availability.ts
+  s_755964b2e0c3da::t_7aafe7499cf10b 1-29
+src/constants/query-keys.ts
+  s_755964b2e0c3da::t_39493f500c0ae0 15-20
+src/lib/queries/analysis-jobs.test.ts
+  s_755964b2e0c3da::t_66b4d7baa506ba 1-124,128-186
+  s_755964b2e0c3da::t_162c96acc5998c 125-127
+src/lib/queries/profile-extras.test.ts
+  s_755964b2e0c3da::t_162c96acc5998c 19-24,160-162,176-180,214-221,244-246
+  s_755964b2e0c3da::t_9f6f61d84dedbd 1-18,25-159,163-175,181-213,222-243,247-253
+src/constants/style-profile/hair-colors.ts
+  s_755964b2e0c3da::t_331d4270409291 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5c13558c3f82fce8221d5a2fae4a5dd161add437",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
