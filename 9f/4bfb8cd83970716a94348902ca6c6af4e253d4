@@ -1,0 +1,55 @@
+src/lib/look-products.functions.test.ts
+  s_755964b2e0c3da::t_8fbfaf85cdca11 676-687,691
+  s_755964b2e0c3da::t_27fd2751d3d5b9 688-690
+src/lib/look-products.functions.ts
+  s_755964b2e0c3da::t_334bd9e8fc82c6 576-577
+src/components/dashboard/shop-look-grid.tsx
+  s_755964b2e0c3da::t_70c84fd55daaae 86
+tests/e2e/colour-map.spec.ts
+  s_755964b2e0c3da::t_e4fe5c74d69da9 147-165
+  s_755964b2e0c3da::t_ee82fc0466e719 31-38
+  s_755964b2e0c3da::t_77dfade55e1167 174
+  s_755964b2e0c3da::t_19d66697721548 282-326
+src/components/dashboard/colour-map-panel.tsx
+  s_755964b2e0c3da::t_e422030333a635 3,6,19-22,25-41
+  s_755964b2e0c3da::t_53f0e58e5e8d10 120-122
+  s_755964b2e0c3da::t_ced219f60db21c 100-105
+  s_755964b2e0c3da::t_7ea201ffc584fb 42
+src/components/dashboard/colour-map-panel.test.tsx
+  s_755964b2e0c3da::t_8162b130a77805 134-221
+  s_755964b2e0c3da::t_54656c077f5675 112-117
+  s_755964b2e0c3da::t_9be9f4a6a2c657 3-4
+  s_755964b2e0c3da::t_b080f081ba4cd6 222
+src/lib/wear-colour.test.ts
+  s_755964b2e0c3da::t_0678b832ced472 214-237
+src/lib/generate-outfit.functions.ts
+  s_755964b2e0c3da::t_a7e1e7c9b44419 308-310
+  s_755964b2e0c3da::t_7bcc812fd6272b 700-701,712
+  s_755964b2e0c3da::t_d670d7e680b990 487-488,491
+  s_755964b2e0c3da::t_dcc16527f87aa7 481-484
+  s_755964b2e0c3da::t_5a90c1dd71309c 153-191
+src/lib/wear-colour.ts
+  s_755964b2e0c3da::t_d610d4815d11ec 164-165
+  s_755964b2e0c3da::t_a0c572da46f3f0 157-163,166-177,180
+src/lib/generate-outfit.functions.test.ts
+  s_755964b2e0c3da::t_1012976d90b757 13
+  s_755964b2e0c3da::t_e23bd1e573f5ed 414-418,423,429-430,434-443,445-446,448-491
+  s_755964b2e0c3da::t_82b3832431fdc6 444,447
+  s_755964b2e0c3da::t_06b89d8dbc416a 419-422,424-428,431-433
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f4bfb8cd83970716a94348902ca6c6af4e253d4",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
