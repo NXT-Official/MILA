@@ -1,0 +1,32 @@
+src/integrations/supabase/member-fetch-guard.test.ts
+  s_755964b2e0c3da::t_7081154f794bde 430-492
+src/integrations/supabase/member-fetch-guard.ts
+  s_755964b2e0c3da::t_30ce6c34120508 110-112
+  s_755964b2e0c3da::t_9fd3e1445178e4 107-109
+  s_755964b2e0c3da::t_3e03e777002981 113-114
+  s_5e96c5fd90900d::t_d5cef1368c5b07 53,106,119-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0bdb4d29f34e320e26a8c2b138071a8dd3e9b0b0",
+  "prompts": {},
+  "sessions": {
+    "s_5e96c5fd90900d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a507ca1e79ec3386f",
+        "model": "unknown"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    },
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
