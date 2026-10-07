@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { accountDeletedEmail, passwordChangedEmail, receiptEmail } from "./member-emails";
+import {
+  accountDeletedEmail,
+  escapeHtml,
+  passwordChangedEmail,
+  receiptEmail,
+} from "./member-emails";
 
 describe("passwordChangedEmail", () => {
   const email = passwordChangedEmail({
@@ -66,5 +71,39 @@ describe("receiptEmail", () => {
     });
     expect(openEnded.html).toContain("Your receipt is attached as a PDF");
     expect(openEnded.html).not.toContain("active until");
+  });
+});
+
+describe("HTML escaping (stored values can never inject markup)", () => {
+  test("escapeHtml neutralises the characters that would break the template", () => {
+    expect(escapeHtml(`<script>alert("x")</script> & 'quotes'`)).toBe(
+      "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#39;quotes&#39;",
+    );
+  });
+
+  test("a member's display name arrives inert in the HTML body", () => {
+    const email = passwordChangedEmail({
+      name: "<img src=x onerror=alert(1)>",
+      changedAt: new Date("2026-09-30T10:15:00Z"),
+    });
+    expect(email.html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(email.html).not.toContain("<img");
+    // The plain-text body is not HTML — the raw name stays readable there.
+    expect(email.text).toContain("<img src=x onerror=alert(1)>");
+  });
+
+  test("receipt fields (name, plan title) are escaped too", () => {
+    const email = receiptEmail({
+      name: "Nadia & Sons",
+      planTitle: "<b>Style Pro</b>",
+      amount: "$49.99",
+      paidOn: "30 Sep 2026",
+      periodEnd: null,
+      receiptNumber: "MILA-2026-X",
+      transactionId: "txn_x",
+    });
+    expect(email.html).toContain("Nadia &amp; Sons");
+    expect(email.html).toContain("&lt;b&gt;Style Pro&lt;/b&gt;");
+    expect(email.html).not.toContain("<b>Style Pro</b>");
   });
 });

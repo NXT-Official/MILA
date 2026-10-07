@@ -7,21 +7,37 @@ export type EmailContent = { subject: string; html: string; text: string };
 
 const BRAND = "Mila";
 
+/**
+ * Neutralizes the characters that would let a stored value (a member's
+ * display name above all — it is member-editable) inject markup into an
+ * email body. The admin app's `announcement-email.ts` has the identical
+ * helper; these two are the only HTML email builders, and both must escape
+ * every interpolation.
+ */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function layout(input: { heading: string; paragraphs: string[]; footnote?: string }): string {
   const body = input.paragraphs
     .map(
       (paragraph) =>
-        `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#1c1c1c">${paragraph}</p>`,
+        `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#1c1c1c">${escapeHtml(paragraph)}</p>`,
     )
     .join("");
   const footnote = input.footnote
-    ? `<p style="margin:22px 0 0;font-size:12px;line-height:1.6;color:#7a7a7a">${input.footnote}</p>`
+    ? `<p style="margin:22px 0 0;font-size:12px;line-height:1.6;color:#7a7a7a">${escapeHtml(input.footnote)}</p>`
     : "";
   return `<!doctype html>
 <html><body style="margin:0;background:#f6f4f1;padding:28px">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:14px;padding:32px 30px;font-family:Helvetica,Arial,sans-serif">
     <div style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#7a7a7a">${BRAND}</div>
-    <h1 style="margin:10px 0 20px;font-size:21px;line-height:1.3;color:#111">${input.heading}</h1>
+    <h1 style="margin:10px 0 20px;font-size:21px;line-height:1.3;color:#111">${escapeHtml(input.heading)}</h1>
     ${body}
     ${footnote}
   </div>
