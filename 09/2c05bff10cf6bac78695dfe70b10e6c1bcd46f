@@ -1,0 +1,46 @@
+src/constants/style-profile/hair-colors.test.ts
+  s_755964b2e0c3da::t_84a8b4af42b9da 72-77
+src/lib/queries/profile-extras.test.ts
+  s_755964b2e0c3da::t_e393a58bed05dd 119-126
+  s_755964b2e0c3da::t_74bb24fef80c90 253
+  s_755964b2e0c3da::t_dfba7820cd21a0 268,271-277
+  s_755964b2e0c3da::t_f1cd2b2ed646b3 26-33
+  s_755964b2e0c3da::t_c6b90e7ce6beac 127-128,278
+src/lib/color-analysis/member-swatches.test.ts
+  s_755964b2e0c3da::t_35ef7e9a6a537d 2
+  s_755964b2e0c3da::t_d3bf8ff08106a7 79-108
+  s_755964b2e0c3da::t_a2c148528aed63 109
+src/lib/queries/profile-extras.ts
+  s_755964b2e0c3da::t_bbf082119f8605 18-20
+  s_755964b2e0c3da::t_c1badc6be1799c 67-69
+src/server/services/profile-extras.server.test.ts
+  s_755964b2e0c3da::t_dd3bb8f84eec87 102-115
+src/lib/analysis-job-offer.ts
+  s_755964b2e0c3da::t_13f7cdb3265eb2 15-19,39-40,50-55,57-61,63-64,80-91,107-113,119,122
+src/lib/analysis-job-offer.test.ts
+  s_755964b2e0c3da::t_641be76c0a3f0f 110-180
+  s_755964b2e0c3da::t_0993957685f9a1 61-63,66-75
+  s_755964b2e0c3da::t_900d2f11e3309d 181
+src/constants/style-profile/hair-colors.ts
+  s_755964b2e0c3da::t_4f85221fdda013 9-11,50
+src/lib/color-analysis/member-swatches.ts
+  s_755964b2e0c3da::t_b48acab5859ad5 11-14,22,31-34,37-40,56-57
+src/server/services/profile-extras.server.ts
+  s_755964b2e0c3da::t_77f416ce78cdcb 14-16,29-33,39-40,43,74-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "092c05bff10cf6bac78695dfe70b10e6c1bcd46f",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
