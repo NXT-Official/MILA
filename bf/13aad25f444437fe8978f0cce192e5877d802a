@@ -1,0 +1,94 @@
+src/lib/shop-card-scroll.ts
+  s_755964b2e0c3da::t_dc143140502729 1-43
+src/components/dashboard/shop-look-grid.tsx
+  s_755964b2e0c3da::t_01ecaab32100bb 53-83,85,87-90
+  s_755964b2e0c3da::t_c8a5a8f56a6845 45
+  s_755964b2e0c3da::t_5671f67f3a8978 91-97
+  s_755964b2e0c3da::t_8830037a654ad0 4,6,12
+  s_755964b2e0c3da::t_97f6a828f0219f 10
+  s_755964b2e0c3da::t_66b6567143403b 34-44,46-52
+src/components/dashboard/colour-map-panel.tsx
+  s_755964b2e0c3da::t_d56d3460126a83 96-98
+  s_755964b2e0c3da::t_20a18a74e7c4ce 2
+  s_755964b2e0c3da::t_4fdd9a65d6228a 95
+  s_755964b2e0c3da::t_aa1d250a04773c 1,3-55,60-94,99-115
+  s_755964b2e0c3da::t_70eada36b0c413 56-59
+src/components/dashboard/colour-map-panel.test.tsx
+  s_755964b2e0c3da::t_4a0e24fb2489ff 4
+  s_755964b2e0c3da::t_58644cf1beea57 1-3,5-133
+src/lib/wear-colour.test.ts
+  s_755964b2e0c3da::t_e6f33e41a597ba 1-25,31-198,200-228,230-245
+  s_755964b2e0c3da::t_4406cfaf8b8c64 229
+  s_755964b2e0c3da::t_70eada36b0c413 26-30,199
+src/lib/shop-card-scroll.test.ts
+  s_755964b2e0c3da::t_42d0700d558665 1-57
+src/components/ui/wear-colour-chip.tsx
+  s_755964b2e0c3da::t_d9406a4150e176 1-38
+src/components/dashboard/shop-look-grid.test.tsx
+  s_755964b2e0c3da::t_2566ff5f7e428c 105-131,134-190
+  s_755964b2e0c3da::t_6abce30630f978 132-133
+src/components/ui/garment-overlay.test.tsx
+  s_755964b2e0c3da::t_cf31004ffd3fe8 1-45
+src/components/ui/wear-colour-chip.test.tsx
+  s_755964b2e0c3da::t_92721f9d188f66 1-45
+src/lib/generate-outfit.functions.test.ts
+  s_755964b2e0c3da::t_11ce764e6cbc35 185-283,375
+  s_755964b2e0c3da::t_bfdb6fc3a18f6d 94-138
+  s_755964b2e0c3da::t_d2101adb49097c 9,13
+  s_755964b2e0c3da::t_17e6d86ae1e995 284,377-432
+  s_755964b2e0c3da::t_5676cc2a6efe1f 376
+src/server/services/look.test.ts
+  s_755964b2e0c3da::t_d4c296aa3fc3c2 183-184,189-190,192-195,203,207-212
+  s_755964b2e0c3da::t_6d6ad5a4a605e3 157
+  s_755964b2e0c3da::t_70eada36b0c413 842-844,932-935,951
+  s_755964b2e0c3da::t_4c9d133f154eee 762-841,845-931,936-950,952-994
+  s_755964b2e0c3da::t_22960e37572805 20,27
+  s_755964b2e0c3da::t_907c58ddcfc258 995-996
+src/components/ui/garment-overlay.tsx
+  s_755964b2e0c3da::t_380a6c6280755c 1-13,15-21
+  s_755964b2e0c3da::t_70eada36b0c413 14
+tests/e2e/colour-map.spec.ts
+  s_755964b2e0c3da::t_1d198302c9f3bf 1-255
+src/lib/generate-outfit.functions.ts
+  s_755964b2e0c3da::t_1aff035f37009f 631-634
+  s_755964b2e0c3da::t_3c70cdaa2b2bf4 288-289
+  s_755964b2e0c3da::t_22d78f8831e4e6 153-185
+  s_755964b2e0c3da::t_70eada36b0c413 7
+  s_755964b2e0c3da::t_b1333db196eae2 8
+  s_755964b2e0c3da::t_667da1a33028a9 506
+  s_755964b2e0c3da::t_e43ec5a6177e2f 474
+  s_755964b2e0c3da::t_191712e47bd18f 526-535
+  s_755964b2e0c3da::t_6e08eb8de14c74 647-650,655,662-670
+  s_755964b2e0c3da::t_ccbb4ac5476301 258-272
+  s_755964b2e0c3da::t_f39b5cbfc1fa5b 433-437,440-453
+  s_755964b2e0c3da::t_713e83cddff7e4 601-605
+  s_755964b2e0c3da::t_04de9ff4b3b409 454,536
+src/server/services/look.ts
+  s_755964b2e0c3da::t_a3614f8f0b147a 44-48
+  s_755964b2e0c3da::t_0fa2633a5d1c21 620,627-631
+  s_755964b2e0c3da::t_771d42e8568c4d 602-604
+  s_755964b2e0c3da::t_e52b8dce152949 31
+  s_755964b2e0c3da::t_6434eedf0324aa 665-669
+  s_755964b2e0c3da::t_14ebdfe0e73a0b 277-300
+  s_755964b2e0c3da::t_379954b3670a1b 687-689,697-705
+  s_755964b2e0c3da::t_98bde3383b6d1b 412-414
+  s_755964b2e0c3da::t_b06d1c055b8a4a 605
+src/lib/wear-colour.ts
+  s_755964b2e0c3da::t_d74b774ffb6500 1-213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf13aad25f444437fe8978f0cce192e5877d802a",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
