@@ -1,0 +1,60 @@
+scripts/verify-generation-job-fail-with-result.sql
+  s_755964b2e0c3da::t_db161e74a150fd 155,160-166,168-170,173
+  s_755964b2e0c3da::t_729ab2876cf622 1-154,156-159,167,171-172,174-250
+src/lib/generation-jobs.store.test.ts
+  s_755964b2e0c3da::t_8278c728722556 1
+  s_755964b2e0c3da::t_2d1af1ed8c17dc 460-670
+src/lib/generation-jobs.server.test.ts
+  s_755964b2e0c3da::t_7ab56a65f36c01 2009-2026
+  s_755964b2e0c3da::t_7042724a3513ab 2041-2047
+  s_755964b2e0c3da::t_6967e248858e7e 1958,1960-2008,2027-2040,2048-2074,2081-2154
+  s_755964b2e0c3da::t_b6cc5219ba1384 2075-2080
+  s_755964b2e0c3da::t_6229043d9aa3ee 4,10
+  s_755964b2e0c3da::t_f67b1db78556c8 1635-1957
+  s_755964b2e0c3da::t_3d951700cb7c28 1959,2155
+tests/helpers/memory-generation-job-store.ts
+  s_755964b2e0c3da::t_8a76899e1ba8c1 223-225,228-241,248
+  s_755964b2e0c3da::t_406676ac679d77 54-57
+supabase/migrations/20261008100000_generation_job_fail_with_result.sql
+  s_755964b2e0c3da::t_f7b1639bb7838a 1-44
+src/lib/generation-jobs.server.ts
+  s_755964b2e0c3da::t_5819d3f346396f 268-274,279,287
+  s_755964b2e0c3da::t_761819cf6ae770 146-172
+  s_755964b2e0c3da::t_fcddc69d2dd6ec 198-201
+  s_755964b2e0c3da::t_1e8e7be10a3c71 281-283,285-286
+  s_755964b2e0c3da::t_03e616be90576a 584-603,606-613
+  s_755964b2e0c3da::t_c21d528e2f926c 379,390-395
+  s_755964b2e0c3da::t_4f0f554d42fd29 546-553,555-559
+  s_755964b2e0c3da::t_3bfa3619045654 299-301,303-336
+  s_755964b2e0c3da::t_e727a1719dce71 949-953,955-960,962-971,975-977,987-992,994-995
+  s_755964b2e0c3da::t_ac3a7b8fbf33ce 138-141,143-144
+  s_755964b2e0c3da::t_5e589f316c1562 487-488,492
+  s_755964b2e0c3da::t_441a73908d694e 978-982
+  s_755964b2e0c3da::t_1e4d8ad9396033 302
+  s_755964b2e0c3da::t_ebed6dff1b03b4 75-77,82
+  s_755964b2e0c3da::t_4caefe7710fd1c 806-821
+  s_755964b2e0c3da::t_75eb9bb8d62549 202-205
+  s_755964b2e0c3da::t_f600005ce69b68 972-974,983-986
+  s_755964b2e0c3da::t_2f0d14f429a781 265-267
+  s_755964b2e0c3da::t_105a77e78111aa 886-891,893-907
+  s_755964b2e0c3da::t_2e45dd285c7820 280,284
+  s_755964b2e0c3da::t_b5528bf2b836a8 644-647
+  s_755964b2e0c3da::t_83298155fbd49b 633-635
+  s_755964b2e0c3da::t_3e7cd5142c7831 145,337,822
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ef59b48182aec4419546689b7b0705b7d7103d0",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
