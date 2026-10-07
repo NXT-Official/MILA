@@ -1,0 +1,23 @@
+src/routes/api/v1/generation-jobs/reap.ts
+  s_755964b2e0c3da::t_ab37e5574ef97d 1-50
+src/routeTree.gen.ts
+  s_755964b2e0c3da::t_838df53bfaeba8 55,287-291,379,431,487,542,594,649,690,1006-1012,1177
+src/routes/api/v1/generation-jobs/reap.test.ts
+  s_755964b2e0c3da::t_2ead5e6f2f466e 1-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "167cbecd3cc75e7b83705d7dc3b481a93aa66b3a",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
