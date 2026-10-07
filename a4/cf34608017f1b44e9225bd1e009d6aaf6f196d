@@ -1,0 +1,33 @@
+src/hooks/use-feature-job.ts
+  s_755964b2e0c3da::t_eaae671fb87aca 100-102
+  s_755964b2e0c3da::t_f2bdf2622fb12d 168
+  s_755964b2e0c3da::t_16775b5a51dc2d 16,18,97,99,114,119,165,172
+src/lib/queries/feature-jobs.test.ts
+  s_755964b2e0c3da::t_b1bd7800fde845 419,434-437,439-455
+  s_755964b2e0c3da::t_9474f86799875f 571-590
+  s_755964b2e0c3da::t_34b01b0249ed1c 10-11,13,15-16
+  s_755964b2e0c3da::t_ceb6823528185d 392-399
+  s_755964b2e0c3da::t_2fae16cda07afe 493-570
+src/hooks/use-feature-job.test.tsx
+  s_755964b2e0c3da::t_9474f86799875f 5,108-154
+src/lib/feature-job-offer.test.ts
+  s_755964b2e0c3da::t_9474f86799875f 131-144
+src/lib/queries/feature-jobs.ts
+  s_755964b2e0c3da::t_16775b5a51dc2d 204-205,208,214,402-403,436-439,446-536,543-548,554,557,566-567,569
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a4cf34608017f1b44e9225bd1e009d6aaf6f196d",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
