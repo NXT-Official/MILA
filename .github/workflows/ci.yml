@@ -37,8 +37,12 @@ jobs:
       - name: Unit tests
         run: bun test
 
+      # GHSA-hp3w-g68c-fv3c (sprintf-js DoS, moderate): no fixed release exists
+      # upstream — 1.1.3 is the latest and still inside the vulnerable range —
+      # and the chain is build/test tooling only (argparse, via js-yaml and
+      # @tensorflow/tfjs). Drop this --ignore once a patched sprintf-js ships.
       - name: Dependency audit
-        run: bun audit --prod
+        run: bun audit --prod --ignore=GHSA-hp3w-g68c-fv3c
 
       - name: Build
         run: bun run build

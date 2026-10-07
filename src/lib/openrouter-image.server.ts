@@ -151,6 +151,10 @@ export async function generateOutfitImage(
     skinDepth?: string | null;
     heightCm?: number | null;
     fallbackGenderDirection?: "Male" | "Female" | null;
+    /** Per-attempt budget for this request; absent = the shipped TIMEOUT_MS.
+     * renderLookImageForUser clamps it to the render budget so a retry
+     * attempt can fit inside what's left. */
+    timeoutMs?: number;
   } = {},
 ): Promise<OutfitImageResult> {
   const { OPENROUTER_API_KEY } = requireEnv({
@@ -178,7 +182,7 @@ export async function generateOutfitImage(
         ),
         output_format: "jpeg",
       }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(Math.max(1, deps.timeoutMs ?? TIMEOUT_MS)),
     });
   } catch {
     throw new Error("Couldn't reach the OpenRouter image service.");
