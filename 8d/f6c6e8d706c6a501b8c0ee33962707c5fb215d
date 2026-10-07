@@ -1,0 +1,25 @@
+src/components/feed/post-item-drawer.tsx
+  s_755964b2e0c3da::t_6b422f9984f824 28,153,158,162,169,171
+src/components/feed/similar-shop-notice.test.tsx
+  s_755964b2e0c3da::t_e4ae0ff81acdb6 82-97
+src/lib/queries/similar-items.test.ts
+  s_755964b2e0c3da::t_b91225fb2f6083 5,62-77
+src/lib/queries/similar-items.ts
+  s_755964b2e0c3da::t_9e4ee137ff6e58 52-64,68,76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8df6c6e8d706c6a501b8c0ee33962707c5fb215d",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
