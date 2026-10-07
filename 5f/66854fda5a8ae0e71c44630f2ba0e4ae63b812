@@ -1,0 +1,35 @@
+src/lib/match-score.test.ts
+  s_755964b2e0c3da::t_c67d055160e6bd 1-15
+src/routes/api/v1/analysis/outfit.test.ts
+  s_755964b2e0c3da::t_996aadae14a039 77-118
+src/server/services/outfit-analysis.test.ts
+  s_755964b2e0c3da::t_22c2438ec7a30c 1-257
+src/routes/api/v1/analysis/outfit.ts
+  s_755964b2e0c3da::t_88d11f122bb86e 28-32
+src/lib/match-score.ts
+  s_755964b2e0c3da::t_26281e4b1881ac 1-12
+src/lib/analyze-outfit.functions.ts
+  s_755964b2e0c3da::t_543e8277ef3a28 22
+  s_755964b2e0c3da::t_2ff3ecc06336fc 10-14
+src/server/services/outfit-analysis.ts
+  s_755964b2e0c3da::t_0a71165568ffea 7-17
+  s_755964b2e0c3da::t_b9873cdfcda424 161
+  s_755964b2e0c3da::t_06d29e6d7c7c3e 63-104,109-118,120-133,138-147,151-154,156
+  s_755964b2e0c3da::t_5d30388e49565d 175,178-252
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5f66854fda5a8ae0e71c44630f2ba0e4ae63b812",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
