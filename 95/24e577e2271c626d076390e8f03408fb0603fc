@@ -1,0 +1,58 @@
+src/routes/api/v1/analysis/personal-color.test.ts
+  s_755964b2e0c3da::t_ab75b90696eb42 157-162
+src/server/services/personal-color-analysis.ts
+  s_755964b2e0c3da::t_69eb8ee700a902 767-768
+  s_755964b2e0c3da::t_f044eb8271d633 359-362,364-367
+  s_755964b2e0c3da::t_bcdc32193c6062 1083
+  s_755964b2e0c3da::t_bed4dd9ff21ba1 733-752
+  s_755964b2e0c3da::t_5e9503d9fd27d1 614-617
+  s_755964b2e0c3da::t_c8454eca7b3ff9 1249-1263,1271,1278-1279
+  s_755964b2e0c3da::t_d3dff672c3f8d6 661-669
+  s_755964b2e0c3da::t_37edf5b9626d98 169-173
+  s_755964b2e0c3da::t_830c54f4e24f42 631-632
+  s_755964b2e0c3da::t_f99a2a0a8eab83 788
+  s_755964b2e0c3da::t_9e9c09fd672d6e 416-425,427-431
+  s_755964b2e0c3da::t_43571cdff64e7c 653-660,670-673
+  s_755964b2e0c3da::t_32afe8f0247302 110-113
+  s_755964b2e0c3da::t_f0066a8677c700 1182-1198,1200-1201
+  s_755964b2e0c3da::t_8439a68d74333d 281-282,284-287
+  s_755964b2e0c3da::t_a03f837c7f0eda 515-517,533,537,558-559,567,588
+  s_755964b2e0c3da::t_625f3db9c5339e 508-514,518-532,534-536,538-557,560-566,568-587
+  s_755964b2e0c3da::t_2271a0e275618a 47-48,53-58
+  s_755964b2e0c3da::t_7a5a3edac043f0 1110
+  s_755964b2e0c3da::t_c9e152326e8a3e 589
+src/lib/ai.server.test.ts
+  s_755964b2e0c3da::t_89e7611a77a6ba 257-272
+src/lib/ai.server.ts
+  s_755964b2e0c3da::t_f857516678a052 107-110,119-120,122
+  s_755964b2e0c3da::t_98c7ad1955762d 121,123
+src/server/services/personal-color-analysis.test.ts
+  s_755964b2e0c3da::t_cc4eb468274b30 1,10-11,16-18
+  s_755964b2e0c3da::t_11902b723c8ebc 80,82-91,95-101,110-111,117-121,125,137,150-178,180,196,213-214
+  s_755964b2e0c3da::t_6e2e208aa4585c 540-541
+  s_755964b2e0c3da::t_532f3ab33a9593 863-991,993-994,1006-1064,1067-1072,1075,1077,1089-1159,1161-1206,1208-1237,1239-1306,1309-1325
+  s_755964b2e0c3da::t_ea50cdc9a12b4b 1307-1308
+  s_755964b2e0c3da::t_0692be729c632a 633,635-636,647-650
+  s_755964b2e0c3da::t_f6e9ad17a319f5 995-1005
+  s_755964b2e0c3da::t_9c325e81b7fa9c 232,234-235
+  s_755964b2e0c3da::t_770dc5e3dab139 1065-1066,1073-1074,1076,1078-1088
+  s_755964b2e0c3da::t_f3744acb08f37f 722
+  s_755964b2e0c3da::t_2f27453317d59f 676-677
+  s_755964b2e0c3da::t_e8ad101b000aa5 992,1160,1207,1238
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9524e577e2271c626d076390e8f03408fb0603fc",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
