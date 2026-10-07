@@ -1,0 +1,32 @@
+src/lib/queries/feature-jobs.test.ts
+  s_755964b2e0c3da::t_2819270e06fde0 1-57,59-244,247-320,322-463
+  s_755964b2e0c3da::t_5e3169d55b354b 58,245-246,321
+src/hooks/use-feature-job.ts
+  s_755964b2e0c3da::t_20aa9c97718f8c 1-138,140-144,146-149,151-180
+  s_755964b2e0c3da::t_e3a5713c0836c8 139,145,150
+src/lib/queries/feature-jobs.ts
+  s_755964b2e0c3da::t_c3f641ccae98e0 1-500
+src/lib/feature-job-offer.test.ts
+  s_755964b2e0c3da::t_185013abd7c96d 1-130
+src/lib/feature-job-offer.ts
+  s_755964b2e0c3da::t_58c4e924568039 1-125
+src/hooks/use-feature-job.test.tsx
+  s_755964b2e0c3da::t_a48cc89b134729 1-100,102-178
+  s_755964b2e0c3da::t_0c8c2eb74d6979 101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "590924ff58135bf0365fb4192a49a81eed63bf4b",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
