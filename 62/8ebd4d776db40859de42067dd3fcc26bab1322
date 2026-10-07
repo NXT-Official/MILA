@@ -1,0 +1,70 @@
+src/routes/api/v1/analysis/body-scan.test.ts
+  s_755964b2e0c3da::t_28fdb62924aee7 1-107
+src/server/services/body-read.ts
+  s_755964b2e0c3da::t_af494aec7ac93e 1,4-11,13-160,162-240,242-243,245-259,262-263
+  s_755964b2e0c3da::t_894714e4c2fd90 2-3,12,161,241,244,260-261
+src/lib/queries/check-in-status.ts
+  s_755964b2e0c3da::t_210c93c1760b0a 1-29
+  s_755964b2e0c3da::t_01ecaab32100bb 30
+src/routeTree.gen.ts
+  s_755964b2e0c3da::t_2f688f0d24c47f 42,49-50,219-223,255-264,361,368,382,412,419,433,467,474,488,521,528,542,572,579,593,626,633,647,666,673,687,902-908,951-964,1145,1152,1166
+src/routes/api/v1/analysis/body-scan.ts
+  s_755964b2e0c3da::t_6fe0332205ce82 1-37,39-46
+  s_755964b2e0c3da::t_01ecaab32100bb 38
+src/server/services/free-check-in-slot.server.ts
+  s_755964b2e0c3da::t_9ac6d1cab1532e 108
+  s_755964b2e0c3da::t_df67a4af2dcb69 1-107
+src/server/services/body-read.test.ts
+  s_755964b2e0c3da::t_1988a87559cefc 34-41
+  s_755964b2e0c3da::t_4b42d1d0d1833c 1-33,42-209
+src/server/services/free-check-in-slot.server.test.ts
+  s_755964b2e0c3da::t_e2855d6bd3c4e5 145,147
+  s_755964b2e0c3da::t_03cac1fb78a834 1-144,146,148-159
+src/lib/queries/check-in-status.test.ts
+  s_755964b2e0c3da::t_74ae980b848107 1-42
+src/routes/api/v1/check-in/status.ts
+  s_755964b2e0c3da::t_5391e43942b0f3 1-31,33-40
+  s_755964b2e0c3da::t_01ecaab32100bb 32
+src/routes/api/v1/check-in/status.test.ts
+  s_755964b2e0c3da::t_56d61f1a34e726 1-112,116-126
+  s_755964b2e0c3da::t_1988a87559cefc 113-115
+src/lib/check-in.functions.ts
+  s_755964b2e0c3da::t_1988a87559cefc 26,35
+  s_755964b2e0c3da::t_1dc04c87c75857 1-25,27-34
+src/server/services/body-scan.test.ts
+  s_755964b2e0c3da::t_66107848e91dd3 1-291,295-462
+  s_755964b2e0c3da::t_1988a87559cefc 292-294
+src/server/services/check-in.ts
+  s_755964b2e0c3da::t_05d1f02362b77c 1,3-91,93-136,138-334,336-341,343-352
+  s_755964b2e0c3da::t_4b33e6c42ecf33 2,137,335,342,353
+  s_755964b2e0c3da::t_1988a87559cefc 92
+src/server/services/body-scan.ts
+  s_755964b2e0c3da::t_5be2654657c347 1,3-41,43-80,82-92,94-103,105,107-109,111,113-122,124-173,175-306
+  s_755964b2e0c3da::t_1988a87559cefc 81
+  s_755964b2e0c3da::t_160a3e4f7d7a44 2,42,93,104,106,110,112,123,174,307
+src/routes/api/v1/check-in/index.test.ts
+  s_755964b2e0c3da::t_09ace65658f274 1-135
+src/server/services/check-in.test.ts
+  s_755964b2e0c3da::t_745739d61e16aa 169
+  s_755964b2e0c3da::t_63c0071dd7fc93 147-149
+  s_755964b2e0c3da::t_a34f5724ecbad7 1-130,132-146,150-168,170-691
+  s_755964b2e0c3da::t_323c7d2d9bb6ae 131
+src/routes/api/v1/check-in/index.ts
+  s_755964b2e0c3da::t_7e27c157121934 1-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "628ebd4d776db40859de42067dd3fcc26bab1322",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
