@@ -1,0 +1,42 @@
+src/lib/color-analysis/daily-palette.test.ts
+  s_755964b2e0c3da::t_2483caabd75fc1 132-163,170-171
+  s_755964b2e0c3da::t_fe1725ccc1df89 164-169
+src/routes/_authenticated/_app/palettes.tsx
+  s_755964b2e0c3da::t_430ffeb8817e15 1,7,10-11
+src/lib/palette-recent.ts
+  s_755964b2e0c3da::t_fe1725ccc1df89 1,9-15,55-57,62-66,87-109
+src/lib/color-analysis/daily-palette.ts
+  s_755964b2e0c3da::t_fe1725ccc1df89 1,107-120
+src/lib/palette-recent.test.ts
+  s_755964b2e0c3da::t_fe1725ccc1df89 88-93,101-105
+  s_755964b2e0c3da::t_2483caabd75fc1 2-8,83-87,94-100,106-136
+  s_755964b2e0c3da::t_4be03202e68805 137
+src/routes/_authenticated/_app/palettes.test.tsx
+  s_755964b2e0c3da::t_430ffeb8817e15 2,4-6
+src/components/wardrobe/DailyPaletteGenerator.tsx
+  s_755964b2e0c3da::t_4a9e74da48f83c 266-270,321-330,351-363,365-369
+  s_755964b2e0c3da::t_bb22976d6cc172 16-22,57-58,78-79,84-120,124,127,138-146,164,195-198,214,263-265,271-274,320,332,334,339,350,370
+src/components/palettes/palette-card.tsx
+  s_755964b2e0c3da::t_430ffeb8817e15 1-104
+src/components/wardrobe/DailyPaletteGenerator.test.tsx
+  s_755964b2e0c3da::t_83fda81fee2d68 32,35-40,116-131
+  s_755964b2e0c3da::t_ba6ea1575ede1f 33
+src/components/palettes/palette-card.test.tsx
+  s_755964b2e0c3da::t_430ffeb8817e15 1-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d56fa0bc8605adddab79378f76436fa4eb9e5cd3",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
