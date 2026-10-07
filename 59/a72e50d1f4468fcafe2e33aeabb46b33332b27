@@ -1,0 +1,37 @@
+supabase/migrations/20261007143000_generation_jobs.sql
+  s_755964b2e0c3da::t_92f4a98f3b2574 68-69
+src/lib/credits.server.ts
+  s_755964b2e0c3da::t_14a0475ecf8edf 266,291
+src/server/services/dupes.test.ts
+  s_755964b2e0c3da::t_14a0475ecf8edf 700-702
+src/server/services/dupes.ts
+  s_755964b2e0c3da::t_14a0475ecf8edf 615-616,656-657
+supabase/migrations/20261007170000_tracked_ai_credit_refunds.sql
+  s_755964b2e0c3da::t_02ca86b3bc6344 4-8
+scripts/verify-generation-jobs.sql
+  s_755964b2e0c3da::t_14a0475ecf8edf 154,568-570,637-639,668,671,676
+src/lib/auth-origin.ts
+  s_755964b2e0c3da::t_14a0475ecf8edf 4-6
+src/lib/credits.server.test.ts
+  s_755964b2e0c3da::t_14a0475ecf8edf 268-269,366,379,395
+scripts/verify-tracked-ai-credits.sql
+  s_755964b2e0c3da::t_14a0475ecf8edf 16-17,88,326,336-337,369,371-373,411-413
+src/lib/auth-handler.server.ts
+  s_755964b2e0c3da::t_687268331a28dd 34-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59a72e50d1f4468fcafe2e33aeabb46b33332b27",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
