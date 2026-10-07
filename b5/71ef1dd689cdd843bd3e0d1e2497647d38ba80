@@ -1,0 +1,41 @@
+src/server/services/dupes.ts
+  s_755964b2e0c3da::t_8452e5fd1bc3d8 2,6-16
+  s_755964b2e0c3da::t_f2d19b08dfee80 792-802,804-817,823-824,826-827,829-915,917-929,931-940,942-943,945
+  s_755964b2e0c3da::t_df4ea6786d5abb 32,37
+  s_755964b2e0c3da::t_9307b91f275b8c 613-614,617-618,621-629,636-637
+  s_755964b2e0c3da::t_b9a47dd4f241a4 769
+  s_755964b2e0c3da::t_1fc6abd377fe5d 916,930
+  s_755964b2e0c3da::t_b854c6e1b12b7b 665-694,696-768
+  s_755964b2e0c3da::t_30b11035a826ea 828
+  s_755964b2e0c3da::t_eda1886d89c505 695
+src/routes/api/v1/dupes/find.ts
+  s_755964b2e0c3da::t_20361113c68d8c 19-23,34-38
+src/lib/dupe-hunter.functions.ts
+  s_755964b2e0c3da::t_4e81c4d0fa3342 73-78
+  s_755964b2e0c3da::t_f01e9b598a31f8 110-112,118
+  s_755964b2e0c3da::t_30f79eed241667 18-21
+src/routes/api/v1/dupes/find.test.ts
+  s_755964b2e0c3da::t_c50d5761b8cca8 108-176
+src/server/services/dupes.test.ts
+  s_755964b2e0c3da::t_0d76e290f4034f 949-959
+  s_755964b2e0c3da::t_4c9197b8a61de7 788-948,960-1032,1034-1253
+  s_755964b2e0c3da::t_a9f34e71102a41 15-18
+  s_755964b2e0c3da::t_9a5f96c5b992c5 1033
+  s_755964b2e0c3da::t_71076964adec97 1254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b571ef1dd689cdd843bd3e0d1e2497647d38ba80",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
