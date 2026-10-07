@@ -1,0 +1,57 @@
+src/routes/_authenticated/_app/dashboard.test.ts
+  s_755964b2e0c3da::t_7a223943af8382 472-474
+  s_755964b2e0c3da::t_2cffb48a21c4f3 271
+  s_755964b2e0c3da::t_51208e04c8a1ff 273,352,413-471,475-501
+  s_755964b2e0c3da::t_f9f6703c13877e 268-270
+  s_755964b2e0c3da::t_06439c8778047f 272
+  s_755964b2e0c3da::t_1587a0ff147bf3 350-351
+  s_f41b7cf5e7f81e::t_c66470548670ba 267,366-368
+src/server/services/look.test.ts
+  s_755964b2e0c3da::t_857d196583470a 732-753
+tests/e2e/generation-recovery.spec.ts
+  s_755964b2e0c3da::t_1096da88b99110 25-34,135-138,197-198,203,240-242,244-258,714-771
+  s_755964b2e0c3da::t_d9a867bfb7cb18 199-202
+  s_755964b2e0c3da::t_61d7a5e94c9786 772
+src/routes/api/v1/look/generate.test.ts
+  s_755964b2e0c3da::t_2189b1d9a88459 145-166
+src/server/services/look.ts
+  s_755964b2e0c3da::t_20cd6c2419ab11 186-190,813-815
+src/components/dashboard/hero-result-panel.tsx
+  s_755964b2e0c3da::t_e57a2c99b37e09 57,94-98,301-306,314-316
+  s_755964b2e0c3da::t_7862f315c5d7c0 317
+src/components/dashboard/hero-result-panel.test.tsx
+  s_755964b2e0c3da::t_51208e04c8a1ff 246-262
+src/routes/_authenticated/_app/dashboard.tsx
+  s_755964b2e0c3da::t_0109ad46c9ca3e 20-21,26,36,42-43,52,54,136-140,170-176,327-331,342-345,357,472-477,582-585,655-657,683-686,697-700,756,788,817,839-840,850-854,869-873,899-900,903,913,915-923,925-928,931-935,969-971,996-999,1010-1013,1095-1100,1129,1162-1187,1190-1192,1195-1221,1245,1250-1252,1396
+src/lib/queries/generation-jobs.ts
+  s_755964b2e0c3da::t_143e5bf0e96fa9 1791
+  s_755964b2e0c3da::t_fc386068a0d725 880
+  s_755964b2e0c3da::t_243a6faddee329 1658-1671
+  s_755964b2e0c3da::t_90b755ae436510 13,463-467,470,536-546,550-552,556-558,560,565-567,819-823,825,833,840-842,855-856,858,863-879,881-896,916-920,926-927,1226-1227,1277-1278,1331,1353,1636-1657,1672-1708,1719,1724-1790,1792-1794
+src/lib/queries/generation-jobs.test.ts
+  s_755964b2e0c3da::t_76fb0bdfb7cfec 27-34,1331,1334-1336,1350-1376,1397-1399,1402-1405,1408-1409,1412-1413,1418-1419,1423,1426-1515,1525-1530,1532-1534,2129-2286
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51126a40862c052254328117af65b22209ee6f64",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    },
+    "s_f41b7cf5e7f81e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ac5b9afa6e4cbeb56",
+        "model": "unknown"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
