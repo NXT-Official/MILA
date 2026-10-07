@@ -1,0 +1,42 @@
+src/lib/openrouter-image.server.ts
+  s_755964b2e0c3da::t_124c45625c7514 154-157,185
+.github/workflows/ci.yml
+  s_755964b2e0c3da::t_2a277045c7d89d 41-45
+  s_755964b2e0c3da::t_124c45625c7514 40
+src/server/services/look.test.ts
+  s_755964b2e0c3da::t_124c45625c7514 119,129,154-328,353,362-451,457,460-462,464,467-468,470-478,487-504,512-530,538-550,558-574,582-586,743-767
+  s_755964b2e0c3da::t_d90738092701c3 1-29,120-128,130-153,329-352,354-361,452-456,458-459,463,465-466,469,479-486,505-511,531-537,551-557,575-581,587-706,708-742
+  s_755964b2e0c3da::t_7f89b01d41870d 707
+src/server/services/look.ts
+  s_755964b2e0c3da::t_124c45625c7514 53,89,93-98,102-105,114-135,258,260-262,440,449,492,598,611,626-677,679-680,691-696,701,703-711,713-731,733,736,763-770,774-788,797-799,805,807-862,864-875
+  s_755964b2e0c3da::t_54cd6ea4da269e 151-154
+  s_755964b2e0c3da::t_ca4faeff74cfce 263-269
+  s_755964b2e0c3da::t_c958d9f9a22ee9 771-773
+  s_755964b2e0c3da::t_b02ac48a664ccb 417
+  s_755964b2e0c3da::t_580bb2456eb2a2 697-700,702
+  s_755964b2e0c3da::t_1f893b7b16aafa 712
+  s_755964b2e0c3da::t_acb9888e3b743b 244,251
+  s_755964b2e0c3da::t_ef96ddaacccc62 90-92,99-101,106-113
+  s_755964b2e0c3da::t_b51935b85628ab 12
+  s_755964b2e0c3da::t_9dec3eed65e4bd 170
+  s_755964b2e0c3da::t_268712335bb8dd 747,755,758
+  s_755964b2e0c3da::t_e67eae59205dbf 219-224
+bun.lock
+  s_755964b2e0c3da::t_7b4088c7f54483 678,1280,1470
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "44f6ea9d6e8a123fff2ff05d56d400a1c18071ba",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
