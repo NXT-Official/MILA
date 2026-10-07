@@ -1,0 +1,42 @@
+src/hooks/use-generation-jobs.test.ts
+  s_755964b2e0c3da::t_fb40755e9c8e98 244-249
+src/hooks/use-generation-jobs.ts
+  s_755964b2e0c3da::t_828d30a5438e71 119-121,124-125
+tests/e2e/generation-recovery.spec.ts
+  s_755964b2e0c3da::t_1779f233a9cf0c 555-559,568-580
+  s_755964b2e0c3da::t_eb69c95a15a749 581-582
+src/lib/queries/generation-jobs.ts
+  s_755964b2e0c3da::t_f69c9084788a08 455-468,473-479,492-494,498,515-523,531-554,768-871,1487-1488,1498-1504,1507
+src/lib/queries/generation-jobs.test.ts
+  s_755964b2e0c3da::t_67ee15ac22d80c 1124-1156,1164-1169,1177-1218,1225-1247,1251-1266,1274-1281,1288-1374,1378-1403
+  s_755964b2e0c3da::t_f69c9084788a08 1219-1224,1248-1250,1267-1273,1282-1287,1375-1377
+  s_755964b2e0c3da::t_8fd1e5a7ae658e 1157-1163,1170-1176
+  s_755964b2e0c3da::t_824f83cc4a7eec 26,34
+  s_755964b2e0c3da::t_9b1ffefbcbd829 27-30,33,35
+src/routes/_authenticated/_app/dashboard.tsx
+  s_755964b2e0c3da::t_f4b6bcbb322374 17,19,22,37,40-41,45,153-157,174-177,394-424,429-430,433,454,457,476,542-555,563,599-608,714-719,739-764,766-768,812-816,833-838,843-856,862-863,866-875,877-878,1034-1035,1098-1118
+src/routes/_authenticated/_app/dashboard.test.ts
+  s_755964b2e0c3da::t_9864467ecdc323 219-221
+  s_755964b2e0c3da::t_fb40755e9c8e98 319-402
+  s_755964b2e0c3da::t_79cc01ce4df285 238-241
+  s_755964b2e0c3da::t_5f4fdd5326ca46 260-262,267
+tests/helpers/fake-generation-jobs-supabase.ts
+  s_755964b2e0c3da::t_b6c441d699c2f6 11-13,52,54,136-141,196-205
+  s_755964b2e0c3da::t_bf16aeffb12298 206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "029be2fbd4b50550d1c34bdd214ea16ef9dd2a4b",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
