@@ -1,0 +1,56 @@
+src/components/pricing/credit-packs.ts
+  s_755964b2e0c3da::t_39bf03d17f3479 1-12
+tests/e2e/landing-stack.spec.ts
+  s_755964b2e0c3da::t_3c51b5aab22bb7 1-17,27-40,44-154,156-157,162,171-172,175-176
+  s_755964b2e0c3da::t_2bbcb49d07479c 41-43
+  s_755964b2e0c3da::t_6a08e5c23d8601 155,158-161,163-170,173-174
+  s_755964b2e0c3da::t_dd240018622d0d 18-26
+src/components/landing/sticky-stack-motion.test.ts
+  s_755964b2e0c3da::t_2d2bbf5194b9d7 29-34,36-42,44,48-53,57,61,66-72,98-101,121-122,129-131,134,136,143,145-152,158-160,162-167,171-177,180,182-185
+  s_755964b2e0c3da::t_0fea2dbcdd99c9 178-179,181,186-189
+src/routes/root-head-defaults.test.ts
+  s_755964b2e0c3da::t_394d6c3352f904 1-31
+src/components/landing/style-flow-stack.test.tsx
+  s_755964b2e0c3da::t_27b76eeff87982 106
+  s_755964b2e0c3da::t_3d1ba5a1512432 103
+  s_755964b2e0c3da::t_74c68be810570c 97-102,104-105,107-111
+src/routes/__root.tsx
+  s_755964b2e0c3da::t_90e27d292e0a24 71,74,77,81
+src/components/landing/style-flow-stack.tsx
+  s_755964b2e0c3da::t_ada53c296932ec 63
+  s_755964b2e0c3da::t_adc8d91e367a1b 167
+  s_755964b2e0c3da::t_8d68f34a42004c 143-146
+src/components/landing/sticky-stack-motion.ts
+  s_755964b2e0c3da::t_ada53c296932ec 16-20,24,26-27,29-30,33-34,40,60-87,89-90,97-100,102,108,110,116-117,121-122,128-132
+  s_755964b2e0c3da::t_8f226ab992c529 133
+src/components/landing/landing-cms.test.tsx
+  s_755964b2e0c3da::t_3ddf9e66a790c4 108-110
+src/components/landing/pricing-section.test.tsx
+  s_755964b2e0c3da::t_ac0d709ade620d 18,239-258
+src/components/landing/pricing-section.tsx
+  s_755964b2e0c3da::t_bb00e4361d3af4 76-77,79
+src/components/pricing/pricing-card.tsx
+  s_755964b2e0c3da::t_5bbd0fbb898b33 14,90-91
+src/lib/landing-content.fallback.test.ts
+  s_755964b2e0c3da::t_f80d10821d96e3 54-63
+src/lib/landing-content.fallback.ts
+  s_755964b2e0c3da::t_32f7cce3ea7de5 30-31,143,146,222,227,229-231,233
+src/lib/landing-content.normalize.test.ts
+  s_755964b2e0c3da::t_9817705d312a1f 276-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9834693ebd278b83d3ea69a5a7f58646ce1a3eb6",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "unknown"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
