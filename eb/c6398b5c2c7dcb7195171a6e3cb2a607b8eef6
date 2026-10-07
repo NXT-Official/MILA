@@ -1,0 +1,21 @@
+src/lib/queries/feature-jobs.test.ts
+  s_755964b2e0c3da::t_e0fa13de35b2bb 34-36,84-86,170-175,191,205,212-213,215,218-222,238,246-249,264-271,597,602,606
+src/hooks/use-feature-job.test.tsx
+  s_755964b2e0c3da::t_e0fa13de35b2bb 202,221-225
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ebc6398b5c2c7dcb7195171a6e3cb2a607b8eef6",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
