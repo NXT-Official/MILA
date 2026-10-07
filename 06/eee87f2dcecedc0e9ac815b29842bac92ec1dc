@@ -1,0 +1,27 @@
+src/lib/posthog-client.test.ts
+  s_755964b2e0c3da::t_d0ba77ae0506f6 58-60,138-141,191-193,256-262
+  s_755964b2e0c3da::t_d5148fa3cd1cf2 1-57,61-137,142-190,194-255,263-315
+src/lib/posthog-client.ts
+  s_755964b2e0c3da::t_f6fc31197d9f39 176,215
+  s_755964b2e0c3da::t_ab0503ff352164 2-147
+  s_755964b2e0c3da::t_021df8bf1d8d65 171-175,177-180
+  s_755964b2e0c3da::t_95ea8ad4d19167 208-212
+src/routes/__root.tsx
+  s_755964b2e0c3da::t_0b613af9b18e4a 53-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "06eee87f2dcecedc0e9ac815b29842bac92ec1dc",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
