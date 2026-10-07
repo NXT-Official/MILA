@@ -1,0 +1,51 @@
+src/lib/site-seo.test.ts
+  s_755964b2e0c3da::t_22bc8c713b18e1 1-130
+src/lib/site-seo.ts
+  s_755964b2e0c3da::t_3c7bb4e77ad751 1-101
+src/components/legal/legal-page.test.tsx
+  s_755964b2e0c3da::t_f856b58a901477 1-60
+src/components/layout/not-found-page.tsx
+  s_755964b2e0c3da::t_5bd84da0cf22e4 1-30
+src/routes/seo-head.test.tsx
+  s_755964b2e0c3da::t_cdd328ced2389b 1-50
+src/components/legal/legal-page.tsx
+  s_755964b2e0c3da::t_865e408bd95f07 4-6,9,12-13,15,31-32
+.env.example
+  s_755964b2e0c3da::t_9414cd128ade90 124-128
+public/robots.txt
+  s_755964b2e0c3da::t_273d9c654db27c 1-2,20
+public/site.webmanifest
+  s_755964b2e0c3da::t_178669beb421d8 1-23
+public/sitemap.xml
+  s_755964b2e0c3da::t_34af3b91dd49ac 3-4,8-9,14-45,49-60
+src/routes/__root.tsx
+  s_755964b2e0c3da::t_490f9c9463529b 20-21,24,78-83,91-93
+src/routes/community.tsx
+  s_755964b2e0c3da::t_018ab4c1f120e6 2,11
+src/routes/dupe-hunter.tsx
+  s_755964b2e0c3da::t_8ba339fb36023a 2,11
+src/routes/how-it-works.tsx
+  s_755964b2e0c3da::t_ad1479dea8f70e 2,11
+src/routes/membership.tsx
+  s_755964b2e0c3da::t_ee8296b505a63f 2,11
+src/routes/style-dossier.tsx
+  s_755964b2e0c3da::t_fe284bfcd55ba8 2,11
+vite.config.ts
+  s_755964b2e0c3da::t_2893d1fce28173 162-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf46320c04eabc644de7e748df7ce399f13fd927",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
