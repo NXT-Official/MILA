@@ -59,3 +59,26 @@ describe("a throw while asking for notifications cannot strand a spinner", () =>
     });
   }
 });
+
+describe("generation flags survive a tab switch (they live at the app shell)", () => {
+  // A member who switches tabs mid-generation unmounts the dashboard. When
+  // the flags lived here as useState they reset to idle: the returning member
+  // saw no progress, and the re-enabled CTA was one tap from charging a
+  // second generation while the first still ran.
+  test("the flags are read from the shared look context", () => {
+    const block = source.match(/const \{[^}]*\} = useCurrentLook\(\)/)?.[0] ?? "";
+    for (const flag of ["generating", "styleSheetLoading", "photoPreviewLoading"]) {
+      expect(block).toContain(flag);
+    }
+  });
+
+  test("none of the flags is still held as route-local state", () => {
+    for (const gone of [
+      "const [generating, setGenerating] = useState",
+      "const [styleSheetLoading, setStyleSheetLoading] = useState",
+      "const [photoPreviewLoading, setPhotoPreviewLoading] = useState",
+    ]) {
+      expect(source).not.toContain(gone);
+    }
+  });
+});

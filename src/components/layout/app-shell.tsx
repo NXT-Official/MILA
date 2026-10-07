@@ -35,6 +35,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [currentLook, setCurrentLook] = useState<GeneratedLook | null>(null);
   const [styleSheetImageDataUri, setStyleSheetImageDataUri] = useState<string | null>(null);
   const [currentSavedLook, setCurrentSavedLook] = useState<CurrentLookSavedRef | null>(null);
+  // Generation flags live HERE (not in the dashboard route): switching tabs
+  // mid-generation unmounts the route, and route-local flags would reset to
+  // idle — no progress shown, CTA re-enabled, one tap from a double charge.
+  // See the note on CurrentLookApi.
+  const [generating, setGenerating] = useState(false);
+  const [styleSheetLoading, setStyleSheetLoading] = useState(false);
+  const [photoPreviewLoading, setPhotoPreviewLoading] = useState(false);
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyze = useServerFn(analyzeOutfit);
@@ -133,6 +140,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           setStyleSheetImageDataUri,
           savedLook: currentSavedLook,
           setSavedLook: setCurrentSavedLook,
+          generating,
+          setGenerating,
+          styleSheetLoading,
+          setStyleSheetLoading,
+          photoPreviewLoading,
+          setPhotoPreviewLoading,
         }}
       >
         <div className="min-h-screen flex w-full">

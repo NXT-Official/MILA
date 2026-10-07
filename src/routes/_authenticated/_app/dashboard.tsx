@@ -137,8 +137,13 @@ function Dashboard() {
     setStyleSheetImageDataUri,
     savedLook,
     setSavedLook,
+    generating,
+    setGenerating,
+    styleSheetLoading,
+    setStyleSheetLoading,
+    photoPreviewLoading,
+    setPhotoPreviewLoading,
   } = useCurrentLook();
-  const [generating, setGenerating] = useState(false);
   const [savingLook, setSavingLook] = useState(false);
   const lookSaved = !!savedLook;
   const [vibe, setVibe] = useState<Vibe>("Everyday Casual");
@@ -147,8 +152,6 @@ function Dashboard() {
   const [indoorOutdoor, setIndoorOutdoor] = useState<"Indoor" | "Outdoor" | "Mixed" | "">("");
   const [creditPaywallOpen, setCreditPaywallOpen] = useState(false);
   const [climate, setClimate] = useState<ClimateState | null>(null);
-  const [photoPreviewLoading, setPhotoPreviewLoading] = useState(false);
-  const [styleSheetLoading, setStyleSheetLoading] = useState(false);
 
   const generate = useServerFn(generateDailyLook);
   const saveOutfit = useServerFn(saveOutfitToHistory);

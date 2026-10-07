@@ -13,6 +13,22 @@ interface CurrentLookApi {
   setStyleSheetImageDataUri: Dispatch<SetStateAction<string | null>>;
   savedLook: CurrentLookSavedRef | null;
   setSavedLook: Dispatch<SetStateAction<CurrentLookSavedRef | null>>;
+  /**
+   * Compose/render orchestration flags. Held HERE, at the app shell, because
+   * a member who switches tabs mid-generation unmounts the dashboard: the
+   * same flags kept as route-local state would reset to idle, the returning
+   * member would see no progress, and the re-enabled CTA would be one tap
+   * away from paying for a second generation while the first still runs. The
+   * setters are stable across mounts, so a request that settles after the
+   * dashboard unmounted still clears its flag — and the member returns to the
+   * in-progress state, not an idle page.
+   */
+  generating: boolean;
+  setGenerating: Dispatch<SetStateAction<boolean>>;
+  styleSheetLoading: boolean;
+  setStyleSheetLoading: Dispatch<SetStateAction<boolean>>;
+  photoPreviewLoading: boolean;
+  setPhotoPreviewLoading: Dispatch<SetStateAction<boolean>>;
 }
 
 export const CurrentLookContext = createContext<CurrentLookApi | null>(null);
