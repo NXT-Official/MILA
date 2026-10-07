@@ -1,0 +1,28 @@
+src/server/services/dupes.test.ts
+  s_755964b2e0c3da::t_ff26032517d577 814-816,819-824,833-836,842-844,848-851
+  s_755964b2e0c3da::t_56de493738cda0 1309-1312
+  s_755964b2e0c3da::t_65a05ab78c1ac7 1256-1257,1285,1314-1315
+  s_755964b2e0c3da::t_037f6a94f08764 1222-1255,1258-1284,1286-1308,1313
+src/server/services/dupes.ts
+  s_755964b2e0c3da::t_9a6500932e0737 882
+  s_755964b2e0c3da::t_2b5fb8ca4a4155 830-838,840
+src/lib/dupe-spec.ts
+  s_755964b2e0c3da::t_d4e1f986d28cf4 186-204,209
+  s_755964b2e0c3da::t_d989da6ab0e8d1 224-226,229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6f55f01e26ea861c364ebd6bcfe6a61d58cadff7",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
