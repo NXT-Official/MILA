@@ -67,6 +67,30 @@ describe("POST /api/v1/dupes/find", () => {
     );
   });
 
+  test("nothing close enough -> 200 with matchQuality 'none' and the message, for mobile", async () => {
+    const deps = fakeDeps({
+      findDupesForUser: mock(async () => ({
+        inspiration: {
+          ...INSPIRATION,
+          category: "Outerwear" as const,
+          garment_type: "coat" as const,
+        },
+        dupes: [],
+        matchQuality: "none" as const,
+        message: "Nothing in our catalogue is close enough to this coat yet.",
+      })),
+    });
+
+    const res = await handleDupesFind(postRequest(VALID_INPUT, "good-token"), deps);
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.dupes).toEqual([]);
+    expect(json.matchQuality).toBe("none");
+    expect(json.message).toBe("Nothing in our catalogue is close enough to this coat yet.");
+    expect(json.inspiration.garment_type).toBe("coat");
+  });
+
   test("insufficient credits -> 402 INSUFFICIENT_CREDITS", async () => {
     const deps = fakeDeps({
       findDupesForUser: mock(async () => {
@@ -79,6 +103,75 @@ describe("POST /api/v1/dupes/find", () => {
 
     expect(res.status).toBe(402);
     expect(json.error.code).toBe("INSUFFICIENT_CREDITS");
+  });
+
+  test("clientRequestId gives inFlight report and passes { status: running, jobId } through", async () => {
+    const clientRequestId = "6f9c2a8e-3b1d-4c7a-9e2f-0a1b2c3d4e5f";
+    const deps = fakeDeps({
+      findDupesForUser: mock(async () => ({ status: "running", jobId: "job-9" })) as never,
+    });
+
+    const res = await handleDupesFind(
+      postRequest({ ...VALID_INPUT, clientRequestId }, "good-token"),
+      deps,
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: "running", jobId: "job-9" });
+    const call = (deps.findDupesForUser as ReturnType<typeof mock>).mock.calls[0];
+    expect(call[2]).toMatchObject({ clientRequestId, imageUrl: VALID_INPUT.imageUrl });
+    // The service's own deps stay the production ones.
+    expect(call[3]).toBeUndefined();
+    expect(call[4]).toEqual({ inFlight: "report" });
+  });
+
+  test("a refunded hunt answers creditRefunded and its jobId, for mobile", async () => {
+    const clientRequestId = "6f9c2a8e-3b1d-4c7a-9e2f-0a1b2c3d4e5f";
+    const deps = fakeDeps({
+      findDupesForUser: mock(async () => ({
+        inspiration: INSPIRATION,
+        dupes: [],
+        matchQuality: "none" as const,
+        message: "Nothing in our catalogue is close enough to this bag yet.",
+        creditRefunded: true,
+        jobId: "job-9",
+      })) as never,
+    });
+
+    const res = await handleDupesFind(
+      postRequest({ ...VALID_INPUT, clientRequestId }, "good-token"),
+      deps,
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.creditRefunded).toBe(true);
+    expect(json.jobId).toBe("job-9");
+  });
+
+  test("without clientRequestId the call is today's three arguments, so it waits for the hunt", async () => {
+    const deps = fakeDeps();
+
+    const res = await handleDupesFind(postRequest(VALID_INPUT, "good-token"), deps);
+
+    expect(res.status).toBe(200);
+    const call = (deps.findDupesForUser as ReturnType<typeof mock>).mock.calls[0];
+    expect(call).toHaveLength(3);
+    expect(call[2]).not.toHaveProperty("clientRequestId");
+  });
+
+  test("a malformed clientRequestId -> 400 VALIDATION_FAILED", async () => {
+    const deps = fakeDeps();
+
+    const res = await handleDupesFind(
+      postRequest({ ...VALID_INPUT, clientRequestId: "nope" }, "good-token"),
+      deps,
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.error.code).toBe("VALIDATION_FAILED");
+    expect(deps.findDupesForUser).not.toHaveBeenCalled();
   });
 
   test("invalid body -> 400 VALIDATION_FAILED", async () => {

@@ -5,6 +5,9 @@ import {
   ProductCardCarouselTrack,
   ProductCardCarouselItem,
 } from "@/components/ui/product-card";
+import { GarmentBadge } from "@/components/ui/garment-badge";
+import { SaveProductButton } from "@/components/ui/save-product-button";
+import { garmentFor, garmentLine, recommendationAlt } from "@/lib/garment-label";
 import { cn, formatPrice } from "@/lib/utils";
 import type { DupeHuntResult } from "@/lib/dupe-hunter.functions";
 
@@ -86,63 +89,70 @@ export function DupeHunterResults({
 
       {result.dupes.length > 0 ? (
         <ProductCardCarouselTrack aria-label="Budget alternatives">
-          {result.dupes.map((d) => (
-            <ProductCardCarouselItem key={d.id}>
-              <ProductCard
-                className="h-full"
-                as="a"
-                href={d.affiliate_link}
-                image={
-                  <>
-                    {d.image_url && (
-                      <img
-                        src={d.image_url}
-                        alt={d.title}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                          e.currentTarget.nextElementSibling?.classList.replace("hidden", "flex");
-                        }}
-                      />
-                    )}
-                    <div
-                      className={cn(
-                        "h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground",
-                        d.image_url ? "hidden" : "flex",
+          {result.dupes.map((d) => {
+            const garment = garmentFor(d.category, d.title);
+            return (
+              <ProductCardCarouselItem key={d.id}>
+                <ProductCard
+                  className="h-full"
+                  as="a"
+                  href={d.affiliate_link}
+                  overlay={<GarmentBadge garment={garment} />}
+                  actions={<SaveProductButton product={d} context={{ source: "dupe" }} />}
+                  image={
+                    <>
+                      {d.image_url && (
+                        <img
+                          src={d.image_url}
+                          alt={recommendationAlt(d.title, garment)}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            e.currentTarget.nextElementSibling?.classList.replace("hidden", "flex");
+                          }}
+                        />
                       )}
-                    >
-                      <ImageOff className="size-5" strokeWidth={1.5} />
-                      <span className="text-micro uppercase tracking-label-xwide">
-                        Image not available
-                      </span>
-                    </div>
-                  </>
-                }
-              >
-                <div className="flex-1">
-                  <p className="font-serif text-sm text-ink leading-snug line-clamp-2">{d.title}</p>
-                  <p className="mt-1 atelier-label">{formatPrice(d.price, d.currency)}</p>
-                </div>
-                {d.match_reasons[0] && (
-                  <p className="text-micro text-muted-foreground line-clamp-2">
-                    {d.match_reasons[0]}
+                      <div
+                        className={cn(
+                          "h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground",
+                          d.image_url ? "hidden" : "flex",
+                        )}
+                      >
+                        <ImageOff className="size-5" strokeWidth={1.5} />
+                        <span className="text-micro uppercase tracking-label-xwide">
+                          Image not available
+                        </span>
+                      </div>
+                    </>
+                  }
+                >
+                  <div className="flex-1">
+                    <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
+                      {garmentLine(garment, d.title)}
+                    </p>
+                    <p className="mt-1 atelier-label">{formatPrice(d.price, d.currency)}</p>
+                  </div>
+                  {d.match_reasons[0] && (
+                    <p className="text-micro text-muted-foreground line-clamp-2">
+                      {d.match_reasons[0]}
+                    </p>
+                  )}
+                  <p className="text-micro text-muted-foreground">
+                    {d.verification_status === "verified" && d.last_verified_at
+                      ? `Last checked ${new Date(d.last_verified_at).toLocaleDateString()}`
+                      : "Link not yet verified"}
                   </p>
-                )}
-                <p className="text-micro text-muted-foreground">
-                  {d.verification_status === "verified" && d.last_verified_at
-                    ? `Last checked ${new Date(d.last_verified_at).toLocaleDateString()}`
-                    : "Link not yet verified"}
-                </p>
-                {/* Decorative — the whole card above is the real link (ProductCard as="a").
+                  {/* Decorative — the whole card above is the real link (ProductCard as="a").
                     A nested <a> here would be invalid HTML inside that anchor. */}
-                <span className={buttonVariants({ size: "pill" })}>
-                  Shop the Dupe
-                  <ExternalLink aria-hidden="true" strokeWidth={1.75} />
-                </span>
-              </ProductCard>
-            </ProductCardCarouselItem>
-          ))}
+                  <span className={buttonVariants({ size: "pill" })}>
+                    Shop the Dupe
+                    <ExternalLink aria-hidden="true" strokeWidth={1.75} />
+                  </span>
+                </ProductCard>
+              </ProductCardCarouselItem>
+            );
+          })}
         </ProductCardCarouselTrack>
       ) : (
         <div className="rounded-control border border-dashed border-border p-6 text-center">

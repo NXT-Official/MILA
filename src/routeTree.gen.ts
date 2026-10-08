@@ -33,6 +33,7 @@ import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
 import { Route as AuthenticatedAppPalettesRouteImport } from './routes/_authenticated/_app/palettes'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
+import { Route as AuthenticatedAppSavedRouteImport } from './routes/_authenticated/_app/saved'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
 import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
 import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
@@ -177,6 +178,11 @@ const AuthenticatedAppPalettesRoute =
 const AuthenticatedAppPricingRoute = AuthenticatedAppPricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppSavedRoute = AuthenticatedAppSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
 const AuthenticatedAppStyleProfileRoute =
@@ -328,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof AuthenticatedAppHistoryRoute
   '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
+  '/saved': typeof AuthenticatedAppSavedRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
@@ -375,6 +382,7 @@ export interface FileRoutesByTo {
   '/history': typeof AuthenticatedAppHistoryRoute
   '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
+  '/saved': typeof AuthenticatedAppSavedRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
@@ -426,6 +434,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/history': typeof AuthenticatedAppHistoryRoute
   '/_authenticated/_app/palettes': typeof AuthenticatedAppPalettesRoute
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
+  '/_authenticated/_app/saved': typeof AuthenticatedAppSavedRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/palettes'
     | '/pricing'
+    | '/saved'
     | '/style-profile'
     | '/onboarding/style-profile'
     | '/api/webhooks/paddle'
@@ -523,6 +533,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/palettes'
     | '/pricing'
+    | '/saved'
     | '/style-profile'
     | '/onboarding/style-profile'
     | '/api/webhooks/paddle'
@@ -573,6 +584,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/history'
     | '/_authenticated/_app/palettes'
     | '/_authenticated/_app/pricing'
+    | '/_authenticated/_app/saved'
     | '/_authenticated/_app/style-profile'
     | '/_authenticated/onboarding/style-profile'
     | '/api/webhooks/paddle'
@@ -806,6 +818,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPricingRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/saved': {
+      id: '/_authenticated/_app/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof AuthenticatedAppSavedRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/style-profile': {
       id: '/_authenticated/_app/style-profile'
       path: '/style-profile'
@@ -985,6 +1004,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
   AuthenticatedAppPalettesRoute: typeof AuthenticatedAppPalettesRoute
   AuthenticatedAppPricingRoute: typeof AuthenticatedAppPricingRoute
+  AuthenticatedAppSavedRoute: typeof AuthenticatedAppSavedRoute
   AuthenticatedAppStyleProfileRoute: typeof AuthenticatedAppStyleProfileRoute
   AuthenticatedAppProfileUserIdRoute: typeof AuthenticatedAppProfileUserIdRoute
 }
@@ -997,6 +1017,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,
   AuthenticatedAppPalettesRoute: AuthenticatedAppPalettesRoute,
   AuthenticatedAppPricingRoute: AuthenticatedAppPricingRoute,
+  AuthenticatedAppSavedRoute: AuthenticatedAppSavedRoute,
   AuthenticatedAppStyleProfileRoute: AuthenticatedAppStyleProfileRoute,
   AuthenticatedAppProfileUserIdRoute: AuthenticatedAppProfileUserIdRoute,
 }
