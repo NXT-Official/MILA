@@ -259,6 +259,20 @@ describe("rankDupes maxBudget", () => {
   });
 });
 
+describe("children's wear", () => {
+  test("a Baby-prefixed row never dupes a hunt, even when it reads identically", async () => {
+    // The live catalogue carries "Baby Fluffy Yarn Fleece Full-Zip Jacket |
+    // Color Blocked" as a real Unisex Outerwear row; here the row reads like
+    // the member's own piece, and must still be excluded.
+    const supabase = fakeSupabase([
+      product("baby-case", { title: "Baby Quilted Case" }),
+      product("grown-case"),
+    ]);
+    const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, null);
+    expect(results.map((r) => r.id)).toEqual(["grown-case"]);
+  });
+});
+
 describe("rankDupes category search", () => {
   const BAG: ClothingAttributes = { ...INSPIRATION, category: "Bags" };
   const NECKLACE: ClothingAttributes = {

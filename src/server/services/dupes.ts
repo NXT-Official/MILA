@@ -53,9 +53,9 @@ import {
 type MilaSupabaseClient = SupabaseClient<Database>;
 
 /**
- * MIN_DUPE_SIMILARITY (60) and IDENTICAL_SIMILARITY (90), both UNCALIBRATED,
- * live with the matcher (dupe-match.ts), which caps unconfirmed matches just
- * under the threshold; they are re-exported here for existing importers.
+ * MIN_DUPE_SIMILARITY (50, calibrated 2026-10-08) and IDENTICAL_SIMILARITY
+ * (90) live with the matcher (dupe-match.ts), which caps unconfirmed matches
+ * just under the threshold; they are re-exported here for existing importers.
  */
 export { IDENTICAL_SIMILARITY, MIN_DUPE_SIMILARITY };
 
@@ -68,6 +68,12 @@ const BUDGET_RANK_NUDGE = 5;
  * src/constants/style-profile/questions.ts) — collected at onboarding into
  * profiles.shopping_preferences but never previously read back downstream. */
 export const BUDGET_TAGS = ["Budget-Conscious", "Mid-Range", "Investment Pieces"] as const;
+
+/** Children's wear lines in the catalogue start with one of these words
+ * ("Baby Fluffy Yarn Fleece Full-Zip Jacket | Color Blocked" is a real
+ * Unisex Outerwear row): such a piece never dupes a member's hunt, however
+ * close it scores. */
+const CHILDRENS_WEAR = /^(?:baby|babies|kids?|toddler|infants?|child(?:ren)?s?)\b/i;
 export type BudgetTag = (typeof BUDGET_TAGS)[number];
 
 /** Pulls the budget tag out of the profile's shopping_preferences tag array,
@@ -218,7 +224,7 @@ const tool = {
 /** Appended to the extraction's original system prompt: the structured read
  * the strict matcher filters on. */
 const EXTRACTION_SPEC_PROMPT =
-  "First identify exactly what the piece is: report the precise garment_type, the department it is cut for (gender_fit), its formality and occasion, how it fastens (closure), its pattern, its colours, its length, its fabric and its key construction details. The member wants a piece that looks the same, so be precise: a tailored coat, a trench coat, a blazer, a casual jacket and a sports jacket are different garments, and pinstripes are not plain.";
+  "First identify exactly what the piece is: report the precise garment_type, the department it is cut for (gender_fit), its formality and occasion, how it fastens (closure), its pattern, its colours, its length, its fabric and its key construction details. The member wants a piece that looks the same, so be precise: a tailored coat, a trench coat, a blazer, a casual jacket and a sports jacket are different garments, and pinstripes are not plain. Length decides the kind: a tailored piece cut well below the hip is a coat; a soft or padded piece ending at or above the hip is a jacket (quilted pad jackets included), never a coat; a belted rain style is a trench coat. fabric is 1-2 words ('wool blend', 'quilted cotton'), not a sentence.";
 
 function scoreCandidate(
   inspiration: ClothingAttributes,
@@ -390,6 +396,11 @@ async function scoreDupeCandidates(
   const scored: ScoredCandidate[] = [];
   for (const product of rows) {
     if (!product.affiliate_link) continue;
+    // Children's wear never matches a member's hunt, however close the piece
+    // reads (the catalogue's "Baby Fluffy Yarn Fleece Full-Zip Jacket" is a
+    // real Unisex Outerwear row): the guard is the title prefix the
+    // catalogue uses for its kids lines.
+    if (CHILDRENS_WEAR.test(product.title)) continue;
     if (product.gender != null && !isGenderMatch(product.gender, undefined, genderDirection)) {
       continue;
     }
@@ -881,7 +892,7 @@ export async function findDupesForUser(
   // aiChatCompletion takes no abort signal, so the AI call itself runs on.
   const runHunt = async ({ stillRunning }: GenerationWriteGuard): Promise<HuntOutcome> => {
     const systemPrompt =
-      "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract precise structural silhouette and color attributes so we can match budget dupes. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match. Always call the report_clothing_attributes tool.";
+      "You are Mila — an elite luxury fashion archivist. Look at the inspiration piece in the image (likely high-end designer) and extract precise structural silhouette and color attributes so we can match budget dupes. silhouette_tags must isolate the SHAPE/CONSTRUCTION cues a dupe must match. Report the piece the photo actually shows, and give name a short real descriptor of it (never placeholder text). Always call the report_clothing_attributes tool.";
 
     const result = await deps.aiChatCompletion(
       [

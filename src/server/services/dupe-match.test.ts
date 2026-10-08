@@ -281,6 +281,22 @@ describe("judgeCandidate", () => {
     if (verdict.eligible) expect(verdict.similarity).toBeLessThan(MIN_DUPE_SIMILARITY);
   });
 
+  test("calibrated 2026-10-08: a real short wrap coat clears the line for a plain coat", () => {
+    // The live catalogue's own row (Wool Cashmere Short Wrap Coat): before the
+    // calibration it scored below 60, so the whole coat class answered
+    // "nothing close" on real hunts.
+    const plainCoat = resolveDupeTarget(
+      { ...STRIPED_FORMAL_WOMENS_COAT, pattern: "solid" },
+      "Female",
+    );
+    const verdict = judgeCandidate(plainCoat, fixture("cuyana-wrap-coat"));
+    expect(verdict.eligible).toBe(true);
+    if (verdict.eligible) {
+      expect(verdict.similarity).toBeGreaterThanOrEqual(MIN_DUPE_SIMILARITY);
+      expect(verdict.summary).toMatch(/A similar .*coat/);
+    }
+  });
+
   test("a striped piece only qualifies against rows that name the same pattern", () => {
     // Title names another pattern: ruled out.
     expect(ruledOutBy(judgeCandidate(target, fixture("everlane-car-coat")))).toBe("pattern");

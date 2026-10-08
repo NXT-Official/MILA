@@ -42,14 +42,20 @@ import type {
  * piece is a different garment, and an empty result is better than an
  * unrelated one.
  *
- * UNCALIBRATED: 60 was set from the seeded catalogue fixtures
- * (dupes.fixtures.ts), not from real member photos. Calibrate on a labelled
- * set of real hunts before tightening or relaxing it.
+ * CALIBRATED 2026-10-08 against replays of real member hunts over the live
+ * catalogue (a women's black overcoat, a women's quilted jacket): with 60 the
+ * whole coat class returned "nothing close", because confirmed same-kind
+ * pieces that a member reads as clear dupes — a Wool Cashmere Short Wrap
+ * Coat, a Wool Blend Short Coat — score 50-58 after the gating. The kind,
+ * department, pattern and contradiction rules (which never moved) are what
+ * reject unrelated pieces; 50 lets real look-alikes through while everything
+ * uncapped-and-unconfirmed still sits below the line via UNCONFIRMED_CAP.
  */
-export const MIN_DUPE_SIMILARITY = 60;
+export const MIN_DUPE_SIMILARITY = 50;
 
 /** At or above this a match is "identical" and its line says "Same ...".
- * Uncalibrated, like MIN_DUPE_SIMILARITY. */
+ * Still to be observed on a real same-piece hunt; 90 keeps "Same" for rows
+ * that share the kind, the pattern, the colour and the fabric. */
 export const IDENTICAL_SIMILARITY = 90;
 
 /**
