@@ -399,3 +399,141 @@ describe("findSimilarItemsForUser gender wiring", () => {
     }
   });
 });
+
+describe("rankDupes similarity floor (MM2)", () => {
+  // The catalogue query already restricts to the inspiration's category, so
+  // "Same category" alone says nothing about likeness. A row must also share
+  // a silhouette cue or the colour to count as a dupe.
+  const COAT: ClothingAttributes = {
+    name: "Camel double-breasted wrap coat",
+    category: "Outerwear",
+    primary_color: "Camel",
+    color_undertone: "Warm",
+    silhouette_tags: ["double-breasted", "longline"],
+  };
+  const coat = (id: string, overrides: Partial<ProductRow> = {}) =>
+    product(id, { category: "Outerwear", description: null, ...overrides });
+
+  test("drops a row that matches on category alone", async () => {
+    const supabase = fakeSupabase([
+      coat("fleece", { title: "Fleece Full-Zip Jacket", price: 24.9 }),
+    ]);
+    expect(await rankDupes(supabase, COAT, 10)).toHaveLength(0);
+  });
+
+  test("a matching undertone palette alone is not likeness", async () => {
+    const supabase = fakeSupabase([
+      coat("breathable", { title: "Breathable Jacket", seasonal_palettes: ["True Autumn"] }),
+    ]);
+    expect(await rankDupes(supabase, COAT, 10)).toHaveLength(0);
+  });
+
+  test("keeps rows sharing a silhouette cue or the colour", async () => {
+    const supabase = fakeSupabase([
+      coat("trench", { title: "Double-Breasted Trench" }),
+      coat("camel", { title: "Camel Car Coat" }),
+      coat("fleece", { title: "Fleece Full-Zip Jacket", price: 1 }),
+    ]);
+    const ids = (await rankDupes(supabase, COAT, 10)).map((r) => r.id).sort();
+    expect(ids).toEqual(["camel", "trench"]);
+  });
+
+  test("a cheap category-only row never fills the list ahead of real matches", async () => {
+    const supabase = fakeSupabase([
+      coat("cheap", { title: "Barn Short Jacket", price: 5 }),
+      coat("match", { title: "Longline Camel Coat", price: 300 }),
+    ]);
+    expect((await rankDupes(supabase, COAT, 10)).map((r) => r.id)).toEqual(["match"]);
+  });
+
+  test("an empty catalogue answer, or a null one, yields no dupes", async () => {
+    expect(await rankDupes(fakeSupabase([]), COAT, 10)).toEqual([]);
+    const nullData = {
+      from: () => {
+        const chain = {
+          select: () => chain,
+          ilike: () => chain,
+          neq: () => chain,
+          eq: () => chain,
+          limit: () => chain,
+          then: (resolve: (v: { data: null; error: null }) => void) =>
+            resolve({ data: null, error: null }),
+        };
+        return chain;
+      },
+    } as unknown as SupabaseClient<Database>;
+    expect(await rankDupes(nullData, COAT, 10)).toEqual([]);
+  });
+
+  test("a failed catalogue query (e.g. an RLS denial) surfaces as an error, not an empty list", async () => {
+    const denied = {
+      from: () => {
+        const chain = {
+          select: () => chain,
+          ilike: () => chain,
+          neq: () => chain,
+          eq: () => chain,
+          limit: () => chain,
+          then: (resolve: (v: { data: null; error: { message: string } }) => void) =>
+            resolve({ data: null, error: { message: "permission denied for table products" } }),
+        };
+        return chain;
+      },
+    } as unknown as SupabaseClient<Database>;
+    await expect(rankDupes(denied, COAT, 10)).rejects.toThrow("Couldn't search the dupe catalog.");
+  });
+});
+
+describe("rankDupes adult catalogue only (MM2)", () => {
+  // QA: a women's formal coat hunt surfaced "Baby Fluffy Yarn Fleece Full-Zip
+  // Jacket" — tagged Unisex, so the gender filter let it through. Mila styles
+  // adults; children's and baby pieces are never a dupe.
+  test.each([
+    "Baby Fluffy Yarn Fleece Quilted Jacket",
+    "Kids Quilted Puffer",
+    "Toddler Quilted Vest",
+    "Infant Quilted Bunting",
+    "Newborn Quilted Romper",
+    "Girls' Quilted Jacket",
+    "Boys Quilted Bomber",
+    "Children's Quilted Coat",
+    "Youth Quilted Parka",
+    "Junior Quilted Gilet",
+  ])("never surfaces %p, even as a Unisex row", async (title) => {
+    const supabase = fakeSupabase([product("kid", { title, gender: "Unisex" })]);
+    for (const direction of ["Female", "Male", undefined] as const) {
+      const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, null, direction);
+      expect(results).toHaveLength(0);
+    }
+  });
+
+  test.each([
+    "Baby Blue Quilted Top",
+    "Baby Pink Quilted Bag",
+    "Quilted Baby Tee",
+    "Baby Cashmere Quilted Scarf",
+    "Babydoll Quilted Dress",
+    "Kid Leather Quilted Gloves",
+    "Quilted Boyfriend Jacket",
+    "Quilted Boy Shorts",
+  ])("keeps the adult piece %p", async (title) => {
+    const supabase = fakeSupabase([product("adult", { title })]);
+    expect((await rankDupes(supabase, INSPIRATION, 10)).map((r) => r.id)).toEqual(["adult"]);
+  });
+
+  test("a store-wide description that mentions kids does not exclude an adult piece", async () => {
+    const supabase = fakeSupabase([
+      product("uniqlo", {
+        title: "Quilted Short Jacket",
+        description:
+          "Shop stylish and comfortable clothes for women, men, kids and babies from UNIQLO.",
+      }),
+    ]);
+    expect((await rankDupes(supabase, INSPIRATION, 10)).map((r) => r.id)).toEqual(["uniqlo"]);
+  });
+
+  test("an empty title is treated as adult rather than crashing", async () => {
+    const supabase = fakeSupabase([product("blank", { title: "" })]);
+    expect((await rankDupes(supabase, INSPIRATION, 10)).map((r) => r.id)).toEqual(["blank"]);
+  });
+});

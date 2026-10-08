@@ -119,6 +119,22 @@ const tool = {
   },
 };
 
+/**
+ * Children's and baby wording in a product TITLE. The catalog has no age
+ * column, and kids' rows are tagged Unisex, so the gender filter lets them
+ * through (MM2: "Baby Fluffy Yarn Fleece Full-Zip Jacket" in a women's coat
+ * hunt). Title only — store-wide descriptions like Uniqlo's "clothes for
+ * women, men, kids and babies" sit on adult rows too. Adult wording is left
+ * alone: "baby blue/pink", "baby tee", "baby cashmere", "babydoll", "kid
+ * leather", "boyfriend", "boy shorts".
+ */
+const KIDS_TITLE =
+  /\b(?:kids|toddlers?|infants?|newborns?|babies|girls|boys|child|children|childrens|junior|juniors|youth)\b|\bbaby\b(?!\s*(?:blue|pink|yellow|lilac|lavender|green|doll|tee|t-shirt|cashmere|alpaca|rib|ribbed|cable))/i;
+
+export function isKidsCatalogItem(title: string): boolean {
+  return KIDS_TITLE.test(title);
+}
+
 function scoreCandidate(
   inspiration: ClothingAttributes,
   product: {
@@ -127,7 +143,7 @@ function scoreCandidate(
     category: string;
     seasonal_palettes: string[];
   },
-): { score: number; reasons: string[] } {
+): { score: number; reasons: string[]; likeness: number } {
   const reasons: string[] = [];
   let score = 0;
 
@@ -147,7 +163,8 @@ function scoreCandidate(
   }
   score += silhouetteHits * 15;
 
-  if (haystack.includes(inspiration.primary_color.toLowerCase())) {
+  const colorHit = haystack.includes(inspiration.primary_color.toLowerCase());
+  if (colorHit) {
     score += 20;
     reasons.push(`Shares ${inspiration.primary_color} color`);
   }
@@ -166,7 +183,9 @@ function scoreCandidate(
     reasons.push(`${inspiration.color_undertone} undertone fit`);
   }
 
-  return { score, reasons };
+  // Likeness = signals that the row LOOKS like the inspiration. Category is
+  // already guaranteed by the query and undertone is palette fit, not likeness.
+  return { score, reasons, likeness: silhouetteHits + (colorHit ? 1 : 0) };
 }
 
 /**
@@ -221,13 +240,19 @@ export async function rankDupes(
         (maxBudget == null || p.price <= maxBudget) &&
         // The member's gender direction — a woman never sees a men's piece
         // (and vice versa); Unisex rows are always eligible.
-        isGenderMatch(p.gender, undefined, genderDirection),
+        isGenderMatch(p.gender, undefined, genderDirection) &&
+        // Adults only — kids' rows are tagged Unisex and slip past gender (MM2).
+        !isKidsCatalogItem(p.title),
     )
     .map((product) => {
-      const { score, reasons } = scoreCandidate(inspiration, product);
-      return { product, score, reasons };
+      const { score, reasons, likeness } = scoreCandidate(inspiration, product);
+      return { product, score, reasons, likeness };
     })
-    .filter((r) => r.score > 0);
+    // Every row already shares the category (the query filters on it), so a
+    // category-only row would always pass `score > 0` and, tied at 40, sort
+    // cheapest-first — which is how the cheapest kids' and fleece pieces
+    // filled a formal-coat hunt (MM2). Require real likeness instead.
+    .filter((r) => r.likeness > 0);
 
   const targetTier = budgetTag ? BUDGET_TARGET_TIER[budgetTag] : null;
   const prices = relevant.map((r) => r.product.price);
