@@ -267,12 +267,19 @@ export function ConciergeChat({
     const trimmed = text.trim();
     if (!trimmed || sending) return;
 
-    const attached = retryId == null ? attachment : null;
+    const original = retryId != null ? messages.find((m) => m.id === retryId) : undefined;
+    if (retryId != null && !original) return;
+    // A retry is the SAME message re-sent — its photo included. The composer
+    // was cleared on the first send, so the attachment rides on the message;
+    // and if the photo already reached storage, that upload is reused rather
+    // than repeated. (Retrying used to drop the image entirely while the
+    // bubble kept rendering its thumbnail — MM-10.)
+    const attached = retryId == null ? attachment : (original?.attachment ?? null);
 
     let userMsg: Msg;
     let priorMessages: Msg[];
-    if (retryId != null) {
-      userMsg = messages.find((m) => m.id === retryId)!;
+    if (retryId != null && original) {
+      userMsg = original;
       priorMessages = messages.slice(0, messages.indexOf(userMsg));
       setMessages((prev) => prev.map((m) => (m.id === retryId ? { ...m, failed: false } : m)));
     } else {
@@ -282,6 +289,7 @@ export function ConciergeChat({
         content: trimmed,
         ts: Date.now(),
         imageUrl: attached?.preview,
+        attachment: attached,
       };
       priorMessages = messages;
       setMessages((prev) => [...prev, userMsg]);
@@ -291,8 +299,8 @@ export function ConciergeChat({
     setSending(true);
 
     try {
-      let uploadedUrl: string | null = null;
-      if (attached) {
+      let uploadedUrl: string | null = original?.uploadedUrl ?? null;
+      if (attached && !uploadedUrl) {
         if (!user) throw new Error("Sign in to attach a photo.");
         const ext = (attached.file.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -301,6 +309,11 @@ export function ConciergeChat({
           .upload(path, attached.file, { contentType: attached.file.type || "image/jpeg" });
         if (upErr) throw upErr;
         uploadedUrl = supabase.storage.from("outfits").getPublicUrl(path).data.publicUrl;
+      }
+      if (uploadedUrl) {
+        // Remember the upload on the message: a later retry re-sends the
+        // photo without re-uploading the same bytes.
+        setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, uploadedUrl } : m)));
       }
       const res = await chat({
         data: {

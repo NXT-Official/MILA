@@ -30,7 +30,8 @@ export const Route = createFileRoute("/_authenticated/_app/history")({
 
 interface OutfitRow {
   id: string;
-  image_url: string;
+  /** Null for auto-saved looks whose visual hadn't rendered yet. */
+  image_url: string | null;
   match_score: number | null;
   created_at: string;
   analysis_result: unknown;
@@ -400,12 +401,15 @@ function History() {
               <Button
                 variant="outline"
                 size="pill"
-                onClick={() =>
+                disabled={!selected.image_url}
+                onClick={() => {
+                  // An auto-saved look can carry no visual yet — nothing to download.
+                  if (!selected.image_url) return;
                   downloadImage(
                     selected.image_url,
                     `mila-look-${(selectedAnalysis ? historyItemTitle(selectedAnalysis) : "look").toLowerCase().replace(/\s+/g, "-")}.jpg`,
-                  )
-                }
+                  );
+                }}
               >
                 <Download className="size-4 mr-2" aria-hidden="true" />
                 Download

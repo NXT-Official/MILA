@@ -113,3 +113,24 @@ describe("HeroResultPanel while a portrait preview is rendering", () => {
     expect(out).not.toContain(PHOTO_PREVIEW_BUSY_REASON);
   });
 });
+
+describe("HeroResultPanel's save button", () => {
+  // Every generation is auto-saved; the button is the retry path and no
+  // longer waits on a visual (a look without one can still be saved).
+  test("saving is available even before a visual exists", async () => {
+    const out = await renderPanel({});
+    const tag = openingTagOfButton(out, "Save to history");
+    expect(tag).not.toContain(' disabled=""');
+  });
+
+  test("saving waits while the style sheet is drawing (no duplicate row)", async () => {
+    const out = await renderPanel({ styleSheetLoading: true });
+    const tag = openingTagOfButton(out, "Save to history");
+    expect(tag).toContain(' disabled=""');
+  });
+
+  test("the old 'needs its visual' copy is gone", async () => {
+    const out = await renderPanel({});
+    expect(out).not.toContain("needs its visual");
+  });
+});

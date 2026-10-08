@@ -82,3 +82,29 @@ describe("generation flags survive a tab switch (they live at the app shell)", (
     }
   });
 });
+
+describe("every generated look lands in history automatically", () => {
+  test("generateLook auto-saves after the visual attempt — with or without a sheet", () => {
+    const body = handler("generateLook");
+    const visual = body.indexOf("await generateStyleSheetVisual(");
+    const save = body.indexOf("autoSaveLook(outfit, sheetUri)");
+    expect(visual).toBeGreaterThan(-1);
+    expect(save).toBeGreaterThan(-1);
+    expect(visual).toBeLessThan(save);
+    // No consent is not an early return any more: the look is still saved.
+    expect(body).not.toContain("if (!profile.photo_consent_at) return;");
+  });
+
+  test("one generation can never produce two rows", () => {
+    // The manual path yields to the automatic save while it is in flight.
+    expect(handler("saveLookToHistory")).toContain("if (autoSaveInFlightRef.current) return;");
+    const body = handler("autoSaveLook");
+    expect(body).toContain("autoSaveInFlightRef.current = true;");
+    expect(body).toContain("autoSaveInFlightRef.current = false;");
+  });
+
+  test("the manual save no longer demands a visual", () => {
+    expect(source).not.toContain("needs its visual before it can be saved");
+    expect(handler("saveLookToHistory")).toContain("imageDataUri: imageToSave ?? null");
+  });
+});

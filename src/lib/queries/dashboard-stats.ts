@@ -32,7 +32,8 @@ export function styleProfileCompletionPercent(profile: StyleProfileRow | null | 
 
 export interface RecentLook {
   id: string;
-  image_url: string;
+  /** Null for an auto-saved look whose visual hadn't rendered yet. */
+  image_url: string | null;
   match_score: number | null;
   created_at: string;
 }

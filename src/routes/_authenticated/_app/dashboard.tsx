@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClimateWidget } from "@/components/dashboard/climate-widget";
@@ -146,6 +146,9 @@ function Dashboard() {
   } = useCurrentLook();
   const [savingLook, setSavingLook] = useState(false);
   const lookSaved = !!savedLook;
+  /** true while the automatic save is writing — the manual button yields to
+   * it so one generation can never produce two history rows. */
+  const autoSaveInFlightRef = useRef(false);
   const [vibe, setVibe] = useState<Vibe>("Everyday Casual");
   const [agenda, setAgenda] = useState("");
   const [dressCode, setDressCode] = useState("");
@@ -177,7 +180,7 @@ function Dashboard() {
       );
       // A sheet drawn for a look that has since been replaced must not land
       // on the new look, stop its spinner, or be saved against its text.
-      if (!styleSheetRun.isCurrent(run)) return false;
+      if (!styleSheetRun.isCurrent(run)) return null;
       if (res.mode === "style_sheet") {
         setStyleSheetImageDataUri(res.imageDataUri);
         setSavedLook(null);
@@ -185,12 +188,12 @@ function Dashboard() {
         // (shown by the callers below) would go unseen. This covers the
         // background case; the foregrounded case keeps its existing toast.
         notifyIfBackgrounded("Your look is ready", "Mila finished rendering your style sheet.");
-        return true;
+        return res.imageDataUri;
       }
       toast.error(res.reason);
-      return false;
+      return null;
     } catch (e) {
-      if (!styleSheetRun.isCurrent(run)) return false;
+      if (!styleSheetRun.isCurrent(run)) return null;
       if (e instanceof TimeoutError) {
         toast.error(TIMEOUT_MESSAGE);
       } else if (isStaleBundleError(e)) {
@@ -200,7 +203,7 @@ function Dashboard() {
       } else {
         toast.error(errorMessage(e, "Couldn't create your style sheet. Please try again."));
       }
-      return false;
+      return null;
     } finally {
       if (styleSheetRun.isCurrent(run)) setStyleSheetLoading(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.credits(user?.id) });
@@ -272,26 +275,33 @@ function Dashboard() {
     setGenerating(false);
     setLook({ ...outfit, imageDataUri: null });
 
-    // No stock-model fallback anymore — a visual requires a consented
-    // photo, since the style sheet is now the only auto-generated image.
-    if (!profile.photo_consent_at) return;
+    // No stock-model fallback anymore — a visual requires a consented photo,
+    // since the style sheet is now the only auto-generated image. A look
+    // without one is still composed, shown, and saved below.
+    let sheetUri: string | null = null;
+    if (profile.photo_consent_at) {
+      const {
+        outfit: outfitBody,
+        hair,
+        makeup,
+        vibe_alignment_score,
+        shoppable_picks,
+        forecastRetrievedAt,
+      } = outfit;
+      sheetUri = await generateStyleSheetVisual({
+        outfit: outfitBody,
+        hair,
+        makeup,
+        vibe_alignment_score,
+        shoppable_picks,
+        forecastRetrievedAt,
+      });
+    }
 
-    const {
-      outfit: outfitBody,
-      hair,
-      makeup,
-      vibe_alignment_score,
-      shoppable_picks,
-      forecastRetrievedAt,
-    } = outfit;
-    await generateStyleSheetVisual({
-      outfit: outfitBody,
-      hair,
-      makeup,
-      vibe_alignment_score,
-      shoppable_picks,
-      forecastRetrievedAt,
-    });
+    // Every generation lands in the member's history automatically — with
+    // the sheet just drawn when there is one, text and picks only otherwise.
+    // The manual save button is only ever the retry path now.
+    await autoSaveLook(outfit, sheetUri);
   }
 
   async function previewOnMyPhoto() {
@@ -342,7 +352,7 @@ function Dashboard() {
     if (!look || styleSheetLoading || generating) return;
     const { outfit, hair, makeup, vibe_alignment_score, shoppable_picks, forecastRetrievedAt } =
       look;
-    const ok = await generateStyleSheetVisual({
+    const sheetUri = await generateStyleSheetVisual({
       outfit,
       hair,
       makeup,
@@ -350,23 +360,21 @@ function Dashboard() {
       shoppable_picks,
       forecastRetrievedAt,
     });
-    if (ok) toast.success("Style sheet ready.");
+    if (sheetUri) toast.success("Style sheet ready.");
   }
 
   async function saveLookToHistory() {
     if (!user || !look || !climate) return;
-    // The style sheet — when the auto-generation on "Create my look"
-    // produced one — is the richer artifact, so it's what gets saved.
+    // One generation, one row: yield while the automatic save is in flight.
+    if (autoSaveInFlightRef.current) return;
+    // The style sheet — when drawn — is the richer artifact, so it's what
+    // gets saved; without one the look is still saved, text and picks only.
     const imageToSave = styleSheetImageDataUri ?? look.imageDataUri;
-    if (!imageToSave) {
-      toast.error("Your look needs its visual before it can be saved.");
-      return;
-    }
     setSavingLook(true);
     try {
       const row = await saveOutfit({
         data: {
-          imageDataUri: imageToSave,
+          imageDataUri: imageToSave ?? null,
           weather: `${climate.label} (${climate.location})`,
           vibe,
           outfit: look.outfit,
@@ -379,7 +387,11 @@ function Dashboard() {
           // can show the suggested pieces under the saved look. Sanitized
           // server-side before the row is written.
           shoppable_picks: look.shoppable_picks,
-          previewMode: styleSheetImageDataUri ? "style_sheet" : "photo_edit",
+          previewMode: imageToSave
+            ? styleSheetImageDataUri
+              ? "style_sheet"
+              : "photo_edit"
+            : undefined,
         },
       });
       setSavedLook({ id: row.id, imageUrl: row.image_url });
@@ -392,6 +404,49 @@ function Dashboard() {
       }
     } finally {
       setSavingLook(false);
+    }
+  }
+
+  /**
+   * The automatic save: every composed look lands in the member's history as
+   * soon as its visual attempt settles — with the style sheet when one was
+   * drawn, text and picks only otherwise (a look without photo consent never
+   * gets a visual; its row's image_url stays null). `saveLookToHistory`
+   * remains as the retry path for a failed automatic save.
+   */
+  async function autoSaveLook(outfit: DailyLook, imageDataUri: string | null) {
+    if (!user || !climate) return;
+    autoSaveInFlightRef.current = true;
+    try {
+      const row = await saveOutfit({
+        data: {
+          imageDataUri,
+          weather: `${climate.label} (${climate.location})`,
+          vibe,
+          outfit: outfit.outfit,
+          hair: outfit.hair,
+          makeup: outfit.makeup,
+          vibe_alignment_score: outfit.vibe_alignment_score,
+          forecastRetrievedAt: outfit.forecastRetrievedAt ?? null,
+          productIds: (outfit.shoppable_picks ?? []).map((item) => item.id),
+          shoppable_picks: outfit.shoppable_picks,
+          previewMode: imageDataUri ? "style_sheet" : undefined,
+        },
+      });
+      setSavedLook({ id: row.id, imageUrl: row.image_url });
+    } catch (e) {
+      if (isStaleBundleError(e)) {
+        reloadForNewVersion();
+      } else {
+        toast.error(
+          errorMessage(
+            e,
+            "We couldn’t save your look to history automatically. Save it with Save to history.",
+          ),
+        );
+      }
+    } finally {
+      autoSaveInFlightRef.current = false;
     }
   }
 

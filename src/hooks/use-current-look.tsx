@@ -3,7 +3,9 @@ import type { GeneratedLook } from "@/lib/generate-outfit.functions";
 
 export interface CurrentLookSavedRef {
   id: string;
-  imageUrl: string;
+  /** Null when the row was auto-saved before a visual existed (or the look
+   * never gets one, without photo consent) — the saved look has no picture. */
+  imageUrl: string | null;
 }
 
 interface CurrentLookApi {

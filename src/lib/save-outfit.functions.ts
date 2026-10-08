@@ -6,7 +6,10 @@ import { sanitizePicksForSave } from "./saved-picks";
 import { uploadGeneratedOutfitImage, deleteOutfitImage } from "./outfit-image-storage.server";
 
 const SaveOutfitInput = DailyLookSchema.extend({
-  imageDataUri: z.string().min(1),
+  // Optional now: every generation is saved automatically, and a look whose
+  // visual has not (yet) rendered — or never will, without photo consent —
+  // still lands in history, text and picks only.
+  imageDataUri: z.string().min(1).nullable().optional(),
   weather: z.string().min(1).max(160),
   vibe: z.string().min(1).max(64),
   // Planned outfit pieces + the "similar" shelf options beside them (capped
@@ -54,17 +57,22 @@ export const saveOutfitToHistory = createServerFn({ method: "POST" })
       makeup_preference: profileRow?.makeup_preference,
     });
 
-    const { publicUrl, storagePath } = await uploadGeneratedOutfitImage({
-      supabase: context.supabase,
-      userId: context.userId,
-      imageDataUri,
-    });
+    // A missing visual is a valid save: the compose pipeline auto-saves before
+    // the style sheet exists (and never renders one without photo consent), so
+    // the row's image is optional — upload only when there is one.
+    const uploaded = imageDataUri
+      ? await uploadGeneratedOutfitImage({
+          supabase: context.supabase,
+          userId: context.userId,
+          imageDataUri,
+        })
+      : null;
 
     const { data: row, error } = await context.supabase
       .from("outfits")
       .insert({
         user_id: context.userId,
-        image_url: publicUrl,
+        image_url: uploaded?.publicUrl ?? null,
         analysis_result: {
           type: "daily_look",
           weather,
@@ -91,7 +99,7 @@ export const saveOutfitToHistory = createServerFn({ method: "POST" })
       .single();
 
     if (error) {
-      await deleteOutfitImage(context.supabase, storagePath);
+      if (uploaded) await deleteOutfitImage(context.supabase, uploaded.storagePath);
       console.error("[saveOutfitToHistory] insert failed:", error.message);
       throw new Error("The look could not be saved. Please try again.");
     }

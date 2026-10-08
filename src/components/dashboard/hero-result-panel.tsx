@@ -58,7 +58,7 @@ export function HeroResultPanel({
   photoPreviewLoading: boolean;
   savingLook: boolean;
   lookSaved: boolean;
-  savedLook: { id: string; imageUrl: string } | null;
+  savedLook: { id: string; imageUrl: string | null } | null;
   resultContainerVariants: Variants;
   resultItemVariants: Variants;
   onPreviewStyleSheet: () => void;
@@ -98,10 +98,10 @@ export function HeroResultPanel({
       ? PHOTO_PREVIEW_BUSY_REASON
       : null;
 
-  const saveBlockedReason =
-    !styleSheetImageDataUri && !look.imageDataUri && !savingLook && !lookSaved
-      ? "Your look needs its visual before it can be saved."
-      : null;
+  // The save button no longer needs a visual first: every generation is
+  // auto-saved, and this button (which now saves without an image when none
+  // exists) is only ever the retry path. It still yields while the style
+  // sheet is drawing so an in-flight automatic save can't be duplicated.
 
   return (
     <motion.div
@@ -237,8 +237,7 @@ export function HeroResultPanel({
           <Button
             variant="outline"
             onClick={onSaveLook}
-            disabled={savingLook || lookSaved || !(styleSheetImageDataUri || look.imageDataUri)}
-            aria-describedby={saveBlockedReason ? "save-blocked" : undefined}
+            disabled={savingLook || lookSaved || styleSheetLoading}
             size="pill"
           >
             {lookSaved ? (
@@ -294,11 +293,6 @@ export function HeroResultPanel({
             </Link>
           </Button>
         </div>
-        {saveBlockedReason && (
-          <p id="save-blocked" className="sr-only">
-            {saveBlockedReason}
-          </p>
-        )}
         {newLookBlockedReason && (
           <p id="look-actions-blocked" className="mt-3 text-xs text-muted-foreground">
             {newLookBlockedReason}
