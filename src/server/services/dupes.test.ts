@@ -271,6 +271,19 @@ describe("children's wear", () => {
     const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, null);
     expect(results.map((r) => r.id)).toEqual(["grown-case"]);
   });
+
+  test("kids wording anywhere in the title is excluded; adult 'baby blue' is not", async () => {
+    // From airaDev's MM2 fix: junior/youth rows are kids' lines too, while
+    // "Baby Blue" is a colour an adult piece may legitimately carry.
+    const supabase = fakeSupabase([
+      product("junior-case", { title: "Junior Quilted Case" }),
+      product("youth-case", { title: "Youth Quilted Case" }),
+      product("baby-blue-case", { title: "Baby Blue Quilted Case" }),
+      product("grown-case"),
+    ]);
+    const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, null);
+    expect(results.map((r) => r.id).sort()).toEqual(["baby-blue-case", "grown-case"]);
+  });
 });
 
 describe("rankDupes category search", () => {

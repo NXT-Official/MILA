@@ -69,11 +69,19 @@ const BUDGET_RANK_NUDGE = 5;
  * profiles.shopping_preferences but never previously read back downstream. */
 export const BUDGET_TAGS = ["Budget-Conscious", "Mid-Range", "Investment Pieces"] as const;
 
-/** Children's wear lines in the catalogue start with one of these words
- * ("Baby Fluffy Yarn Fleece Full-Zip Jacket | Color Blocked" is a real
- * Unisex Outerwear row): such a piece never dupes a member's hunt, however
- * close it scores. */
-const CHILDRENS_WEAR = /^(?:baby|babies|kids?|toddler|infants?|child(?:ren)?s?)\b/i;
+/** Children's and baby wording in a product TITLE (from airaDev's MM2 fix,
+ * adapted): the catalogue has no age column and kids' rows are tagged Unisex,
+ * so the gender filter lets them through ("Baby Fluffy Yarn Fleece Full-Zip
+ * Jacket" in a women's coat hunt). Title only — store-wide descriptions like
+ * Uniqlo's "clothes for women, men, kids and babies" sit on adult rows too.
+ * Adult wording is left alone: "baby blue/pink", "baby tee", "baby cashmere",
+ * "babydoll", "kid leather", "boyfriend". */
+const KIDS_TITLE =
+  /\b(?:kids|toddlers?|infants?|newborns?|babies|girls|boys|child|children|childrens|junior|juniors|youth)\b|\bbaby\b(?!\s*(?:blue|pink|yellow|lilac|lavender|green|doll|tee|t-shirt|cashmere|alpaca|rib|ribbed|cable))/i;
+
+export function isKidsCatalogItem(title: string): boolean {
+  return KIDS_TITLE.test(title);
+}
 export type BudgetTag = (typeof BUDGET_TAGS)[number];
 
 /** Pulls the budget tag out of the profile's shopping_preferences tag array,
@@ -398,9 +406,8 @@ async function scoreDupeCandidates(
     if (!product.affiliate_link) continue;
     // Children's wear never matches a member's hunt, however close the piece
     // reads (the catalogue's "Baby Fluffy Yarn Fleece Full-Zip Jacket" is a
-    // real Unisex Outerwear row): the guard is the title prefix the
-    // catalogue uses for its kids lines.
-    if (CHILDRENS_WEAR.test(product.title)) continue;
+    // real Unisex Outerwear row).
+    if (isKidsCatalogItem(product.title)) continue;
     if (product.gender != null && !isGenderMatch(product.gender, undefined, genderDirection)) {
       continue;
     }
