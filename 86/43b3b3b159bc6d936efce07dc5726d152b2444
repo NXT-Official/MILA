@@ -1,0 +1,81 @@
+src/server/services/dupes.test.ts
+  s_755964b2e0c3da::t_aa25b0e2918565 1376-1378,1383-1385,1391-1393,1480-1482
+  s_755964b2e0c3da::t_3dd0fcf3bce0b7 1400-1402
+  s_755964b2e0c3da::t_c4462dc94805cd 5,8,50,74,1370-1375,1379-1382,1386-1390,1394-1399,1403-1419,1432-1479,1483-1517
+  s_755964b2e0c3da::t_018c6bbcb6d14d 1420-1431
+src/server/services/dupes.ts
+  s_755964b2e0c3da::t_630c5a9e377431 373-377,385,393-395
+  s_755964b2e0c3da::t_070eeec9d01a93 507-510,514,517-518
+  s_755964b2e0c3da::t_b6d1026e3cd8a6 569
+  s_755964b2e0c3da::t_4f85736beab029 18
+  s_755964b2e0c3da::t_522fd454c2f907 599-602,918
+  s_755964b2e0c3da::t_470ae30da1525f 497-506,511-513,515-516,519-521,526-528
+  s_755964b2e0c3da::t_064aa73618fd30 832-833
+src/components/dashboard/hero-result-panel.test.tsx
+  s_755964b2e0c3da::t_98142841466860 263
+  s_755964b2e0c3da::t_c4462dc94805cd 264-282
+  s_755964b2e0c3da::t_973349b1ee64e9 283
+src/lib/member-emails.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 10-25,30,34,40
+src/lib/save-outfit.functions.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 5,9-12,43,60-69,75,86-89,102
+supabase/migrations/20261008040000_outfits_allow_null_image.sql
+  s_755964b2e0c3da::t_c4462dc94805cd 1-5
+src/integrations/supabase/types.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 272,280,288
+src/components/concierge/concierge-chat.test.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 1-5,9-11,14-19,22-23,26-27
+  s_755964b2e0c3da::t_9fc379b3c07088 6-8,12-13,20-21,24-25
+src/hooks/use-current-look.tsx
+  s_755964b2e0c3da::t_c4462dc94805cd 6-8,18-33
+src/lib/member-emails.test.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 2-7,76-108
+  s_755964b2e0c3da::t_f4cd44fe47872b 109
+src/lib/queries/dashboard-stats.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 37-38
+src/lib/saved-picks.test.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 1-87
+src/lib/saved-picks.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 1-84
+src/routes/_authenticated/_app/dashboard.test.ts
+  s_755964b2e0c3da::t_c4462dc94805cd 503-507,512,514-515,519-535,537-556
+  s_755964b2e0c3da::t_843f618f224fa8 502,508-511,513,516-518,536
+src/routes/_authenticated/_app/dashboard.tsx
+  s_755964b2e0c3da::t_835710122a19e8 994
+  s_755964b2e0c3da::t_3464461872745e 550-562
+  s_755964b2e0c3da::t_02d44b0c78478e 675-678
+  s_755964b2e0c3da::t_b7f0709d24f27d 304-307
+  s_755964b2e0c3da::t_fd6a6ddde294a8 715
+  s_755964b2e0c3da::t_172f32f5da94e2 1299-1302,1304-1305,1308-1312,1316-1317
+  s_755964b2e0c3da::t_c366132375bf6d 1251-1252,1256
+  s_755964b2e0c3da::t_c4462dc94805cd 308-310,314-316,694,702,705,714,731,968-989,991-993,1059,1067,1265-1273,1293-1298,1303,1306-1307,1313-1315,1318-1343
+  s_755964b2e0c3da::t_67fa39ee87638b 729-730
+  s_755964b2e0c3da::t_4a2e2110263f3b 1224-1225
+  s_755964b2e0c3da::t_9150a6638e4268 2
+  s_755964b2e0c3da::t_949078ebd4ca56 1344
+src/components/dashboard/hero-result-panel.tsx
+  s_755964b2e0c3da::t_c4462dc94805cd 69,134-137
+  s_755964b2e0c3da::t_0b79d7069927cb 301
+src/routes/_authenticated/_app/history.tsx
+  s_755964b2e0c3da::t_c4462dc94805cd 14,18-19,33-34,55-58,88-97,185-186,220-224,407-410,414-415
+src/components/concierge/types.ts
+  s_755964b2e0c3da::t_7cd90c3fe0d5ea 8-13
+src/components/layout/app-shell.tsx
+  s_755964b2e0c3da::t_c4462dc94805cd 38-44,143-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8643b3b3b159bc6d936efce07dc5726d152b2444",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
