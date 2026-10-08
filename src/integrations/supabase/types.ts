@@ -433,6 +433,7 @@ export type Database = {
       products: {
         Row: {
           affiliate_link: string;
+          attire: string[];
           available_regions: string[];
           body_shapes: string[];
           brand_id: string;
@@ -456,6 +457,7 @@ export type Database = {
         };
         Insert: {
           affiliate_link: string;
+          attire?: string[];
           available_regions?: string[];
           body_shapes?: string[];
           brand_id: string;
@@ -479,6 +481,7 @@ export type Database = {
         };
         Update: {
           affiliate_link?: string;
+          attire?: string[];
           available_regions?: string[];
           body_shapes?: string[];
           brand_id?: string;
