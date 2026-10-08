@@ -1,0 +1,44 @@
+src/lib/color-read-errors.ts
+  s_755964b2e0c3da::t_3b180d26e1fb02 36-55
+  s_755964b2e0c3da::t_889dd933aed113 76-79
+  s_755964b2e0c3da::t_5133ba1509639b 35
+src/components/style-profile/viewfinder-guards.test.ts
+  s_755964b2e0c3da::t_13efabfd2b6c7b 1-104
+src/hooks/use-color-read-job.ts
+  s_755964b2e0c3da::t_17f9b62ed86182 429-435
+  s_755964b2e0c3da::t_dd0ea944bc1740 465-474,478,482
+  s_755964b2e0c3da::t_67dda7d6226da6 2
+  s_755964b2e0c3da::t_7a73c51f3b9be0 98-101
+  s_755964b2e0c3da::t_cdc4fee27cfb80 1,3-97,102-428,436-452,454,456-464,475-477,479-481,483-672
+  s_755964b2e0c3da::t_84a25d7cb942bd 453,455
+src/components/style-profile/viewfinder-guards.ts
+  s_755964b2e0c3da::t_8bba8f7fd8fe9a 1-68
+src/components/style-profile/color-read-recovery-card.tsx
+  s_755964b2e0c3da::t_5e638d947f0d7f 1-172
+src/components/style-profile/color-read-recovery-card.test.tsx
+  s_755964b2e0c3da::t_7a73c51f3b9be0 25-29,158-160
+  s_755964b2e0c3da::t_8193f3538b8dde 1-24,30-157,161-163
+src/lib/color-read-errors.test.ts
+  s_755964b2e0c3da::t_ae96e17d40f8d8 76-77,86-112,114
+  s_755964b2e0c3da::t_4afeb7005ed6ac 3-7
+  s_755964b2e0c3da::t_be76c539edfaf4 113
+src/hooks/use-color-read-job.test.ts
+  s_755964b2e0c3da::t_7a73c51f3b9be0 54-58,160-162,247-250,366-368,454-455,532-536,547-552
+  s_755964b2e0c3da::t_878fc973732036 1-53,59-159,163-246,251-365,369-453,456-531,537-546,553-571
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "173aced1cfa69d8df9ba4c7d5864b9e646874e4c",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
