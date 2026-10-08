@@ -1,0 +1,36 @@
+src/lib/body-scan-errors.test.ts
+  s_755964b2e0c3da::t_7a73c51f3b9be0 68-75,124
+  s_755964b2e0c3da::t_a0fc8ef16a621d 1-67,76-123,125-128
+src/lib/body-scan-errors.ts
+  s_755964b2e0c3da::t_0e016dc7bbbc7b 1-104
+src/lib/style-profile/body-quiz.ts
+  s_755964b2e0c3da::t_1a0607b312fea1 1-110
+src/lib/style-profile/body-quiz.test.ts
+  s_755964b2e0c3da::t_e72780601f843a 1-159
+src/hooks/use-body-scan.test.ts
+  s_755964b2e0c3da::t_7b02ede8acccde 1-212,218-424,426-444
+  s_755964b2e0c3da::t_7a73c51f3b9be0 213-217,425
+src/hooks/use-body-scan.ts
+  s_755964b2e0c3da::t_9cb6299ad05ee8 1-266,268-404
+  s_755964b2e0c3da::t_7a73c51f3b9be0 267
+src/components/style-profile/body-type-quiz.test.tsx
+  s_755964b2e0c3da::t_940e6cb05e0426 1-107
+src/components/style-profile/body-type-quiz.tsx
+  s_755964b2e0c3da::t_28ff86a03ab0f7 7-16,32,66,74,83-179,187,194,198,204-209,211-215,232,236,238,244-260
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d3b255d9e70787f122b5a1e3f6dd9c47e36a8c65",
+  "prompts": {},
+  "sessions": {
+    "s_755964b2e0c3da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41717171-e98d-4ccb-91e6-20f4d84aa5ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
