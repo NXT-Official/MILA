@@ -4,7 +4,7 @@ import { aiChatCompletion, aiFailure } from "@/lib/ai.server";
 import { consumeRateLimit } from "@/lib/rate-limit.server";
 import { withAiCredit } from "@/lib/credits.server";
 import { assertTrustedStorageImageUrl } from "@/lib/trusted-image-url.server";
-import { isAvailableInRegion } from "@/lib/look-products.functions";
+import { isAvailableInRegion, isGenderMatch } from "@/lib/look-products.functions";
 import { ClothingAttributesSchema, type ClothingAttributes } from "@/lib/outfit-items";
 import {
   CLOTHING_CATEGORIES as CATEGORIES,
@@ -37,6 +37,24 @@ export function extractBudgetTag(shoppingPreferences: unknown): BudgetTag | null
     }
   }
   return null;
+}
+
+/**
+ * The ONE catalog direction this member's dupes may come from. A stated
+ * Male/Female filters to exactly that direction — a woman is never shown a
+ * men's piece, a man never a women's. Unknown / Non-binary /
+ * Prefer-not-to-say resolves to a single direction decided per hunt, so a
+ * result list still can't mix menswear and womenswear. This mirrors the look
+ * pipeline's rule (generateLookForUser's fallbackGenderDirection in
+ * src/server/services/look.ts) so both engines treat the catalog identically.
+ * Unisex pieces are always eligible, whichever direction wins — see
+ * isGenderMatch (src/lib/look-products.functions.ts).
+ */
+export function resolveGenderDirection(
+  profileGender: string | null | undefined,
+): "Male" | "Female" {
+  if (profileGender === "Male" || profileGender === "Female") return profileGender;
+  return Math.random() < 0.5 ? "Male" : "Female";
 }
 
 type PriceTier = "low" | "mid" | "high";
@@ -164,6 +182,12 @@ function scoreCandidate(
  * `maxBudget`, in contrast, is a hard price ceiling the user typed in for
  * this search — anything priced above it is dropped before scoring, not
  * just re-ranked.
+ *
+ * `genderDirection` (resolved from the member's profile — see
+ * resolveGenderDirection) narrows the candidate set to one direction plus
+ * Unisex pieces BEFORE scoring: a woman is never shown a men's piece, a man
+ * never a women's. Same helper (isGenderMatch) the look pipeline filters
+ * with, so the two engines can't drift.
  */
 export async function rankDupes(
   supabase: MilaSupabaseClient,
@@ -172,11 +196,12 @@ export async function rankDupes(
   region?: string,
   budgetTag: BudgetTag | null = null,
   maxBudget?: number | null,
+  genderDirection?: "Male" | "Female",
 ): Promise<DupeMatch[]> {
   const { data: candidates, error } = await supabase
     .from("products")
     .select(
-      "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes,available_regions,in_stock,verification_status,last_verified_at,rating,units_sold,shipping_info,discount_percent,brands(is_verified_seller)",
+      "id,title,description,category,price,currency,image_url,affiliate_link,brand_id,seasonal_palettes,available_regions,in_stock,verification_status,last_verified_at,rating,units_sold,shipping_info,discount_percent,gender,brands(is_verified_seller)",
     )
     .ilike("category", inspiration.category)
     .neq("verification_status", "broken")
@@ -193,7 +218,10 @@ export async function rankDupes(
       (p) =>
         !!p.affiliate_link &&
         isAvailableInRegion(p, region) &&
-        (maxBudget == null || p.price <= maxBudget),
+        (maxBudget == null || p.price <= maxBudget) &&
+        // The member's gender direction — a woman never sees a men's piece
+        // (and vice versa); Unisex rows are always eligible.
+        isGenderMatch(p.gender, undefined, genderDirection),
     )
     .map((product) => {
       const { score, reasons } = scoreCandidate(inspiration, product);
@@ -245,7 +273,8 @@ export async function rankDupes(
  * **Free, no AI call** — the attributes were extracted when the post was
  * analysed, so this is a catalogue query. Shared verbatim by the web
  * `findSimilarItems` server function and the mobile
- * `POST /api/v1/dupes/similar` route.
+ * `POST /api/v1/dupes/similar` route. Results honor the VIEWER's gender: the
+ * member opening the drawer is the one being recommended to.
  */
 export async function findSimilarItemsForUser(
   supabase: MilaSupabaseClient,
@@ -254,7 +283,7 @@ export async function findSimilarItemsForUser(
 ): Promise<DupeMatch[]> {
   const { data: profileRow } = await supabase
     .from("profiles")
-    .select("shopping_preferences")
+    .select("shopping_preferences,gender")
     .eq("id", userId)
     .maybeSingle();
   const budgetTag = extractBudgetTag(profileRow?.shopping_preferences);
@@ -265,6 +294,7 @@ export async function findSimilarItemsForUser(
     data.region,
     budgetTag,
     data.maxBudget,
+    resolveGenderDirection(profileRow?.gender),
   );
 }
 
@@ -276,7 +306,8 @@ export async function findSimilarItemsForUser(
  * client-supplied URL is a server-side request forgery primitive (§8).
  *
  * Shared verbatim by the web `findDupes` server function and the mobile
- * `POST /api/v1/dupes/find` route.
+ * `POST /api/v1/dupes/find` route. Results honor the hunter's gender — a
+ * woman's hunt never surfaces a men's piece.
  */
 export async function findDupesForUser(
   supabase: MilaSupabaseClient,
@@ -309,7 +340,7 @@ export async function findDupesForUser(
     const inspiration = ClothingAttributesSchema.parse(result.args);
     const { data: profileRow } = await supabase
       .from("profiles")
-      .select("shopping_preferences")
+      .select("shopping_preferences,gender")
       .eq("id", userId)
       .maybeSingle();
     const budgetTag = extractBudgetTag(profileRow?.shopping_preferences);
@@ -320,6 +351,7 @@ export async function findDupesForUser(
       data.region,
       budgetTag,
       data.maxBudget,
+      resolveGenderDirection(profileRow?.gender),
     );
     return { inspiration, dupes };
   });

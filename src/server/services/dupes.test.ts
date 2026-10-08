@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { extractBudgetTag, priceTier, rankDupes } from "./dupes";
+import {
+  extractBudgetTag,
+  findSimilarItemsForUser,
+  priceTier,
+  rankDupes,
+  resolveGenderDirection,
+} from "./dupes";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { ClothingAttributes } from "@/lib/outfit-items";
@@ -17,6 +23,7 @@ type ProductRow = {
   title: string;
   description: string | null;
   category: string;
+  gender: string;
   price: number;
   currency: string;
   image_url: string | null;
@@ -40,6 +47,7 @@ function product(id: string, overrides: Partial<ProductRow> = {}): ProductRow {
     title: `Quilted ${id}`,
     description: "quilted top-handle case in cream.",
     category: "Accessories",
+    gender: "Unisex",
     price: 100,
     currency: "USD",
     image_url: null,
@@ -259,5 +267,135 @@ describe("rankDupes category search", () => {
     const { supabase } = catalogueSupabase(CATALOGUE);
     const results = await rankDupes(supabase, INSPIRATION, 10);
     expect(results.map((r) => r.id)).toEqual(["socks"]);
+  });
+});
+
+describe("rankDupes gender direction", () => {
+  // The catalog carries Male / Female / Unisex rows; a hunt must only ever
+  // draw from ONE direction plus Unisex. This is the guarantee QA asked for:
+  // a woman is never recommended a men's piece (and vice versa).
+  const CATALOGUE = [
+    product("w-top", { gender: "Female", title: "Quilted Top" }),
+    product("m-shirt", { gender: "Male", title: "Quilted Shirt" }),
+    product("u-scarf", { gender: "Unisex", title: "Quilted Scarf" }),
+  ];
+
+  test("a woman's hunt never surfaces a men's item", async () => {
+    const supabase = fakeSupabase([...CATALOGUE]);
+    const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, null, "Female");
+    expect(results.map((r) => r.id).sort()).toEqual(["u-scarf", "w-top"]);
+  });
+
+  test("a man's hunt never surfaces a women's item", async () => {
+    const supabase = fakeSupabase([...CATALOGUE]);
+    const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, null, "Male");
+    expect(results.map((r) => r.id).sort()).toEqual(["m-shirt", "u-scarf"]);
+  });
+
+  test("Unisex pieces stay eligible in every direction", async () => {
+    for (const direction of ["Male", "Female"] as const) {
+      const supabase = fakeSupabase([...CATALOGUE]);
+      const results = await rankDupes(supabase, INSPIRATION, 10, undefined, null, null, direction);
+      expect(results.map((r) => r.id)).toContain("u-scarf");
+    }
+  });
+
+  test("no direction applies no gender filter (ad-hoc callers keep legacy behavior)", async () => {
+    const supabase = fakeSupabase([...CATALOGUE]);
+    const results = await rankDupes(supabase, INSPIRATION, 10);
+    expect(results.map((r) => r.id).sort()).toEqual(["m-shirt", "u-scarf", "w-top"]);
+  });
+});
+
+describe("resolveGenderDirection", () => {
+  test("a stated gender resolves to exactly that direction", () => {
+    expect(resolveGenderDirection("Female")).toBe("Female");
+    expect(resolveGenderDirection("Male")).toBe("Male");
+  });
+
+  test("ambiguous profiles still resolve to ONE valid direction, never a mix", () => {
+    for (const ambiguous of ["Non-binary", "Prefer not to say", null, undefined]) {
+      const seen = new Set<string>();
+      for (let i = 0; i < 60; i += 1) seen.add(resolveGenderDirection(ambiguous));
+      // Both directions can occur across calls (it's a coin toss per hunt),
+      // but every single resolution is one of the two — nothing else.
+      expect([...seen].sort()).toEqual(["Female", "Male"]);
+    }
+  });
+});
+
+/** Profile-aware stand-in: routes `from("profiles")` to the member's row and
+ * `from("products")` to the catalogue, and records every profile SELECT so a
+ * test can assert the gender column was actually requested. */
+function serviceSupabase(
+  profile: { shopping_preferences: unknown; gender: string | null },
+  rows: ProductRow[],
+) {
+  const selects: string[] = [];
+  const from = (table: string) => {
+    if (table === "profiles") {
+      const chain = {
+        select: (columns: string) => {
+          selects.push(columns);
+          return chain;
+        },
+        eq: () => chain,
+        maybeSingle: () => Promise.resolve({ data: profile, error: null }),
+      };
+      return chain;
+    }
+    const chain = {
+      select: () => chain,
+      ilike: () => chain,
+      neq: () => chain,
+      eq: () => chain,
+      limit: () => chain,
+      then: (resolve: (v: { data: ProductRow[]; error: null }) => void) => {
+        resolve({ data: rows, error: null });
+      },
+    };
+    return chain;
+  };
+  return { supabase: { from } as unknown as SupabaseClient<Database>, selects };
+}
+
+describe("findSimilarItemsForUser gender wiring", () => {
+  const CATALOGUE = [
+    product("w-top", { gender: "Female", title: "Quilted Top" }),
+    product("m-shirt", { gender: "Male", title: "Quilted Shirt" }),
+    product("u-scarf", { gender: "Unisex", title: "Quilted Scarf" }),
+  ];
+
+  test("a woman opening the drawer gets women's + Unisex pieces only", async () => {
+    const { supabase, selects } = serviceSupabase(
+      { shopping_preferences: null, gender: "Female" },
+      [...CATALOGUE],
+    );
+    const results = await findSimilarItemsForUser(supabase, "user-1", {
+      attributes: INSPIRATION,
+      maxResults: 10,
+    });
+    expect(results.map((r) => r.id).sort()).toEqual(["u-scarf", "w-top"]);
+    // The query itself must ask for gender — the resolution reads it.
+    expect(selects).toContain("shopping_preferences,gender");
+  });
+
+  test("an ambiguous member gets one consistent direction per hunt, never a mixed list", async () => {
+    for (let i = 0; i < 12; i += 1) {
+      const { supabase } = serviceSupabase({ shopping_preferences: null, gender: "Non-binary" }, [
+        ...CATALOGUE,
+      ]);
+      const results = await findSimilarItemsForUser(supabase, "user-1", {
+        attributes: INSPIRATION,
+        maxResults: 10,
+      });
+      // Unisex is always in; exactly ONE directed row joins it — the women's
+      // top or the men's shirt, never both.
+      const ids = results.map((r) => r.id);
+      expect(ids).toContain("u-scarf");
+      const directed = ids.filter((id) => id !== "u-scarf");
+      expect(directed).toHaveLength(1);
+      expect(["w-top", "m-shirt"]).toContain(directed[0]);
+    }
   });
 });
