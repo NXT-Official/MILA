@@ -1,14 +1,34 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { aiChatCompletion, isAiConfigured, type AiResult } from "@/lib/ai.server";
-import { consumeRateLimit, RateLimitExceededError } from "@/lib/rate-limit.server";
+import {
+  consumeRateLimit,
+  releaseRateLimit,
+  RateLimitExceededError,
+  type RateLimitResult,
+} from "@/lib/rate-limit.server";
 import { withAiCredit } from "@/lib/credits.server";
 import { INSUFFICIENT_CREDITS, isInsufficientCreditsError } from "@/lib/credits";
 import {
+  GENERATION_DEADLINE_SECONDS,
+  GenerationDeliveredUnsavedError,
+  GenerationInFlightError,
+  resolveDailyAllowance,
+  withGenerationJob,
+  withJobId,
+  type GenerationJobContext,
+  type GenerationJobOutcome,
+  type GenerationJobSpec,
+  type GenerationWriteGuard,
+  type LegacyGenerationContext,
+} from "@/lib/generation-jobs.server";
+import {
+  HAIR_COLORS,
   SEASON_HEX_MATRIX,
   SEASON_KEYS,
   SEASONS_MASTER_DATA,
+  SKIN_DEPTHS,
   type SeasonKey,
 } from "@/constants/style-profile";
 
@@ -22,6 +42,21 @@ type MilaSupabaseClient = SupabaseClient<Database>;
  * The founding read — the once-ever free read, tracked in
  * `profiles.founding_color_read_at` (service-role write only) — is free;
  * re-reads cost **1 AI credit**, 10/hour either way.
+ *
+ * Wave D (D-W1):
+ * - Pass 2's one call also reads her hair colour and skin depth; there is no
+ *   extra AI call. A value off the list is dropped, never guessed, and hair
+ *   that cannot be seen comes back as null.
+ * - The read runs as a `color_read` generation job: a re-read is charged once
+ *   per `clientRequestId` (a double press or a reload replays it), the founding
+ *   read is a free job, and a failed job refunds its credit. Until the
+ *   generation_jobs migration is applied, today's path runs unchanged.
+ * - The founding read is claimed atomically before the AI call, so two racing
+ *   reads are never both free; the claim goes back when she gets no read.
+ * - The hourly slot comes back only when every provider call this request
+ *   made was a refusal she cannot cause (plan R-2 as amended, D-W1 review
+ *   I-1), at most once, and never to a request answered from another
+ *   request's job.
  */
 
 const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
@@ -73,6 +108,12 @@ const StudioColorProfileSchema = z.object({
   calculatedUndertone: z.string().min(1).optional(),
   confidenceScore: z.number().min(1).max(100).optional(),
   confidenceLabel: z.string().optional(),
+  /** Her hair as it looks today, read in Pass 2. Null when it cannot be seen
+   * (covered, out of the photo): never a guess. Absent when the model left it
+   * out or answered off the list. */
+  hairColor: z.enum(HAIR_COLORS).nullable().optional(),
+  /** How light or deep her skin is after the light correction, read in Pass 2. */
+  skinDepth: z.enum(SKIN_DEPTHS).optional(),
 });
 
 export type StudioColorProfile = z.infer<typeof StudioColorProfileSchema>;
@@ -124,6 +165,14 @@ const SlimVisionSchema = z.object({
   detectedLighting: z.string().min(1),
   calculatedUndertone: z.string().min(1),
   confidenceScore: modelScore,
+  // Optional, and a value off the list (or a missing one) is dropped rather
+  // than failing a good season read or spending its retry.
+  // Null is her hair not being visible (D-W1 review M-4), kept as null.
+  hairColor: z
+    .union([z.null(), modelEnum(HAIR_COLORS)])
+    .optional()
+    .catch(undefined),
+  skinDepth: modelEnum(SKIN_DEPTHS).optional().catch(undefined),
 });
 
 const AMBIENT_LIGHTING_VALUES = [
@@ -230,6 +279,19 @@ const slimTool = {
           description:
             "Triage debug — 1–100 confidence in the final season call, based on how cleanly the landmark pixels (cheek apex, iris root, eyebrow root) read after lighting noise was cancelled. Lower this when backlight or warm bleed forced heavy reconstruction.",
         },
+        // src: https://developers.openai.com/api/docs/guides/structured-outputs (a nullable
+        //   enum in a strict schema: type ["string", "null"] with null in the enum) · 2026-10-07
+        hairColor: {
+          type: ["string", "null"],
+          enum: [...HAIR_COLORS, null],
+          description:
+            "Her hair as it looks today, dyed or natural; null when her hair is covered or out of the photo.",
+        },
+        skinDepth: {
+          type: "string",
+          enum: SKIN_DEPTHS as unknown as string[],
+          description: "How light or deep her skin is after the light correction.",
+        },
       },
       required: [
         "season",
@@ -241,6 +303,8 @@ const slimTool = {
         "detectedLighting",
         "calculatedUndertone",
         "confidenceScore",
+        "hairColor",
+        "skinDepth",
       ],
       additionalProperties: false,
     },
@@ -267,10 +331,105 @@ export type ColorAnalysisResult =
         };
         forcedDiagnostic: boolean;
       };
+      /** The generation job that holds this read (absent on the legacy path). */
+      jobId?: string;
     }
   | { success: false; error: string };
 
 const PARSING_FAILED: ColorAnalysisResult = { success: false, error: "ANALYSIS_PARSING_FAILED" };
+
+type ColorReadTelemetry = Extract<ColorAnalysisResult, { success: true }>["telemetry"];
+
+const TelemetrySchema: z.ZodType<ColorReadTelemetry> = z.object({
+  pass1Raw: z.object({
+    ambientLighting: z.string(),
+    biologicalUndertone: z.string(),
+    computedContrast: z.string(),
+  }),
+  interceptTriggered: z.boolean(),
+  gatekeeperNotes: z.array(z.string()),
+  pass2OverrideInputs: z.object({
+    ambientLighting: z.string(),
+    biologicalUndertone: z.string(),
+    computedContrast: z.string(),
+    sensorClippingEvent: z.boolean(),
+  }),
+  forcedDiagnostic: z.boolean(),
+});
+
+/** What a succeeded `color_read` job keeps: the read, never the photo. A
+ * stored hair colour or skin depth that is no longer on its list (a later
+ * rename) never fails a paid replay (D-W1 review M-2): the hair colour
+ * replays as null and the skin depth as absent. */
+const StoredReadSchema = z.object({
+  profile: StudioColorProfileSchema.extend({
+    hairColor: z.enum(HAIR_COLORS).nullable().optional().catch(null),
+    skinDepth: z.enum(SKIN_DEPTHS).optional().catch(undefined),
+  }),
+  telemetry: TelemetrySchema,
+});
+
+/** The answer a replay gives, rebuilt from the job's stored result and
+ * checked before it is trusted. */
+function readFromStored(result: Json | null): ColorAnalysisResult {
+  const parsed = StoredReadSchema.safeParse(result);
+  if (!parsed.success) {
+    console.error(
+      "[analyzePersonalColor] a stored read no longer validates",
+      parsed.error.flatten(),
+    );
+    return { success: false, error: "SERVER_GATEWAY_TIMEOUT" };
+  }
+  return { success: true, profile: parsed.data.profile, telemetry: parsed.data.telemetry };
+}
+
+/** Every code this read answers with, which both clients already map. */
+const MEMBER_ERROR_CODES: ReadonlySet<string> = new Set([
+  "CONFIG_MISSING_API_KEY",
+  "ANALYSIS_RATE_LIMITED",
+  "ANALYSIS_CREDITS_EXHAUSTED",
+  "ANALYSIS_PARSING_FAILED",
+  "ANALYSIS_GATEWAY_FAILURE",
+  "SERVER_GATEWAY_TIMEOUT",
+  INSUFFICIENT_CREDITS,
+]);
+
+/** A failed job's code as one the clients map. The read's own codes pass
+ * through; the job wrapper's own (`deadline_exceeded`, a thrown error's name,
+ * `persist_failed_delivered`) read as the read running long, exactly as an
+ * unhandled error does today. */
+function memberErrorCode(errorCode: string): string {
+  return MEMBER_ERROR_CODES.has(errorCode) ? errorCode : "SERVER_GATEWAY_TIMEOUT";
+}
+
+/** The photo's fingerprint for the job row (plan R-4): the first 16 hex of
+ * the SHA-256 of the base64 text. The photo itself is never stored. */
+async function photoDigest(imageBase64: string): Promise<string> {
+  // src: https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest · Web Crypto,
+  //   global in Node 20+ and Bun 1.3; base64 text is ASCII, so these bytes are its UTF-8.
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(imageBase64));
+  return Array.from(new Uint8Array(hash).slice(0, 8), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+/**
+ * The only provider answers that hand the hourly slot back: refusals before
+ * generation that she cannot cause herself (our key, our provider credit, a
+ * retired model, the provider's own rate limit or outage).
+ *
+ * Every other answer keeps the slot (D-W1 review I-1):
+ * - a reply (ok, or ai.server's 502: no text or unusable JSON) and the
+ *   timeouts (408, 504, 524) may have been billed;
+ * - 400 and 403 (and 413, 422, anything unknown) bill nothing but she can
+ *   cause them with a corrupt or flagged image, so releasing them would let
+ *   bad photos loop past the 10-an-hour cap.
+ */
+// src: https://openrouter.ai/docs/api-reference/errors · OpenRouter API (2026-10-07): 400
+//   invalid or missing parameters, 401 invalid credentials, 402 insufficient credits, 403
+//   guardrail or moderation flag, 408 timeout, 429 rate limited, 502 model down or invalid
+//   response, 503 no available provider; after a 200, failures are reported in the body.
+const UNBILLED_REFUSALS: ReadonlySet<number> = new Set([401, 402, 404, 429, 500, 503]);
 
 function analysisFailure(status: number): ColorAnalysisResult {
   if (status === 429) return { success: false, error: "ANALYSIS_RATE_LIMITED" };
@@ -321,6 +480,9 @@ export const PersonalColorAnalysisInput = z.object({
         .optional(),
     })
     .optional(),
+  /** One per press: a double press or a retry after a lost answer reuses it
+   * and replays the job instead of charging again. */
+  clientRequestId: z.string().uuid().optional(),
 });
 export type PersonalColorAnalysisInputData = z.infer<typeof PersonalColorAnalysisInput>;
 
@@ -344,6 +506,88 @@ async function markFoundingReadUsed(userId: string): Promise<void> {
   }
 }
 
+/**
+ * The founding read, claimed before the AI call:
+ * - claimed: this request moved the marker from NULL, so this read is free.
+ *   `claimedAt` is the marker text exactly as the database returned it.
+ * - taken: the marker was already set (another request won it a moment ago).
+ * - error: the claim could not be written; never treated as free.
+ */
+export type FoundingReadClaim =
+  { outcome: "claimed"; claimedAt: string } | { outcome: "taken" } | { outcome: "error" };
+
+async function serviceRoleClient(): Promise<MilaSupabaseClient> {
+  return (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+}
+
+/**
+ * Claims her once-ever free founding read for this request, atomically: one
+ * conditional update, `founding_color_read_at IS NULL`, that only one request
+ * can win. Under READ COMMITTED a second, concurrent update waits for the
+ * first's row lock, then re-checks the condition and matches no row. Uses the
+ * existing column, so it needs no migration. Never throws.
+ */
+// src: https://www.postgresql.org/docs/current/transaction-iso.html#XACT-READ-COMMITTED
+//   (UPDATE re-evaluates its WHERE against the row a concurrent transaction just
+//   committed); the update/eq/is/select chain is the one body-scan.ts uses ·
+//   @supabase/postgrest-js 2.110.0.
+export async function claimFoundingColorRead(
+  userId: string,
+  admin: () => Promise<MilaSupabaseClient> = serviceRoleClient,
+  now: () => number = Date.now,
+): Promise<FoundingReadClaim> {
+  try {
+    const db = await admin();
+    const { data, error } = await db
+      .from("profiles")
+      .update({ founding_color_read_at: new Date(now()).toISOString() })
+      .eq("id", userId)
+      .is("founding_color_read_at", null)
+      .select("founding_color_read_at");
+    if (error) {
+      console.error("[analyzePersonalColor] founding claim failed:", error);
+      return { outcome: "error" };
+    }
+    const claimedAt = data?.[0]?.founding_color_read_at;
+    return typeof claimedAt === "string" && claimedAt.length > 0
+      ? { outcome: "claimed", claimedAt }
+      : { outcome: "taken" };
+  } catch (err) {
+    console.error("[analyzePersonalColor] founding claim threw:", err);
+    return { outcome: "error" };
+  }
+}
+
+/**
+ * Hands a founding claim back after a read she did not receive, so her free
+ * read is still there. Clears only this request's own claim (the marker
+ * still holds `claimedAt`), so it can never undo a read that landed. Retried
+ * once; never throws. If both attempts fail, the founding read stays spent:
+ * logged loudly, since she was not given the read it stands for.
+ */
+export async function giveBackFoundingColorRead(
+  userId: string,
+  claimedAt: string,
+  admin: () => Promise<MilaSupabaseClient> = serviceRoleClient,
+): Promise<void> {
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      const db = await admin();
+      const { error } = await db
+        .from("profiles")
+        .update({ founding_color_read_at: null })
+        .eq("id", userId)
+        .eq("founding_color_read_at", claimedAt)
+        .select("id");
+      if (!error) return;
+      console.error(`[analyzePersonalColor] founding give-back failed (${attempt}/2):`, error);
+    } catch (err) {
+      console.error(`[analyzePersonalColor] founding give-back threw (${attempt}/2):`, err);
+    }
+  }
+  console.error("[analyzePersonalColor] founding read left spent after a read she did not get");
+}
+
 /** The collaborators the read calls out to, injectable for the tests. */
 export type PersonalColorAnalysisDeps = {
   aiChatCompletion: typeof aiChatCompletion;
@@ -352,6 +596,26 @@ export type PersonalColorAnalysisDeps = {
   withAiCredit: typeof withAiCredit;
   markFoundingRead: (userId: string) => Promise<void>;
   now: () => number;
+  /** Runs the read as a `color_read` generation job (R7). */
+  withGenerationJob: (
+    spec: GenerationJobSpec<ColorAnalysisResult>,
+    produce: (job: GenerationJobContext) => Promise<ColorAnalysisResult>,
+  ) => Promise<GenerationJobOutcome<ColorAnalysisResult>>;
+  /** The daily allowance a charged job's credit is taken against. */
+  dailyAllowance: (supabase: MilaSupabaseClient, userId: string) => Promise<number>;
+  /** Hands an hourly slot back to the window it was taken from. Never throws. */
+  releaseRateLimit: (key: string, resetAt: RateLimitResult["reset_at"]) => Promise<boolean>;
+  /**
+   * The server-side dossier upsert, kept but off (plan R-10, owner question
+   * Q1, coordinator ruling 2026-10-07). RLS refuses it for most members, and
+   * where it lands it saves her read before she has confirmed it; both web
+   * flows and mobile save the dossier from the client. Default false.
+   */
+  persistDossierOnServer?: boolean;
+  /** Claims the founding read before the AI call (one request can win). */
+  claimFoundingRead: (userId: string) => Promise<FoundingReadClaim>;
+  /** Hands this request's own founding claim back. Never throws. */
+  giveBackFoundingRead: (userId: string, claimedAt: string) => Promise<void>;
 };
 
 const defaultDeps: PersonalColorAnalysisDeps = {
@@ -361,6 +625,12 @@ const defaultDeps: PersonalColorAnalysisDeps = {
   withAiCredit,
   markFoundingRead: markFoundingReadUsed,
   now: Date.now,
+  withGenerationJob,
+  dailyAllowance: resolveDailyAllowance,
+  releaseRateLimit,
+  persistDossierOnServer: false,
+  claimFoundingRead: (userId) => claimFoundingColorRead(userId),
+  giveBackFoundingRead: (userId, claimedAt) => giveBackFoundingColorRead(userId, claimedAt),
 };
 
 export async function analyzePersonalColorForUser(
@@ -369,6 +639,51 @@ export async function analyzePersonalColorForUser(
   data: PersonalColorAnalysisInputData,
   deps: PersonalColorAnalysisDeps = defaultDeps,
 ): Promise<ColorAnalysisResult> {
+  const rateKey = `ai:analyzePersonalColor:${userId}`;
+  /** The window this request's hourly slot was taken from: the exact
+   * `reset_at` text, never parsed (a Date would lose its microseconds and
+   * match no window). Null until a slot is taken. */
+  let chargedWindow: RateLimitResult["reset_at"] | null = null;
+  /** Provider calls this request made, and how many of them were refused
+   * before generating anything. */
+  const providerCalls = { made: 0, unbilled: 0 };
+  /** True once this request's own produce ran: a request answered from
+   * another request's job (a replay, an attach) never ran it. */
+  let producedHere = false;
+  let slotReleased = false;
+  /** This request's founding claim (the marker text it wrote), or null when
+   * it holds none. Settled once: kept for a read she received, otherwise
+   * handed back. */
+  let foundingClaim: string | null = null;
+  let foundingSettled = false;
+  const settleFoundingClaim = async (received: boolean) => {
+    if (foundingClaim === null || foundingSettled) return;
+    foundingSettled = true;
+    try {
+      // Kept: the marker then records when the founding read produced a
+      // dossier (the column's meaning), not just when it was claimed.
+      if (received) await deps.markFoundingRead(userId);
+      else await deps.giveBackFoundingRead(userId, foundingClaim);
+    } catch (err) {
+      // Both defaults never throw; a kept claim stays spent either way.
+      console.error("[analyzePersonalColor] settling the founding claim failed", err);
+    }
+  };
+  /** Plan R-2 as amended (D-W0 review I-3, D-W1 review I-1): this request's
+   * hourly slot comes back only when every call it made was a refusal she
+   * cannot cause, and at most once, so bad photos never loop past the cap. */
+  const releaseSlotUnlessBilled = async () => {
+    if (slotReleased || chargedWindow === null) return;
+    if (providerCalls.made > providerCalls.unbilled) return;
+    slotReleased = true;
+    try {
+      await deps.releaseRateLimit(rateKey, chargedWindow);
+    } catch (err) {
+      // The default never throws; the slot then simply stays spent.
+      console.error("[analyzePersonalColor] the hourly slot could not be handed back", err);
+    }
+  };
+
   try {
     if (!deps.isAiConfigured()) {
       console.error("[analyzePersonalColor] AI provider not configured (OPENROUTER_API_KEY)");
@@ -376,10 +691,11 @@ export async function analyzePersonalColorForUser(
     }
 
     try {
-      await deps.consumeRateLimit(`ai:analyzePersonalColor:${userId}`, {
+      const taken = await deps.consumeRateLimit(rateKey, {
         limit: 10,
         windowSeconds: 3600,
       });
+      chargedWindow = taken.reset_at;
     } catch (err) {
       if (err instanceof RateLimitExceededError) {
         return { success: false, error: "ANALYSIS_RATE_LIMITED" };
@@ -393,8 +709,17 @@ export async function analyzePersonalColorForUser(
         .select("skin_undertone, color_season, color_profile, founding_color_read_at")
         .eq("id", userId)
         .maybeSingle();
-      if (profileError) {
-        console.error("[analyzePersonalColor] founding-read check failed:", profileError);
+      if (profileError || !profileRow) {
+        // Fail closed: a check that could not be read, or found no row, is
+        // never "founding read unused". Treating it as free let a failing
+        // read hand out free AI reads, and a member with no row could never
+        // have the marker written. Nothing has been called or charged yet.
+        console.error(
+          "[analyzePersonalColor] founding-read check failed:",
+          profileError ?? "no profile row",
+        );
+        await releaseSlotUnlessBilled();
+        return { success: false, error: "SERVER_GATEWAY_TIMEOUT" };
       }
 
       // The founding read is free — once, ever. Whether it was used is read
@@ -406,17 +731,44 @@ export async function analyzePersonalColorForUser(
       // the whole dossier depends on would dead-end the flow that everything
       // else builds on. Once the marker is set, re-reads charge a credit as
       // before (and refund it if the read fails).
-      const foundingRead = !profileRow?.founding_color_read_at;
+      const foundingUnused = !profileRow?.founding_color_read_at;
+      if (foundingUnused) {
+        // Claimed before the AI call, atomically, so two reads racing can
+        // never both be free; handed back if she does not receive the read.
+        const claim = await deps.claimFoundingRead(userId);
+        if (claim.outcome === "error") {
+          // Fail closed, as above: nothing called or charged yet.
+          await releaseSlotUnlessBilled();
+          return { success: false, error: "SERVER_GATEWAY_TIMEOUT" };
+        }
+        if (claim.outcome === "taken") {
+          // Another read of hers claimed it a moment ago and is most likely
+          // still running: ask her to wait rather than charge her. Tied to
+          // that read, so this slot stays spent (as for an in-flight read).
+          console.warn("[analyzePersonalColor] the founding read was claimed by another read");
+          return { success: false, error: "SERVER_GATEWAY_TIMEOUT" };
+        }
+        foundingClaim = claim.claimedAt;
+      }
+      const foundingRead = foundingClaim !== null;
 
-      const produce = async (): Promise<ColorAnalysisResult> => {
+      // `stillRunning` is the job's write guard (always true on the legacy
+      // path, which has no job).
+      const produceRead = async ({
+        stillRunning,
+      }: GenerationWriteGuard): Promise<ColorAnalysisResult> => {
+        producedHere = true;
         const budget = createColorReadBudget(deps.now);
-        const callGateway = (
+        const callGateway = async (
           systemPrompt: string,
           userText: string,
           toolDef: typeof slimTool | typeof calibrationTool,
           timeoutMs: number,
-        ) =>
-          deps.aiChatCompletion(
+        ): Promise<AiResult> => {
+          // Counted against the slot from the moment it is sent, until its
+          // answer is a refusal she cannot cause (a throw stays counted).
+          providerCalls.made += 1;
+          const res = await deps.aiChatCompletion(
             [
               { role: "system", content: systemPrompt },
               {
@@ -434,6 +786,9 @@ export async function analyzePersonalColorForUser(
             { supabase: supabase, userId: userId },
             { timeoutMs },
           );
+          if (!res.ok && UNBILLED_REFUSALS.has(res.status)) providerCalls.unbilled += 1;
+          return res;
+        };
 
         // One pass of the read. A reply that can't be used — no text, not
         // JSON, or JSON outside the schema (the gateway reports the first two
@@ -725,6 +1080,9 @@ Populate the tool payload exactly so the UI can log the system's thought process
   • STRICT KEY VALIDATION: \`season\` MUST resolve to EXACTLY one of the keys listed above (${SEASON_KEYS.join(", ")}) — no aliases, no spaces, no lowercase, no extra punctuation. Any other value fails to hydrate the SEASONS_MASTER_DATA dictionary on the frontend and breaks the 5×4 dot matrix.
   • \`undertone\`, \`contrastScore\`, \`faceShape\`, \`bodyType\` — your raw reads.
   • \`stylistNote\`          — 2 warm, human-sounding sentences from an expert analyst explaining WHY this specific face framing fits the chosen season, referencing the actual undertone / value / chroma you observed. No clinical or robotic wording, no hex codes, no template phrases.
+  • \`hairColor\`: her hair as it looks today, dyed or natural, one of ${HAIR_COLORS.join(", ")}.
+  • If her hair is covered or out of the photo, answer \`hairColor\` null. Never guess it.
+  • \`skinDepth\`: how light or deep her skin is after the light correction, one of ${SKIN_DEPTHS.join(", ")}.
 
 === OUTPUT ===
 Return ONLY the slim raw vision read by calling the report_studio_color_profile tool. Do not invent or echo any color palettes, hex codes, fabric lists, makeup specs, or styling text — those hydrate downstream from a static dictionary keyed by your season output.`;
@@ -749,6 +1107,9 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
           detectedLighting: slim.data.detectedLighting,
           calculatedUndertone: slim.data.calculatedUndertone,
           confidenceScore: slim.data.confidenceScore,
+          // Only when read: an absent field stays absent, never undefined.
+          ...(slim.data.hairColor !== undefined ? { hairColor: slim.data.hairColor } : {}),
+          ...(slim.data.skinDepth ? { skinDepth: slim.data.skinDepth } : {}),
         };
 
         const AMBIENT_NOISE_PATTERN = /backlit|glare|yellow.*lamp|blue-?light|ambient noise/i;
@@ -815,24 +1176,78 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
           },
           forcedDiagnostic: Boolean(forced),
         };
-        try {
-          const { error: persistError } = await supabase.from("profiles").upsert(
-            {
-              id: userId,
-              skin_undertone: parsed.data.toneType.startsWith("Warm") ? "Warm" : "Cool",
-              color_season: parsed.data.season,
-              color_profile: parsed.data as never,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "id" },
-          );
-          if (persistError) {
-            console.error("[analyzePersonalColor] profiles upsert failed:", persistError);
+
+        // Past its deadline the job is being failed (and a charged one
+        // refunded) while this may still run: a write then would be value she
+        // never received, so nothing is written unless the job is still live.
+        // Asked only when there is a write to make. (The founding marker is
+        // settled from the outcome instead, below: claimed before the call,
+        // kept or handed back once the answer is known.)
+        if (deps.persistDossierOnServer === true && (await stillRunning())) {
+          try {
+            const { error: persistError } = await supabase.from("profiles").upsert(
+              {
+                id: userId,
+                skin_undertone: parsed.data.toneType.startsWith("Warm") ? "Warm" : "Cool",
+                color_season: parsed.data.season,
+                color_profile: parsed.data as never,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "id" },
+            );
+            if (persistError) {
+              console.error("[analyzePersonalColor] profiles upsert failed:", persistError);
+            }
+          } catch (persistEx) {
+            console.error("[analyzePersonalColor] profiles upsert threw:", persistEx);
           }
-        } catch (persistEx) {
-          console.error("[analyzePersonalColor] profiles upsert threw:", persistEx);
         }
 
+        return { success: true, profile: parsed.data, telemetry };
+      };
+
+      // Today's path, run unchanged while the generation_jobs migration is not
+      // applied: the founding read free, a re-read under withAiCredit.
+      const legacy = async (context: LegacyGenerationContext): Promise<ColorAnalysisResult> => {
+        const produce = () => produceRead(context);
+        if (foundingRead) return await produce();
+
+        return await deps.withAiCredit<ColorAnalysisResult>(supabase, userId, produce, {
+          refundIf: (r) => !r.success,
+        });
+      };
+
+      const outcome = await deps.withGenerationJob(
+        {
+          kind: "color_read",
+          userId,
+          clientRequestId: data.clientRequestId,
+          // Never the photo (plan R-4): only its fingerprint.
+          input: {
+            forced: data.diagnostics?.forceCalibration ?? null,
+            digest: await photoDigest(data.imageBase64),
+          },
+          // The founding read is still a job, so it survives a reload too.
+          charge: !foundingRead,
+          dailyAllowance: foundingRead ? 0 : await deps.dailyAllowance(supabase, userId),
+          deadlineSeconds: GENERATION_DEADLINE_SECONDS,
+          inFlight: "attach",
+          settle: (r) =>
+            r.success
+              ? { ok: true, result: { profile: r.profile, telemetry: r.telemetry } }
+              : { ok: false, errorCode: r.error },
+          fromStored: ({ result }) => readFromStored(result),
+          failure: (errorCode) => ({ success: false, error: memberErrorCode(errorCode) }),
+          legacy,
+        },
+        produceRead,
+      );
+      if (outcome.status === "running") {
+        // Not reached: "attach" waits for the job instead of reporting it.
+        return { success: false, error: "SERVER_GATEWAY_TIMEOUT" };
+      }
+      const result = outcome.value;
+      if (result.success) {
         // A successful founding read spends the once-ever free read. The
         // marker column carries no `authenticated` grant, so a member cannot
         // clear it the way they can clear the dossier columns (QA MW-10). It
@@ -840,27 +1255,42 @@ Return ONLY the slim raw vision read by calling the report_studio_color_profile 
         // INSERT policy on every proposed upsert row, which a member's
         // username-less row fails, so that gate left the marker unset and the
         // free read repeatable. The member holds the read either way — both
-        // web flows save the dossier from the client.
-        if (foundingRead) await deps.markFoundingRead(userId);
-
-        return { success: true, profile: parsed.data, telemetry };
-      };
-
-      if (foundingRead) return await produce();
-
-      return await deps.withAiCredit<ColorAnalysisResult>(supabase, userId, produce, {
-        refundIf: (r) => !r.success,
-      });
+        // web flows save the dossier from the client. Settled from the
+        // outcome, so a job row that cannot be re-read never leaves it free
+        // (D-W1 review M-1); only a read this request produced keeps it.
+        await settleFoundingClaim(producedHere);
+        return withJobId(result, outcome.jobId);
+      }
+      await settleFoundingClaim(false);
+      // A failure answered from another request's job (a replay, an attach)
+      // is that request's to account for, not this slot's.
+      if (producedHere) await releaseSlotUnlessBilled();
+      return result;
     } catch (err) {
       if (isInsufficientCreditsError(err)) {
+        // Refused before any AI call: the slot comes back.
+        await settleFoundingClaim(false);
+        await releaseSlotUnlessBilled();
         return { success: false, error: INSUFFICIENT_CREDITS };
       }
       throw err;
     }
   } catch (error) {
+    // She received no read: a founding claim this request holds goes back.
+    await settleFoundingClaim(false);
+    // A replay of a read made and charged but never stored: answered as `409
+    // DELIVERED_NOT_SAVED`. Not an unbilled refusal, so the slot stays spent.
+    if (error instanceof GenerationDeliveredUnsavedError) throw error;
+    if (error instanceof GenerationInFlightError) {
+      // Another read of hers is still running (a second photo, or a wait that
+      // outlasted it). Tied to that request's job, so this slot stays spent.
+      console.warn("[analyzePersonalColor] another color read is still running");
+      return { success: false, error: "SERVER_GATEWAY_TIMEOUT" };
+    }
     // Logged in full server-side; `detail` reaches the browser, so an
     // unexpected error's raw message (possibly Postgres text) stays out of it.
     console.error("[analyzePersonalColor] Unhandled gateway exception:", error);
+    await releaseSlotUnlessBilled();
     return { success: false, error: "SERVER_GATEWAY_TIMEOUT" };
   }
 }

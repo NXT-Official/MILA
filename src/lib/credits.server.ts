@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { IN_FORCE_SUBSCRIPTION_STATUSES, isSubscriptionLive } from "@/constants/subscriptions";
+import { createAvailabilityCache, type AvailabilityCache } from "./availability-cache";
 import { DEFAULT_AI_CREDITS, InsufficientCreditsError } from "./credits";
 import { captureServerException } from "./sentry.server";
 
@@ -112,11 +113,215 @@ export async function grantAiCredits(
   return store(userId, dailyAllowance, amount);
 }
 
+// ---------------------------------------------------------------------------
+// Tracked spend/refund (migration 20261007170000_tracked_ai_credit_refunds)
+// ---------------------------------------------------------------------------
+
+/** Which bucket a tracked spend took the credit from, so its refund goes back
+ * there. `creditDay` is the UTC day consume_ai_credit stamped. */
+export type CreditReceipt = { id: string; bucket: "daily" | "purchased"; creditDay: string };
+
+/** refunded: back in its bucket now · owed: an allowance credit whose day
+ * rolled over, landing in the next stamped day's pool (never purchased) ·
+ * already_refunded: nothing changed. */
+export type TrackedRefundOutcome = "refunded" | "owed" | "already_refunded";
+
+export type TrackedCreditStore = {
+  spend: (
+    userId: string,
+    dailyAllowance: number,
+  ) => Promise<{ allowed: boolean; remaining: number; receipt: CreditReceipt | null }>;
+  refund: (receiptId: string) => Promise<TrackedRefundOutcome>;
+};
+
+/** The tracked migration is not applied yet (function missing). */
+export class TrackedCreditsUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TrackedCreditsUnavailableError";
+  }
+}
+
+/** The shared missing-migration cache (./availability-cache), under the names
+ * this module has always exported. */
+export type CreditAvailabilityCache = AvailabilityCache;
+export const createCreditAvailabilityCache = createAvailabilityCache;
+
+const trackedCreditAvailability = createCreditAvailabilityCache();
+
+// src: https://docs.postgrest.org/en/v12/references/errors.html (PGRST202: function not
+//   in the schema cache) · PostgREST 12; PGRST205 (table not in the schema cache) · PostgREST 13
+// src: https://www.postgresql.org/docs/current/errcodes-appendix.html (42P01 undefined_table,
+//   42883 undefined_function)
+const MISSING_CODES = new Set(["PGRST202", "PGRST205", "42P01", "42883"]);
+
+/** A PostgREST error from a tracked RPC as an Error: "migration missing"
+ * becomes TrackedCreditsUnavailableError (fall back), anything else keeps the
+ * database's message (consume_ai_credit's own errors pass through). */
+export function toTrackedCreditsError(
+  op: string,
+  error: { code?: string; message?: string },
+): Error {
+  if (error.code && MISSING_CODES.has(error.code)) {
+    return new TrackedCreditsUnavailableError(`${op}: ${error.code}`);
+  }
+  return new Error(error.message ?? `${op} failed`, { cause: error });
+}
+
+type RpcError = { code?: string; message?: string };
+type RpcResult = PromiseLike<{ data: unknown; error: RpcError | null }>;
+
+/** The slice of a supabase-js (or postgrest-js) client the tracked pair
+ * needs, called as a method so the client keeps its `this`. Untyped on
+ * purpose: the generated Database types predate the migration, so the rows
+ * are checked here instead. */
+export type TrackedCreditRpcClient = {
+  rpc: (fn: string, args: Record<string, unknown>) => RpcResult & { single: () => RpcResult };
+};
+
+type TrackedSpendRow = {
+  allowed: boolean;
+  remaining: number;
+  receipt_id: string | null;
+  bucket: string | null;
+  credit_day: string | null;
+};
+
+const REFUND_OUTCOMES = new Set<string>(["refunded", "owed", "already_refunded"]);
+
+/** The tracked pair over a service-role client. */
+export function createTrackedCreditStore(
+  client: () => Promise<TrackedCreditRpcClient>,
+): TrackedCreditStore {
+  return {
+    spend: async (userId, dailyAllowance) => {
+      // src: node_modules/@supabase/postgrest-js · 2.110.0 (rpc on a set-returning
+      //   function answers an array; .single() takes its one row, as consume_ai_credit's call does)
+      const { data, error } = await (
+        await client()
+      )
+        .rpc("spend_ai_credit_tracked", { p_user_id: userId, p_daily_allowance: dailyAllowance })
+        .single();
+      if (error) throw toTrackedCreditsError("spend_ai_credit_tracked", error);
+      const row = data as TrackedSpendRow | null;
+      if (!row?.allowed) return { allowed: false, remaining: 0, receipt: null };
+      if (
+        !row.receipt_id ||
+        (row.bucket !== "daily" && row.bucket !== "purchased") ||
+        !row.credit_day
+      ) {
+        throw new Error("spend_ai_credit_tracked returned no receipt");
+      }
+      return {
+        allowed: true,
+        remaining: row.remaining,
+        receipt: { id: row.receipt_id, bucket: row.bucket, creditDay: row.credit_day },
+      };
+    },
+    refund: async (receiptId) => {
+      const { data, error } = await (
+        await client()
+      ).rpc("refund_ai_credit_tracked", { p_receipt_id: receiptId });
+      if (error) throw toTrackedCreditsError("refund_ai_credit_tracked", error);
+      if (typeof data !== "string" || !REFUND_OUTCOMES.has(data)) {
+        throw new Error("refund_ai_credit_tracked returned an unknown outcome");
+      }
+      return data as TrackedRefundOutcome;
+    },
+  };
+}
+
+const supabaseTrackedCreditStore = createTrackedCreditStore(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin as unknown as TrackedCreditRpcClient;
+});
+
 export type WithAiCreditOptions<T> = {
   refundIf?: (result: T) => boolean;
   consume?: ConsumeCreditStore;
   grant?: GrantCreditStore;
+  /** The tracked spend/refund pair. Defaults to the database's when no
+   * legacy `consume`/`grant` store is injected. */
+  tracked?: TrackedCreditStore;
+  availability?: CreditAvailabilityCache;
+  /** Where server errors are reported. Defaults to Sentry
+   * (captureServerException); injectable for tests. */
+  report?: (error: unknown) => void;
 };
+
+type CreditStores = {
+  consume?: ConsumeCreditStore;
+  grant?: GrantCreditStore;
+  tracked?: TrackedCreditStore;
+  availability?: CreditAvailabilityCache;
+  report?: (error: unknown) => void;
+};
+
+/**
+ * Spends one credit and returns how to refund exactly that credit.
+ *
+ * With the tracked pair (the database's by default) the refund goes back to
+ * the bucket the credit came from: purchased to purchased, an allowance
+ * credit to the current day's allowance (owed until that day is stamped),
+ * never to purchased credits. While the migration is missing, or
+ * when only legacy `consume`/`grant` stores are injected, this is today's
+ * path unchanged: consume_ai_credit, then grant_ai_credits to refund.
+ */
+async function spendOneCredit(
+  supabase: SupabaseClient,
+  userId: string,
+  stores: CreditStores,
+  label: string,
+): Promise<() => Promise<void>> {
+  const tracked =
+    stores.tracked ?? (stores.consume || stores.grant ? null : supabaseTrackedCreditStore);
+  const availability = stores.availability ?? trackedCreditAvailability;
+
+  if (tracked && !availability.isMissing()) {
+    const dailyAllowance = await resolveDailyCreditAllowance(supabase, userId);
+    let spent: Awaited<ReturnType<TrackedCreditStore["spend"]>> | null = null;
+    try {
+      spent = await tracked.spend(userId, dailyAllowance);
+    } catch (err) {
+      // Only "not applied yet" falls back. Any other failure is thrown as is:
+      // the spend may have happened, so charging again on the old path could
+      // take two credits.
+      if (!(err instanceof TrackedCreditsUnavailableError)) throw err;
+      availability.markMissing();
+      // A fall-back runs the legacy refund path (grant_ai_credits) for
+      // the whole miss window, so it must never be silent: once per window
+      // per instance, since isMissing() now skips this branch.
+      console.warn(
+        `[${label}] tracked credit RPCs unavailable; using the old spend/refund path for a few minutes`,
+        err,
+      );
+      (stores.report ?? captureServerException)(err);
+    }
+    if (spent) {
+      if (!spent.allowed || !spent.receipt) throw new InsufficientCreditsError();
+      const receiptId = spent.receipt.id;
+      return () =>
+        tracked.refund(receiptId).then(
+          () => undefined,
+          (err) => reportRefundFailure(stores, label, err),
+        );
+    }
+  }
+
+  await consumeAiCredit(supabase, userId, stores.consume);
+  return () =>
+    grantAiCredits(supabase, userId, 1, stores.grant).then(
+      () => undefined,
+      (err) => reportRefundFailure(stores, label, err),
+    );
+}
+
+/** A refund that fails leaves the member charged for nothing (Dupe review
+ * M3): never only a console line, always error capture too. */
+function reportRefundFailure(stores: CreditStores, label: string, err: unknown): void {
+  console.error(`[${label}] refund failed`, err);
+  (stores.report ?? captureServerException)(err);
+}
 
 export async function withAiCredit<T>(
   supabase: SupabaseClient,
@@ -124,11 +329,7 @@ export async function withAiCredit<T>(
   produce: () => Promise<T>,
   opts: WithAiCreditOptions<T> = {},
 ): Promise<T> {
-  await consumeAiCredit(supabase, userId, opts.consume);
-  const refund = () =>
-    grantAiCredits(supabase, userId, 1, opts.grant).catch((err) =>
-      console.error("[withAiCredit] refund failed", err),
-    );
+  const refund = await spendOneCredit(supabase, userId, opts, "withAiCredit");
 
   let result: T;
   try {
@@ -147,6 +348,9 @@ export type LookImageDeps = {
   mark: (userId: string) => Promise<void>;
   consume?: ConsumeCreditStore;
   grant?: GrantCreditStore;
+  tracked?: TrackedCreditStore;
+  availability?: CreditAvailabilityCache;
+  report?: (error: unknown) => void;
 };
 
 async function supabaseClaimLookImage(userId: string): Promise<boolean> {
@@ -182,12 +386,14 @@ export async function payForLookImage<T extends { imageDataUri: string | null }>
   deps: LookImageDeps = supabaseLookImageDeps,
 ): Promise<T> {
   const free = await deps.claim(userId);
-  if (!free) await consumeAiCredit(supabase, userId, deps.consume);
+  const refundCredit = free
+    ? null
+    : await spendOneCredit(supabase, userId, deps, "payForLookImage");
 
   const refund = () =>
-    (free ? deps.mark(userId) : grantAiCredits(supabase, userId, 1, deps.grant)).catch((err) =>
-      console.error("[payForLookImage] refund failed", err),
-    );
+    refundCredit
+      ? refundCredit()
+      : deps.mark(userId).catch((err) => reportRefundFailure(deps, "payForLookImage", err));
 
   let result: T;
   try {

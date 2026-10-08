@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from "bun:test";
 import {
+  authRequestOrigin,
   authenticateWithPassword,
   requestPasswordReset,
   updatePassword,
@@ -22,6 +23,8 @@ function dependencies(
   const signUp = mock(async () => result);
   const deps = {
     client: () => ({ auth: { signInWithPassword, signUp } }),
+    // The deployment she is on (a preview here), as the server sees the request.
+    origin: () => "https://mila-nicoledev.vercel.app",
   } as unknown as AuthDependencies;
   return { deps, signInWithPassword, signUp };
 }
@@ -43,8 +46,44 @@ describe("security-sensitive password authentication", () => {
     expect(signUp).toHaveBeenCalledWith({
       email: credentials.email,
       password: credentials.password,
-      options: { data: { username: "mila_user" }, captchaToken: credentials.captchaToken },
+      options: {
+        data: { username: "mila_user" },
+        captchaToken: credentials.captchaToken,
+        emailRedirectTo: "https://mila-nicoledev.vercel.app/auth/callback?next=%2Fdashboard",
+      },
     });
+  });
+
+  test("the confirmation email returns her to the deployment she signed up on, and to her page", async () => {
+    // Without emailRedirectTo Supabase uses the Site URL: the live site, even
+    // when she signed up on a preview.
+    const { deps, signUp } = dependencies();
+    await authenticateWithPassword(
+      "signup",
+      { ...credentials, username: "mila_user", next: "/history?look=abc" },
+      deps,
+    );
+    const options = (
+      signUp.mock.calls[0] as unknown as [{ options: { emailRedirectTo: string } }]
+    )[0].options;
+    expect(options.emailRedirectTo).toBe(
+      "https://mila-nicoledev.vercel.app/auth/callback?next=%2Fhistory%3Flook%3Dabc",
+    );
+  });
+
+  test("an unsafe return path in the sign-up request falls back to the dashboard", async () => {
+    const { deps, signUp } = dependencies();
+    await authenticateWithPassword(
+      "signup",
+      { ...credentials, username: "mila_user", next: "//evil.example" },
+      deps,
+    );
+    const options = (
+      signUp.mock.calls[0] as unknown as [{ options: { emailRedirectTo: string } }]
+    )[0].options;
+    expect(options.emailRedirectTo).toBe(
+      "https://mila-nicoledev.vercel.app/auth/callback?next=%2Fdashboard",
+    );
   });
 
   test("requires CAPTCHA and returns generic provider errors", async () => {
@@ -158,5 +197,50 @@ describe("password reset completion", () => {
     await expect(updatePassword(payload, deps)).rejects.toThrow(
       "Unable to update your password. Please try again.",
     );
+  });
+});
+
+describe("auth redirect origin from the request (host-header injection)", () => {
+  const env = { NODE_ENV: "production" };
+
+  test("a forged Host header never becomes the link in her email", () => {
+    expect(
+      authRequestOrigin({ originHeader: undefined, requestUrlOrigin: "https://evil.example" }, env),
+    ).toBe("https://mila-umber.vercel.app");
+  });
+
+  test("a forged Origin header never becomes the link either", () => {
+    expect(
+      authRequestOrigin(
+        { originHeader: "https://evil.example", requestUrlOrigin: "https://evil.example" },
+        env,
+      ),
+    ).toBe("https://mila-umber.vercel.app");
+  });
+
+  test("a real Mila deployment is kept", () => {
+    expect(
+      authRequestOrigin(
+        {
+          originHeader: "https://mila-nicoledev.vercel.app",
+          requestUrlOrigin: "https://mila-nicoledev.vercel.app",
+        },
+        env,
+      ),
+    ).toBe("https://mila-nicoledev.vercel.app");
+  });
+});
+
+describe("the request's own host wins over the Origin header (N-4)", () => {
+  test("a forged Origin naming the other deployment cannot redirect a live request", () => {
+    expect(
+      authRequestOrigin(
+        {
+          originHeader: "https://mila-nicoledev.vercel.app",
+          requestUrlOrigin: "https://mila-umber.vercel.app",
+        },
+        { NODE_ENV: "production" },
+      ),
+    ).toBe("https://mila-umber.vercel.app");
   });
 });

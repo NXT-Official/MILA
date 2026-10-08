@@ -119,3 +119,67 @@ describe("POST /api/v1/look/photo-preview", () => {
     expect(deps.renderPhotoPreviewForUser).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/v1/look/photo-preview — generation jobs", () => {
+  const REQUEST_ID = "6f9c2a8e-3b1d-4c7a-9e2f-0a1b2c3d4e5f";
+
+  test("a clientRequestId asks for the running shape and passes it through", async () => {
+    const deps = fakeDeps({
+      renderPhotoPreviewForUser: mock(async () => ({ status: "running", jobId: "job-1" })),
+    } as unknown as Partial<HandleLookPhotoPreviewDeps>);
+
+    const res = await handleLookPhotoPreview(
+      postRequest({ outfit: VALID_LOOK, clientRequestId: REQUEST_ID }, "good-token"),
+      deps,
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: "running", jobId: "job-1" });
+    expect(deps.renderPhotoPreviewForUser).toHaveBeenCalledWith(
+      {},
+      "user-1",
+      expect.objectContaining({ clientRequestId: REQUEST_ID }),
+      { inFlight: "report" },
+    );
+  });
+
+  test("without a clientRequestId the service is called exactly as before", async () => {
+    const deps = fakeDeps();
+    await handleLookPhotoPreview(postRequest({ outfit: VALID_LOOK }, "good-token"), deps);
+    expect((deps.renderPhotoPreviewForUser as ReturnType<typeof mock>).mock.calls[0]).toHaveLength(
+      3,
+    );
+  });
+
+  test("the render answer keeps every field and adds the job id", async () => {
+    const deps = fakeDeps({
+      renderPhotoPreviewForUser: mock(async () => ({
+        imageDataUri: "data:image/jpeg;base64,img",
+        mode: "photo_edit" as const,
+        jobId: "job-1",
+      })),
+    });
+
+    const res = await handleLookPhotoPreview(
+      postRequest({ outfit: VALID_LOOK, clientRequestId: REQUEST_ID }, "good-token"),
+      deps,
+    );
+
+    expect(await res.json()).toEqual({
+      imageDataUri: "data:image/jpeg;base64,img",
+      mode: "photo_edit",
+      jobId: "job-1",
+    });
+  });
+
+  test("a clientRequestId that is not a UUID -> 400 VALIDATION_FAILED, nothing charged", async () => {
+    const deps = fakeDeps();
+    const res = await handleLookPhotoPreview(
+      postRequest({ outfit: VALID_LOOK, clientRequestId: "not-a-uuid" }, "good-token"),
+      deps,
+    );
+
+    expect(res.status).toBe(400);
+    expect(deps.renderPhotoPreviewForUser).not.toHaveBeenCalled();
+  });
+});

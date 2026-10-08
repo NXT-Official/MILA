@@ -1,7 +1,14 @@
 import { Section, SectionHeading } from "@/components/landing/section";
 import type { DailyPaletteContent } from "@/lib/landing-content";
 
-/** Swatch hex values arrive validated as #RRGGBB (landing-content.normalize). */
+/**
+ * Not on the home page since 2026-10-07: the palette and concierge copy now
+ * renders in `StyleFlowStack`, one sticky stack instead of two back-to-back
+ * text and image splits. Kept as a standalone section (the owner rule is to
+ * delete nothing), ready for a page of its own.
+ *
+ * Swatch hex values arrive validated as #RRGGBB (landing-content.normalize).
+ */
 export function DailyPaletteSection({ content }: { content: DailyPaletteContent }) {
   return (
     <Section id="palette">

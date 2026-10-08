@@ -24,6 +24,13 @@ const defaultDeps: HandleLookPhotoPreviewDeps = { verifyBearerAuth, renderPhotoP
  * errors: they answer `200` with
  * `{ imageDataUri: null, mode: "unavailable", reason }` so the client keeps
  * the written look on screen and offers a retry.
+ *
+ * Generation jobs: an optional `clientRequestId` (UUID) makes the request
+ * idempotent (a repeat replays the stored portrait, no second charge); while
+ * another portrait is still rendering it answers
+ * `200 { status: "running", jobId }`. Without one (builds that predate jobs)
+ * the route waits for that portrait and answers it. Responses carry `jobId`
+ * once the migration is applied.
  */
 export async function handleLookPhotoPreview(
   request: Request,
@@ -39,7 +46,9 @@ export async function handleLookPhotoPreview(
       );
     }
 
-    const result = await deps.renderPhotoPreviewForUser(supabase, userId, parsed.data);
+    const result = parsed.data.clientRequestId
+      ? await deps.renderPhotoPreviewForUser(supabase, userId, parsed.data, { inFlight: "report" })
+      : await deps.renderPhotoPreviewForUser(supabase, userId, parsed.data);
     return Response.json(result);
   } catch (error) {
     return respondWithError("look/photo-preview", error);

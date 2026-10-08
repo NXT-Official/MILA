@@ -12,6 +12,7 @@ export function OutfitVisual({
   onRetry,
   retryDisabled,
   label = "AI-generated outfit inspiration",
+  wait,
 }: {
   imageDataUri: string | null;
   imageGenerationError?: string;
@@ -20,6 +21,8 @@ export function OutfitVisual({
   onRetry?: () => void;
   retryDisabled?: boolean;
   label?: string;
+  /** Staged copy while it renders; the original copy without it. */
+  wait?: { stage: string; detail: string } | null;
 }) {
   if (loading) {
     return (
@@ -27,8 +30,12 @@ export function OutfitVisual({
         <Skeleton className="absolute inset-0 bg-accent-soft/50" />
         <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
           <Loader2 className="size-5 animate-spin text-ink" aria-hidden="true" />
-          <p className="font-serif text-lg text-foreground">Visualizing your look…</p>
-          <p className="text-xs text-muted-foreground">Creating your personalized outfit visual.</p>
+          <p className="font-serif text-lg text-foreground">
+            {wait ? wait.stage : "Visualizing your look…"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {wait ? wait.detail : "Creating your personalized outfit visual."}
+          </p>
         </div>
       </div>
     );

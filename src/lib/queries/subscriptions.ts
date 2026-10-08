@@ -6,6 +6,8 @@ import {
 } from "@/constants/subscriptions";
 import { queryKeys } from "@/constants/query-keys";
 import { supabase } from "@/integrations/supabase/client";
+import { memberAuthorization } from "@/lib/auth-session";
+import { memberQueryRetry } from "@/lib/queries/member-query";
 import type { BillingInterval } from "@/lib/subscription-plans";
 
 export interface MySubscription {
@@ -24,31 +26,39 @@ export interface MySubscription {
   is_staff_granted: boolean;
 }
 
-export function mySubscriptionQueryOptions(userId: string | undefined) {
+export function mySubscriptionQueryOptions(userId: string | undefined, client = supabase) {
   return queryOptions({
     queryKey: queryKeys.mySubscription(userId),
     queryFn: async (): Promise<MySubscription | null> => {
       if (!userId) return null;
+      // Read as her, never as anonymous (an anonymous read sees no membership).
+      const authorization = await memberAuthorization(client.auth, userId);
 
-      const { data: sub, error: subError } = await supabase
+      const { data: sub, error: subError } = await client
         .from("subscriptions")
         .select("plan_id, status, current_period_end, cancel_at_period_end, paddle_subscription_id")
         .eq("user_id", userId)
         .in("status", IN_FORCE_SUBSCRIPTION_STATUSES)
         .order("updated_at", { ascending: false })
         .limit(1)
-        .maybeSingle();
+        .maybeSingle()
+        .setHeader("Authorization", authorization);
+      // A failed read keeps the last known membership on screen instead of
+      // reporting "no membership".
+      if (subError) throw subError;
       // A subscription whose paid period has run out is over even before the
       // daily sweep flips its status, so the drawer must not keep showing it as
       // an active membership.
-      if (subError || !sub || !isSubscriptionLive(sub)) return null;
+      if (!sub || !isSubscriptionLive(sub)) return null;
 
-      const { data: plan, error: planError } = await supabase
+      const { data: plan, error: planError } = await client
         .from("subscription_plans")
         .select("title, credits_included, price_amount, currency, billing_interval")
         .eq("id", sub.plan_id)
-        .maybeSingle();
-      if (planError || !plan) return null;
+        .maybeSingle()
+        .setHeader("Authorization", authorization);
+      if (planError) throw planError;
+      if (!plan) return null;
 
       return {
         status: sub.status,
@@ -63,5 +73,6 @@ export function mySubscriptionQueryOptions(userId: string | undefined) {
       };
     },
     enabled: !!userId,
+    retry: memberQueryRetry,
   });
 }

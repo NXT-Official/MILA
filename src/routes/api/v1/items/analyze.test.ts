@@ -74,6 +74,45 @@ describe("POST /api/v1/items/analyze", () => {
     expect(json).toEqual([]);
   });
 
+  test("with clientRequestId -> asks to be told when a detection is running", async () => {
+    const running = { status: "running", jobId: "job-1" };
+    const analyze = mock(async () => running);
+    const deps = fakeDeps({ analyzeOutfitItemsForUser: analyze as never });
+    const clientRequestId = "6f9c2a8e-3b1d-4c7a-9e2f-0a1b2c3d4e5f";
+    const res = await handleItemsAnalyze(
+      postRequest({ post_id: POST_ID, clientRequestId }, "good-token"),
+      deps,
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(running);
+    expect(analyze.mock.calls[0]).toEqual([
+      expect.anything(),
+      "user-1",
+      { post_id: POST_ID, clientRequestId },
+      { inFlight: "report" },
+    ]);
+  });
+
+  test("without clientRequestId -> old shape, waits for an in-flight run", async () => {
+    const analyze = mock(async () => []);
+    const deps = fakeDeps({ analyzeOutfitItemsForUser: analyze as never });
+    const res = await handleItemsAnalyze(postRequest({ post_id: POST_ID }, "good-token"), deps);
+
+    expect(res.status).toBe(200);
+    expect(analyze.mock.calls[0]).toHaveLength(3);
+  });
+
+  test("a clientRequestId that is not a uuid -> 400 VALIDATION_FAILED", async () => {
+    const deps = fakeDeps();
+    const res = await handleItemsAnalyze(
+      postRequest({ post_id: POST_ID, clientRequestId: "nope" }, "good-token"),
+      deps,
+    );
+    expect(res.status).toBe(400);
+    expect(deps.analyzeOutfitItemsForUser).not.toHaveBeenCalled();
+  });
+
   test("missing post_id -> 400 VALIDATION_FAILED", async () => {
     const deps = fakeDeps();
     const res = await handleItemsAnalyze(postRequest({}, "good-token"), deps);

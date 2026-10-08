@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { INSUFFICIENT_CREDITS } from "./credits";
-import { describeColorReadError } from "./color-read-errors";
+import {
+  COLOR_READ_STALE_BUNDLE,
+  COLOR_READ_TIMEOUT,
+  describeColorReadError,
+} from "./color-read-errors";
 
 /** Every `error` string `analyzePersonalColorForUser` can return (see the service). */
 const SLOW_CODES = ["SERVER_GATEWAY_TIMEOUT", "ANALYSIS_GATEWAY_FAILURE"] as const;
@@ -69,12 +73,43 @@ describe("describeColorReadError", () => {
       "ANALYSIS_RATE_LIMITED",
       "ANALYSIS_PARSING_FAILED",
       INSUFFICIENT_CREDITS,
+      COLOR_READ_TIMEOUT,
+      COLOR_READ_STALE_BUNDLE,
       "SOMETHING_NEW_FROM_THE_SERVER",
     ];
     for (const code of codes) {
       const { message } = describeColorReadError(code);
       expect(message).not.toMatch(RAW_CODE);
       expect(message).not.toMatch(/\b(api key|openrouter|http|\d{3})\b/i);
+    }
+  });
+
+  // Wave D plan, section 3.4: the client's own time limit is not a failure.
+  test("COLOR_READ_TIMEOUT reads the still-reading line", () => {
+    const failure = describeColorReadError(COLOR_READ_TIMEOUT);
+    expect(failure.message).toBe(
+      "Mila is still reading your photo. You can close this; your result will wait for you here.",
+    );
+    expect(failure.outOfCredits).toBe(false);
+  });
+
+  test("a tab left open across a deploy is asked to refresh, not to wait", () => {
+    const failure = describeColorReadError(COLOR_READ_STALE_BUNDLE);
+    expect(failure.message).toMatch(/refresh the page/i);
+    expect(failure.outOfCredits).toBe(false);
+  });
+
+  test("no member-facing line has an em or en dash", () => {
+    for (const code of [
+      ...SLOW_CODES,
+      "ANALYSIS_RATE_LIMITED",
+      "ANALYSIS_PARSING_FAILED",
+      INSUFFICIENT_CREDITS,
+      COLOR_READ_TIMEOUT,
+      COLOR_READ_STALE_BUNDLE,
+      undefined,
+    ]) {
+      expect(describeColorReadError(code).message).not.toMatch(/[–—]/);
     }
   });
 });

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import type * as z from "zod";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,13 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordVisibilityButton } from "@/components/ui/password-visibility-button";
+import { authFormOptions, describedBy, loginSchema } from "@/components/login/auth-validation";
+import { FieldError } from "@/components/login/field-error";
 import { useCaptcha } from "@/components/login/use-captcha";
 import { errorMessage } from "@/lib/utils";
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid studio email address." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-});
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
@@ -40,10 +36,7 @@ export function LoginForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email, password: "" },
-  });
+  } = useForm<LoginFormValues>(authFormOptions(loginSchema, { email, password: "" }));
   const emailField = register("email");
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -70,7 +63,7 @@ export function LoginForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="login-email" className="text-xs">
           Email Address
@@ -78,21 +71,23 @@ export function LoginForm({
         <Input
           id="login-email"
           type="email"
+          // src: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill-field-name · 2026-10-07
+          // The email is this account's sign-in name, so it is the `username` that
+          // `current-password` below is "the current password for".
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           placeholder="name@studio.com"
           className="h-10"
           aria-invalid={errors.email ? true : undefined}
-          aria-describedby={errors.email ? "login-email-error" : undefined}
+          aria-describedby={describedBy(errors.email && "login-email-error")}
           {...emailField}
           onChange={(e) => {
             emailField.onChange(e);
             onEmailChange(e.target.value);
           }}
         />
-        {errors.email && (
-          <p id="login-email-error" className="text-xs text-destructive">
-            {errors.email.message}
-          </p>
-        )}
+        <FieldError id="login-email-error" message={errors.email?.message} />
       </div>
 
       <div className="space-y-1.5">
@@ -103,19 +98,16 @@ export function LoginForm({
           <Input
             id="login-password"
             type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
+            autoComplete="current-password"
+            placeholder="Your password"
             className="h-10 pr-10"
             aria-invalid={errors.password ? true : undefined}
-            aria-describedby={errors.password ? "login-password-error" : undefined}
+            aria-describedby={describedBy(errors.password && "login-password-error")}
             {...register("password")}
           />
           <PasswordVisibilityButton visible={showPassword} onToggle={onToggleShowPassword} />
         </div>
-        {errors.password && (
-          <p id="login-password-error" className="text-xs text-destructive">
-            {errors.password.message}
-          </p>
-        )}
+        <FieldError id="login-password-error" message={errors.password?.message} />
       </div>
 
       {captcha.field}

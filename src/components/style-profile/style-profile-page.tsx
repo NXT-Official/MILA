@@ -4,6 +4,7 @@ import { type StudioColorProfile } from "@/lib/analyzePersonalColor.functions";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/use-auth";
+import { useRetryWhenSessionReturns } from "@/hooks/use-auth-connection";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { queryKeys } from "@/constants/query-keys";
@@ -42,6 +43,10 @@ import { memberBodyType, withChosenBodyType } from "@/components/style-profile/m
 import { useServerFn } from "@tanstack/react-start";
 import { deleteMyProfilePhoto } from "@/lib/profile-photo.functions";
 import { Trash2 } from "lucide-react";
+import { useLocation } from "@tanstack/react-router";
+import { AuthReconnecting } from "@/components/layout/auth-reconnecting";
+import { loginRedirectSearch } from "@/lib/safe-redirect";
+import { profileLoadOutcome } from "@/components/style-profile/profile-load";
 
 function readString(value: Json | undefined): string | null {
   return typeof value === "string" ? value : null;
@@ -49,8 +54,17 @@ function readString(value: Json | undefined): string | null {
 
 export function StyleProfile() {
   const { user } = useAuth();
+  // Effects below are keyed on the id, never the user object: a token refresh
+  // or tab return must not reload the profile over her unsaved edits.
+  const userId = user?.id;
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
+  // Her real row never arrived (offline, server error, session reconnecting):
+  // show the calm try-again state, never a blank editable form whose defaults
+  // one tap would save over her colour analysis.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const href = useLocation({ select: (location) => location.href });
   const [form, setForm] = useState({
     full_name: "",
     skin_undertone: "",
@@ -82,15 +96,24 @@ export function StyleProfile() {
   const deletePhoto = useServerFn(deleteMyProfilePhoto);
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let cancelled = false;
     supabase
       .from("profiles")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return;
+        if (profileLoadOutcome({ data, error }) === "failed") {
+          if (error) console.error("[StyleProfile] load failed", error);
+          setLoadFailed(true);
+          setLoading(false);
+          // initialLoadedRef stays false: no autosave or manual save can run
+          // on anything but her real row.
+          return;
+        }
+        setLoadFailed(false);
         if (data) {
           const json =
             data.color_profile &&
@@ -136,7 +159,7 @@ export function StyleProfile() {
                 hair_type: resolvedHair,
                 updated_at: new Date().toISOString(),
               } as never)
-              .eq("id", user.id)
+              .eq("id", userId)
               .then(({ error }) => {
                 if (error) console.error("[StyleProfile] backfill FAILED", error);
               });
@@ -183,7 +206,14 @@ export function StyleProfile() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [userId, loadAttempt]);
+
+  // Her session came back (the note's Try again, or auth-js's own refresh):
+  // load her row again by itself, with no second tap on the inline state (R-4).
+  useRetryWhenSessionReturns(loadFailed, () => {
+    setLoading(true);
+    setLoadAttempt((n) => n + 1);
+  });
 
   async function commitManual(over: {
     face?: string;
@@ -199,6 +229,9 @@ export function StyleProfile() {
       "Medium Contrast";
     const seasonStr = over.season ?? dossier.season;
     const bodyStr = over.body ?? form.body_type ?? dossier.bodyType;
+    // Never save before her real profile has loaded: the base would be the
+    // defaults, not her analysis.
+    if (!initialLoadedRef.current) return;
     if (!user || !face || !contrast || !seasonStr || !bodyStr) return;
     const season = seasonStr as Season;
     const bodyType = bodyStr as BodyType;
@@ -268,7 +301,7 @@ export function StyleProfile() {
   }
 
   useEffect(() => {
-    if (!user || !initialLoadedRef.current) return;
+    if (!userId || !initialLoadedRef.current) return;
     const payload = {
       skin_undertone: form.skin_undertone || null,
       color_season: form.color_season || null,
@@ -284,7 +317,7 @@ export function StyleProfile() {
       const { error } = await supabase
         .from("profiles")
         .update({ ...payload, updated_at: new Date().toISOString() } as never)
-        .eq("id", user.id);
+        .eq("id", userId);
       if (error) {
         console.error("[StyleProfile] auto-save FAILED", error, payload);
         setSyncStatus("error");
@@ -292,11 +325,11 @@ export function StyleProfile() {
       }
       lastSavedRef.current = sig;
       setSyncStatus("synced");
-      void queryClient.invalidateQueries({ queryKey: queryKeys.profile(user.id) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile(userId) });
     }, 600);
     return () => window.clearTimeout(t);
   }, [
-    user,
+    userId,
     form.skin_undertone,
     form.color_season,
     form.body_type,
@@ -429,6 +462,15 @@ export function StyleProfile() {
           <div className="text-xs tracking-widest text-muted-foreground animate-pulse">
             Loading your profile…
           </div>
+        ) : loadFailed ? (
+          <AuthReconnecting
+            inline
+            onRetry={() => {
+              setLoading(true);
+              setLoadAttempt((n) => n + 1);
+            }}
+            signInSearch={loginRedirectSearch(href)}
+          />
         ) : (
           <>
             {user && <StyleAnalysisNudge userId={user.id} />}

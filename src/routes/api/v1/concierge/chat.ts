@@ -30,7 +30,11 @@ export async function handleConciergeChat(
       throw new DomainValidationError("Mila couldn't read that message. Please try again.");
     }
 
-    const reply = await deps.conciergeChatForUser(supabase, userId, parsed.data);
+    // With a clientRequestId, a turn still being produced is answered
+    // `{ status: "running", jobId }`; builds without one wait for it.
+    const reply = parsed.data.clientRequestId
+      ? await deps.conciergeChatForUser(supabase, userId, parsed.data, { inFlight: "report" })
+      : await deps.conciergeChatForUser(supabase, userId, parsed.data);
     return Response.json(reply);
   } catch (error) {
     return respondWithError("concierge/chat", error);

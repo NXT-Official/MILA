@@ -25,7 +25,11 @@ export async function handleAnalysisOutfit(
     const body = await parseJsonBody(request);
     const input = AnalyzeOutfitInputSchema.parse(body);
 
-    const result = await deps.analyzeOutfitForUser(supabase, userId, input);
+    // A client that sends a request id handles the `running` answer; the rest
+    // wait for the read, as before.
+    const result = input.clientRequestId
+      ? await deps.analyzeOutfitForUser(supabase, userId, input, { inFlight: "report" })
+      : await deps.analyzeOutfitForUser(supabase, userId, input, { inFlight: "attach" });
     return Response.json(result);
   } catch (error) {
     return respondWithError("analysis/outfit", error);

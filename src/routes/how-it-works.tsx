@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MARKETING_SEO, pageHead, siteFromMatches } from "@/lib/site-seo";
 import {
   loadLandingContentForRoute,
   shouldReloadLandingRoute,
@@ -7,7 +8,11 @@ import {
 import { HowItWorksPageView } from "@/components/landing/how-it-works-page-view";
 
 export const Route = createFileRoute("/how-it-works")({
-  head: () => ({ meta: [{ title: "How it Works — Mila" }] }),
+  head: ({ matches }) =>
+    pageHead(
+      { path: "/how-it-works", ...MARKETING_SEO["/how-it-works"] },
+      siteFromMatches(matches),
+    ),
   loader: loadLandingContentForRoute,
   shouldReload: shouldReloadLandingRoute,
   staleTime: 5 * 60 * 1000,

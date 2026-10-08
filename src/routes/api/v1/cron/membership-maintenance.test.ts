@@ -73,3 +73,65 @@ describe("GET /api/v1/cron/membership-maintenance", () => {
     expect(res.status).toBe(500);
   });
 });
+
+describe("GET /api/v1/cron/membership-maintenance — generation jobs reaper", () => {
+  test("reaps overdue generation jobs after the sweep and reports the count", async () => {
+    const reap = mock(async () => ({ available: true, reaped: 3 }));
+    const deps = fakeDeps({ reap });
+    const res = await handleMembershipMaintenance(
+      get({ authorization: "Bearer cron-secret" }),
+      deps,
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      ...SUMMARY,
+      generationJobs: { available: true, reaped: 3 },
+    });
+    expect(reap).toHaveBeenCalledTimes(1);
+  });
+
+  test("a failing reaper never fails the membership sweep", async () => {
+    const deps = fakeDeps({
+      reap: mock(async () => {
+        throw new Error("connection reset");
+      }),
+    });
+    const res = await handleMembershipMaintenance(
+      get({ authorization: "Bearer cron-secret" }),
+      deps,
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      ...SUMMARY,
+      generationJobs: { available: true, reaped: 0, error: "reap_failed" },
+    });
+  });
+
+  test("the reaper does not run for a refused request", async () => {
+    const reap = mock(async () => ({ available: true, reaped: 0 }));
+    const res = await handleMembershipMaintenance(get(), fakeDeps({ reap }));
+    expect(res.status).toBe(401);
+    expect(reap).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/v1/cron/membership-maintenance — reaper when the sweep fails", () => {
+  test("stuck credits are still refunded when the membership sweep throws", async () => {
+    const reap = mock(async () => ({ available: true, reaped: 1 }));
+    const deps = fakeDeps({
+      run: mock(async () => {
+        throw new Error("subscriptions not read");
+      }),
+      reap,
+    });
+    const res = await handleMembershipMaintenance(
+      get({ authorization: "Bearer cron-secret" }),
+      deps,
+    );
+
+    expect(res.status).toBe(500);
+    expect(reap).toHaveBeenCalledTimes(1);
+  });
+});

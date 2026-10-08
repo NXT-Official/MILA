@@ -74,6 +74,48 @@ describe("POST /api/v1/analysis/outfit", () => {
     expect(json.error.retryAfter).toBe(120);
   });
 
+  test("clientRequestId gives inFlight report and passes { status: running, jobId } through", async () => {
+    const clientRequestId = "6f9c2a8e-3b1d-4c7a-9e2f-0a1b2c3d4e5f";
+    const deps = fakeDeps({
+      analyzeOutfitForUser: mock(async () => ({ status: "running", jobId: "job-9" })),
+    });
+    const res = await handleAnalysisOutfit(
+      postRequest({ ...VALID_INPUT, clientRequestId, saveToHistory: true }, "good-token"),
+      deps,
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: "running", jobId: "job-9" });
+    const call = (deps.analyzeOutfitForUser as ReturnType<typeof mock>).mock.calls[0];
+    expect(call[2]).toMatchObject({ clientRequestId, saveToHistory: true });
+    expect(call[3]).toEqual({ inFlight: "report" });
+  });
+
+  test("without clientRequestId the answer is today's shape and the call attaches", async () => {
+    const deps = fakeDeps();
+    const res = await handleAnalysisOutfit(postRequest(VALID_INPUT, "good-token"), deps);
+    const json = await res.json();
+
+    expect(json).toEqual({
+      color_match: "Great match",
+      silhouette: "Flattering",
+      overall_score: 88,
+      verdict: "Looks great, try a belt.",
+    });
+    const call = (deps.analyzeOutfitForUser as ReturnType<typeof mock>).mock.calls[0];
+    expect(call[3]).toEqual({ inFlight: "attach" });
+  });
+
+  test("a malformed clientRequestId -> 400 VALIDATION_FAILED", async () => {
+    const deps = fakeDeps();
+    const res = await handleAnalysisOutfit(
+      postRequest({ ...VALID_INPUT, clientRequestId: "nope" }, "good-token"),
+      deps,
+    );
+    expect(res.status).toBe(400);
+    expect(deps.analyzeOutfitForUser).not.toHaveBeenCalled();
+  });
+
   test("invalid image URL -> 400 VALIDATION_FAILED", async () => {
     const deps = fakeDeps();
     const res = await handleAnalysisOutfit(

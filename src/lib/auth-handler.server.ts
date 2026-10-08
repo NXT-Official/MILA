@@ -1,5 +1,5 @@
 import { createClient, type Session } from "@supabase/supabase-js";
-import { getRequestUrl } from "@tanstack/react-start/server";
+import { getRequestHeader, getRequestUrl } from "@tanstack/react-start/server";
 import type { Database } from "@/integrations/supabase/types";
 import { requireEnv } from "./env";
 import {
@@ -13,6 +13,8 @@ import {
   type NewPasswordInput,
 } from "./auth-input";
 import { captureServerException } from "./sentry.server";
+import { authCallbackUrl } from "./safe-redirect";
+import { authOriginConfig, pickAuthOrigin } from "./auth-origin";
 
 type AuthOperation = "login" | "signup";
 
@@ -26,8 +28,31 @@ function authClient() {
   });
 }
 
+/**
+ * The origin for links in auth emails. The request's own URL (the host Vercel
+ * routed it to) is only a hint: it is used only when it is a known Mila
+ * deployment, otherwise the deployment's canonical URL is. An unknown `Host`
+ * or `X-Forwarded-Host` never reaches an email (`getRequestUrl({
+ * xForwardedHost: true })` reads `X-Forwarded-Host`, so its value is validated
+ * like any header). The browser `Origin` header never picks the deployment: a
+ * real browser POST always sends a same-origin Origin (so it adds nothing),
+ * and a link must stay on the deployment that served the request. It is
+ * accepted here for callers but never decides.
+ * // src: node_modules/@tanstack/start-server-core/src/request-response.ts
+ * //      (getRequestHeader, getRequestUrl) · 1.169.39
+ */
+export function authRequestOrigin(
+  request: { originHeader: string | undefined; requestUrlOrigin: string },
+  env: Record<string, string | undefined> = process.env,
+): string {
+  return pickAuthOrigin([request.requestUrlOrigin], authOriginConfig(env));
+}
+
 function requestOrigin(): string {
-  return getRequestUrl({ xForwardedHost: true, xForwardedProto: true }).origin;
+  return authRequestOrigin({
+    originHeader: getRequestHeader("origin"),
+    requestUrlOrigin: getRequestUrl({ xForwardedHost: true, xForwardedProto: true }).origin,
+  });
 }
 
 export type AuthDependencies = {
@@ -81,6 +106,10 @@ export async function authenticateWithPassword(
           options: {
             data: { username: (data as SignupInput).username },
             captchaToken: data.captchaToken,
+            // The confirmation link returns to the deployment she signed up
+            // on (the request origin), not the project's Site URL, and to the
+            // page she was on.
+            emailRedirectTo: authCallbackUrl(deps.origin(), (data as SignupInput).next),
           },
         });
   if (result.error) {

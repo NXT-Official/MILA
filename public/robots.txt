@@ -1,5 +1,5 @@
-# Production domain not yet confirmed in repo config (checked .env.example,
-# vite.config.ts) — replace the placeholder below once it's known.
+# The sitemap URL is static (robots.txt cannot read env). It is the canonical live
+# origin (MILA_DEPLOYMENT_ORIGINS[0] in src/lib/auth-origin.ts); a test keeps them equal.
 User-agent: *
 Allow: /
 Disallow: /dashboard
@@ -17,4 +17,4 @@ Disallow: /onboarding
 Disallow: /auth/
 Disallow: /api/
 
-Sitemap: https://your-production-domain.example/sitemap.xml
+Sitemap: https://mila-umber.vercel.app/sitemap.xml

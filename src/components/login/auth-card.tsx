@@ -8,20 +8,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginForm } from "./login-form";
 import { SignupForm } from "./signup-form";
+import { startGoogleSignIn } from "./google-sign-in";
 
-async function handleGoogleOAuth() {
+async function handleGoogleOAuth(returnTo: string | undefined) {
   try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
-    });
+    const { error } = await startGoogleSignIn(supabase.auth, window.location.origin, returnTo);
     if (error) toast.error("Google sign-in failed. Please try again.");
   } catch {
     toast.error("Google sign-in unavailable.");
   }
 }
 
-export function AuthCard() {
+/** `returnTo`: the page she was on before being asked to sign in (already safe). */
+export function AuthCard({ returnTo }: { returnTo?: string } = {}) {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -40,7 +39,7 @@ export function AuthCard() {
         <Button
           type="button"
           variant="outline"
-          onClick={handleGoogleOAuth}
+          onClick={() => handleGoogleOAuth(returnTo)}
           className="w-full h-10 gap-2"
         >
           <img src="/google.svg" alt="google-icon" className="size-5" />
@@ -96,6 +95,7 @@ export function AuthCard() {
               onEmailChange={setEmail}
               showPassword={showPassword}
               onToggleShowPassword={toggleShowPassword}
+              returnTo={returnTo}
             />
           </TabsContent>
         </Tabs>

@@ -22,6 +22,7 @@ import { ShopThisLookGrid } from "@/components/dashboard/shop-look-grid";
 import { EmptyMediaState } from "@/components/dashboard/empty-media-state";
 import type { GeneratedLook } from "@/lib/generate-outfit.functions";
 import type { DashboardProfile } from "@/lib/queries/profile";
+import type { GenerationWait } from "@/lib/queries/generation-jobs";
 import type { Vibe } from "@/components/dashboard/hero-generator-form";
 import {
   PHOTO_PREVIEW_BUSY_REASON,
@@ -47,6 +48,13 @@ export function HeroResultPanel({
   onSaveLook,
   onGenerateAnother,
   onAskConcierge,
+  lookWait,
+  styleSheetWait,
+  photoPreviewWait,
+  styleSheetNotDrawn = false,
+  lookFromLabel = null,
+  lookCheckReason = null,
+  saveConfirming = false,
 }: {
   generating: boolean;
   look: GeneratedLook | null;
@@ -66,8 +74,30 @@ export function HeroResultPanel({
   onSaveLook: () => void;
   onGenerateAnother: () => void;
   onAskConcierge: () => void;
+  /** Staged wait copy for each generation in progress (absent: the original copy). */
+  lookWait?: GenerationWait | null;
+  styleSheetWait?: GenerationWait | null;
+  photoPreviewWait?: GenerationWait | null;
+  /**
+   * This look has no style sheet attempt to report (none was started for it
+   * here, e.g. it came back after a reload): offer one instead of saying a
+   * sheet "couldn't be generated".
+   */
+  styleSheetNotDrawn?: boolean;
+  /** For a look that came back from before today: "From last night, 11:40 PM". */
+  lookFromLabel?: string | null;
+  /**
+   * A new look waits while her last one is being checked ("Checking your last
+   * look…"): "Try another look" is disabled and says so, like Create (NEW-M1).
+   */
+  lookCheckReason?: string | null;
+  /**
+   * What this look was asked for is still being confirmed (round 5, N-3):
+   * Save waits, and says so, so a guessed vibe is never saved.
+   */
+  saveConfirming?: boolean;
 }) {
-  if (generating) return <OutfitResultSkeleton />;
+  if (generating) return <OutfitResultSkeleton wait={lookWait} />;
 
   if (!look) {
     return (
@@ -91,12 +121,15 @@ export function HeroResultPanel({
   }
 
   // A new look must wait for the style sheet or portrait still drawing, or the
-  // old look's picture would land on the new look.
-  const newLookBlockedReason = styleSheetLoading
-    ? STYLE_SHEET_BUSY_REASON
-    : photoPreviewLoading
-      ? PHOTO_PREVIEW_BUSY_REASON
-      : null;
+  // old look's picture would land on the new look; and for the check on her
+  // last look.
+  const newLookBlockedReason =
+    lookCheckReason ??
+    (styleSheetLoading
+      ? STYLE_SHEET_BUSY_REASON
+      : photoPreviewLoading
+        ? PHOTO_PREVIEW_BUSY_REASON
+        : null);
 
   // The save button no longer needs a visual first: every generation is
   // auto-saved, and this button (which now saves without an image when none
@@ -121,6 +154,11 @@ export function HeroResultPanel({
         <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs font-medium uppercase tracking-label tabular-nums">
           Vibe fit {look.vibe_alignment_score}/10
         </span>
+        {lookFromLabel && (
+          <span className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
+            {lookFromLabel}
+          </span>
+        )}
         {climate && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs uppercase tracking-label tabular-nums text-muted-foreground">
             <ClimateGlyph icon={climate.icon} className="size-3" />
@@ -146,9 +184,13 @@ export function HeroResultPanel({
                   <Skeleton className="absolute inset-0 bg-accent-soft/50" />
                   <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
                     <Loader2 className="size-5 animate-spin text-ink" aria-hidden="true" />
-                    <p className="font-serif text-lg text-foreground">Building your style sheet…</p>
+                    <p className="font-serif text-lg text-foreground">
+                      {styleSheetWait ? styleSheetWait.stage : "Building your style sheet…"}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Rendering your identity-locked 5-view turnaround.
+                      {styleSheetWait
+                        ? styleSheetWait.detail
+                        : "Rendering your identity-locked 5-view turnaround."}
                     </p>
                   </div>
                 </div>
@@ -177,6 +219,22 @@ export function HeroResultPanel({
                     Identity-locked style sheet
                   </p>
                 </div>
+              ) : styleSheetNotDrawn ? (
+                <EmptyMediaState
+                  message="Your look is ready. Its style sheet hasn't been drawn yet."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="pill"
+                      onClick={onPreviewStyleSheet}
+                      aria-describedby="visual-cost-note"
+                      disabled={generating}
+                    >
+                      <Sparkles aria-hidden="true" />
+                      Draw style sheet
+                    </Button>
+                  }
+                />
               ) : (
                 <EmptyMediaState
                   message="The outfit is ready, but the style sheet couldn't be generated."
@@ -185,6 +243,7 @@ export function HeroResultPanel({
                       variant="outline"
                       size="pill"
                       onClick={onPreviewStyleSheet}
+                      aria-describedby="visual-cost-note"
                       disabled={generating}
                     >
                       <RotateCcw aria-hidden="true" />
@@ -202,6 +261,7 @@ export function HeroResultPanel({
                     loading={photoPreviewLoading}
                     disabled={generating}
                     onClick={onPreviewOnMyPhoto}
+                    aria-describedby="visual-cost-note"
                   >
                     {look.imageDataUri
                       ? "Regenerate portrait preview"
@@ -219,6 +279,7 @@ export function HeroResultPanel({
                   onRetry={onPreviewOnMyPhoto}
                   retryDisabled={generating || photoPreviewLoading}
                   label="AI-edited preview of your photo"
+                  wait={photoPreviewWait}
                 />
               ) : null}
             </div>
@@ -237,12 +298,16 @@ export function HeroResultPanel({
           <Button
             variant="outline"
             onClick={onSaveLook}
-            disabled={savingLook || lookSaved || styleSheetLoading}
+            disabled={savingLook || saveConfirming || lookSaved || styleSheetLoading}
             size="pill"
           >
             {lookSaved ? (
               <>
                 <CheckCircle2 aria-hidden="true" /> Saved
+              </>
+            ) : saveConfirming ? (
+              <>
+                <Loader2 className="animate-spin" aria-hidden="true" /> Confirming your look…
               </>
             ) : savingLook ? (
               <>
@@ -258,6 +323,7 @@ export function HeroResultPanel({
             <Button
               variant="ghost"
               onClick={onPreviewStyleSheet}
+              aria-describedby="visual-cost-note"
               disabled={styleSheetLoading || generating}
               size="pill"
             >
@@ -298,7 +364,7 @@ export function HeroResultPanel({
             {newLookBlockedReason}
           </p>
         )}
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p id="visual-cost-note" className="mt-3 text-xs text-muted-foreground">
           Each new look or visual uses one credit.
         </p>
       </motion.div>

@@ -1,17 +1,28 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { cn, errorMessage } from "@/lib/utils";
+import { errorMessage } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useMemberIdentity } from "@/hooks/use-member-identity";
+import { useLiveValue } from "@/hooks/use-live-value";
+import { useMinWidth } from "@/hooks/use-min-width";
 import { supabase } from "@/integrations/supabase/client";
 import { useCaptcha } from "@/components/login/use-captcha";
 import { HUBS } from "@/constants/climate";
 import { passwordChecks } from "@/constants/password";
-import { fetchDefaultHubId, localDefaultHubId, saveDefaultHubId } from "@/lib/default-hub";
+import {
+  attemptSaveDefaultHub,
+  fetchDefaultHubId,
+  hubSaveFollowUp,
+  localDefaultHubId,
+} from "@/lib/default-hub";
+import { runMembershipAction } from "@/lib/account-errors";
+import { fetchAccountExport, type ExportClient } from "@/lib/account-export";
+import { getSignInMethods } from "@/lib/auth-identities";
+import { requestEmailChange } from "@/lib/email-change";
 import { queryKeys } from "@/constants/query-keys";
 import { profileQueryOptions } from "@/lib/queries/profile";
 import { creditsQueryOptions } from "@/lib/queries/credits";
@@ -19,6 +30,14 @@ import { mySubscriptionQueryOptions } from "@/lib/queries/subscriptions";
 import { cancelMySubscription, resumeMySubscription } from "@/lib/subscriptions.functions";
 import { deleteMyAccount, notifyPasswordChanged } from "@/lib/account.functions";
 import { CancelMembershipDialog } from "@/components/account/cancel-membership-dialog";
+import { AccountShell } from "@/components/account/account-menu";
+import { SavedPiecesAccountRow } from "@/components/saved/saved-pieces-link";
+import {
+  planSectionChange,
+  sanitizeAccountSection,
+  validateAccountSearch,
+  type AccountSection,
+} from "@/components/account/account-sections";
 import { MembershipView } from "@/components/account/drawer-views/membership-view";
 import { PreferencesView } from "@/components/account/drawer-views/preferences-view";
 import { LocationView } from "@/components/account/drawer-views/location-view";
@@ -27,23 +46,31 @@ import { PrivacyView } from "@/components/account/drawer-views/privacy-view";
 import { PageHeader } from "@/components/ui/page-header";
 
 export const Route = createFileRoute("/_authenticated/_app/account")({
+  validateSearch: validateAccountSearch,
   component: AccountPage,
 });
-
-type AccountSection = "membership" | "preferences" | "location" | "privacy" | "security";
-
-const SECTIONS: { id: AccountSection; label: string }[] = [
-  { id: "membership", label: "Membership" },
-  { id: "preferences", label: "Preferences" },
-  { id: "location", label: "Default Location" },
-  { id: "security", label: "Email & Security" },
-  { id: "privacy", label: "Privacy & Data" },
-];
 
 const noop = () => {};
 
 function AccountPage() {
-  const [section, setSection] = useState<AccountSection>("membership");
+  // The open section lives in the URL (?section=security): browser and phone
+  // Back return to the list, and a section can be linked to. null = still on
+  // the list (the whole screen on phone and tablet); from lg up the list sits
+  // beside the content and Membership shows by default.
+  // src: https://tanstack.com/router/latest/docs/framework/react/guide/search-params · @tanstack/react-router 1.170.41
+  // The router merges raw URL params into what useSearch() returns, so an
+  // unknown id can still arrive here: sanitize again and fall back to the list.
+  const { section: searchSection } = Route.useSearch();
+  const section: AccountSection | null = sanitizeAccountSection(searchSection) ?? null;
+  const navigate = Route.useNavigate();
+  // 64rem is Tailwind's `lg`, where the layout switches to list + content.
+  const wide = useMinWidth("64rem");
+  // Async saves read the section they settle in, not the one they started in,
+  // and null once she has left the page altogether (see useLiveValue).
+  const sectionRef = useLiveValue(section);
+  // True while the entry just before this one is the list, so the in-page Back
+  // can be a real history Back instead of stacking another list entry.
+  const cameFromList = useRef(false);
   const { user: authUser, signOut, signingOut } = useAuth();
   const queryClient = useQueryClient();
 
@@ -89,38 +116,75 @@ function AccountPage() {
   const [canceling, setCanceling] = useState(false);
   const [resuming, setResuming] = useState(false);
 
+  // Both calls can reject (network drop, stale tab); runMembershipAction turns
+  // every failure into one calm sentence so the button never just stops spinning.
   async function handleResume() {
     setResuming(true);
-    try {
-      const result = await resumeSubscription();
-      if ("error" in result) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(`Your membership renews on ${new Date(result.renewsAt).toLocaleDateString()}.`);
-      queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
-    } finally {
-      setResuming(false);
+    const outcome = await runMembershipAction("resume", () => resumeSubscription());
+    setResuming(false);
+    if (!outcome.ok) {
+      toast.error(outcome.message);
+      return;
     }
+    toast.success(
+      `Your membership renews on ${new Date(outcome.value.renewsAt).toLocaleDateString()}.`,
+    );
+    queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
   }
 
   async function handleConfirmCancel() {
     setCanceling(true);
-    try {
-      const result = await cancelSubscription();
-      if ("error" in result) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success(`Your membership ends on ${new Date(result.endsAt).toLocaleDateString()}.`);
-      setCancelDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
-    } finally {
-      setCanceling(false);
+    const outcome = await runMembershipAction("cancel", () => cancelSubscription());
+    setCanceling(false);
+    if (!outcome.ok) {
+      toast.error(outcome.message);
+      return;
     }
+    toast.success(
+      `Your membership ends on ${new Date(outcome.value.endsAt).toLocaleDateString()}.`,
+    );
+    setCancelDialogOpen(false);
+    queryClient.invalidateQueries({ queryKey: queryKeys.mySubscription(authUser?.id) });
   }
 
   const [defaultHubId, setDefaultHubId] = useState<string>(() => localDefaultHubId() ?? HUBS[0].id);
+  const [savingHubId, setSavingHubId] = useState<string | null>(null);
+  const [failedHubId, setFailedHubId] = useState<string | null>(null);
+
+  async function handleSelectHub(hubId: string) {
+    setSavingHubId(hubId);
+    setFailedHubId(null);
+    const { ok } = await attemptSaveDefaultHub(authUser?.id, hubId);
+    setSavingHubId(null);
+    // She may have tapped Back while this was saving: a late save must not pull
+    // her to Preferences, and a failure she can no longer see inline is a toast.
+    const next = hubSaveFollowUp(ok, sectionRef.current === "location");
+    if (next.inlineRetry) setFailedHubId(hubId);
+    if (next.toastFailure) {
+      toast.error("We couldn't save your default location. Open Default Location to try again.");
+    }
+    if (next.adoptHub) {
+      setDefaultHubId(hubId);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.profile(authUser?.id) });
+    }
+    if (next.goToPreferences) openSection("preferences");
+  }
+
+  // Going from the list into a section is the one history entry (so phone Back
+  // returns to the list); moves between sections replace it. See planSectionChange.
+  function openSection(next: AccountSection | null) {
+    setFailedHubId(null);
+    const plan = planSectionChange(section, next, { wide, cameFromList: cameFromList.current });
+    cameFromList.current = plan.cameFromList;
+    if (plan.kind === "history-back") {
+      window.history.back();
+      return;
+    }
+    void navigate({
+      search: plan.section ? { section: plan.section } : {},
+      replace: plan.replace,
+    });
+  }
 
   useEffect(() => {
     if (!authUser) return;
@@ -148,7 +212,8 @@ function AccountPage() {
     if (!newEmail.trim() || newEmail === authUser?.email) return;
     setEmailSubmitting(true);
     try {
-      const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+      // The confirmation link returns her to this deployment's Account page.
+      const { error } = await requestEmailChange(supabase.auth, newEmail, window.location.origin);
       if (error) throw error;
       toast.success("Check both your old and new inbox to confirm the email change.");
       setNewEmail("");
@@ -178,7 +243,7 @@ function AccountPage() {
       });
       if (reauthError) {
         if (reauthError.code === "captcha_failed") {
-          throw new Error("The human check didn't go through — verify again and retry.");
+          throw new Error("The human check didn't go through. Verify again and retry.");
         }
         throw new Error("Current password is incorrect.");
       }
@@ -204,22 +269,22 @@ function AccountPage() {
     if (!authUser || exporting) return;
     setExporting(true);
     try {
-      const [profileRow, outfits, posts, favorites] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", authUser.id).maybeSingle(),
-        supabase.from("outfits").select("*").eq("user_id", authUser.id),
-        supabase.from("posts").select("*").eq("user_id", authUser.id),
-        supabase.from("user_favorites").select("*").eq("user_id", authUser.id),
-      ]);
-      const payload = {
-        exportedAt: new Date().toISOString(),
-        account: { id: authUser.id, email: authUser.email },
-        profile: profileRow.data,
-        outfits: outfits.data ?? [],
-        posts: posts.data ?? [],
-        favorites: favorites.data ?? [],
-      };
+      // Typed as a loose client on purpose: `saved_products` comes from a
+      // migration that may not be applied yet, so it is not in the generated
+      // types and must be skipped quietly when the table is missing.
+      const result = await fetchAccountExport(
+        { id: authUser.id, email: authUser.email },
+        supabase as unknown as ExportClient,
+      );
+      if (!result.ok) {
+        // A file with rows missing would look complete and not be. Say what
+        // could not be included and let her retry rather than hand over a
+        // partial export.
+        toast.error(result.message);
+        return;
+      }
       const url = URL.createObjectURL(
-        new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
+        new Blob([JSON.stringify(result.payload, null, 2)], { type: "application/json" }),
       );
       const a = document.createElement("a");
       a.href = url;
@@ -232,102 +297,89 @@ function AccountPage() {
   }
 
   const { displayName, handle } = useMemberIdentity();
+  const signInMethods = getSignInMethods(authUser);
+  const shownSection: AccountSection = section ?? "membership";
 
   return (
     <div className="atelier-page">
       <PageHeader
         kicker="Account"
         title="Your account."
-        description="Membership, preferences, and security — all in one place."
+        description="Membership, preferences and security, all in one place."
       />
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-[220px_1fr]">
-        <nav aria-label="Account sections" className="flex gap-1 overflow-x-auto md:flex-col">
-          {SECTIONS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setSection(s.id)}
-              aria-current={section === s.id ? "page" : undefined}
-              className={cn(
-                "atelier-focus-ring shrink-0 rounded-control px-4 py-2.5 text-left text-sm transition-colors md:w-full",
-                section === s.id
-                  ? "bg-accent-soft/60 text-accent font-medium"
-                  : "text-muted-foreground hover:bg-accent-soft/30 hover:text-ink",
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="min-w-0">
-          {section === "membership" ? (
-            <MembershipView
-              user={{
-                fullName: displayName,
-                username: handle,
-                season: profile?.color_season ?? null,
-                faceShape: profile?.face_shape ?? null,
-                hairType: profile?.hair_type ?? null,
-              }}
-              authUserId={authUser?.id}
-              subscription={subscription}
-              credits={credits ?? null}
-              onClose={noop}
-              resuming={resuming}
-              onResume={handleResume}
-              onCancelClick={() => setCancelDialogOpen(true)}
-            />
-          ) : section === "preferences" ? (
-            <PreferencesView
-              defaultHubId={defaultHubId}
-              onNavigate={setSection}
-              onSignOut={() => signOut()}
-              signingOut={signingOut}
-            />
-          ) : section === "location" ? (
-            <LocationView
-              defaultHubId={defaultHubId}
-              onSelectHub={(hubId) => {
-                setDefaultHubId(hubId);
-                void saveDefaultHubId(authUser?.id, hubId);
-                setSection("preferences");
-              }}
-            />
-          ) : section === "security" ? (
-            <SecurityView
-              authUserEmail={authUser?.email}
-              newEmail={newEmail}
-              onNewEmailChange={setNewEmail}
-              emailSubmitting={emailSubmitting}
-              onChangeEmail={changeEmail}
-              currentPassword={currentPassword}
-              onCurrentPasswordChange={setCurrentPassword}
-              newPassword={newPassword}
-              onNewPasswordChange={setNewPassword}
-              confirmPassword={confirmPassword}
-              onConfirmPasswordChange={setConfirmPassword}
-              newPasswordOk={newPasswordOk}
-              passwordSubmitting={passwordSubmitting}
-              onChangePassword={changePassword}
-              captchaField={captcha.field}
-              captchaReady={Boolean(captcha.token)}
-              deleteEmail={deleteEmail}
-              onDeleteEmailChange={setDeleteEmail}
-              deleteEmailMatches={deleteEmailMatches}
-              deleting={deleting}
-              onDeleteAccount={handleDeleteAccount}
-            />
-          ) : (
-            <PrivacyView
-              exporting={exporting}
-              onDownloadData={downloadData}
-              onNavigateSecurity={() => setSection("security")}
-            />
-          )}
-        </div>
-      </div>
+      <AccountShell
+        section={section}
+        wide={wide}
+        onSelect={openSection}
+        onBack={() => openSection(null)}
+        menuFooter={<SavedPiecesAccountRow />}
+      >
+        {shownSection === "membership" ? (
+          <MembershipView
+            user={{
+              fullName: displayName,
+              username: handle,
+              season: profile?.color_season ?? null,
+              faceShape: profile?.face_shape ?? null,
+              hairType: profile?.hair_type ?? null,
+            }}
+            authUserId={authUser?.id}
+            subscription={subscription}
+            credits={credits ?? null}
+            onClose={noop}
+            resuming={resuming}
+            onResume={handleResume}
+            onCancelClick={() => setCancelDialogOpen(true)}
+          />
+        ) : shownSection === "preferences" ? (
+          <PreferencesView
+            defaultHubId={defaultHubId}
+            onNavigate={openSection}
+            onSignOut={() => signOut()}
+            signingOut={signingOut}
+          />
+        ) : shownSection === "location" ? (
+          <LocationView
+            defaultHubId={defaultHubId}
+            onSelectHub={handleSelectHub}
+            savingHubId={savingHubId}
+            failedHubId={failedHubId}
+          />
+        ) : shownSection === "security" ? (
+          <SecurityView
+            authUserEmail={authUser?.email}
+            newEmail={newEmail}
+            onNewEmailChange={setNewEmail}
+            emailSubmitting={emailSubmitting}
+            onChangeEmail={changeEmail}
+            hasPassword={signInMethods.hasPassword}
+            signInProviders={signInMethods.providerLabels}
+            currentPassword={currentPassword}
+            onCurrentPasswordChange={setCurrentPassword}
+            newPassword={newPassword}
+            onNewPasswordChange={setNewPassword}
+            confirmPassword={confirmPassword}
+            onConfirmPasswordChange={setConfirmPassword}
+            newPasswordOk={newPasswordOk}
+            passwordSubmitting={passwordSubmitting}
+            onChangePassword={changePassword}
+            captchaField={captcha.field}
+            captchaReady={Boolean(captcha.token)}
+            deleteEmail={deleteEmail}
+            onDeleteEmailChange={setDeleteEmail}
+            deleteEmailMatches={deleteEmailMatches}
+            deleting={deleting}
+            onDeleteAccount={handleDeleteAccount}
+          />
+        ) : (
+          <PrivacyView
+            exporting={exporting}
+            onDownloadData={downloadData}
+            onNavigateSecurity={() => openSection("security")}
+          />
+        )}
+      </AccountShell>
 
       {subscription && !subscription.cancel_at_period_end && (
         <CancelMembershipDialog

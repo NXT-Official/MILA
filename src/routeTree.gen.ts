@@ -33,21 +33,26 @@ import { Route as AuthenticatedAppFeedRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/_app/history'
 import { Route as AuthenticatedAppPalettesRouteImport } from './routes/_authenticated/_app/palettes'
 import { Route as AuthenticatedAppPricingRouteImport } from './routes/_authenticated/_app/pricing'
+import { Route as AuthenticatedAppSavedRouteImport } from './routes/_authenticated/_app/saved'
 import { Route as AuthenticatedAppStyleProfileRouteImport } from './routes/_authenticated/_app/style-profile'
 import { Route as AuthenticatedOnboardingStyleProfileRouteImport } from './routes/_authenticated/onboarding/style-profile'
 import { Route as ApiWebhooksPaddleRouteImport } from './routes/api/webhooks/paddle'
 import { Route as AuthenticatedAppProfileUserIdRouteImport } from './routes/_authenticated/_app/profile.$userId'
 import { Route as ApiV1AccountDeleteRouteImport } from './routes/api/v1/account/delete'
+import { Route as ApiV1AnalysisBodyScanRouteImport } from './routes/api/v1/analysis/body-scan'
 import { Route as ApiV1AnalysisOutfitRouteImport } from './routes/api/v1/analysis/outfit'
 import { Route as ApiV1AnalysisPersonalColorRouteImport } from './routes/api/v1/analysis/personal-color'
 import { Route as ApiV1BillingCancelRouteImport } from './routes/api/v1/billing/cancel'
 import { Route as ApiV1BillingCheckoutUrlRouteImport } from './routes/api/v1/billing/checkout-url'
 import { Route as ApiV1BillingResumeRouteImport } from './routes/api/v1/billing/resume'
 import { Route as ApiV1BillingSyncRouteImport } from './routes/api/v1/billing/sync'
+import { Route as ApiV1CheckInIndexRouteImport } from './routes/api/v1/check-in/index'
+import { Route as ApiV1CheckInStatusRouteImport } from './routes/api/v1/check-in/status'
 import { Route as ApiV1ConciergeChatRouteImport } from './routes/api/v1/concierge/chat'
 import { Route as ApiV1CronMembershipMaintenanceRouteImport } from './routes/api/v1/cron/membership-maintenance'
 import { Route as ApiV1DupesFindRouteImport } from './routes/api/v1/dupes/find'
 import { Route as ApiV1DupesSimilarRouteImport } from './routes/api/v1/dupes/similar'
+import { Route as ApiV1GenerationJobsReapRouteImport } from './routes/api/v1/generation-jobs/reap'
 import { Route as ApiV1ItemsAnalyzeRouteImport } from './routes/api/v1/items/analyze'
 import { Route as ApiV1LookGenerateRouteImport } from './routes/api/v1/look/generate'
 import { Route as ApiV1LookImageRouteImport } from './routes/api/v1/look/image'
@@ -179,6 +184,11 @@ const AuthenticatedAppPricingRoute = AuthenticatedAppPricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppSavedRoute = AuthenticatedAppSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppStyleProfileRoute =
   AuthenticatedAppStyleProfileRouteImport.update({
     id: '/style-profile',
@@ -205,6 +215,11 @@ const AuthenticatedAppProfileUserIdRoute =
 const ApiV1AccountDeleteRoute = ApiV1AccountDeleteRouteImport.update({
   id: '/api/v1/account/delete',
   path: '/api/v1/account/delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1AnalysisBodyScanRoute = ApiV1AnalysisBodyScanRouteImport.update({
+  id: '/api/v1/analysis/body-scan',
+  path: '/api/v1/analysis/body-scan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1AnalysisOutfitRoute = ApiV1AnalysisOutfitRouteImport.update({
@@ -238,6 +253,16 @@ const ApiV1BillingSyncRoute = ApiV1BillingSyncRouteImport.update({
   path: '/api/v1/billing/sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1CheckInIndexRoute = ApiV1CheckInIndexRouteImport.update({
+  id: '/api/v1/check-in/',
+  path: '/api/v1/check-in/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1CheckInStatusRoute = ApiV1CheckInStatusRouteImport.update({
+  id: '/api/v1/check-in/status',
+  path: '/api/v1/check-in/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1ConciergeChatRoute = ApiV1ConciergeChatRouteImport.update({
   id: '/api/v1/concierge/chat',
   path: '/api/v1/concierge/chat',
@@ -257,6 +282,11 @@ const ApiV1DupesFindRoute = ApiV1DupesFindRouteImport.update({
 const ApiV1DupesSimilarRoute = ApiV1DupesSimilarRouteImport.update({
   id: '/api/v1/dupes/similar',
   path: '/api/v1/dupes/similar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1GenerationJobsReapRoute = ApiV1GenerationJobsReapRouteImport.update({
+  id: '/api/v1/generation-jobs/reap',
+  path: '/api/v1/generation-jobs/reap',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1ItemsAnalyzeRoute = ApiV1ItemsAnalyzeRouteImport.update({
@@ -328,21 +358,25 @@ export interface FileRoutesByFullPath {
   '/history': typeof AuthenticatedAppHistoryRoute
   '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
+  '/saved': typeof AuthenticatedAppSavedRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
+  '/api/v1/analysis/body-scan': typeof ApiV1AnalysisBodyScanRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
   '/api/v1/analysis/personal-color': typeof ApiV1AnalysisPersonalColorRoute
   '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
   '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
+  '/api/v1/check-in/status': typeof ApiV1CheckInStatusRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/cron/membership-maintenance': typeof ApiV1CronMembershipMaintenanceRoute
   '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
+  '/api/v1/generation-jobs/reap': typeof ApiV1GenerationJobsReapRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
   '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
   '/api/v1/look/image': typeof ApiV1LookImageRoute
@@ -352,6 +386,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
   '/api/v1/support/message': typeof ApiV1SupportMessageRoute
+  '/api/v1/check-in/': typeof ApiV1CheckInIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -375,21 +410,25 @@ export interface FileRoutesByTo {
   '/history': typeof AuthenticatedAppHistoryRoute
   '/palettes': typeof AuthenticatedAppPalettesRoute
   '/pricing': typeof AuthenticatedAppPricingRoute
+  '/saved': typeof AuthenticatedAppSavedRoute
   '/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
+  '/api/v1/analysis/body-scan': typeof ApiV1AnalysisBodyScanRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
   '/api/v1/analysis/personal-color': typeof ApiV1AnalysisPersonalColorRoute
   '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
   '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
+  '/api/v1/check-in/status': typeof ApiV1CheckInStatusRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/cron/membership-maintenance': typeof ApiV1CronMembershipMaintenanceRoute
   '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
+  '/api/v1/generation-jobs/reap': typeof ApiV1GenerationJobsReapRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
   '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
   '/api/v1/look/image': typeof ApiV1LookImageRoute
@@ -399,6 +438,7 @@ export interface FileRoutesByTo {
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
   '/api/v1/support/message': typeof ApiV1SupportMessageRoute
+  '/api/v1/check-in': typeof ApiV1CheckInIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -426,21 +466,25 @@ export interface FileRoutesById {
   '/_authenticated/_app/history': typeof AuthenticatedAppHistoryRoute
   '/_authenticated/_app/palettes': typeof AuthenticatedAppPalettesRoute
   '/_authenticated/_app/pricing': typeof AuthenticatedAppPricingRoute
+  '/_authenticated/_app/saved': typeof AuthenticatedAppSavedRoute
   '/_authenticated/_app/style-profile': typeof AuthenticatedAppStyleProfileRoute
   '/_authenticated/onboarding/style-profile': typeof AuthenticatedOnboardingStyleProfileRoute
   '/api/webhooks/paddle': typeof ApiWebhooksPaddleRoute
   '/_authenticated/_app/profile/$userId': typeof AuthenticatedAppProfileUserIdRoute
   '/api/v1/account/delete': typeof ApiV1AccountDeleteRoute
+  '/api/v1/analysis/body-scan': typeof ApiV1AnalysisBodyScanRoute
   '/api/v1/analysis/outfit': typeof ApiV1AnalysisOutfitRoute
   '/api/v1/analysis/personal-color': typeof ApiV1AnalysisPersonalColorRoute
   '/api/v1/billing/cancel': typeof ApiV1BillingCancelRoute
   '/api/v1/billing/checkout-url': typeof ApiV1BillingCheckoutUrlRoute
   '/api/v1/billing/resume': typeof ApiV1BillingResumeRoute
   '/api/v1/billing/sync': typeof ApiV1BillingSyncRoute
+  '/api/v1/check-in/status': typeof ApiV1CheckInStatusRoute
   '/api/v1/concierge/chat': typeof ApiV1ConciergeChatRoute
   '/api/v1/cron/membership-maintenance': typeof ApiV1CronMembershipMaintenanceRoute
   '/api/v1/dupes/find': typeof ApiV1DupesFindRoute
   '/api/v1/dupes/similar': typeof ApiV1DupesSimilarRoute
+  '/api/v1/generation-jobs/reap': typeof ApiV1GenerationJobsReapRoute
   '/api/v1/items/analyze': typeof ApiV1ItemsAnalyzeRoute
   '/api/v1/look/generate': typeof ApiV1LookGenerateRoute
   '/api/v1/look/image': typeof ApiV1LookImageRoute
@@ -450,6 +494,7 @@ export interface FileRoutesById {
   '/api/v1/posts/feed': typeof ApiV1PostsFeedRoute
   '/api/v1/profile/member': typeof ApiV1ProfileMemberRoute
   '/api/v1/support/message': typeof ApiV1SupportMessageRoute
+  '/api/v1/check-in/': typeof ApiV1CheckInIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -476,21 +521,25 @@ export interface FileRouteTypes {
     | '/history'
     | '/palettes'
     | '/pricing'
+    | '/saved'
     | '/style-profile'
     | '/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/profile/$userId'
     | '/api/v1/account/delete'
+    | '/api/v1/analysis/body-scan'
     | '/api/v1/analysis/outfit'
     | '/api/v1/analysis/personal-color'
     | '/api/v1/billing/cancel'
     | '/api/v1/billing/checkout-url'
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
+    | '/api/v1/check-in/status'
     | '/api/v1/concierge/chat'
     | '/api/v1/cron/membership-maintenance'
     | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
+    | '/api/v1/generation-jobs/reap'
     | '/api/v1/items/analyze'
     | '/api/v1/look/generate'
     | '/api/v1/look/image'
@@ -500,6 +549,7 @@ export interface FileRouteTypes {
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
     | '/api/v1/support/message'
+    | '/api/v1/check-in/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -523,21 +573,25 @@ export interface FileRouteTypes {
     | '/history'
     | '/palettes'
     | '/pricing'
+    | '/saved'
     | '/style-profile'
     | '/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/profile/$userId'
     | '/api/v1/account/delete'
+    | '/api/v1/analysis/body-scan'
     | '/api/v1/analysis/outfit'
     | '/api/v1/analysis/personal-color'
     | '/api/v1/billing/cancel'
     | '/api/v1/billing/checkout-url'
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
+    | '/api/v1/check-in/status'
     | '/api/v1/concierge/chat'
     | '/api/v1/cron/membership-maintenance'
     | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
+    | '/api/v1/generation-jobs/reap'
     | '/api/v1/items/analyze'
     | '/api/v1/look/generate'
     | '/api/v1/look/image'
@@ -547,6 +601,7 @@ export interface FileRouteTypes {
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
     | '/api/v1/support/message'
+    | '/api/v1/check-in'
   id:
     | '__root__'
     | '/'
@@ -573,21 +628,25 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/history'
     | '/_authenticated/_app/palettes'
     | '/_authenticated/_app/pricing'
+    | '/_authenticated/_app/saved'
     | '/_authenticated/_app/style-profile'
     | '/_authenticated/onboarding/style-profile'
     | '/api/webhooks/paddle'
     | '/_authenticated/_app/profile/$userId'
     | '/api/v1/account/delete'
+    | '/api/v1/analysis/body-scan'
     | '/api/v1/analysis/outfit'
     | '/api/v1/analysis/personal-color'
     | '/api/v1/billing/cancel'
     | '/api/v1/billing/checkout-url'
     | '/api/v1/billing/resume'
     | '/api/v1/billing/sync'
+    | '/api/v1/check-in/status'
     | '/api/v1/concierge/chat'
     | '/api/v1/cron/membership-maintenance'
     | '/api/v1/dupes/find'
     | '/api/v1/dupes/similar'
+    | '/api/v1/generation-jobs/reap'
     | '/api/v1/items/analyze'
     | '/api/v1/look/generate'
     | '/api/v1/look/image'
@@ -597,6 +656,7 @@ export interface FileRouteTypes {
     | '/api/v1/posts/feed'
     | '/api/v1/profile/member'
     | '/api/v1/support/message'
+    | '/api/v1/check-in/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -615,16 +675,19 @@ export interface RootRouteChildren {
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   ApiWebhooksPaddleRoute: typeof ApiWebhooksPaddleRoute
   ApiV1AccountDeleteRoute: typeof ApiV1AccountDeleteRoute
+  ApiV1AnalysisBodyScanRoute: typeof ApiV1AnalysisBodyScanRoute
   ApiV1AnalysisOutfitRoute: typeof ApiV1AnalysisOutfitRoute
   ApiV1AnalysisPersonalColorRoute: typeof ApiV1AnalysisPersonalColorRoute
   ApiV1BillingCancelRoute: typeof ApiV1BillingCancelRoute
   ApiV1BillingCheckoutUrlRoute: typeof ApiV1BillingCheckoutUrlRoute
   ApiV1BillingResumeRoute: typeof ApiV1BillingResumeRoute
   ApiV1BillingSyncRoute: typeof ApiV1BillingSyncRoute
+  ApiV1CheckInStatusRoute: typeof ApiV1CheckInStatusRoute
   ApiV1ConciergeChatRoute: typeof ApiV1ConciergeChatRoute
   ApiV1CronMembershipMaintenanceRoute: typeof ApiV1CronMembershipMaintenanceRoute
   ApiV1DupesFindRoute: typeof ApiV1DupesFindRoute
   ApiV1DupesSimilarRoute: typeof ApiV1DupesSimilarRoute
+  ApiV1GenerationJobsReapRoute: typeof ApiV1GenerationJobsReapRoute
   ApiV1ItemsAnalyzeRoute: typeof ApiV1ItemsAnalyzeRoute
   ApiV1LookGenerateRoute: typeof ApiV1LookGenerateRoute
   ApiV1LookImageRoute: typeof ApiV1LookImageRoute
@@ -634,6 +697,7 @@ export interface RootRouteChildren {
   ApiV1PostsFeedRoute: typeof ApiV1PostsFeedRoute
   ApiV1ProfileMemberRoute: typeof ApiV1ProfileMemberRoute
   ApiV1SupportMessageRoute: typeof ApiV1SupportMessageRoute
+  ApiV1CheckInIndexRoute: typeof ApiV1CheckInIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -806,6 +870,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPricingRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/saved': {
+      id: '/_authenticated/_app/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof AuthenticatedAppSavedRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/style-profile': {
       id: '/_authenticated/_app/style-profile'
       path: '/style-profile'
@@ -839,6 +910,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/account/delete'
       fullPath: '/api/v1/account/delete'
       preLoaderRoute: typeof ApiV1AccountDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/analysis/body-scan': {
+      id: '/api/v1/analysis/body-scan'
+      path: '/api/v1/analysis/body-scan'
+      fullPath: '/api/v1/analysis/body-scan'
+      preLoaderRoute: typeof ApiV1AnalysisBodyScanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/analysis/outfit': {
@@ -883,6 +961,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1BillingSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/check-in/': {
+      id: '/api/v1/check-in/'
+      path: '/api/v1/check-in'
+      fullPath: '/api/v1/check-in/'
+      preLoaderRoute: typeof ApiV1CheckInIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/check-in/status': {
+      id: '/api/v1/check-in/status'
+      path: '/api/v1/check-in/status'
+      fullPath: '/api/v1/check-in/status'
+      preLoaderRoute: typeof ApiV1CheckInStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/concierge/chat': {
       id: '/api/v1/concierge/chat'
       path: '/api/v1/concierge/chat'
@@ -909,6 +1001,13 @@ declare module '@tanstack/react-router' {
       path: '/api/v1/dupes/similar'
       fullPath: '/api/v1/dupes/similar'
       preLoaderRoute: typeof ApiV1DupesSimilarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/generation-jobs/reap': {
+      id: '/api/v1/generation-jobs/reap'
+      path: '/api/v1/generation-jobs/reap'
+      fullPath: '/api/v1/generation-jobs/reap'
+      preLoaderRoute: typeof ApiV1GenerationJobsReapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/items/analyze': {
@@ -985,6 +1084,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
   AuthenticatedAppPalettesRoute: typeof AuthenticatedAppPalettesRoute
   AuthenticatedAppPricingRoute: typeof AuthenticatedAppPricingRoute
+  AuthenticatedAppSavedRoute: typeof AuthenticatedAppSavedRoute
   AuthenticatedAppStyleProfileRoute: typeof AuthenticatedAppStyleProfileRoute
   AuthenticatedAppProfileUserIdRoute: typeof AuthenticatedAppProfileUserIdRoute
 }
@@ -997,6 +1097,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,
   AuthenticatedAppPalettesRoute: AuthenticatedAppPalettesRoute,
   AuthenticatedAppPricingRoute: AuthenticatedAppPricingRoute,
+  AuthenticatedAppSavedRoute: AuthenticatedAppSavedRoute,
   AuthenticatedAppStyleProfileRoute: AuthenticatedAppStyleProfileRoute,
   AuthenticatedAppProfileUserIdRoute: AuthenticatedAppProfileUserIdRoute,
 }
@@ -1061,16 +1162,19 @@ const rootRouteChildren: RootRouteChildren = {
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   ApiWebhooksPaddleRoute: ApiWebhooksPaddleRoute,
   ApiV1AccountDeleteRoute: ApiV1AccountDeleteRoute,
+  ApiV1AnalysisBodyScanRoute: ApiV1AnalysisBodyScanRoute,
   ApiV1AnalysisOutfitRoute: ApiV1AnalysisOutfitRoute,
   ApiV1AnalysisPersonalColorRoute: ApiV1AnalysisPersonalColorRoute,
   ApiV1BillingCancelRoute: ApiV1BillingCancelRoute,
   ApiV1BillingCheckoutUrlRoute: ApiV1BillingCheckoutUrlRoute,
   ApiV1BillingResumeRoute: ApiV1BillingResumeRoute,
   ApiV1BillingSyncRoute: ApiV1BillingSyncRoute,
+  ApiV1CheckInStatusRoute: ApiV1CheckInStatusRoute,
   ApiV1ConciergeChatRoute: ApiV1ConciergeChatRoute,
   ApiV1CronMembershipMaintenanceRoute: ApiV1CronMembershipMaintenanceRoute,
   ApiV1DupesFindRoute: ApiV1DupesFindRoute,
   ApiV1DupesSimilarRoute: ApiV1DupesSimilarRoute,
+  ApiV1GenerationJobsReapRoute: ApiV1GenerationJobsReapRoute,
   ApiV1ItemsAnalyzeRoute: ApiV1ItemsAnalyzeRoute,
   ApiV1LookGenerateRoute: ApiV1LookGenerateRoute,
   ApiV1LookImageRoute: ApiV1LookImageRoute,
@@ -1080,6 +1184,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiV1PostsFeedRoute: ApiV1PostsFeedRoute,
   ApiV1ProfileMemberRoute: ApiV1ProfileMemberRoute,
   ApiV1SupportMessageRoute: ApiV1SupportMessageRoute,
+  ApiV1CheckInIndexRoute: ApiV1CheckInIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

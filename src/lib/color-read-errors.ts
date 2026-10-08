@@ -33,6 +33,27 @@ const GENERIC: ColorReadFailure = {
 };
 
 /**
+ * The client stopped waiting (COLOR_READ_CLIENT_TIMEOUT_MS) while the read may
+ * still be running as her job. Never a failure: her result waits in the job
+ * row (Wave D plan, section 3.4).
+ */
+export const COLOR_READ_TIMEOUT = "COLOR_READ_TIMEOUT";
+
+/** The tab runs a bundle from before a deploy: the call never reached the read. */
+export const COLOR_READ_STALE_BUNDLE = "COLOR_READ_STALE_BUNDLE";
+
+const STILL_READING: ColorReadFailure = {
+  message:
+    "Mila is still reading your photo. You can close this; your result will wait for you here.",
+  outOfCredits: false,
+};
+
+const STALE_BUNDLE: ColorReadFailure = {
+  message: "Mila was updated while this page was open. Refresh the page and try again.",
+  outOfCredits: false,
+};
+
+/**
  * Turns whatever `analyzePersonalColor` returned in `error` into copy for the
  * member. The server answers with codes (`SERVER_GATEWAY_TIMEOUT`,
  * `ANALYSIS_PARSING_FAILED`, ...) and, for the member's own credits, the
@@ -52,6 +73,10 @@ export function describeColorReadError(code: string | null | undefined): ColorRe
       return COULD_NOT_READ_PHOTO;
     case INSUFFICIENT_CREDITS:
       return OUT_OF_CREDITS;
+    case COLOR_READ_TIMEOUT:
+      return STILL_READING;
+    case COLOR_READ_STALE_BUNDLE:
+      return STALE_BUNDLE;
     default:
       return GENERIC;
   }

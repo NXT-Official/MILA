@@ -73,7 +73,7 @@ function FeedPage() {
             Today's looks, in real time
           </h1>
           <p className="text-sm text-stone max-w-md mx-auto">
-            One outfit, one mirror, one mood — your community's daily blueprints.
+            One outfit, one mirror, one mood: the community's daily blueprints.
           </p>
           <Button
             type="button"
@@ -109,7 +109,7 @@ function FeedPage() {
             className="mx-auto max-w-xl"
             icon={<Images className="size-8" strokeWidth={1.25} />}
             title="You're first to the mirror today."
-            description="As your circle posts, their looks will land here."
+            description="As other members post, their looks will land here."
           />
         )}
 
@@ -130,7 +130,7 @@ function FeedPage() {
             </p>
             <SheetTitle className="font-serif text-3xl leading-tight">Post Today's OOTD</SheetTitle>
             <SheetDescription className="max-w-md mx-auto text-sm">
-              Two captures, head to toe — your fit, then your face & hair.
+              Two captures, head to toe: your fit, then your face and hair.
             </SheetDescription>
           </SheetHeader>
           <div className="max-w-md mx-auto">

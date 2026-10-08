@@ -20,6 +20,8 @@ function renderForm(overrides: {
   styleSheetLoading?: boolean;
   photoPreviewLoading?: boolean;
   climate?: ClimateState;
+  checking?: boolean;
+  blockedReason?: string | null;
 }) {
   return renderToStaticMarkup(
     <HeroGeneratorForm
@@ -36,7 +38,8 @@ function renderForm(overrides: {
       styleSheetLoading={overrides.styleSheetLoading ?? false}
       photoPreviewLoading={overrides.photoPreviewLoading ?? false}
       profileComplete
-      blockedReason={null}
+      blockedReason={overrides.blockedReason ?? null}
+      checking={overrides.checking}
       onGenerate={() => {}}
     />,
   );
@@ -70,7 +73,7 @@ describe("HeroGeneratorForm while a style sheet is drawing", () => {
     const out = renderForm({ styleSheetLoading: true });
     const tag = openingTagOfButton(out, "Create my look");
     expect(tag).toContain(' disabled=""');
-    expect(tag).toContain('aria-describedby="generate-blocked"');
+    expect(tag).toMatch(/aria-describedby="[^"]*\bgenerate-blocked\b/);
     expect(out).toContain(`<span id="generate-blocked"`);
     expect(out).toContain(STYLE_SHEET_BUSY_REASON);
   });
@@ -88,7 +91,7 @@ describe("HeroGeneratorForm while a portrait preview is rendering", () => {
     const out = renderForm({ photoPreviewLoading: true });
     const tag = openingTagOfButton(out, "Create my look");
     expect(tag).toContain(' disabled=""');
-    expect(tag).toContain('aria-describedby="generate-blocked"');
+    expect(tag).toMatch(/aria-describedby="[^"]*\bgenerate-blocked\b/);
     expect(out).toContain(`<span id="generate-blocked"`);
     expect(out).toContain(PHOTO_PREVIEW_BUSY_REASON);
     expect(out).not.toContain(STYLE_SHEET_BUSY_REASON);
@@ -109,5 +112,46 @@ describe("HeroGeneratorForm button label", () => {
   test("does not dress the weather fallback up as a reading", () => {
     const out = renderForm({ climate: unavailableClimate("Manila", "PH") });
     expect(labelOfButton(out, "Create my look")).toBe("Create my look");
+  });
+});
+
+describe("HeroGeneratorForm shows the cost before the click (R7)", () => {
+  test("Create my look says it uses one credit", () => {
+    const out = renderForm({});
+    expect(out).toContain("Uses 1 credit");
+  });
+
+  test("the cost line stays while a look is being composed", () => {
+    expect(renderForm({ generating: true })).toContain("Uses 1 credit");
+  });
+});
+
+describe("HeroGeneratorForm ties the cost to the button (N1)", () => {
+  test("Create my look is described by its cost", () => {
+    const out = renderForm({});
+    expect(out).toContain(`<span id="generate-cost"`);
+    expect(openingTagOfButton(out, "Create my look")).toMatch(
+      /aria-describedby="[^"]*\bgenerate-cost\b/,
+    );
+  });
+
+  test("and by why it is blocked, when it is", () => {
+    const tag = openingTagOfButton(renderForm({ styleSheetLoading: true }), "Create my look");
+    expect(tag).toMatch(/aria-describedby="[^"]*\bgenerate-blocked\b[^"]*"/);
+    expect(tag).toMatch(/aria-describedby="[^"]*\bgenerate-cost\b[^"]*"/);
+  });
+});
+
+describe("HeroGeneratorForm while her last look is being checked (I1)", () => {
+  test("Create my look waits, and says why", () => {
+    const out = renderForm({ checking: true, blockedReason: "Checking your last look…" });
+    expect(openingTagOfButton(out, "Create my look")).toContain(' disabled=""');
+    expect(out).toContain("Checking your last look…");
+  });
+
+  test("without a check it is pressable", () => {
+    expect(openingTagOfButton(renderForm({ checking: false }), "Create my look")).not.toContain(
+      ' disabled=""',
+    );
   });
 });

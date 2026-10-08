@@ -1,5 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { memberAuthorization } from "@/lib/auth-session";
+import { memberQueryRetry } from "@/lib/queries/member-query";
 import { queryKeys } from "@/constants/query-keys";
 import type { DailyPalette } from "@/lib/color-analysis/paletteGenerator";
 import type { Json } from "@/integrations/supabase/types";
@@ -30,16 +32,19 @@ export function isDailyPalette(value: unknown): value is DailyPalette {
   );
 }
 
-export function savedPalettesQueryOptions(userId: string | undefined) {
+export function savedPalettesQueryOptions(userId: string | undefined, client = supabase) {
   return queryOptions({
     queryKey: queryKeys.savedPalettes(userId),
     queryFn: async (): Promise<SavedPalette[]> => {
       if (!userId) return [];
-      const { data, error } = await supabase
+      // Read as her, never as anonymous (an anonymous read sees no palettes).
+      const authorization = await memberAuthorization(client.auth, userId);
+      const { data, error } = await client
         .from("saved_palettes")
         .select("id,created_at,palette")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .setHeader("Authorization", authorization);
       if (error) throw error;
       return (data ?? [])
         .filter((row) => isDailyPalette(row.palette))
@@ -49,6 +54,7 @@ export function savedPalettesQueryOptions(userId: string | undefined) {
           palette: row.palette as unknown as DailyPalette,
         }));
     },
+    retry: memberQueryRetry,
   });
 }
 

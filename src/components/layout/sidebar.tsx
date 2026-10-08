@@ -4,6 +4,7 @@ import {
   Images,
   History as HistoryIcon,
   Palette,
+  Bookmark,
   Sparkles,
   Camera,
   MessageCircle,
@@ -20,6 +21,7 @@ const primaryNavItems: { to: string; label: string; icon: typeof LayoutGrid }[] 
   { to: "/feed", label: "Feed", icon: Images },
   { to: "/history", label: "History", icon: HistoryIcon },
   { to: "/palettes", label: "Palettes", icon: Palette },
+  { to: "/saved", label: "Saved pieces", icon: Bookmark },
   { to: "/style-profile", label: "Studio", icon: Sparkles },
 ];
 

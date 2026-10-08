@@ -206,6 +206,64 @@ export type Database = {
           },
         ];
       };
+      // --- generation_jobs (R7) · supabase/migrations/20261007143000_generation_jobs.sql ---
+      // Hand-written until types are regenerated against a database with the migration.
+      // user_id references auth.users, which PostgREST does not expose: no Relationships.
+      generation_jobs: {
+        Row: {
+          charged_from: string | null;
+          client_request_id: string;
+          completed_at: string | null;
+          created_at: string;
+          credit_state: string;
+          deadline_at: string;
+          error_code: string | null;
+          id: string;
+          image_path: string | null;
+          input: Json;
+          kind: string;
+          refund_applied_at: string | null;
+          result: Json | null;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          charged_from?: string | null;
+          client_request_id: string;
+          completed_at?: string | null;
+          created_at?: string;
+          credit_state?: string;
+          deadline_at: string;
+          error_code?: string | null;
+          id?: string;
+          image_path?: string | null;
+          input?: Json;
+          kind: string;
+          refund_applied_at?: string | null;
+          result?: Json | null;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          charged_from?: string | null;
+          client_request_id?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          credit_state?: string;
+          deadline_at?: string;
+          error_code?: string | null;
+          id?: string;
+          image_path?: string | null;
+          input?: Json;
+          kind?: string;
+          refund_applied_at?: string | null;
+          result?: Json | null;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      // --- end generation_jobs ---
       outfits: {
         Row: {
           analysis_result: Json | null;
@@ -462,13 +520,16 @@ export type Database = {
           default_location: string | null;
           delivery_country: string | null;
           face_shape: string | null;
+          founding_body_read_at: string | null;
           founding_color_read_at: string | null;
           full_name: string | null;
           gender: string | null;
+          hair_color: string | null;
           hair_length: string | null;
           hair_type: string | null;
           height_cm: number | null;
           id: string;
+          last_check_in_at: string | null;
           makeup_preference: string;
           paddle_customer_id: string | null;
           photo_consent_at: string | null;
@@ -492,13 +553,16 @@ export type Database = {
           default_location?: string | null;
           delivery_country?: string | null;
           face_shape?: string | null;
+          founding_body_read_at?: string | null;
           founding_color_read_at?: string | null;
           full_name?: string | null;
           gender?: string | null;
+          hair_color?: string | null;
           hair_length?: string | null;
           hair_type?: string | null;
           height_cm?: number | null;
           id: string;
+          last_check_in_at?: string | null;
           makeup_preference?: string;
           paddle_customer_id?: string | null;
           photo_consent_at?: string | null;
@@ -522,13 +586,16 @@ export type Database = {
           default_location?: string | null;
           delivery_country?: string | null;
           face_shape?: string | null;
+          founding_body_read_at?: string | null;
           founding_color_read_at?: string | null;
           full_name?: string | null;
           gender?: string | null;
+          hair_color?: string | null;
           hair_length?: string | null;
           hair_type?: string | null;
           height_cm?: number | null;
           id?: string;
+          last_check_in_at?: string | null;
           makeup_preference?: string;
           paddle_customer_id?: string | null;
           photo_consent_at?: string | null;
@@ -627,6 +694,61 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      saved_products: {
+        Row: {
+          created_at: string;
+          id: string;
+          outfit_id: string | null;
+          post_item_id: string | null;
+          product_id: string | null;
+          snapshot: Json;
+          source: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          outfit_id?: string | null;
+          post_item_id?: string | null;
+          product_id?: string | null;
+          snapshot: Json;
+          source: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          outfit_id?: string | null;
+          post_item_id?: string | null;
+          product_id?: string | null;
+          snapshot?: Json;
+          source?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "saved_products_outfit_id_fkey";
+            columns: ["outfit_id"];
+            isOneToOne: false;
+            referencedRelation: "outfits";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "saved_products_post_item_id_fkey";
+            columns: ["post_item_id"];
+            isOneToOne: false;
+            referencedRelation: "post_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "saved_products_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
             referencedColumns: ["id"];
           },
         ];
@@ -807,6 +929,7 @@ export type Database = {
           ai_credits: number;
           created_at: string;
           credits_reset_at: string | null;
+          free_check_in_on: string | null;
           look_image_pending: boolean;
           purchased_credits: number;
           updated_at: string;
@@ -816,6 +939,7 @@ export type Database = {
           ai_credits?: number;
           created_at?: string;
           credits_reset_at?: string | null;
+          free_check_in_on?: string | null;
           look_image_pending?: boolean;
           purchased_credits?: number;
           updated_at?: string;
@@ -825,6 +949,7 @@ export type Database = {
           ai_credits?: number;
           created_at?: string;
           credits_reset_at?: string | null;
+          free_check_in_on?: string | null;
           look_image_pending?: boolean;
           purchased_credits?: number;
           updated_at?: string;
@@ -912,6 +1037,42 @@ export type Database = {
         Args: { desired: string; email: string };
         Returns: string;
       };
+      // --- generation_jobs functions (R7) · 20261007143000_generation_jobs.sql ---
+      // Service role only. Each job function returns exactly one { outcome, job } row.
+      complete_generation_job: {
+        Args: { p_image_path: string | null; p_job_id: string; p_result: Json };
+        Returns: {
+          job: Database["public"]["Tables"]["generation_jobs"]["Row"];
+          outcome: string;
+        }[];
+      };
+      fail_generation_job: {
+        Args: { p_error_code: string; p_job_id: string; p_refund: boolean };
+        Returns: {
+          job: Database["public"]["Tables"]["generation_jobs"]["Row"];
+          outcome: string;
+        }[];
+      };
+      reap_generation_jobs: {
+        Args: { p_user_id?: string };
+        Returns: number;
+      };
+      start_generation_job: {
+        Args: {
+          p_charge: boolean;
+          p_client_request_id: string;
+          p_daily_allowance: number;
+          p_deadline_seconds: number;
+          p_input: Json;
+          p_kind: string;
+          p_user_id: string;
+        };
+        Returns: {
+          job: Database["public"]["Tables"]["generation_jobs"]["Row"];
+          outcome: string;
+        }[];
+      };
+      // --- end generation_jobs functions ---
       grant_ai_credits: {
         Args: { _amount: number; _daily_allowance: number; _user_id: string };
         Returns: number;
@@ -931,6 +1092,10 @@ export type Database = {
           _target_user_id: string;
         };
         Returns: string;
+      };
+      release_rate_limit: {
+        Args: { _cost?: number; _key: string; _reset_at: string };
+        Returns: boolean;
       };
       set_user_suspended: {
         Args: {

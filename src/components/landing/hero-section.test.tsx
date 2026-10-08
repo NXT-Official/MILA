@@ -63,12 +63,12 @@ const EDITED: HeroContent = {
   kicker: "Edited kicker",
   headlineLine1: "Edited first line.",
   headlineLine2: "Edited second line.",
-  subhead: "Edited subhead — it's tuned & tailored.",
+  subhead: "Edited subhead: it's tuned & tailored.",
   ctaNote: "Edited CTA note",
   preview: {
     ...LANDING_FALLBACK.hero.preview,
     season: "Edited Season",
-    weather: "31°C · Edited weather",
+    weather: "88°F · Edited weather",
   },
   imageCaption: "Edited caption",
 };
@@ -83,11 +83,34 @@ describe("HeroSection renders its content", () => {
     expect(h1.indexOf(text(EDITED.headlineLine2))).toBeGreaterThan(line1At);
 
     expect(out).toContain(`${text(EDITED.kicker)}<`);
-    expect(out).toContain(`>${text(EDITED.subhead)}<`);
-    expect(out).toContain(`>${text(EDITED.ctaNote)}<`);
+    // The note closes the sub-copy paragraph; it no longer sits under the button.
+    // A note written as a fragment ("Edited CTA note") still ends the sentence.
+    expect(out).toContain(`>${text(EDITED.subhead)} ${text(EDITED.ctaNote)}.</p>`);
     expect(out).toContain(`>${text(EDITED.preview.season)}<`);
     expect(out).toContain(`>${text(EDITED.preview.weather)}<`);
     expect(out).toContain(`>${text(EDITED.imageCaption)}<`);
+  });
+
+  test("nothing but the button follows the CTA: no tagline under it", async () => {
+    const cta = { ...LANDING_FALLBACK.cta, signedOutLabel: "Edited hero label" };
+    const out = await renderHero(EDITED, cta);
+    const label = `>${text(cta.signedOutLabel)}<`;
+    // Guard: the button and the note are both in the markup.
+    expect(out).toContain(label);
+    expect(out.indexOf(text(EDITED.ctaNote))).toBeGreaterThan(-1);
+
+    expect(out.indexOf(text(EDITED.ctaNote))).toBeLessThan(out.indexOf(label));
+    const afterButton = out.slice(out.indexOf(label)).split("</a>")[1] ?? "";
+    expect(afterButton.startsWith("</div>")).toBe(true);
+  });
+
+  test("joined lines that already end a sentence keep their own punctuation", async () => {
+    const out = await renderHero({
+      ...EDITED,
+      subhead: "Edited subhead without a stop",
+      ctaNote: "Edited note!",
+    });
+    expect(out).toContain(">Edited subhead without a stop. Edited note!</p>");
   });
 
   test("the button carries the CTA label the hero is given", async () => {

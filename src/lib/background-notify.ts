@@ -25,7 +25,29 @@ export function notifyIfBackgrounded(title: string, body?: string): void {
   const documentHidden = typeof document !== "undefined" && document.hidden;
   const permission = notificationSupported ? Notification.permission : "denied";
   if (!shouldNotifyInBackground({ documentHidden, notificationSupported, permission })) return;
-  new Notification(title, body ? { body } : undefined);
+  const options = body ? { body } : undefined;
+  try {
+    new Notification(title, options);
+  } catch {
+    // src: https://developer.mozilla.org/en-US/docs/Web/API/Notification/Notification#exceptions
+    // · MDN, 2026-10-07: the constructor throws TypeError on Android Chrome, which
+    // requires ServiceWorkerRegistration.showNotification() instead.
+    showViaServiceWorker(title, options);
+  }
+}
+
+function showViaServiceWorker(title: string, options: NotificationOptions | undefined): void {
+  try {
+    if (typeof navigator === "undefined" || !navigator.serviceWorker?.getRegistration) return;
+    // getRegistration() resolves undefined when none is registered; `ready` would hang forever.
+    // src: https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/getRegistration
+    void navigator.serviceWorker
+      .getRegistration()
+      .then((registration) => registration?.showNotification(title, options))
+      .catch(() => undefined);
+  } catch {
+    // No service worker available: skip silently, never throw into the caller.
+  }
 }
 
 /**

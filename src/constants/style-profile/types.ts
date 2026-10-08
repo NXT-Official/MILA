@@ -34,6 +34,10 @@ export interface DetailedColorProfile {
   calibrationSource?: "AI Vision" | "Studio Calibrated";
   confidenceScore?: number;
   confidenceLabel?: string;
+  /** Wave D: the generation job this read came from, so it is never offered back to her. */
+  readJobId?: string;
+  /** The aesthetic she chose for this read, when she chose one. */
+  selectedAesthetic?: string;
 }
 
 export type StaticSeasonSpec = Pick<

@@ -673,6 +673,22 @@ describe("pickWeatherBackfill", () => {
     expect(result?.product).not.toHaveProperty("seasonal_palettes");
   });
 
+  test("the backfill's reason reads plainly, with no em or en dash (it is shown on her color map)", () => {
+    const result = pickWeatherBackfill(
+      picks,
+      [inventoryItem("coat-1", { category: "Outerwear" })],
+      {
+        tempF: 40,
+        colorSeason: "Cool Summer",
+        bodyType: "Rectangle",
+      },
+    );
+    expect(result?.rationale).toBe(
+      "Added for today's temperature: the outer layer this look was missing.",
+    );
+    expect(result?.rationale).not.toMatch(/[‒–—―]/);
+  });
+
   test("never re-adds a piece already in picks", () => {
     const inventory = [inventoryItem("top-1", { category: "Tops" })];
     const result = pickWeatherBackfill(picks, inventory, {

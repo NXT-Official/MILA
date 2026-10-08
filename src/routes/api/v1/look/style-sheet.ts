@@ -23,6 +23,12 @@ const defaultDeps: HandleLookStyleSheetDeps = { verifyBearerAuth, renderStyleShe
  * "No consented photo on file" and a failed QA check are not HTTP errors:
  * they answer `200` with `{ imageDataUri: null, mode: "unavailable", reason }`
  * so the client keeps the written look on screen and offers a retry.
+ *
+ * Generation jobs: an optional `clientRequestId` (UUID) makes the request
+ * idempotent (a repeat replays the stored sheet, no second charge); while
+ * another sheet is still rendering it answers `200 { status: "running", jobId }`.
+ * Without one (builds that predate jobs) the route waits for that sheet and
+ * answers it. Responses carry `jobId` once the migration is applied.
  */
 export async function handleLookStyleSheet(
   request: Request,
@@ -38,7 +44,9 @@ export async function handleLookStyleSheet(
       );
     }
 
-    const result = await deps.renderStyleSheetForUser(supabase, userId, parsed.data);
+    const result = parsed.data.clientRequestId
+      ? await deps.renderStyleSheetForUser(supabase, userId, parsed.data, { inFlight: "report" })
+      : await deps.renderStyleSheetForUser(supabase, userId, parsed.data);
     return Response.json(result);
   } catch (error) {
     return respondWithError("look/style-sheet", error);

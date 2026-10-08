@@ -1,14 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useLoginRedirect } from "@/hooks/use-login-redirect";
+import { validateLoginSearch } from "@/lib/safe-redirect";
+import { AuthReconnecting } from "@/components/layout/auth-reconnecting";
 import { AuthCard } from "@/components/login/auth-card";
 import { SupportDialog } from "@/components/login/support-dialog";
 
 export const Route = createFileRoute("/login/")({
+  // `redirect` is where she was before being asked to sign in. Only a
+  // same-origin path survives; anything else is dropped, never followed.
+  validateSearch: validateLoginSearch,
   component: LoginPage,
 });
 
 function LoginPage() {
-  useLoginRedirect();
+  const { redirect } = Route.useSearch();
+  const signedInButUnread = useLoginRedirect(redirect);
+  if (signedInButUnread.unavailable) {
+    return <AuthReconnecting onRetry={signedInButUnread.retry} signInSearch={{ redirect }} />;
+  }
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
@@ -29,7 +38,7 @@ function LoginPage() {
           <p className="atelier-kicker mt-3">Personal AI Fashion Stylist</p>
         </div>
 
-        <AuthCard />
+        <AuthCard returnTo={redirect} />
         <SupportDialog />
       </div>
     </div>

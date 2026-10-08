@@ -13,10 +13,21 @@ export const Input = z.object({
   history: z.array(HistoryMessage).max(12).default([]),
   lookId: z.string().uuid().nullable().optional(),
   imageUrl: z.string().url().max(2048).nullable().optional(),
+  /** Optional idempotency key: a repeat replays the stored reply, no second charge. */
+  clientRequestId: z.string().uuid().optional(),
+  /** The conversation to save this turn into (with `saveTurn`); null opens a new one. */
+  conversationId: z.string().uuid().nullable().optional(),
+  /** Opt in to the server saving both sides of the turn. Old clients omit it. */
+  saveTurn: z.boolean().optional(),
 });
 export type ConciergeChatInputData = z.infer<typeof Input>;
 
-export type ConciergeReply = { reply: string };
+export type ConciergeReply = {
+  reply: string;
+  conversationId?: string | null;
+  saved?: boolean;
+  jobId?: string;
+};
 
 export const conciergeChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

@@ -4,14 +4,18 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { DailyLookSchema } from "./generate-outfit.functions";
 import {
   renderPhotoPreviewForUser,
-  type PhotoPreviewResult,
+  type PhotoPreviewResponse,
 } from "@/server/services/photo-preview";
 
 export const Input = z.object({
   outfit: DailyLookSchema,
+  /** Idempotency key for this render (a UUID the client picks once per
+   * press). The same key never charges twice and replays the stored portrait.
+   * Optional: clients that predate generation jobs keep working without it. */
+  clientRequestId: z.string().uuid().optional(),
 });
 
-export type { PhotoPreviewResult } from "@/server/services/photo-preview";
+export type { PhotoPreviewResult, PhotoPreviewResponse } from "@/server/services/photo-preview";
 
 /**
  * Renders the single-photo edit preview (the member's own consented selfie
@@ -22,10 +26,14 @@ export type { PhotoPreviewResult } from "@/server/services/photo-preview";
  * shared verbatim with the mobile `POST /api/v1/look/photo-preview` route so
  * both clients run one implementation of the consent gate, protected-region
  * QA check, and face-match verification (Phase 11 shared-service extraction).
+ *
+ * Runs as a generation job: answers today's result plus `jobId` once jobs are
+ * live, and waits for a portrait that is already rendering instead of
+ * charging again, so the dashboard's result contract is unchanged.
  */
 export const generatePhotoPreview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
-  .handler(async ({ data, context }): Promise<PhotoPreviewResult> =>
+  .handler(async ({ data, context }): Promise<PhotoPreviewResponse> =>
     renderPhotoPreviewForUser(context.supabase, context.userId, data),
   );

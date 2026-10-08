@@ -10,26 +10,40 @@ import {
   formatPlanPrice,
   type PublicSubscriptionPlan,
 } from "@/lib/subscription-plans";
+import { monthlyEquivalentCents, type PlanStanding } from "@/components/pricing/plan-value";
+import { SHOW_CREDIT_PACKS } from "@/components/pricing/credit-packs";
 
 export function PricingCard({
   plan,
+  standing,
   onChoosePlan,
   disabled,
   loading,
   unavailable,
 }: {
   plan: PublicSubscriptionPlan;
+  /** The badge this plan earns against the others (`planStanding`). Without
+   * the other plans to compare, a featured plan is only "Featured": the card
+   * never claims "Recommended" on a basis it can't show. */
+  standing?: PlanStanding | null;
   onChoosePlan?: () => void;
   disabled?: boolean;
-  /** True while checkout is still initializing (e.g. Paddle.js loading) —
+  /** True while checkout is still initializing (e.g. Paddle.js loading):
    * shows a spinner so a disabled button doesn't read as broken. */
   loading?: boolean;
-  /** True when checkout cannot work at all (Paddle env config missing) —
+  /** True when checkout cannot work at all (Paddle env config missing):
    * says so instead of spinning forever. */
   unavailable?: boolean;
 }) {
   const price = formatPlanPrice(plan.price_amount, plan.currency);
   const interval = BILLING_INTERVAL_SUFFIX[plan.billing_interval];
+  const badge =
+    standing === undefined
+      ? plan.is_featured
+        ? ({ label: "Featured", basis: null } satisfies PlanStanding)
+        : null
+      : standing;
+  const monthly = plan.billing_interval === "yearly" ? monthlyEquivalentCents(plan) : null;
 
   return (
     <Card
@@ -40,11 +54,11 @@ export function PricingCard({
           "border-accent/70 shadow-atelier-soft ring-1 ring-accent/30 lg:-translate-y-2",
       )}
     >
-      <li aria-label={plan.is_featured ? `${plan.title} — recommended plan` : plan.title}>
-        {plan.is_featured && (
+      <li aria-label={badge ? `${plan.title}, ${badge.label.toLowerCase()}` : plan.title}>
+        {badge && (
           <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 gap-1.5 border border-accent/50 bg-accent-soft text-ink shadow-paper">
             <Sparkles aria-hidden="true" className="size-3" strokeWidth={1.75} />
-            Recommended
+            {badge.label}
           </Badge>
         )}
 
@@ -59,6 +73,12 @@ export function PricingCard({
           </span>
           <span className="ml-2 text-xs uppercase tracking-label text-muted">{interval}</span>
         </p>
+        {monthly !== null && (
+          <p className="mt-1.5 text-sm text-muted tabular-nums">
+            {formatPlanPrice(monthly, plan.currency)} a month, billed yearly
+          </p>
+        )}
+        {badge?.basis && <p className="mt-3 text-sm font-semibold text-ink">{badge.basis}</p>}
 
         <ul className="mt-6 space-y-2.5 border-t border-line pt-6">
           {plan.credits_included > 0 && (
@@ -67,7 +87,8 @@ export function PricingCard({
           {plan.features.map((feature) => (
             <PlanFeature key={feature} text={feature} />
           ))}
-          <PlanFeature text="Credit packs to top up any day" />
+          {/* Hidden while no pack can be bought (see credit-packs.ts). */}
+          {SHOW_CREDIT_PACKS && <PlanFeature text="Credit packs to top up any day" />}
           <li className="flex items-start gap-2.5 text-sm leading-relaxed text-ink">
             <VerifiedBadge className="mt-0.5" />
             <span className="min-w-0 wrap-break-words">

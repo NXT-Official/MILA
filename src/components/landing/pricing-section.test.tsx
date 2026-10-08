@@ -11,8 +11,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AuthContext } from "@/hooks/use-auth";
 import type { PricingContent } from "@/lib/landing-content";
 import { LANDING_FALLBACK } from "@/lib/landing-content.fallback";
+import { DEFAULT_AI_CREDITS } from "@/lib/credits";
 import { publicSubscriptionPlansQueryOptions } from "@/lib/queries/subscription-plans";
 import type { PublicSubscriptionPlan } from "@/lib/subscription-plans";
+import { FREE_PLAN } from "@/components/pricing/free-plan";
+import { SHOW_CREDIT_PACKS } from "@/components/pricing/credit-packs";
 import { PricingSection } from "./pricing-section";
 
 /** The cache entry the section reads; the same key the app's query writes. */
@@ -106,14 +109,20 @@ const PLANS: PublicSubscriptionPlan[] = [
     paddle_price_id: "pri_test_b",
   },
 ];
-/** What a visitor is shown for those amounts: 900 and 2400 cents of USD. */
-const SHOWN_PRICES = ["$9.00", "$24.00"];
+/** What a visitor is shown for each plan: its price, then its monthly equivalent when yearly. */
+const SHOWN = { "plan-a": ["$9.00"], "plan-b": ["$24.00", "$2.00"] } as Record<string, string[]>;
+/** The Free column leads, priced at zero in the plans' currency. */
+const FREE_PRICE = "$0.00";
+
+function shownPrices(plans: PublicSubscriptionPlan[]) {
+  return [FREE_PRICE, ...plans.flatMap((plan) => SHOWN[plan.id])];
+}
 
 /** The two fields the Studio edits, set to copy the fallback does not contain. */
 const EDITED: PricingContent = {
   ...LANDING_FALLBACK.pricing,
   heading: "Edited pricing heading",
-  body: "Edited pricing body — it's clear & simple.",
+  body: "Edited pricing body: it's clear & simple.",
 };
 
 describe("PricingSection copy comes from content", () => {
@@ -125,20 +134,23 @@ describe("PricingSection copy comes from content", () => {
 });
 
 describe("PricingSection plans come only from the plans query", () => {
-  test("plan names and prices are the query's, in the query's order", async () => {
+  test("plan names and prices are the query's, in the query's order, after the Free column", async () => {
     const out = await renderPricing(clientWith(PLANS), EDITED);
     const { h2, h3 } = headings(out);
     expect(h2).toEqual([text(EDITED.heading)]);
-    expect(h3).toEqual(PLANS.map((plan) => text(plan.title)));
-    expect(prices(out)).toEqual(SHOWN_PRICES);
+    expect(h3).toEqual([FREE_PLAN.title, ...PLANS.map((plan) => text(plan.title))]);
+    expect(prices(out)).toEqual(shownPrices(PLANS));
     expect(count(out, PLACEHOLDER)).toBe(0);
 
     const reversedPlans = [...PLANS].reverse();
     const reversed = await renderPricing(clientWith(reversedPlans), EDITED);
     const reversedHeadings = headings(reversed);
     expect(reversedHeadings.h2).toEqual([text(EDITED.heading)]);
-    expect(reversedHeadings.h3).toEqual(reversedPlans.map((plan) => text(plan.title)));
-    expect(prices(reversed)).toEqual([...SHOWN_PRICES].reverse());
+    expect(reversedHeadings.h3).toEqual([
+      FREE_PLAN.title,
+      ...reversedPlans.map((plan) => text(plan.title)),
+    ]);
+    expect(prices(reversed)).toEqual(shownPrices(reversedPlans));
   });
 
   test("price- and plan-looking values smuggled into content change nothing", async () => {
@@ -167,6 +179,8 @@ describe("PricingSection without plans", () => {
     expect(headings(out).h2).toEqual([text(EDITED.heading)]);
     expect(out).toContain(`>${text(EDITED.body)}<`);
     expect(count(out, PLACEHOLDER)).toBe(3);
+    // The placeholders say what they are waiting for.
+    expect(out).toMatch(/<div[^>]*role="status"[^>]*>(?:(?!<\/div>).)*Loading plans/s);
     expect(prices(out)).toEqual([]);
     expect(out).not.toContain("<li");
     expect(out).not.toContain("<button");
@@ -202,6 +216,76 @@ describe("PricingSection without plans", () => {
     expect(out).toContain(`>${text("Couldn't load membership plans")}</p>`);
     expect(out).toContain("Try Again");
     expect(prices(out)).toEqual([]);
+  });
+});
+
+describe("PricingSection lets a visitor judge the plans", () => {
+  test("a Free column says what every account gets, from the code, not a sales sheet", async () => {
+    // Guard: the column's credits are the ones a member without a plan really gets.
+    expect(FREE_PLAN.dailyCredits).toBe(DEFAULT_AI_CREDITS);
+
+    const out = await renderPricing(clientWith(PLANS), EDITED);
+    const free = out.slice(
+      out.indexOf(`>${FREE_PLAN.title}</h3>`),
+      out.indexOf(`>${text(PLANS[0].title)}</h3>`),
+    );
+    expect(free).toContain(FREE_PRICE);
+    expect(free).toContain(text(FREE_PLAN.creditLine));
+    for (const feature of FREE_PLAN.features) expect(free).toContain(`>${text(feature)}<`);
+    // Free has nothing to check out.
+    expect(free).not.toContain("<button");
+  });
+
+  test("no card offers credit packs while none are on sale", async () => {
+    // A code flag, never plan data: a one-time plan has no fulfilment yet.
+    expect(SHOW_CREDIT_PACKS).toBe(false);
+    const out = await renderPricing(clientWith(PLANS), EDITED);
+    // Guard: the plan cards rendered their feature lists.
+    expect(out).toContain("First test feature");
+    expect(out).not.toMatch(/credit pack|top up/i);
+  });
+
+  test("with three plans the four columns wait for xl; below that they sit two by two", async () => {
+    const third = { ...PLANS[0], id: "plan-c", slug: "test-c", title: "Test Plan C" };
+    const out = await renderPricing(clientWith([...PLANS, third]), EDITED);
+    const list = out.match(/<ul\b[^>]*class="([^"]*)"/)?.[1] ?? "";
+    // Guard: this is the plans list (Free plus three plans).
+    expect(headings(out).h3).toHaveLength(4);
+    expect(list).toContain("sm:grid-cols-2");
+    expect(list).toContain("xl:grid-cols-4");
+    expect(list).not.toMatch(/(^|\s)(md|lg):grid-cols-/);
+  });
+
+  test("a credit is defined as a look", async () => {
+    const out = await renderPricing(clientWith(PLANS), EDITED);
+    expect(out).toContain("1 credit = 1 look");
+  });
+
+  test("a yearly plan shows what it costs a month", async () => {
+    const out = await renderPricing(clientWith(PLANS), EDITED);
+    expect(out).toContain("$2.00 a month, billed yearly");
+    // A monthly plan has nothing to convert.
+    expect(out).not.toContain("$9.00 a month");
+  });
+
+  test("the featured plan is recommended only when it is the best value, and the card says why", async () => {
+    // Plan B is featured and gives 600 looks for $2.00 a month; plan A gives 150 for $9.00.
+    const out = await renderPricing(clientWith(PLANS), EDITED);
+    expect(count(out, ">Recommended<")).toBe(1);
+    expect(out).toContain("Best value: the most looks for the price.");
+    expect(out).toContain(`aria-label="${text(PLANS[1].title)}, recommended"`);
+  });
+
+  test("when the numbers beat the featured plan, the badge drops the claim and the better plan says so", async () => {
+    const plans = [
+      { ...PLANS[0], is_featured: true },
+      { ...PLANS[1], is_featured: false },
+    ];
+    const out = await renderPricing(clientWith(plans), EDITED);
+    expect(out).not.toContain("Recommended");
+    expect(count(out, ">Featured<")).toBe(1);
+    expect(count(out, ">Best value<")).toBe(1);
+    expect(out).toContain("The most looks for the price.");
   });
 });
 

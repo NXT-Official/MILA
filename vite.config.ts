@@ -6,6 +6,21 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { nitro } from "nitro/vite";
 import mkcert from "vite-plugin-mkcert";
 
+// These images keep stable filenames (no content hash), so "immutable" would pin a
+// replaced image for a year. A week plus a day of stale-while-revalidate keeps
+// them cacheable and still fixable.
+// src: https://nitro.build/config#routerules (headers) ·
+//      nitro 3.0.260603-beta (types: NitroRouteRules.headers)
+const PUBLIC_IMAGE_CACHE = {
+  "Cache-Control": "public, max-age=604800, stale-while-revalidate=86400",
+};
+export const publicAssetCacheRules: Record<string, { headers: Record<string, string> }> = {
+  "/hero-style-sheet.png": { headers: PUBLIC_IMAGE_CACHE },
+  "/landing/**": { headers: PUBLIC_IMAGE_CACHE },
+  "/og-image.jpg": { headers: PUBLIC_IMAGE_CACHE },
+  "/og-share.jpg": { headers: PUBLIC_IMAGE_CACHE },
+};
+
 function buildCsp(supabaseUrl: string | undefined): string {
   // Dev-only allowance so impeccable live mode can load. Guarded by NODE_ENV.
   const live = process.env.NODE_ENV === "development" ? ["http://localhost:8400"] : [];
@@ -159,6 +174,7 @@ export default defineConfig(({ command, mode }) => {
                 "/assets/**": {
                   headers: { "Cache-Control": "public, max-age=31536000, immutable" },
                 },
+                ...publicAssetCacheRules,
               },
               rollupConfig: {
                 output: {

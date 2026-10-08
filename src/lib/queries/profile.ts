@@ -1,5 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { memberAuthorization } from "@/lib/auth-session";
+import { memberQueryRetry } from "@/lib/queries/member-query";
 import { queryKeys } from "@/constants/query-keys";
 import { deriveColorMetrics } from "@/lib/profile-color";
 import type { Json } from "@/integrations/supabase/types";
@@ -118,20 +120,26 @@ function buildDashboardProfile(
   };
 }
 
-export function profileQueryOptions(userId: string | undefined) {
+export function profileQueryOptions(userId: string | undefined, client = supabase) {
   return queryOptions({
     queryKey: queryKeys.profile(userId),
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!userId) return buildDashboardProfile(null);
+      // Read as her, never as anonymous: an anonymous read sees no profile row,
+      // and an empty profile sends a finished member to onboarding.
+      const authorization = await memberAuthorization(client.auth, userId);
+      const { data, error } = await client
         .from("profiles")
         .select(
           "body_type,color_season,skin_undertone,full_name,color_profile,face_shape,hair_type,beauty_preferences,default_location,gender,hair_length,makeup_preference,shopping_preferences,styling_constraints,delivery_country,photo_consent_at,skin_depth,height_cm,weight_kg",
         )
-        .eq("id", userId as string)
-        .maybeSingle();
+        .eq("id", userId)
+        .maybeSingle()
+        .setHeader("Authorization", authorization);
       if (error) throw error;
       return buildDashboardProfile(data);
     },
     staleTime: 5 * 60_000,
+    retry: memberQueryRetry,
   });
 }

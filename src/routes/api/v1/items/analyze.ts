@@ -25,7 +25,11 @@ export async function handleItemsAnalyze(
     const body = await parseJsonBody(request);
     const input = AnalyzeOutfitItemsInput.parse(body);
 
-    const items = await deps.analyzeOutfitItemsForUser(supabase, userId, input);
+    // With a clientRequestId, a detection still being produced is answered
+    // `{ status: "running", jobId }`; builds without one wait for it.
+    const items = input.clientRequestId
+      ? await deps.analyzeOutfitItemsForUser(supabase, userId, input, { inFlight: "report" })
+      : await deps.analyzeOutfitItemsForUser(supabase, userId, input);
     return Response.json(items);
   } catch (error) {
     return respondWithError("items/analyze", error);

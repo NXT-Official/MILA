@@ -205,6 +205,93 @@ describe("OpenRouter chat gateway", () => {
     expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
   });
 
+  test("a complete draft followed by a cut-off final answer is refused", async () => {
+    // The scan used to keep the one complete object it found, here the draft,
+    // and drop the answer the model was still writing when it was cut off.
+    stubProvider(
+      Response.json({
+        choices: [
+          { message: { content: 'Draft: {"value":"draft"}\nFinal answer: {"value":"fin' } },
+        ],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+  });
+
+  test("a cut-off object whose string holds a brace is still refused", async () => {
+    stubProvider(
+      Response.json({
+        choices: [{ message: { content: 'Draft: {"value":"ok"} then {"value":"a } b' } }],
+      }),
+    );
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+  });
+
+  test("a one-item array answer is read the same bare, fenced and in prose; a two-item array is refused", async () => {
+    const one = '[{"value":"ok"}]';
+    const two = '[{"value":"a"},{"value":"b"}]';
+    const forms = (json: string) => [
+      json,
+      `\`\`\`json\n${json}\n\`\`\``,
+      `Here it is: ${json} Done.`,
+    ];
+
+    for (const content of forms(one)) {
+      stubProvider(Response.json({ choices: [{ message: { content } }] }));
+      expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({
+        ok: true,
+        args: { value: "ok" },
+      });
+    }
+    for (const content of forms(two)) {
+      stubProvider(Response.json({ choices: [{ message: { content } }] }));
+      expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+    }
+  });
+
+  test("an empty array is no answer", async () => {
+    stubProvider(Response.json({ choices: [{ message: { content: "[]" } }] }));
+    expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+  });
+
+  test("a JSON null reply is refused as unusable", async () => {
+    // Every tool's root is an object: `null.reply` / `null.items` / `null.passes`
+    // used to throw a TypeError in the callers instead of reading as a 502.
+    for (const content of ["null", "```json\nnull\n```", "[null]"]) {
+      stubProvider(Response.json({ choices: [{ message: { content } }] }));
+      expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+    }
+  });
+
+  test("a bare string, number or boolean reply is no answer either", async () => {
+    for (const content of ['"ok"', "42", "true"]) {
+      stubProvider(Response.json({ choices: [{ message: { content } }] }));
+      expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 502 });
+    }
+  });
+
+  test("a provider error whose body cannot be read still answers its status", async () => {
+    // The connection can drop while the error body is still arriving: the
+    // status is already known, so the caller gets it instead of a throw.
+    const unreadable = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.error(new Error("connection reset"));
+      },
+    });
+    stubProvider(new Response(unreadable, { status: 503 }));
+    const logged = mock((..._args: unknown[]) => {});
+    const originalError = console.error;
+    console.error = logged;
+    try {
+      expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 503 });
+    } finally {
+      console.error = originalError;
+    }
+    expect(
+      logged.mock.calls.some((call) => call[0] === "[ai] provider error body unreadable"),
+    ).toBe(true);
+  });
+
   test("surfaces the provider status instead of throwing", async () => {
     stubProvider(new Response("slow down", { status: 429 }));
     expect(await aiChatCompletion([], tool, fakeCaller)).toEqual({ ok: false, status: 429 });

@@ -17,6 +17,14 @@ const defaultDeps: HandleLookGenerateDeps = { verifyBearerAuth, generateLookForU
  * `src/lib/generate-outfit.functions.ts`. **1 AI credit.** See
  * `MILA_MOBILE/src/services/api/look.ts` for the exact request/response
  * contract this must satisfy.
+ *
+ * Generation jobs: an optional `clientRequestId` (UUID) makes the request
+ * idempotent: a repeat replays the stored look (no second charge), and while
+ * another look is still being composed the answer is
+ * `200 { status: "running", jobId }` for the client to follow. Without a
+ * clientRequestId (builds that predate jobs) the route waits for that look
+ * and answers it, so those builds keep receiving a look. Responses carry
+ * `jobId` once the migration is applied.
  */
 export async function handleLookGenerate(
   request: Request,
@@ -32,7 +40,9 @@ export async function handleLookGenerate(
       );
     }
 
-    const look = await deps.generateLookForUser(supabase, userId, parsed.data);
+    const look = parsed.data.clientRequestId
+      ? await deps.generateLookForUser(supabase, userId, parsed.data, { inFlight: "report" })
+      : await deps.generateLookForUser(supabase, userId, parsed.data);
     return Response.json(look);
   } catch (error) {
     return respondWithError("look/generate", error);

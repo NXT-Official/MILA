@@ -2,7 +2,8 @@ import { createFileRoute, Outlet, Link, useNavigate, useSearch } from "@tanstack
 import { useEffect, useRef } from "react";
 import { LogOut, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useAuthenticatedViewerState } from "@/lib/queries/auth";
+import { routeForViewer, useAuthenticatedViewerState } from "@/lib/queries/auth";
+import { AuthReconnecting } from "@/components/layout/auth-reconnecting";
 import { useSignOut } from "@/hooks/use-sign-out";
 import { IconButton } from "@/components/ui/icon-button";
 import { sanitizeRestartFlag } from "@/constants/steps";
@@ -23,20 +24,28 @@ function OnboardingLayout() {
   // when the user explicitly chose Restart Style Analysis.
   const wasCompleteAtLoad = useRef<boolean | null>(null);
   const redirectAtLoad = useRef<boolean | null>(null);
-  if (redirectAtLoad.current === null && user && !viewer.isLoading) {
+  // Captured only from a profile that was actually read: a failed read is not
+  // "incomplete" and must not decide anything.
+  const route = routeForViewer(viewer);
+  if (redirectAtLoad.current === null && user && (route === "stay" || route === "onboarding")) {
     wasCompleteAtLoad.current = viewer.isStyleProfileComplete;
     redirectAtLoad.current = viewer.isStyleProfileComplete && !isRestart;
   }
   const shouldRedirectForComplete = redirectAtLoad.current === true;
 
   useEffect(() => {
-    if (!user || viewer.isLoading) return;
+    if (!user || redirectAtLoad.current === null) return;
     if (shouldRedirectForComplete) {
       navigate({ to: "/dashboard", replace: true });
     }
-  }, [user, viewer.isLoading, shouldRedirectForComplete, navigate]);
+  }, [user, shouldRedirectForComplete, navigate]);
 
-  if (!user || viewer.isLoading || shouldRedirectForComplete) {
+  // Her profile could not be read yet: the calm try-again state, not the wizard.
+  if (user && redirectAtLoad.current === null && route === "unavailable") {
+    return <AuthReconnecting onRetry={viewer.retry} signInSearch={{}} />;
+  }
+
+  if (!user || redirectAtLoad.current === null || shouldRedirectForComplete) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-stone">
         <Loader2 className="size-4 animate-spin" aria-hidden="true" />

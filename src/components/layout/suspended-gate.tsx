@@ -6,29 +6,46 @@ import { supabase } from "@/integrations/supabase/client";
 import { queryKeys } from "@/constants/query-keys";
 import { STEWARD_EMAIL } from "@/constants/app";
 import { Skeleton } from "@/components/ui/skeleton";
+import { memberAuthorization } from "@/lib/auth-session";
+import { memberQueryRetry } from "@/lib/queries/member-query";
 
 /** Blocks a suspended account from every authenticated tree, members and staff alike. */
 export function SuspendedGate({ children }: { children: ReactNode }) {
   const { session, signOut } = useAuth();
   const userId = session?.user.id;
 
-  const { data: suspended, isLoading } = useQuery({
+  const {
+    data: suspended,
+    isLoading,
+    failureCount,
+    errorUpdateCount,
+  } = useQuery({
     queryKey: queryKeys.suspended(userId),
     enabled: !!userId,
     queryFn: async () => {
-      const { data } = await supabase
+      // Read as her, never as anonymous: an anonymous read sees no profile and
+      // would cache "not suspended" over the real answer.
+      const authorization = await memberAuthorization(supabase.auth, userId!);
+      const { data, error } = await supabase
         .from("profiles")
         .select("suspended")
         .eq("id", userId!)
-        .maybeSingle();
+        .maybeSingle()
+        .setHeader("Authorization", authorization);
+      if (error) throw error;
       return !!data?.suspended;
     },
+    retry: memberQueryRetry,
   });
 
   // Don't render the authenticated app (or the suspended-block screen) until
   // we actually know the suspension status — otherwise a suspended member
   // briefly sees the real dashboard on every cold load before this resolves.
-  if (userId && isLoading) {
+  // Only the first attempt blocks: once a read has failed it keeps retrying in
+  // the background (each retry resets a data-less query to loading), and the
+  // page underneath shows its own calm state instead of a blank skeleton.
+  const firstAttempt = failureCount === 0 && errorUpdateCount === 0;
+  if (userId && isLoading && firstAttempt) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6">
         <Skeleton className="h-8 w-48" />

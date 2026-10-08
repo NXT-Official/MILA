@@ -24,18 +24,28 @@ function SkeletonCard({ compact }: { compact?: boolean }) {
   );
 }
 
-export function OutfitResultSkeleton() {
+/**
+ * `wait`: the staged copy of a look being composed ("Choosing pieces", "About
+ * 2 minutes · you can leave this page"). Without it, the original copy.
+ */
+export function OutfitResultSkeleton({
+  wait,
+}: {
+  wait?: { stage: string; detail: string; line: string } | null;
+} = {}) {
   return (
     <div className="space-y-6" role="status" aria-live="polite">
-      <span className="sr-only">Creating your outfit and visual…</span>
+      <span className="sr-only">{wait ? wait.line : "Creating your outfit and visual…"}</span>
       <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[42fr_58fr] md:gap-8">
         <div className="atelier-media-frame max-w-lg" aria-hidden="true">
           <Skeleton className="absolute inset-0 bg-accent-soft/50" />
           <div className="relative flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
             <Loader2 className="size-5 animate-spin text-ink" />
-            <p className="font-serif text-lg text-foreground">Visualizing your look…</p>
+            <p className="font-serif text-lg text-foreground">
+              {wait ? wait.stage : "Visualizing your look…"}
+            </p>
             <p className="text-xs text-muted-foreground">
-              Creating your personalized outfit visual.
+              {wait ? wait.detail : "Creating your personalized outfit visual."}
             </p>
           </div>
         </div>

@@ -15,7 +15,7 @@ import {
   STYLE_SHEET_BUSY_REASON,
 } from "@/components/dashboard/style-sheet-run";
 
-const VIBES = [
+export const VIBES = [
   "Everyday Casual",
   "Work or School",
   "Business Casual",
@@ -46,6 +46,7 @@ export function HeroGeneratorForm({
   photoPreviewLoading,
   profileComplete,
   blockedReason,
+  checking = false,
   onGenerate,
 }: {
   vibe: Vibe;
@@ -62,6 +63,8 @@ export function HeroGeneratorForm({
   photoPreviewLoading: boolean;
   profileComplete: boolean;
   blockedReason: string | null;
+  /** Create waits for a quick check (her last look's job row after a reload); the why is in `blockedReason`. */
+  checking?: boolean;
   onGenerate: () => void;
 }) {
   // A new look must wait for the style sheet or portrait still drawing, or the
@@ -168,9 +171,14 @@ export function HeroGeneratorForm({
         <Button
           onClick={onGenerate}
           disabled={
-            generating || styleSheetLoading || photoPreviewLoading || !profileComplete || !climate
+            generating ||
+            styleSheetLoading ||
+            photoPreviewLoading ||
+            !profileComplete ||
+            !climate ||
+            checking
           }
-          aria-describedby={unavailableReason ? "generate-blocked" : undefined}
+          aria-describedby={unavailableReason ? "generate-blocked generate-cost" : "generate-cost"}
           size="pill"
           className="w-full sm:w-auto whitespace-normal text-center leading-snug"
         >
@@ -189,6 +197,10 @@ export function HeroGeneratorForm({
             </>
           )}
         </Button>
+        {/* The cost, said before the click (R7): every look is one credit. */}
+        <span id="generate-cost" className="text-sm text-muted-foreground">
+          Uses 1 credit
+        </span>
         {unavailableReason && (
           <span id="generate-blocked" className="text-sm text-muted-foreground text-pretty">
             {unavailableReason}

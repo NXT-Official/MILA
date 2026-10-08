@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MARKETING_SEO, pageHead, siteFromMatches } from "@/lib/site-seo";
 import {
   loadLandingContentForRoute,
   shouldReloadLandingRoute,
@@ -7,7 +8,8 @@ import {
 import { CommunityPageView } from "@/components/landing/community-page-view";
 
 export const Route = createFileRoute("/community")({
-  head: () => ({ meta: [{ title: "Community — Mila" }] }),
+  head: ({ matches }) =>
+    pageHead({ path: "/community", ...MARKETING_SEO["/community"] }, siteFromMatches(matches)),
   loader: loadLandingContentForRoute,
   shouldReload: shouldReloadLandingRoute,
   staleTime: 5 * 60 * 1000,

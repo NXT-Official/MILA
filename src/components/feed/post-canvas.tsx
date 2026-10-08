@@ -7,6 +7,7 @@ import { PostItemDrawer } from "@/components/feed/post-item-drawer";
 import { VerifiedBadge } from "@/components/ui/verified-badge";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { relativeTime } from "@/lib/utils";
+import { avatarNameFor, ootdLabel } from "@/components/feed/post-canvas-helpers";
 
 export function PostCanvas({ post }: { post: FeedPost }) {
   const author = post.is_self ? "You" : post.author_name?.trim() || "Member";
@@ -16,7 +17,7 @@ export function PostCanvas({ post }: { post: FeedPost }) {
     <article className="rounded-card border border-border bg-card shadow-paper overflow-hidden">
       <header className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3">
-          <AvatarInitial name={author} className="size-9" />
+          <AvatarInitial name={avatarNameFor(post)} className="size-9" />
           <div className="min-w-0">
             <span className="flex items-center gap-1">
               <Link
@@ -35,7 +36,7 @@ export function PostCanvas({ post }: { post: FeedPost }) {
         </div>
         {post.is_self && (
           <span className="text-nano uppercase tracking-label-xwide text-stone px-2 py-0.5 rounded-full border border-porcelain/60">
-            Today's OOTD
+            {ootdLabel(post.created_at)}
           </span>
         )}
       </header>

@@ -5,6 +5,15 @@ import { logAiSpend } from "@/lib/ai-spend.server";
 import { aiChatCompletion } from "@/lib/ai.server";
 import { withAiCredit, markLookImagePending, payForLookImage } from "@/lib/credits.server";
 import {
+  GENERATION_DEADLINE_SECONDS,
+  resolveDailyAllowance,
+  withGenerationJob,
+  withJobId,
+  type GenerationJobDeps,
+  type GenerationJobRunning,
+} from "@/lib/generation-jobs.server";
+import type { Json } from "@/integrations/supabase/types";
+import {
   normalizeBeautyPreferences,
   formatBeautyPreferencesForPrompt,
 } from "@/lib/beauty-preferences";
@@ -19,6 +28,7 @@ import {
   buildInventoryReviewPrompt,
   buildInventoryReviewTool,
   buildOutfitPlanPrompt,
+  buildSwatchBlock,
   computeMakeupEligibility,
   DailyLookSchema,
   HAIRSTYLE_TRENDS_2026,
@@ -31,6 +41,11 @@ import {
 } from "@/lib/generate-outfit.functions";
 import { deriveColorMetrics } from "@/lib/profile-color";
 import { AESTHETIC_MOODS } from "@/constants/style-profile";
+import { isHairColor } from "@/constants/style-profile/hair-colors";
+import { memberSwatches } from "@/lib/color-analysis/member-swatches";
+import { garmentFor } from "@/lib/garment-label";
+import { fallbackWearColour } from "@/lib/wear-colour";
+import { readProfileExtras } from "@/server/services/profile-extras.server";
 import {
   buildFallbackShortlist,
   formatInventoryForPrompt,
@@ -55,7 +70,7 @@ const REVIEW_MIN_SHORTLIST = 8;
  * mobile client both give up at 240s. The server aims to resolve well inside
  * that so the member always gets a real answer (success, or the friendly
  * AI_UNAVAILABLE retry message) before the client's own timeout fires. */
-const COMPOSE_DEADLINE_MS = 215_000;
+export const COMPOSE_DEADLINE_MS = 215_000;
 /** Per-attempt budgets, allocated by blast radius: the REVIEW is backed by
  * the deterministic fallback (buildFallbackShortlist), so it fails fast — a
  * second review attempt only happens when the first died early enough that
@@ -77,17 +92,31 @@ const MIN_COMPOSE_CALL_MS = 12_000;
  * Bounded waits in the same probe still returned full, valid payloads. */
 const REVIEW_REASONING_TOKENS = 1024;
 const PLAN_REASONING_TOKENS = 4096;
+/** Minimum room the schema-repair plan attempt needs before it starts — same
+ * family as the plan retry's floor (MIN_COMPOSE_ATTEMPT_MS, plus the compose
+ * margin): below this the deadline is better spent resolving than starting an
+ * attempt that can't finish. */
+const REPAIR_MIN_ATTEMPT_MS = 45_000;
 
 export type LookComposeDeps = {
   /** The provider chat call — tests inject fakes; production uses
    * aiChatCompletion. */
   ai?: typeof aiChatCompletion;
-  /** The credit wrapper — tests inject a pass-through; production uses
-   * withAiCredit. */
+  /** The legacy credit wrapper, used only while the generation_jobs
+   * migration is not applied (the job charges once at start otherwise) —
+   * tests inject a pass-through; production uses withAiCredit. */
   withCredit?: typeof withAiCredit;
   /** Marks the first-render-free claim — tests inject a spy; production
    * writes through supabaseAdmin. */
   markPending?: (userId: string) => Promise<void>;
+  /** The generation-job seams (store, availability, clock) — tests inject the
+   * in-memory store; production uses the Supabase store. */
+  jobs?: GenerationJobDeps;
+  /** The daily allowance the job's charge is taken against — tests inject a
+   * constant; production resolves it exactly as consume_ai_credit does. */
+  dailyAllowance?: (supabase: MilaSupabaseClient, userId: string) => Promise<number>;
+  /** The compose budget's clock — tests inject a controlled one. */
+  now?: () => number;
 };
 
 /** `path: message` pairs (capped) describing why a plan payload failed
@@ -125,6 +154,10 @@ export type ComposeBudget = {
   /** May the plan retry after a failed attempt? Whenever a clamped attempt
    * can still plausibly finish. */
   canRetryPlan: () => boolean;
+  /** May a schema-invalid plan output be re-asked once? Whenever a repair
+   * attempt (REPAIR_MIN_ATTEMPT_MS) can still finish inside the margin; it
+   * runs on planTimeout(), so it ends inside the deadline like any plan call. */
+  canRepairPlan: () => boolean;
 };
 
 /** The clock the compose stages share, started once the catalog is loaded. */
@@ -140,6 +173,7 @@ export function createComposeBudget(now: () => number = Date.now): ComposeBudget
     planTimeout: () => callTimeout(PLAN_CALL_TIMEOUT_MS),
     canRetryReview: () => fits(REVIEW_CALL_TIMEOUT_MS + MIN_COMPOSE_ATTEMPT_MS),
     canRetryPlan: () => fits(MIN_COMPOSE_ATTEMPT_MS),
+    canRepairPlan: () => fits(REPAIR_MIN_ATTEMPT_MS),
   };
 }
 
@@ -148,11 +182,54 @@ export type LookImageResult = {
   imageGenerationError?: string;
 };
 
+/** Today's look response, plus the generation job it was recorded as (absent
+ * while the generation_jobs migration is not applied), and whether this answer
+ * is that job's stored look (`replayed`: a repeat of a known request, or
+ * another request's job it waited for) rather than one composed for this call.
+ * Web and mobile count a look once by it. */
+export type LookResponse = DailyLook & { jobId?: string; replayed?: boolean };
+
+/** The member-facing message for every look that could not be composed. */
+export const LOOK_FAILURE_MESSAGE = "Mila couldn't compose a look this time. Please try again.";
+
+/** What the look's job row records as its input: the request minus the
+ * idempotency key and exact coordinates (the location label stays). */
+export function lookJobInput(data: GenerateLookInputData): Json {
+  const { clientRequestId, lat, lon, ...input } = data;
+  return input as Json;
+}
+
+/** A replayed look: the stored result, checked against the same schema it
+ * was validated with before it was stored. */
+export function lookFromStored(result: Json | null): DailyLook {
+  const parsed = DailyLookSchema.safeParse(result);
+  if (!parsed.success) {
+    console.error("[generateLookForUser] a stored look no longer validates", parsed.error.issues);
+    throw new AiUnavailableError(LOOK_FAILURE_MESSAGE);
+  }
+  return parsed.data;
+}
+
 /**
  * Composes today's Daily Look (outfit + hair + makeup) and charges one AI
  * credit. Shared verbatim by the web `generateDailyLook` server function and
  * the mobile `POST /api/v1/look/generate` route — this is the entire body
  * that used to live inside `generateDailyLook`'s handler.
+ *
+ * Runs as a generation job (src/lib/generation-jobs.server.ts): the credit is
+ * taken when the job starts, the composed look is stored before it is
+ * returned, a repeated `clientRequestId` replays it without a second charge,
+ * and every failure refunds once. `inFlight: 'report'` answers
+ * `{ status: 'running', jobId }` while another look is still being composed
+ * (clients that send a clientRequestId); the default waits for that look and
+ * returns it. Until the migration is applied this is exactly the old
+ * `withAiCredit` path.
+ *
+ * Self-healing: a plan output that fails DailyLookSchema is re-asked once
+ * with its zod issues (the schema repair), when the compose budget still
+ * fits a plan attempt. The repair, like every retry here, runs inside the
+ * job's produce step: one charge per request, one refund if the look still
+ * fails, and the shared compose budget keeps it inside the job deadline.
  *
  * The pipeline is three steps, all in this one request:
  *   1. loadLookInventory — the whole eligible shop catalog for this client.
@@ -168,23 +245,62 @@ export type LookImageResult = {
  * which read as a random shop dump beside the look. The client's next call
  * renders the plan's visual with muse-image.
  */
+export function generateLookForUser(
+  supabase: MilaSupabaseClient,
+  userId: string,
+  data: GenerateLookInputData,
+  options?: { inFlight?: "attach" },
+  deps?: LookComposeDeps,
+): Promise<LookResponse>;
+export function generateLookForUser(
+  supabase: MilaSupabaseClient,
+  userId: string,
+  data: GenerateLookInputData,
+  options: { inFlight: "report" },
+  deps?: LookComposeDeps,
+): Promise<LookResponse | GenerationJobRunning>;
 export async function generateLookForUser(
   supabase: MilaSupabaseClient,
   userId: string,
   data: GenerateLookInputData,
+  options: { inFlight?: "attach" | "report" } = {},
   deps: LookComposeDeps = {},
-): Promise<DailyLook> {
+): Promise<LookResponse | GenerationJobRunning> {
   const ai = deps.ai ?? aiChatCompletion;
   const withCredit = deps.withCredit ?? withAiCredit;
   const markPending = deps.markPending ?? markLookImagePending;
-  return withCredit(supabase, userId, async () => {
-    const { data: profileRow } = await supabase
-      .from("profiles")
-      .select(
-        "beauty_preferences,gender,makeup_preference,hair_length,skin_depth,height_cm,weight_kg,color_profile,color_season,skin_undertone",
-      )
-      .eq("id", userId)
-      .maybeSingle();
+  const dailyAllowanceFor = deps.dailyAllowance ?? resolveDailyAllowance;
+  // The job's produce step. Every provider call in it (review, its retry and
+  // recheck, the plan, its retry, the schema repair) runs under the one
+  // charge the job took at start (or withCredit's, on the legacy path), and
+  // all of them share the compose budget, which ends well inside the job's
+  // produce window — so a self-healing retry can never charge twice or
+  // outlive the job.
+  const compose = async (): Promise<DailyLook> => {
+    // Her Wave D fields (hair colour) come from their own guarded read, beside
+    // the main one and never inside it: until the owner applies the Wave D
+    // migration that column is missing, and naming it in the main select would
+    // break every look. readProfileExtras never throws; a missing column, an
+    // error or no row reads as "no hair colour", and the look goes on.
+    const [{ data: profileRow }, extras] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select(
+          "beauty_preferences,gender,makeup_preference,hair_length,skin_depth,height_cm,weight_kg,color_profile,color_season,skin_undertone",
+        )
+        .eq("id", userId)
+        .maybeSingle(),
+      readProfileExtras(supabase, userId),
+    ]);
+
+    // Her own wearable colours (primary, then secondary; at most 8). The plan
+    // may only name one of these for each pick's wear_colour, and the hex is
+    // always copied from here (Wave D, R6). None: the tool and prompt are
+    // exactly today's.
+    const swatches = memberSwatches(profileRow?.color_profile);
+    // Only an exact HAIR_COLORS value reaches a prompt: the column is
+    // member-writable (Wave D plan, risk K4).
+    const hairColorValue = isHairColor(extras.hairColor) ? extras.hairColor : null;
 
     const { selectedAesthetic } = deriveColorMetrics(profileRow);
     const aestheticName = selectedAesthetic
@@ -296,6 +412,9 @@ export async function generateLookForUser(
         ? `- Hair type: ${hairTypeValue} (use this exact hair-type name in the hair rationale)`
         : null,
       hairLengthValue ? `- Current hair length: ${hairLengthValue}` : null,
+      hairColorValue
+        ? `- Hair color: ${hairColorValue} (keep the colors worn near the face in tune with it)`
+        : null,
       `- Beauty preferences: ${beautyPrefsLine}`,
       aestheticName && aestheticGuide
         ? `- Personal style identity: ${aestheticName} — ${aestheticGuide} (this is the client's standing aesthetic signature; blend it with today's occasion vibe below rather than defaulting to a generic take on that occasion)`
@@ -324,7 +443,7 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     // isn't a live row from the same list, so the plan stage below can only
     // ever choose pieces that actually exist in the shop.
     let shortlistProducts: LookInventoryItem[] = [];
-    const budget = createComposeBudget();
+    const budget = createComposeBudget(deps.now);
     if (inventory.length > 0) {
       const reviewPrompt = buildInventoryReviewPrompt({
         profileLines,
@@ -483,6 +602,10 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
             .join("\n")
         : "(none available right now — compose the outfit without inventory pieces and omit shoppable_picks entirely)";
 
+    const shortlistIds = shortlistProducts.map((p) => p.id);
+    // Her colour map is only asked for when there are picks to colour.
+    const mapSwatches = shortlistIds.length > 0 ? swatches : [];
+
     const systemPrompt = buildOutfitPlanPrompt({
       profileLines,
       weatherBlock,
@@ -497,14 +620,18 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       beautyPrefsLine,
       hairRule,
       shortlistBlock,
+      swatchBlock: buildSwatchBlock(mapSwatches),
     });
 
-    const shortlistIds = shortlistProducts.map((p) => p.id);
     const planMessages = [
       { role: "system", content: systemPrompt },
       { role: "user", content: "Compose today's complete look." },
     ];
-    const planTool = buildDailyLookTool(makeupEnabled, shortlistIds);
+    const planTool = buildDailyLookTool(
+      makeupEnabled,
+      shortlistIds,
+      mapSwatches.map((swatch) => swatch.name),
+    );
     let composed = await ai(
       planMessages,
       planTool,
@@ -538,7 +665,11 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     // hydration/backfill/validation on its second attempt — the repair path
     // can never drift from the primary one.
     const finalizePlanOutput = (rawArgs: Record<string, unknown>) => {
-      const hydratedPicks = hydrateShoppablePicks(rawArgs.shoppable_picks, shortlistProducts);
+      const hydratedPicks = hydrateShoppablePicks(
+        rawArgs.shoppable_picks,
+        shortlistProducts,
+        mapSwatches,
+      );
 
       // Climate backstop: CLIMATE_RULES asks deepseek (in prompt text) to
       // include outerwear below COLD_WEATHER_F, but prompt compliance isn't
@@ -556,6 +687,9 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
           `[generateLookForUser] cold-weather outfit missing Outerwear and none available in inventory (tempF=${tempF})`,
         );
       }
+      // The backfill was not planned by the model, so it has no colour of its
+      // own: it wears her deepest swatch, in the role its kind gives it (an
+      // outer layer is a base).
       const picksWithWeatherBackfill: ShoppablePick[] = weatherBackfill
         ? [
             ...hydratedPicks,
@@ -563,6 +697,15 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
               ...weatherBackfill.product,
               rationale: weatherBackfill.rationale,
               source: "planned" as const,
+              ...(mapSwatches.length > 0
+                ? {
+                    wear_colour: fallbackWearColour(
+                      garmentFor(weatherBackfill.product.category, weatherBackfill.product.title)
+                        .kind,
+                      mapSwatches,
+                    ),
+                  }
+                : {}),
             },
           ]
         : hydratedPicks;
@@ -602,10 +745,12 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
       // Schema-repair retry: a payload that dies on validation — a missing
       // field, an empty string, a wrong type — used to fail the whole
       // generation even though the model was one sampled correction away
-      // from a valid look. When a clamped plan attempt still fits (the same
-      // budget rule as the plan retry), re-ask once with the issues spelled
-      // out and keep the repaired payload if it validates.
-      if (budget.canRetryPlan()) {
+      // from a valid look. When a real plan attempt still fits the deadline,
+      // re-ask once with the issues spelled out and keep the repaired payload
+      // if it validates. It shares the compose budget (gate and clamp), and
+      // it is one more call inside the job's produce step, not a new request:
+      // no second charge.
+      if (budget.canRepairPlan()) {
         console.warn(
           `[generateLookForUser] plan output failed schema validation — re-asking once with ${Math.round(budget.remainingMs() / 1000)}s left`,
         );
@@ -643,7 +788,31 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
     // separate renderLookImageForUser call the client makes next.
     await markPending(userId);
     return look.data;
-  });
+  };
+
+  const outcome = await withGenerationJob<DailyLook>(
+    {
+      kind: "look",
+      userId,
+      clientRequestId: data.clientRequestId,
+      input: lookJobInput(data),
+      charge: true,
+      dailyAllowance: await dailyAllowanceFor(supabase, userId),
+      deadlineSeconds: GENERATION_DEADLINE_SECONDS,
+      inFlight: options.inFlight,
+      settle: (look) => ({ ok: true, result: look as Json }),
+      fromStored: ({ result }) => lookFromStored(result),
+      failure: () => {
+        throw new AiUnavailableError(LOOK_FAILURE_MESSAGE);
+      },
+      legacy: () => withCredit(supabase, userId, compose),
+    },
+    compose,
+    deps.jobs,
+  );
+  if (outcome.status === "running") return outcome;
+  const answer = withJobId(outcome.value, outcome.jobId);
+  return outcome.jobId ? { ...answer, replayed: outcome.replayed } : answer;
 }
 
 /** The outfit-visual render runs its own tighter budget than the style-sheet/
@@ -654,7 +823,9 @@ ${data.indoorOutdoor ? `- Setting: ${data.indoorOutdoor}` : ""}`
  * muse-image attempt runs 30–65s. */
 const LOOK_IMAGE_MAX_ATTEMPTS = 2;
 const LOOK_IMAGE_ATTEMPT_MS = 75_000;
-const LOOK_IMAGE_BUDGET_MS = 150_000;
+/** Exported so a test pins it inside the function's render budget and the
+ * generation-job produce window. */
+export const LOOK_IMAGE_BUDGET_MS = 150_000;
 /** Don't start an attempt that can't plausibly finish. */
 const LOOK_IMAGE_MIN_ATTEMPT_MS = 40_000;
 
