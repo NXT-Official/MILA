@@ -1,7 +1,19 @@
 const VERIFY_URL = "https://hcaptcha.com/siteverify";
 const VERIFY_TIMEOUT_MS = 8_000;
 
+/**
+ * Mirrors VITE_CAPTCHA_ENABLED in components/login/use-captcha.tsx: captcha is
+ * off unless it is switched on in both places. While it is off the browser never
+ * sends a real token, so the forms that verify one server-side must not demand
+ * it. Read per call so tests and runtime env changes are honoured.
+ */
+export function captchaEnabled() {
+  return (process.env.CAPTCHA_ENABLED ?? "").toLowerCase() === "true";
+}
+
 export async function verifyHcaptcha(token: string | undefined | null, remoteIp?: string) {
+  if (!captchaEnabled()) return;
+
   const secret = process.env.HCAPTCHA_SECRET;
   if (!secret) {
     console.error("[hcaptcha] HCAPTCHA_SECRET is not configured");

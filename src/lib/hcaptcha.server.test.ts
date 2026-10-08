@@ -1,10 +1,17 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { verifyHcaptcha } from "./hcaptcha.server";
 
 const originalSecret = process.env.HCAPTCHA_SECRET;
+const originalCaptchaEnabled = process.env.CAPTCHA_ENABLED;
 const originalFetch = globalThis.fetch;
+beforeEach(() => {
+  // The verifier is off unless captcha is switched on; these tests cover it live.
+  process.env.CAPTCHA_ENABLED = "true";
+});
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  if (originalCaptchaEnabled === undefined) delete process.env.CAPTCHA_ENABLED;
+  else process.env.CAPTCHA_ENABLED = originalCaptchaEnabled;
   if (originalSecret === undefined) delete process.env.HCAPTCHA_SECRET;
   else process.env.HCAPTCHA_SECRET = originalSecret;
 });
