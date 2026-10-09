@@ -37,6 +37,7 @@ export function ReviewStep({
   dossier,
   onEdit,
   onComplete,
+  onAddDetail,
   completing,
   completionError,
 }: {
@@ -44,6 +45,8 @@ export function ReviewStep({
   dossier: StudioDossier | null;
   onEdit: (step: OnboardingStepId) => void;
   onComplete: () => void;
+  /** Offered while the optional extras are still untouched. */
+  onAddDetail?: () => void;
   completing: boolean;
   completionError: string | null;
 }) {
@@ -71,6 +74,22 @@ export function ReviewStep({
           </p>
         </div>
       </div>
+
+      {onAddDetail ? (
+        <button
+          type="button"
+          onClick={onAddDetail}
+          className="atelier-focus-ring mt-6 w-full rounded-card border border-dashed border-line bg-surface p-4 text-left hover:border-accent"
+        >
+          <p className="text-sm font-medium text-ink">
+            Optional: add a few details for sharper looks
+          </p>
+          <p className="mt-1 text-xs text-muted leading-relaxed">
+            Measurements, makeup preference, beauty priorities, location, and shopping preferences —
+            all optional, and all editable later.
+          </p>
+        </button>
+      ) : null}
 
       <div className="mt-6">
         <ReviewSection
@@ -166,7 +185,7 @@ export function ReviewStep({
         </p>
       ) : null}
 
-      <div className="mt-8 flex justify-end border-t border-line pt-6">
+      <div className="mt-8 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-end">
         <Button size="lg" loading={completing} onClick={onComplete}>
           Complete my style profile
         </Button>
