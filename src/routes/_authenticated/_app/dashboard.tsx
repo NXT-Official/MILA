@@ -77,6 +77,7 @@ import { createLatestRun } from "@/components/dashboard/style-sheet-run";
 import { generatePhotoPreview } from "@/lib/photo-preview.functions";
 import { generateStyleSheetPreview } from "@/lib/style-sheet.functions";
 import { SelfiePhotoWidget } from "@/components/dashboard/selfie-photo-widget";
+import { GettingStartedCard } from "@/components/dashboard/getting-started-card";
 import { toast } from "sonner";
 import { UpgradeSlotsDialog } from "@/components/dashboard/upgrade-slots-dialog";
 import { isInsufficientCreditsError } from "@/lib/credits";
@@ -1369,6 +1370,20 @@ function Dashboard() {
       initial="hidden"
       animate="visible"
     >
+      {/* The instruction a new member never got: what to do first. Hides itself
+          once all three moves are done, or when dismissed. */}
+      {!profileLoading && !lookStatsLoading ? (
+        <motion.section variants={cardItemVariants} className="mb-6">
+          <GettingStartedCard
+            profileCompletionPercent={profileCompletionPercent}
+            hasPhotoConsent={!!profile?.photo_consent_at}
+            hasComposedLook={
+              (lookStats?.recentLooks?.length ?? 0) > 0 || (lookStats?.looksThisMonth ?? 0) > 0
+            }
+          />
+        </motion.section>
+      ) : null}
+
       <motion.section
         variants={cardItemVariants}
         className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4"
@@ -1433,31 +1448,33 @@ function Dashboard() {
                     </Link>
                   </p>
                 ) : null}
-                <div className="mt-3">
+                <div id="selfie-photo" className="mt-3 scroll-mt-24">
                   <SelfiePhotoWidget hasConsent={!!profile?.photo_consent_at} userId={user?.id} />
                 </div>
               </div>
               <ClimateWidget value={climate} onChange={setClimate} />
             </div>
 
-            <HeroGeneratorForm
-              vibe={vibe}
-              onVibeChange={setVibe}
-              agenda={agenda}
-              onAgendaChange={setAgenda}
-              dressCode={dressCode}
-              onDressCodeChange={setDressCode}
-              indoorOutdoor={indoorOutdoor}
-              onIndoorOutdoorChange={setIndoorOutdoor}
-              climate={climate}
-              generating={generating}
-              styleSheetLoading={styleSheetLoading}
-              photoPreviewLoading={photoPreviewLoading}
-              profileComplete={profileComplete}
-              blockedReason={blockedReason}
-              checking={checkingLastLook}
-              onGenerate={generateLook}
-            />
+            <div id="hero-generate" className="scroll-mt-24">
+              <HeroGeneratorForm
+                vibe={vibe}
+                onVibeChange={setVibe}
+                agenda={agenda}
+                onAgendaChange={setAgenda}
+                dressCode={dressCode}
+                onDressCodeChange={setDressCode}
+                indoorOutdoor={indoorOutdoor}
+                onIndoorOutdoorChange={setIndoorOutdoor}
+                climate={climate}
+                generating={generating}
+                styleSheetLoading={styleSheetLoading}
+                photoPreviewLoading={photoPreviewLoading}
+                profileComplete={profileComplete}
+                blockedReason={blockedReason}
+                checking={checkingLastLook}
+                onGenerate={generateLook}
+              />
+            </div>
 
             <div className="mt-8">
               <HeroResultPanel
