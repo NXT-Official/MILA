@@ -1,14 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { MILA_DEPLOYMENT_ORIGINS, authOriginConfig, pickAuthOrigin } from "./auth-origin";
 
-const LIVE = "https://mila-umber.vercel.app";
+const LIVE = "https://milafashion.site";
+const LIVE_VERCEL = "https://mila-umber.vercel.app";
 const PREVIEW = "https://mila-nicoledev.vercel.app";
 
 describe("pickAuthOrigin: auth links never point at a forged host", () => {
   const production = authOriginConfig({ NODE_ENV: "production" });
 
   test("the known Mila deployments are the default allowlist", () => {
-    expect([...MILA_DEPLOYMENT_ORIGINS]).toEqual([LIVE, PREVIEW]);
+    expect([...MILA_DEPLOYMENT_ORIGINS]).toEqual([LIVE, LIVE_VERCEL, PREVIEW]);
   });
 
   test("a forged Host (request URL) gets the canonical URL", () => {

@@ -30,7 +30,7 @@ export type MailerDeps = {
   log?: (message: string, detail?: unknown) => void;
 };
 
-export const DEFAULT_MAIL_FROM = "Mila <noreply@mila.app>";
+export const DEFAULT_MAIL_FROM = "Mila <noreply@milafashion.site>";
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 export function mailerFrom(env: Record<string, string | undefined> = process.env): string {
