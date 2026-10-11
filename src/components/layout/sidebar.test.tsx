@@ -46,3 +46,14 @@ describe("Sidebar main navigation", () => {
     expect(link).toContain("text-accent");
   });
 });
+
+describe("Sidebar avatar", () => {
+  test("opens the account menu (where Sign out lives) instead of leaving the page", async () => {
+    const out = await renderSidebar();
+    const trigger = out.match(/<button[^>]*aria-label="Your account"[^>]*>/)?.[0] ?? "";
+    expect(trigger).toContain('aria-haspopup="menu"');
+    expect(out).not.toMatch(/<a[^>]*href="\/account"/);
+    // Her initial and name are still what the trigger shows.
+    expect(out).toContain(">Ana</span>");
+  });
+});
