@@ -1,0 +1,46 @@
+src/components/layout/app-shell.tsx
+  s_f8d6ceb53516cd::t_44e08041b37693 201
+  s_f8d6ceb53516cd::t_362f692fcda3f7 13
+  s_f8d6ceb53516cd::t_fb67489fba0948 196
+src/components/layout/profile-menu.test.tsx
+  s_f8d6ceb53516cd::t_482d8c9d3e4998 1-21
+src/components/layout/profile-menu.tsx
+  s_f8d6ceb53516cd::t_2bf8fdad5dcb5a 1-41,45-49,53-59,61-62,66-70,72-80
+  s_f8d6ceb53516cd::t_42ea73a2d082ba 42-44,50-51,63-65,71
+  s_f8d6ceb53516cd::t_f2865e3efb02dc 52,60
+src/components/layout/sidebar.tsx
+  s_f8d6ceb53516cd::t_fb67489fba0948 210
+  s_f8d6ceb53516cd::t_e48ce8b024f6a6 18
+  s_f8d6ceb53516cd::t_5490e65615ce7d 207-209,224
+src/components/layout/sidebar.test.tsx
+  s_f8d6ceb53516cd::t_493a2e4426c850 49-59
+tests/e2e/auth-session.spec.ts
+  s_f8d6ceb53516cd::t_a231ad5c4c6723 677-680
+  s_f8d6ceb53516cd::t_d347c5480b1f97 653-676,681-714
+  s_f8d6ceb53516cd::t_dfe9f97f22df28 94-96
+  s_f8d6ceb53516cd::t_f16e597ab6aa7b 579-652,715-716,720-740,744-753
+  s_f8d6ceb53516cd::t_d45075d6d7f90a 743
+  s_f8d6ceb53516cd::t_b953da1b5e4292 717-719
+  s_f8d6ceb53516cd::t_62abbcc6c0e594 741-742
+  s_f8d6ceb53516cd::t_e5f78b145ab291 114-118
+MILA_CHANGELOG_2026-10-11.md
+  s_f8d6ceb53516cd::t_9de04e9aa5a93e 1-22
+src/components/layout/app-shell.test.tsx
+  s_f8d6ceb53516cd::t_d195c6017b1998 112-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7e1ff45d5477248f0265120566b7cec6f3a0c30f",
+  "prompts": {},
+  "sessions": {
+    "s_f8d6ceb53516cd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c84df994-0d2a-4bdf-b97f-83f23f252335",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "naaxtech <naaxtech.official@gmail.com>"
+    }
+  }
+}
