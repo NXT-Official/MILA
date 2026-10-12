@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { Sidebar } from "@/components/layout/sidebar";
+import { ProfileMenu } from "@/components/layout/profile-menu";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { saveLensAnalysis } from "@/components/layout/save-lens-analysis";
 import { StudioCameraDrawer } from "@/components/dashboard/studio-camera-drawer";
@@ -192,12 +193,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Camera className="size-3.5" strokeWidth={1.75} />
                     Lens
                   </Button>
-                  <Link to="/account" aria-label="Your account" className="rounded-full">
+                  <ProfileMenu triggerClassName="atelier-focus-ring cursor-pointer rounded-full">
                     <AvatarInitial
                       name={displayName}
                       className="size-10 tracking-wide transition-all duration-300 hover:border-porcelain hover:shadow-atelier-soft"
                     />
-                  </Link>
+                  </ProfileMenu>
                 </div>
               </div>
             </header>

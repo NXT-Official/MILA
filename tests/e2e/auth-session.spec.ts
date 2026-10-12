@@ -91,6 +91,9 @@ async function mockSupabase(page: Page, refresh: RefreshMode = "ok") {
     anonymousTables: [] as string[],
     // When true, PostgREST fails the profile read (network or server trouble).
     profilesFail: false,
+    // Sign-out calls that reached the auth server, and how it answers them.
+    logouts: 0,
+    logoutStatus: 204 as 204 | 500,
   };
   await page.route(`${SUPABASE_URL}/**`, async (route) => {
     const request = route.request();
@@ -108,7 +111,11 @@ async function mockSupabase(page: Page, refresh: RefreshMode = "ok") {
       return json(makeSession(3600));
     }
     if (url.pathname === "/auth/v1/user") return json(makeSession(3600).user);
-    if (url.pathname === "/auth/v1/logout") return route.fulfill({ status: 204, headers: CORS });
+    if (url.pathname === "/auth/v1/logout") {
+      state.logouts += 1;
+      if (state.logoutStatus === 500) return json({ code: 500, msg: "upstream unavailable" }, 500);
+      return route.fulfill({ status: 204, headers: CORS });
+    }
     if (url.pathname.startsWith("/rest/v1/")) {
       const wantsObject = (request.headers()["accept"] ?? "").includes("vnd.pgrst.object");
       // Our JWTs start with the base64url of `{"alg"`: "eyJ".
@@ -569,3 +576,178 @@ async function expectStudioRecovered(page: Page) {
   await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);
   expect(new URL(page.url()).pathname).toBe("/style-profile");
 }
+
+test.describe("sign out from the avatar", () => {
+  async function openAccountMenu(page: Page) {
+    await page.getByRole("button", { name: "Your account" }).filter({ visible: true }).click();
+    return page.getByRole("menu");
+  }
+
+  /** Signed out for real: back on the landing, the token gone, and a member page asks her to sign in. */
+  async function expectSignedOut(page: Page) {
+    await page.waitForURL((url) => url.pathname === "/", { timeout: 30_000 });
+    expect(await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).toBeNull();
+    await page.goto("/dashboard");
+    await page.waitForURL((url) => url.pathname === "/login", { timeout: 30_000 });
+  }
+
+  async function openDashboard(page: Page) {
+    await page.goto("/dashboard");
+    await expect(page.getByText("AI Credits", { exact: true })).toBeVisible({ timeout: 60_000 });
+  }
+
+  test("desktop: avatar → Sign out ends the session", async ({ page }) => {
+    const backend = await mockSupabase(page);
+    await seedSession(page, makeSession(3600));
+    await openDashboard(page);
+
+    const menu = await openAccountMenu(page);
+    await expect(menu.getByRole("menuitem", { name: "Your account" })).toBeVisible();
+    await menu.getByRole("menuitem", { name: "Sign out" }).click();
+    await expectSignedOut(page);
+    expect(backend.logouts).toBe(1);
+  });
+
+  test("desktop, sidebar collapsed: the avatar alone still opens Sign out", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("mila-sidebar-expanded", "false"));
+    await mockSupabase(page);
+    await seedSession(page, makeSession(3600));
+    await page.goto("/dashboard");
+    await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible({
+      timeout: 60_000,
+    });
+
+    const menu = await openAccountMenu(page);
+    await menu.getByRole("menuitem", { name: "Sign out" }).click();
+    await expectSignedOut(page);
+  });
+
+  test("phone (375px): header avatar → Sign out, on screen and tappable", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await mockSupabase(page);
+    await seedSession(page, makeSession(3600));
+    await openDashboard(page);
+
+    const menu = await openAccountMenu(page);
+    const item = menu.getByRole("menuitem", { name: "Sign out" });
+    await expect(item).toBeInViewport();
+    // Nothing (the tab bar, the header) sits on top of it.
+    const onTop = await item.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !!hit && el.contains(hit);
+    });
+    expect(onTop).toBe(true);
+    await item.click();
+    await expectSignedOut(page);
+  });
+
+  test("'Your account' in the menu still opens the account page", async ({ page }) => {
+    await mockSupabase(page);
+    await seedSession(page, makeSession(3600));
+    await openDashboard(page);
+
+    const menu = await openAccountMenu(page);
+    await menu.getByRole("menuitem", { name: "Your account" }).click();
+    await page.waitForURL((url) => url.pathname === "/account", { timeout: 30_000 });
+    // The menu is gone and the page is live: a modal menu left open would keep
+    // pointer-events off the body and every section behind aria-hidden.
+    await expect(page.getByRole("menu")).toHaveCount(0);
+    await page
+      .getByRole("navigation", { name: "Account sections" })
+      .getByRole("button", { name: /Preferences/ })
+      .click();
+    await page.waitForURL((url) => url.searchParams.get("section") === "preferences", {
+      timeout: 30_000,
+    });
+  });
+
+  test.describe("on a touch phone", () => {
+    test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
+
+    test("a tap on the avatar opens the menu; every item is a 44px target; a tap signs out", async ({
+      page,
+    }) => {
+      await mockSupabase(page);
+      await seedSession(page, makeSession(3600));
+      await openDashboard(page);
+
+      await page.getByRole("button", { name: "Your account" }).filter({ visible: true }).tap();
+      const menu = page.getByRole("menu");
+      // Measure once the open animation (zoom-in-95) has settled, not mid-scale.
+      await menu.evaluate((el) =>
+        Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
+      );
+      for (const item of await menu.getByRole("menuitem").all()) {
+        const box = await item.boundingBox();
+        expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+      }
+      await menu.getByRole("menuitem", { name: "Sign out" }).tap();
+      await expectSignedOut(page);
+    });
+  });
+
+  test("while signing out the item says so, takes no second press, and one request goes out", async ({
+    page,
+  }) => {
+    const backend = await mockSupabase(page);
+    await seedSession(page, makeSession(3600));
+    await openDashboard(page);
+
+    // Hold the auth server's answer so the pending state can be seen.
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(`${SUPABASE_URL}/auth/v1/logout*`, async (route) => {
+      if (route.request().method() === "OPTIONS") return route.fallback();
+      await held;
+      return route.fallback();
+    });
+
+    const menu = await openAccountMenu(page);
+    await menu.getByRole("menuitem", { name: "Sign out" }).click();
+    const pending = menu.getByRole("menuitem", { name: "Signing out…" });
+    await expect(pending).toBeVisible();
+    await expect(pending).toHaveAttribute("aria-disabled", "true");
+    await pending.click({ force: true });
+    release();
+    await expectSignedOut(page);
+    expect(backend.logouts).toBe(1);
+  });
+
+  test("keyboard: Enter opens the menu, End reaches Sign out, Enter signs out", async ({
+    page,
+  }) => {
+    await mockSupabase(page);
+    await seedSession(page, makeSession(3600));
+    await openDashboard(page);
+
+    await page.getByRole("button", { name: "Your account" }).filter({ visible: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("menu")).toBeVisible();
+    await page.keyboard.press("End");
+    await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expectSignedOut(page);
+  });
+
+  test("when sign-out fails she stays signed in, is told, and can try again", async ({ page }) => {
+    const backend = await mockSupabase(page);
+    backend.logoutStatus = 500;
+    await seedSession(page, makeSession(3600));
+    await openDashboard(page);
+
+    const menu = await openAccountMenu(page);
+    await menu.getByRole("menuitem", { name: "Sign out" }).click();
+    // Either wording from signOutFailureMessage. Today this 500 is shown with
+    // the offline wording, exactly as Account → Preferences' button shows it.
+    await expect(page.getByText(/couldn't sign you out/)).toBeVisible({ timeout: 30_000 });
+    expect(new URL(page.url()).pathname).toBe("/dashboard");
+    expect(await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).not.toBeNull();
+    await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeEnabled();
+
+    backend.logoutStatus = 204;
+    await page.getByRole("menuitem", { name: "Sign out" }).click();
+    await expectSignedOut(page);
+    expect(backend.logouts).toBe(2);
+  });
+});
