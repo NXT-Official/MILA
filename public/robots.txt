@@ -17,4 +17,4 @@ Disallow: /onboarding
 Disallow: /auth/
 Disallow: /api/
 
-Sitemap: https://mila-umber.vercel.app/sitemap.xml
+Sitemap: https://milafashion.site/sitemap.xml

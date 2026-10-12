@@ -10,12 +10,15 @@
  */
 
 /**
- * The Mila web deployments: the live site (`main`) and the `nicoleDev`
- * preview. Both are on the Supabase Redirect URLs allow-list.
- * // src: Vercel projects `mila-umber` (production branch main) and
- * //      `mila-nicoledev` (production branch nicoleDev); owner, 2026-10-07
+ * The Mila web origins: the live custom domain first (canonical), then the
+ * live site's vercel.app URL (`main`) and the `nicoleDev` preview. All three
+ * are on the Supabase Redirect URLs allow-list.
+ * // src: Vercel projects `mila-umber` (production branch main, custom domain
+ * //      milafashion.site) and `mila-nicoledev` (production branch nicoleDev);
+ * //      owner, 2026-10-07 and 2026-10-10
  */
 export const MILA_DEPLOYMENT_ORIGINS = [
+  "https://milafashion.site",
   "https://mila-umber.vercel.app",
   "https://mila-nicoledev.vercel.app",
 ] as const;

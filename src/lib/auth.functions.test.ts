@@ -206,7 +206,7 @@ describe("auth redirect origin from the request (host-header injection)", () => 
   test("a forged Host header never becomes the link in her email", () => {
     expect(
       authRequestOrigin({ originHeader: undefined, requestUrlOrigin: "https://evil.example" }, env),
-    ).toBe("https://mila-umber.vercel.app");
+    ).toBe("https://milafashion.site");
   });
 
   test("a forged Origin header never becomes the link either", () => {
@@ -215,7 +215,7 @@ describe("auth redirect origin from the request (host-header injection)", () => 
         { originHeader: "https://evil.example", requestUrlOrigin: "https://evil.example" },
         env,
       ),
-    ).toBe("https://mila-umber.vercel.app");
+    ).toBe("https://milafashion.site");
   });
 
   test("a real Mila deployment is kept", () => {

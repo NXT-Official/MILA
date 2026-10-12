@@ -35,10 +35,10 @@ async function read(host: string, env: Partial<Record<(typeof ENV_KEYS)[number],
 describe("readSiteContext", () => {
   test("the live host is indexable (compares the host, not the origin)", async () => {
     expect(
-      await read("mila-umber.vercel.app", {
-        VERCEL_PROJECT_PRODUCTION_URL: "mila-umber.vercel.app",
+      await read("milafashion.site", {
+        VERCEL_PROJECT_PRODUCTION_URL: "milafashion.site",
       }),
-    ).toEqual({ origin: "https://mila-umber.vercel.app", indexable: true });
+    ).toEqual({ origin: "https://milafashion.site", indexable: true });
   });
 
   test("the nicoleDev host is not indexable", async () => {
@@ -46,10 +46,10 @@ describe("readSiteContext", () => {
       await read("mila-nicoledev.vercel.app", {
         VERCEL_PROJECT_PRODUCTION_URL: "mila-nicoledev.vercel.app",
       }),
-    ).toEqual({ origin: "https://mila-umber.vercel.app", indexable: false });
+    ).toEqual({ origin: "https://milafashion.site", indexable: false });
   });
 
   test("the kill switch is read from the environment", async () => {
-    expect((await read("mila-umber.vercel.app", { SITE_INDEXING: "off" })).indexable).toBe(false);
+    expect((await read("milafashion.site", { SITE_INDEXING: "off" })).indexable).toBe(false);
   });
 });
