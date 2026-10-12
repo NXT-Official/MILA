@@ -10,6 +10,8 @@ export interface DailyPalette {
   isSisterSeasonIncluded: boolean;
   styleVibe: string;
   insight: string;
+  /** Built from her own swatches, or drawn from the curated mixes. Absent on older saved palettes. */
+  source?: "swatches" | "curated";
 }
 
 type SeasonFamily = SeasonProfile["family"];
@@ -54,7 +56,7 @@ const CURATED_MIXES: readonly CuratedMix[] = [
     statement: { name: "Soft Pistachio", hex: "#CFDDB4" },
     accent: { name: "Rose Clay", hex: "#C9897C" },
     vibe: "Modern Classic",
-    insight: "Modern, low-effort balance — built for an unscripted day.",
+    insight: "Modern, low-effort balance, built for an unscripted day.",
     families: ["Spring", "Autumn"],
   },
   {
@@ -70,7 +72,7 @@ const CURATED_MIXES: readonly CuratedMix[] = [
     statement: { name: "Crisp White", hex: "#F5F7FA" },
     accent: { name: "Fuchsia", hex: "#C2185B" },
     vibe: "Sharp Contrast",
-    insight: "A grounded base with one signature lift — easy to wear all day.",
+    insight: "A grounded base with one signature lift, easy to wear all day.",
     families: ["Winter"],
   },
   {
@@ -86,7 +88,7 @@ const CURATED_MIXES: readonly CuratedMix[] = [
     statement: { name: "Cream", hex: "#F1E6CF" },
     accent: { name: "Burnt Terracotta", hex: "#B5573A" },
     vibe: "Earth Tones",
-    insight: "Warm, grounded earth tones — easy to layer, easy to wear.",
+    insight: "Warm, grounded earth tones. Easy to layer, easy to wear.",
     families: ["Autumn"],
   },
 ];
@@ -157,6 +159,7 @@ export function generateDailyPalette(
     accentHex: mix.accent.hex,
     isSisterSeasonIncluded: false,
     styleVibe: mix.vibe,
+    source: "curated",
     insight: matched && family ? `${mix.insight} Picked for your ${family} palette.` : mix.insight,
   };
 }

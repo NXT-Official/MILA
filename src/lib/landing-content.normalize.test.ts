@@ -238,11 +238,76 @@ function expectPayload(content: LandingContent, absent: SentinelGroup[]) {
   }
 }
 
+/**
+ * Copy changed in the checked-in page by the 2026-10-07 landing pass (one
+ * locale, no dashes, claims that match what ships) and not yet published in
+ * the Studio. Publishing is the owner's call. Until then the published
+ * documents differ from the checked-in page in exactly these fields, and in no
+ * other. Once the owner publishes and the fixture is refreshed, the "still
+ * pending" test below names every entry that has landed, so the list shrinks
+ * back to empty.
+ */
+const PENDING_PUBLISH = [
+  "seo.title",
+  "seo.description",
+  "seo.socialDescription",
+  "hero.subhead",
+  "hero.ctaNote",
+  "hero.preview.weather",
+  "hero.imageCaption",
+  "howItWorks.steps.0.body",
+  "howItWorks.steps.1.body",
+  "howItWorks.steps.2.body",
+  "dossier.body",
+  "dossier.rows.0.label",
+  "dossier.rows.0.value",
+  "dailyPalette.body",
+  "concierge.body",
+  "concierge.exchange.1.text",
+  "dupeHunter.heading",
+  "dupeHunter.inspiration.title",
+  "dupeHunter.inspiration.price",
+  "dupeHunter.milaMatch.title",
+  "dupeHunter.milaMatch.price",
+  "feed.body",
+  "community.heading",
+  "community.body",
+  "finalCta.body",
+  // Fix round 1: no free look promised, no credit packs.
+  "cta.signedOutLabel",
+  "pricing.body",
+  "subpageCta.heading",
+] as const;
+
+function valueAt(content: unknown, path: string): unknown {
+  return path
+    .split(".")
+    .reduce<unknown>((node, key) => (node as Record<string, unknown> | undefined)?.[key], content);
+}
+
+/** `content` with every pending field set to the checked-in copy. */
+function withPendingCopy(content: LandingContent): LandingContent {
+  const out = structuredClone(content) as unknown as Record<string, unknown>;
+  for (const path of PENDING_PUBLISH) {
+    const keys = path.split(".");
+    const last = keys.pop() as string;
+    const parent = keys.reduce<Record<string, unknown>>(
+      (node, key) => node[key] as Record<string, unknown>,
+      out,
+    );
+    parent[last] = structuredClone(valueAt(LANDING_FALLBACK, path));
+  }
+  return out as unknown as LandingContent;
+}
+
 describe("normalizeLandingContent", () => {
   // LEGACY_DOCUMENT is what Sanity really returned, not a copy of the fallback,
-  // so this fails when the checked-in copy and the published page drift apart.
-  test("the real published document renders exactly the checked-in page", () => {
-    expect(normalizeLandingContent(LEGACY_DOCUMENT, TARGET)).toEqual(LANDING_FALLBACK);
+  // so this fails when the checked-in copy and the published page drift apart
+  // anywhere outside the copy that is waiting to be published.
+  test("the real published document renders the checked-in page, apart from the pending copy", () => {
+    expect(withPendingCopy(normalizeLandingContent(LEGACY_DOCUMENT, TARGET))).toEqual(
+      LANDING_FALLBACK,
+    );
   });
 
   // An empty fixture would pass the test above (every field falls back), so
@@ -265,9 +330,24 @@ describe("normalizeLandingContent", () => {
 
   // The legacy document predates seven of the groups, so it can't catch drift
   // in them; the Studio's published document has all fifteen.
-  test("the Studio's published document renders exactly the checked-in page", () => {
+  test("the Studio's published document renders the checked-in page, apart from the pending copy", () => {
     const studio: SanityTarget = { projectId: "8gum36g6", dataset: "production" };
-    expect(normalizeLandingContent(PUBLISHED_DOCUMENT, studio)).toEqual(LANDING_FALLBACK);
+    expect(withPendingCopy(normalizeLandingContent(PUBLISHED_DOCUMENT, studio))).toEqual(
+      LANDING_FALLBACK,
+    );
+  });
+
+  // Without this, an entry could stay on the list after the owner publishes and
+  // hide a later drift in that field.
+  test("every pending field is still pending: the Studio's published copy differs there", () => {
+    const studio: SanityTarget = { projectId: "8gum36g6", dataset: "production" };
+    const published = normalizeLandingContent(PUBLISHED_DOCUMENT, studio);
+    const landed = PENDING_PUBLISH.filter(
+      (path) =>
+        JSON.stringify(valueAt(published, path)) ===
+        JSON.stringify(valueAt(LANDING_FALLBACK, path)),
+    );
+    expect(landed).toEqual([]);
   });
 
   test("the published fixture carries every group the page renders", () => {
@@ -572,7 +652,7 @@ describe("normalizeLandingContent", () => {
   test("the checked-in copy carries no field that nothing renders", () => {
     expect(LANDING_FALLBACK.hero.preview).toEqual({
       season: "True Summer",
-      weather: "18°C · Light rain",
+      weather: "64°F · Light rain",
     });
     for (const group of ["howItWorks", "dossier", "dupeHunter", "community"] as const) {
       expect([group, Object.keys(LANDING_FALLBACK[group]).includes("kicker")]).toEqual([
@@ -1243,7 +1323,7 @@ describe("createLandingLoader: only MILA's document is accepted", () => {
     loader.nextRead(async () => LINARA_DOC);
     const served = await loader.load();
     expect(served.hero.headlineLine1).toBe("Dressed by noon.");
-    expect(served.seo.title).toBe("Mila — Your stylist. Every morning.");
+    expect(served.seo.title).toBe("Mila: Your stylist. Every morning.");
 
     loader.clock.advance(29_999);
     await loader.load();

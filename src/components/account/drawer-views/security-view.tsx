@@ -9,6 +9,10 @@ interface SecurityViewProps {
   onNewEmailChange: (v: string) => void;
   emailSubmitting: boolean;
   onChangeEmail: (e: React.FormEvent) => void;
+  /** False for accounts that only sign in through a provider such as Google. */
+  hasPassword: boolean;
+  /** Plain names of those providers, e.g. ["Google"]. */
+  signInProviders: string[];
   currentPassword: string;
   onCurrentPasswordChange: (v: string) => void;
   newPassword: string;
@@ -28,12 +32,20 @@ interface SecurityViewProps {
   onDeleteAccount: () => void;
 }
 
+function signInNote(providers: string[]): string {
+  if (providers.length === 0) return "You sign in with a linked account";
+  if (providers.length === 1) return `You sign in with ${providers[0]}`;
+  return `You sign in with ${providers.slice(0, -1).join(", ")} and ${providers[providers.length - 1]}`;
+}
+
 export function SecurityView({
   authUserEmail,
   newEmail,
   onNewEmailChange,
   emailSubmitting,
   onChangeEmail,
+  hasPassword,
+  signInProviders,
   currentPassword,
   onCurrentPasswordChange,
   newPassword,
@@ -60,6 +72,8 @@ export function SecurityView({
         </p>
         <Input
           type="email"
+          aria-label="New email address"
+          autoComplete="email"
           placeholder="new@email.com"
           value={newEmail}
           onChange={(e) => onNewEmailChange(e.target.value)}
@@ -76,67 +90,84 @@ export function SecurityView({
         </Button>
       </form>
 
-      <form onSubmit={onChangePassword} className="space-y-3 pt-6 border-t border-porcelain/30">
-        <p className="atelier-label">Change password</p>
-        <Input
-          type="password"
-          placeholder="Current password"
-          value={currentPassword}
-          onChange={(e) => onCurrentPasswordChange(e.target.value)}
-          className="h-10"
-        />
-        <Input
-          type="password"
-          placeholder="New password"
-          value={newPassword}
-          onChange={(e) => onNewPasswordChange(e.target.value)}
-          className="h-10"
-        />
-        <Input
-          type="password"
-          placeholder="Confirm new password"
-          value={confirmPassword}
-          onChange={(e) => onConfirmPasswordChange(e.target.value)}
-          className="h-10"
-        />
-        {newPassword && (
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
-            {passwordChecks.map((c) => {
-              const ok = c.test(newPassword);
-              return (
-                <li
-                  key={c.label}
-                  className={`flex items-center gap-1.5 text-label ${
-                    ok ? "text-success" : "text-stone"
-                  }`}
-                >
-                  {ok ? <Check className="size-3" /> : <X className="size-3" />}
-                  {c.label}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {confirmPassword && newPassword !== confirmPassword && (
-          <p className="text-label text-destructive">Passwords don't match.</p>
-        )}
-        {captchaField}
-        <Button
-          type="submit"
-          variant="secondary"
-          size="sm"
-          disabled={
-            passwordSubmitting ||
-            !currentPassword ||
-            !newPasswordOk ||
-            newPassword !== confirmPassword ||
-            !captchaReady
-          }
-          className="w-full"
-        >
-          {passwordSubmitting ? "Updating…" : "Update Password"}
-        </Button>
-      </form>
+      {hasPassword ? (
+        <form onSubmit={onChangePassword} className="space-y-3 pt-6 border-t border-porcelain/30">
+          <p className="atelier-label">Change password</p>
+          <Input
+            type="password"
+            aria-label="Current password"
+            autoComplete="current-password"
+            placeholder="Current password"
+            value={currentPassword}
+            onChange={(e) => onCurrentPasswordChange(e.target.value)}
+            className="h-10"
+          />
+          <Input
+            type="password"
+            aria-label="New password"
+            autoComplete="new-password"
+            placeholder="New password"
+            value={newPassword}
+            onChange={(e) => onNewPasswordChange(e.target.value)}
+            className="h-10"
+          />
+          <Input
+            type="password"
+            aria-label="Confirm new password"
+            autoComplete="new-password"
+            placeholder="Confirm new password"
+            value={confirmPassword}
+            onChange={(e) => onConfirmPasswordChange(e.target.value)}
+            className="h-10"
+          />
+          {newPassword && (
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
+              {passwordChecks.map((c) => {
+                const ok = c.test(newPassword);
+                return (
+                  <li
+                    key={c.label}
+                    className={`flex items-center gap-1.5 text-label ${
+                      ok ? "text-success" : "text-stone"
+                    }`}
+                  >
+                    {ok ? <Check className="size-3" /> : <X className="size-3" />}
+                    {c.label}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {confirmPassword && newPassword !== confirmPassword && (
+            <p className="text-label text-destructive">Passwords don't match.</p>
+          )}
+          {captchaField}
+          <Button
+            type="submit"
+            variant="secondary"
+            size="sm"
+            disabled={
+              passwordSubmitting ||
+              !currentPassword ||
+              !newPasswordOk ||
+              newPassword !== confirmPassword ||
+              !captchaReady
+            }
+            className="w-full"
+          >
+            {passwordSubmitting ? "Updating…" : "Update Password"}
+          </Button>
+        </form>
+      ) : (
+        <div className="space-y-2 pt-6 border-t border-porcelain/30">
+          <p className="atelier-label">Change password</p>
+          <p className="text-sm text-ink">{signInNote(signInProviders)}</p>
+          <p className="text-xs text-stone leading-relaxed">
+            There is no password to change here. To keep your account safe, manage your sign-in with
+            that provider.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-3 pt-6 border-t border-destructive/20">
         <p className="text-micro uppercase tracking-label-wide text-destructive">Delete account</p>

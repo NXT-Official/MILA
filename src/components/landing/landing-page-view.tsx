@@ -3,8 +3,7 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { DossierSection } from "@/components/landing/dossier-section";
-import { DailyPaletteSection } from "@/components/landing/daily-palette-section";
-import { ConciergeSection } from "@/components/landing/concierge-section";
+import { StyleFlowStack } from "@/components/landing/style-flow-stack";
 import { DupeHunterSection } from "@/components/landing/dupe-hunter-section";
 import { FeedSection } from "@/components/landing/feed-section";
 import { CommunitySection } from "@/components/landing/community-section";
@@ -26,8 +25,8 @@ export function LandingPageView({ content }: { content: LandingContent }) {
         <HeroSection content={content.hero} cta={content.cta} />
         {!content.howItWorks.hidden && <HowItWorksSection content={content.howItWorks} />}
         {!content.dossier.hidden && <DossierSection content={content.dossier} />}
-        {!content.dailyPalette.hidden && <DailyPaletteSection content={content.dailyPalette} />}
-        {!content.concierge.hidden && <ConciergeSection content={content.concierge} />}
+        {/* The palette and concierge share one sticky stack; each flag hides its panels. */}
+        <StyleFlowStack palette={content.dailyPalette} concierge={content.concierge} />
         {!content.dupeHunter.hidden && <DupeHunterSection content={content.dupeHunter} />}
         {!content.feed.hidden && <FeedSection content={content.feed} />}
         {!content.community.hidden && (

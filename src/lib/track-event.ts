@@ -1,8 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { capturePhEvent, identifyPhUser } from "@/lib/posthog-client";
 
+// analytics_events.event_name only checks length (1-100), so new names need no migration.
 export type TrackedEventName =
-  "signup_completed" | "onboarding_completed" | "look_generated" | "purchase_started";
+  | "signup_completed"
+  | "onboarding_completed"
+  | "look_generated"
+  | "purchase_started"
+  | "product_saved"
+  | "product_unsaved";
 
 // Best-effort: a failed analytics write must never break the caller's flow
 // or surface to the user, same shape as logAiSpend. Events land in two

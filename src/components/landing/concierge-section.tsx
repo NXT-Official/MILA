@@ -1,6 +1,12 @@
 import { Section, SectionHeading } from "@/components/landing/section";
 import type { ConciergeContent } from "@/lib/landing-content";
 
+/**
+ * Not on the home page since 2026-10-07: the palette and concierge copy now
+ * renders in `StyleFlowStack`, one sticky stack instead of two back-to-back
+ * text and image splits. Kept as a standalone section (the owner rule is to
+ * delete nothing), ready for a page of its own.
+ */
 export function ConciergeSection({ content }: { content: ConciergeContent }) {
   return (
     <Section id="concierge">

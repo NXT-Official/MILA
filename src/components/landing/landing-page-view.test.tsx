@@ -31,10 +31,19 @@ function text(copy: string) {
   return renderToStaticMarkup(<>{copy}</>);
 }
 
-/** A section's heading is its `<h2>`; body copy never closes one. */
+/**
+ * The palette and concierge now share one sticky stack, where each is a panel
+ * headed by an `<h3>` under the stack's `<h2>`. Every other section keeps its
+ * own `<h2>`. Body copy never closes either.
+ */
+const STACK_PANELS: readonly SectionKey[] = ["dailyPalette", "concierge"];
+
 function heading(key: SectionKey) {
-  return `>${text(LANDING_FALLBACK[key].heading)}</h2>`;
+  const level = STACK_PANELS.includes(key) ? "h3" : "h2";
+  return `>${text(LANDING_FALLBACK[key].heading)}</${level}>`;
 }
+
+const STACK_HEADING = ">Read your colors, compose the look, shop it.</h2>";
 
 function withHidden(key: SectionKey): LandingContent {
   return { ...LANDING_FALLBACK, [key]: { ...LANDING_FALLBACK[key], hidden: true } };
@@ -94,6 +103,28 @@ describe("the home page honours the Studio's visibility flags", () => {
       }
     });
   }
+
+  test("the palette and concierge are one sticky stack, not two text and image splits", async () => {
+    const out = await renderLanding(LANDING_FALLBACK);
+    expect(out.split(STACK_HEADING)).toHaveLength(2);
+    expect(out.split("data-stack-panel")).toHaveLength(4);
+    // Both headings sit inside the stack's section.
+    const stack = out.slice(
+      out.indexOf(STACK_HEADING),
+      out.indexOf("</section>", out.indexOf(STACK_HEADING)),
+    );
+    expect(stack).toContain(heading("dailyPalette"));
+    expect(stack).toContain(heading("concierge"));
+  });
+
+  test("hiding both the palette and the concierge removes the stack", async () => {
+    const out = await renderLanding({
+      ...withHidden("dailyPalette"),
+      concierge: { ...LANDING_FALLBACK.concierge, hidden: true },
+    });
+    expect(out).not.toContain("data-stack-panel");
+    expect(out).toContain(heading("dupeHunter"));
+  });
 
   test("hiding testimonials removes every quote but keeps the community section", async () => {
     const out = await renderLanding({

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import type * as z from "zod";
 import { ArrowRight, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
@@ -11,18 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordVisibilityButton } from "@/components/ui/password-visibility-button";
+import {
+  authFormOptions,
+  describedBy,
+  setNewPasswordSchema,
+} from "@/components/login/auth-validation";
+import { FieldError } from "@/components/login/field-error";
 import { passwordChecks } from "@/constants/password";
 import { errorMessage } from "@/lib/utils";
-
-const setNewPasswordSchema = z
-  .object({
-    password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-    confirmPassword: z.string().min(8, { message: "Please confirm your new password." }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"],
-  });
 
 type SetNewPasswordFormValues = z.infer<typeof setNewPasswordSchema>;
 
@@ -34,12 +29,13 @@ export function SetNewPasswordForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    trigger,
+    formState: { errors, touchedFields },
     watch,
-  } = useForm<SetNewPasswordFormValues>({
-    resolver: zodResolver(setNewPasswordSchema),
-    defaultValues: { password: "", confirmPassword: "" },
-  });
+  } = useForm<SetNewPasswordFormValues>(
+    authFormOptions(setNewPasswordSchema, { password: "", confirmPassword: "" }),
+  );
+  const passwordField = register("password");
 
   const password = watch("password") ?? "";
   const passedChecks = passwordChecks.filter((c) => c.test(password)).length;
@@ -81,7 +77,7 @@ export function SetNewPasswordForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="new-password" className="text-xs">
           New Password
@@ -90,22 +86,28 @@ export function SetNewPasswordForm() {
           <Input
             id="new-password"
             type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
+            // src: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill-field-name · 2026-10-07
+            autoComplete="new-password"
+            placeholder="Create a new password"
             className="h-10 pr-10"
             aria-invalid={errors.password ? true : undefined}
-            aria-describedby={errors.password ? "new-password-error" : undefined}
-            {...register("password")}
+            aria-describedby={describedBy(
+              errors.password && "new-password-error",
+              password && "new-password-requirements",
+            )}
+            {...passwordField}
+            onChange={(e) => {
+              void passwordField.onChange(e);
+              // A confirmation the member already left must not keep a stale verdict.
+              if (touchedFields.confirmPassword) void trigger("confirmPassword");
+            }}
           />
           <PasswordVisibilityButton
             visible={showPassword}
             onToggle={() => setShowPassword((v) => !v)}
           />
         </div>
-        {errors.password && (
-          <p id="new-password-error" className="text-xs text-destructive">
-            {errors.password.message}
-          </p>
-        )}
+        <FieldError id="new-password-error" message={errors.password?.message} />
       </div>
 
       <div className="space-y-1.5">
@@ -116,10 +118,11 @@ export function SetNewPasswordForm() {
           <Input
             id="confirm-new-password"
             type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
+            autoComplete="new-password"
+            placeholder="Repeat the new password"
             className="h-10 pr-10"
             aria-invalid={errors.confirmPassword ? true : undefined}
-            aria-describedby={errors.confirmPassword ? "confirm-new-password-error" : undefined}
+            aria-describedby={describedBy(errors.confirmPassword && "confirm-new-password-error")}
             {...register("confirmPassword")}
           />
           <PasswordVisibilityButton
@@ -127,15 +130,11 @@ export function SetNewPasswordForm() {
             onToggle={() => setShowPassword((v) => !v)}
           />
         </div>
-        {errors.confirmPassword && (
-          <p id="confirm-new-password-error" className="text-xs text-destructive">
-            {errors.confirmPassword.message}
-          </p>
-        )}
+        <FieldError id="confirm-new-password-error" message={errors.confirmPassword?.message} />
       </div>
 
       {password && (
-        <div className="space-y-2">
+        <div id="new-password-requirements" className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
               <div

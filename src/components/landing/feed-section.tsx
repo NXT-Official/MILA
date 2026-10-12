@@ -6,7 +6,7 @@ export function FeedSection({ content }: { content: FeedContent }) {
   return (
     <Reveal id="feed" stagger className="scroll-mt-16 border-t border-border py-20 sm:py-24">
       <div className="atelier-container">
-        <SectionHeading align="center" heading={content.heading} body={content.body} />
+        <SectionHeading heading={content.heading} body={content.body} />
       </div>
 
       <div className="mt-14 grid grid-cols-2 gap-1 sm:mt-16 sm:grid-cols-4 sm:gap-1.5">

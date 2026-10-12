@@ -3,6 +3,11 @@ import { Section, SectionHeading, Eyebrow } from "@/components/landing/section";
 import { cn } from "@/lib/utils";
 import type { DupeCard, DupeHunterContent } from "@/lib/landing-content";
 
+/**
+ * The inspiration photo is framed from its right edge: the built-in one is a
+ * wide editorial shot with the model on the right. A 4:5 upload fills the
+ * frame either way, so the framing only matters for a wider photo.
+ */
 function DupeColumn({ card, isMatch }: { card: DupeCard; isMatch?: boolean }) {
   return (
     <div
@@ -17,7 +22,10 @@ function DupeColumn({ card, isMatch }: { card: DupeCard; isMatch?: boolean }) {
         width={480}
         height={600}
         loading="lazy"
-        className="aspect-4/5 w-full rounded-panel border border-border object-cover"
+        className={cn(
+          "aspect-4/5 w-full rounded-panel border border-border object-cover",
+          !isMatch && "object-right",
+        )}
       />
       <Eyebrow icon={isMatch ? BadgeCheck : Camera} className={isMatch ? "text-ink" : undefined}>
         {card.label}

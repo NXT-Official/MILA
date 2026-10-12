@@ -37,13 +37,13 @@ import { SingleSelectStep } from "./steps/single-select-step";
 import { BeautyPreferencesStep } from "./steps/beauty-preferences-step";
 import { TagSelectStep } from "./steps/tag-select-step";
 import { MeasurementsStep } from "./steps/measurements-step";
+import { RefineStep } from "./steps/refine-step";
 import { LocationStep } from "./steps/location-step";
 import { ReviewStep } from "./steps/review-step";
 import { errorMessage } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/track-event";
 
-const MAKEUP_ELIGIBLE_NEXT = "makeup-preference" as const;
 const MAKEUP_SKIP_NEXT = "beauty-preferences" as const;
 
 const SELECT_STEPS = {
@@ -75,7 +75,7 @@ const SELECT_STEPS = {
       "Choose the shape that most closely describes how your shoulders, waist, and hips relate to one another. This drives every cut, drape, and proportion recommendation — there's no wrong answer.",
     requiredMessage: "Select a body silhouette to continue.",
     back: "skin-depth",
-    next: "measurements",
+    next: "face-shape",
   },
   "face-shape": {
     field: "face_shape",
@@ -84,7 +84,7 @@ const SELECT_STEPS = {
     guidance:
       "Pick whichever shape reads closest — Mila uses this to guide hairstyling, eyewear, and framing suggestions. You can always refine it later.",
     requiredMessage: "Select a face shape to continue.",
-    back: "measurements",
+    back: "body-type",
     next: "hair-type",
   },
   "hair-type": {
@@ -105,7 +105,9 @@ const SELECT_STEPS = {
       "Mila only recommends hairstyles achievable at this length — no extensions, no added length assumed.",
     requiredMessage: "Select a hair length to continue.",
     back: "hair-type",
-    next: MAKEUP_ELIGIBLE_NEXT,
+    // The seventh and last required question. `refine` is where she is told the
+    // profile is already usable and offered the optional extras.
+    next: "refine",
   },
   "makeup-preference": {
     field: "makeup_preference",
@@ -114,7 +116,7 @@ const SELECT_STEPS = {
     guidance:
       "How much makeup guidance do you want in your daily look? You can change this any time from Style Profile.",
     requiredMessage: "Select an option to continue.",
-    back: "hair-length",
+    back: "measurements",
     next: MAKEUP_SKIP_NEXT,
   },
 } as const satisfies Record<
@@ -282,19 +284,27 @@ export function StyleProfileOnboarding({
         />
       )}
 
+      {step === "refine" && (
+        <RefineStep
+          onBack={() => goTo("hair-length")}
+          onFinish={() => goTo("review")}
+          onAddDetail={() => goTo("measurements")}
+        />
+      )}
+
       {step === "measurements" && (
         <MeasurementsStep
           heightCm={profile?.height_cm ?? null}
           weightKg={profile?.weight_kg ?? null}
-          onBack={() => goTo("body-type")}
-          onSaved={() => goTo("face-shape")}
+          onBack={() => goTo("refine")}
+          onSaved={() => goTo("makeup-preference")}
         />
       )}
 
       {step === "beauty-preferences" && (
         <BeautyPreferencesStep
           value={beautyPrefs}
-          onBack={() => goTo(profile?.gender === "Male" ? "hair-length" : "makeup-preference")}
+          onBack={() => goTo(profile?.gender === "Male" ? "measurements" : "makeup-preference")}
           onSaved={() => goTo("location")}
         />
       )}
@@ -351,6 +361,7 @@ export function StyleProfileOnboarding({
           dossier={dossier}
           onEdit={(s) => goTo(s)}
           onComplete={handleComplete}
+          onAddDetail={() => goTo("measurements")}
           completing={completing}
           completionError={completionError}
         />

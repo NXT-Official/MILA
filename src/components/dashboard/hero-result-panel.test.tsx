@@ -114,6 +114,153 @@ describe("HeroResultPanel while a portrait preview is rendering", () => {
   });
 });
 
+async function renderPanelWith(props: Partial<Parameters<typeof HeroResultPanel>[0]>) {
+  const rootRoute = createRootRoute({
+    component: () => (
+      <HeroResultPanel
+        generating={false}
+        look={LOOK}
+        vibe="Everyday Casual"
+        climate={null}
+        profile={{ photo_consent_at: "2026-10-01T00:00:00Z" }}
+        styleSheetLoading={false}
+        styleSheetImageDataUri={null}
+        photoPreviewLoading={false}
+        savingLook={false}
+        lookSaved={false}
+        savedLook={null}
+        resultContainerVariants={{}}
+        resultItemVariants={{}}
+        onPreviewStyleSheet={() => {}}
+        onPreviewOnMyPhoto={() => {}}
+        onSaveLook={() => {}}
+        onGenerateAnother={() => {}}
+        onAskConcierge={() => {}}
+        {...props}
+      />
+    ),
+  });
+  const router = createRouter({
+    routeTree: rootRoute,
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+  });
+  await router.load();
+  return renderToStaticMarkup(<RouterProvider router={router} />);
+}
+
+const WAIT = {
+  stage: "Choosing pieces",
+  detail: "About 2 minutes · you can leave this page",
+  line: "Choosing pieces · about 2 minutes · you can leave this page",
+};
+
+describe("HeroResultPanel while a generation is being made (R7)", () => {
+  test("a look in progress names its stage and that she can leave", async () => {
+    const out = await renderPanelWith({ generating: true, look: null, lookWait: WAIT });
+    expect(out).toContain("Choosing pieces");
+    expect(out).toContain("About 2 minutes · you can leave this page");
+    expect(out).toContain('role="status"');
+  });
+
+  test("without a wait line the look skeleton keeps today's copy", async () => {
+    const out = await renderPanelWith({ generating: true, look: null });
+    expect(out).toContain("Visualizing your look…");
+    expect(out).not.toContain("you can leave this page");
+  });
+
+  test("a style sheet in progress names its stage", async () => {
+    const out = await renderPanelWith({
+      styleSheetLoading: true,
+      styleSheetWait: { ...WAIT, stage: "Drawing your style sheet" },
+    });
+    expect(out).toContain("Drawing your style sheet");
+    expect(out).toContain("About 2 minutes · you can leave this page");
+  });
+
+  test("a portrait in progress names its stage", async () => {
+    const out = await renderPanelWith({
+      photoPreviewLoading: true,
+      photoPreviewWait: { ...WAIT, stage: "Dressing your portrait" },
+    });
+    expect(out).toContain("Dressing your portrait");
+  });
+
+  test("a sheet never drawn for this look is offered, not reported as a failure", async () => {
+    const out = await renderPanelWith({ styleSheetNotDrawn: true });
+    expect(out).not.toContain("couldn&#x27;t be generated");
+    expect(out).toContain("Draw style sheet");
+    expect(openingTagOfButton(out, "Draw style sheet")).not.toContain(' disabled=""');
+  });
+
+  test("a sheet that genuinely failed still says so and offers a retry", async () => {
+    const out = await renderPanelWith({ styleSheetNotDrawn: false });
+    expect(out).toContain("couldn&#x27;t be generated");
+    expect(out).toContain("Retry visual");
+  });
+
+  test("new copy carries no em or en dashes", async () => {
+    const out = await renderPanelWith({ styleSheetNotDrawn: true });
+    const media = out.slice(out.indexOf("atelier-media-frame"), out.indexOf("Draw style sheet"));
+    expect(media).not.toMatch(/[\u2013\u2014]/);
+  });
+});
+
+describe("HeroResultPanel for a look that came back from before today", () => {
+  test("shows when it is from, in words, with no dashes", async () => {
+    const out = await renderPanelWith({ lookFromLabel: "From last night, 11:40 PM" });
+    expect(out).toContain("From last night, 11:40 PM");
+  });
+
+  test("a look from today carries no label", async () => {
+    expect(await renderPanelWith({ lookFromLabel: null })).not.toContain("From last night");
+  });
+});
+
+describe("HeroResultPanel states the cost of paid visuals (N1)", () => {
+  test("the cost note has an id the visual buttons point to", async () => {
+    const out = await renderPanelWith({ styleSheetNotDrawn: true });
+    expect(out).toContain(`id="visual-cost-note"`);
+    expect(openingTagOfButton(out, "Draw style sheet")).toContain(
+      'aria-describedby="visual-cost-note"',
+    );
+    expect(openingTagOfButton(out, "Generate portrait preview")).toContain(
+      'aria-describedby="visual-cost-note"',
+    );
+  });
+});
+
+describe("HeroResultPanel while her last look is being checked (NEW-M1)", () => {
+  test("Try another look waits, and says why", async () => {
+    const out = await renderPanelWith({ lookCheckReason: "Checking your last look…" });
+    const tag = openingTagOfButton(out, "Try another look");
+    expect(tag).toContain(' disabled=""');
+    expect(tag).toContain('aria-describedby="look-actions-blocked"');
+    expect(out).toContain("Checking your last look…");
+  });
+
+  test("without a check it is pressable", async () => {
+    const out = await renderPanelWith({ lookCheckReason: null });
+    expect(openingTagOfButton(out, "Try another look")).not.toContain(' disabled=""');
+  });
+});
+
+describe("HeroResultPanel while her look is being confirmed (round 5, N-3)", () => {
+  test("Save says so and waits", async () => {
+    const out = await renderPanelWith({
+      styleSheetImageDataUri: "data:image/png;base64,AAAA",
+      saveConfirming: true,
+    });
+    const tag = openingTagOfButton(out, "Confirming your look…");
+    expect(tag).toContain(' disabled=""');
+  });
+
+  test("otherwise Save is as before", async () => {
+    const out = await renderPanelWith({ styleSheetImageDataUri: "data:image/png;base64,AAAA" });
+    expect(openingTagOfButton(out, "Save to history")).not.toContain(' disabled=""');
+    expect(out).not.toContain("Confirming your look…");
+  });
+});
+
 describe("HeroResultPanel's save button", () => {
   // Every generation is auto-saved; the button is the retry path and no
   // longer waits on a visual (a look without one can still be saved).

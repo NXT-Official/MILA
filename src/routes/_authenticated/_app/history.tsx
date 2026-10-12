@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Images, ImageOff, Sparkles, Trash2, Loader2, Download } from "lucide-react";
@@ -21,6 +21,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { Card } from "@/components/ui/card";
+import { VIBES } from "@/components/dashboard/hero-generator-form";
+import { HistoryControls, HistoryNoMatches } from "@/components/history/history-controls";
+import {
+  ALL_CATEGORY,
+  DEFAULT_HISTORY_FILTER,
+  filterHistory,
+  historyCategories,
+  searchTextOf,
+  type HistoryFilter,
+  type HistorySummary,
+} from "@/lib/history-filter";
 
 export const Route = createFileRoute("/_authenticated/_app/history")({
   validateSearch: (search: Record<string, unknown>): { look?: string } =>
@@ -113,6 +124,51 @@ function historyItemTitle(analysis: NormalizedAnalysis): string {
   if (analysis.kind === "daily_look") return analysis.data.outfit.headline;
   if (analysis.kind === "lens") return "Outfit Analysis";
   return "Saved Look";
+}
+
+/**
+ * What History's search, sort and category views read for one row. Fields come
+ * from a stored row, so each is checked rather than trusted: a damaged part is
+ * left out of the search, never thrown on.
+ */
+function historySummary(item: OutfitRow): HistorySummary {
+  const analysis = normalizeAnalysisResult(item.analysis_result);
+  const title = historyItemTitle(analysis);
+  const base = { id: item.id, createdAt: item.created_at, title };
+
+  if (analysis.kind === "daily_look") {
+    const { data } = analysis;
+    const vibe = typeof data.vibe === "string" && data.vibe.trim() ? data.vibe.trim() : null;
+    return {
+      ...base,
+      kind: "look",
+      category: vibe,
+      score: typeof data.vibe_alignment_score === "number" ? data.vibe_alignment_score : null,
+      searchText: searchTextOf([
+        title,
+        data.vibe,
+        data.weather,
+        data.outfit.description,
+        data.outfit.styling_notes,
+        data.hair.style,
+        data.makeup?.palette,
+        ...(data.shoppable_picks ?? []).map((pick) => pick.title),
+      ]),
+    };
+  }
+
+  if (analysis.kind === "lens") {
+    const { data } = analysis;
+    return {
+      ...base,
+      kind: "analysis",
+      category: null,
+      score: null,
+      searchText: searchTextOf([title, data.verdict, data.color_match, data.silhouette]),
+    };
+  }
+
+  return { ...base, kind: "other", category: null, score: null, searchText: searchTextOf([title]) };
 }
 
 function HistoryImage({
@@ -274,6 +330,7 @@ function History() {
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
+  const [filter, setFilter] = useState<HistoryFilter>(DEFAULT_HISTORY_FILTER);
 
   async function deleteOutfit(item: OutfitRow) {
     if (!user) return;
@@ -293,15 +350,18 @@ function History() {
     toast.success("Look deleted from your archive.");
   }
 
+  // Keyed on the id, never the user object: a token refresh or tab return must
+  // not blank her archive back to skeletons and fetch it again.
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let cancelled = false;
     setLoading(true);
     setLoadError(false);
     supabase
       .from("outfits")
       .select("id,image_url,match_score,created_at,analysis_result")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (cancelled) return;
@@ -315,7 +375,7 @@ function History() {
     return () => {
       cancelled = true;
     };
-  }, [user, reloadToken]);
+  }, [userId, reloadToken]);
 
   useEffect(() => {
     if (!look) return;
@@ -325,6 +385,21 @@ function History() {
 
   const selectedAnalysis = selected ? normalizeAnalysisResult(selected.analysis_result) : null;
 
+  const summaries = useMemo(() => items.map(historySummary), [items]);
+  const categories = historyCategories(summaries, VIBES);
+  // Deleting the last look in a vibe removes its category; the view falls back
+  // to All rather than stranding her on an empty one.
+  const activeFilter: HistoryFilter = {
+    ...filter,
+    category: categories.some((c) => c.id === filter.category) ? filter.category : ALL_CATEGORY,
+  };
+  const rowsById = new Map(items.map((item) => [item.id, item]));
+  const visible = filterHistory(summaries, activeFilter).flatMap((summary) => {
+    const row = rowsById.get(summary.id);
+    return row ? [row] : [];
+  });
+  const clearFilters = () => setFilter({ ...DEFAULT_HISTORY_FILTER, sort: filter.sort });
+
   return (
     <div className="atelier-page">
       <PageHeader
@@ -333,6 +408,16 @@ function History() {
         title="Your archive."
         description="Every outfit you've analyzed, scored, and saved."
       />
+
+      {!loading && !loadError && items.length > 0 ? (
+        <HistoryControls
+          filter={activeFilter}
+          categories={categories}
+          shown={visible.length}
+          total={items.length}
+          onChange={setFilter}
+        />
+      ) : null}
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -353,9 +438,11 @@ function History() {
           title="No outfits yet"
           description="Analyzed outfits will be collected here."
         />
+      ) : visible.length === 0 ? (
+        <HistoryNoMatches query={activeFilter.query} onClear={clearFilters} />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {items.map((item) => (
+          {visible.map((item) => (
             <HistoryCard key={item.id} item={item} onOpen={() => setSelected(item)} />
           ))}
         </div>

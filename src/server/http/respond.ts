@@ -3,6 +3,7 @@ import { InsufficientCreditsError } from "@/lib/credits";
 import { RateLimitExceededError } from "@/lib/rate-limit.server";
 import { UnauthorizedError, SuspendedError } from "@/integrations/supabase/auth-middleware";
 import { captureServerException } from "@/lib/sentry.server";
+import { GenerationDeliveredUnsavedError } from "@/lib/generation-jobs.server";
 import {
   AiUnavailableError,
   DomainValidationError,
@@ -24,6 +25,11 @@ export type ApiErrorCode =
   | "INSUFFICIENT_CREDITS"
   | "RATE_LIMITED"
   | "AI_UNAVAILABLE"
+  /** A replayed generation that was delivered and charged but never stored:
+   * nothing to show again, and never a failure to retry with a new request
+   * id (that would be a new, charged generation). A mobile build that does
+   * not map it yet reads it as fatal, which never retries. */
+  | "DELIVERED_NOT_SAVED"
   | "INTERNAL";
 
 const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
@@ -34,6 +40,7 @@ const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
   INSUFFICIENT_CREDITS: 402,
   RATE_LIMITED: 429,
   AI_UNAVAILABLE: 503,
+  DELIVERED_NOT_SAVED: 409,
   INTERNAL: 500,
 };
 
@@ -76,6 +83,10 @@ export function respondWithError(routeName: string, error: unknown): Response {
 
   if (error instanceof AiUnavailableError) return apiError("AI_UNAVAILABLE", error.message);
   if (error instanceof UpstreamUnavailableError) return apiError("AI_UNAVAILABLE", error.message);
+
+  if (error instanceof GenerationDeliveredUnsavedError) {
+    return apiError("DELIVERED_NOT_SAVED", error.message);
+  }
 
   console.error(`[api/v1/${routeName}] unhandled error`, error);
   captureServerException(error);

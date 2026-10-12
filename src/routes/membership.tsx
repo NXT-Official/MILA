@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MARKETING_SEO, pageHead, siteFromMatches } from "@/lib/site-seo";
 import {
   loadLandingContentForRoute,
   shouldReloadLandingRoute,
@@ -7,7 +8,8 @@ import {
 import { MembershipPageView } from "@/components/landing/membership-page-view";
 
 export const Route = createFileRoute("/membership")({
-  head: () => ({ meta: [{ title: "Membership — Mila" }] }),
+  head: ({ matches }) =>
+    pageHead({ path: "/membership", ...MARKETING_SEO["/membership"] }, siteFromMatches(matches)),
   loader: loadLandingContentForRoute,
   shouldReload: shouldReloadLandingRoute,
   staleTime: 5 * 60 * 1000,

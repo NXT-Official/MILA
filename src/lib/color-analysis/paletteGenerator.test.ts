@@ -130,3 +130,19 @@ describe("season matching in older browsers", () => {
     for (const base of bases("Winter / Autumn")) expect(SUITED_BASES.Winter).toContain(base);
   });
 });
+
+describe("curated insights", () => {
+  test("no insight contains an em or en dash", () => {
+    const source = readFileSync(new URL("./paletteGenerator.ts", import.meta.url), "utf8");
+    const insights = [...source.matchAll(/insight: "([^"]*)"/g)].map((m) => m[1]!);
+    expect(insights.length).toBeGreaterThanOrEqual(8);
+    for (const insight of insights) expect(insight).not.toMatch(/[–—]/);
+    for (const family of ["Spring", "Summer", "Autumn", "Winter", null]) {
+      for (const p of draws(family)) expect(p.insight).not.toMatch(/[–—]/);
+    }
+  });
+
+  test("a curated palette is tagged as curated", () => {
+    expect(generateDailyPalette("Winter", null, () => 0.5).source).toBe("curated");
+  });
+});

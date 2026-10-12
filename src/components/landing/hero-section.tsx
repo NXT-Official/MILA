@@ -5,6 +5,14 @@ import { SeasonTag } from "@/components/landing/season-tag";
 import { CtaButton } from "@/components/landing/cta-button";
 import type { CtaContent, HeroContent } from "@/lib/landing-content";
 
+/**
+ * Two Studio lines joined into one paragraph each need to end a sentence: the
+ * note was written to stand alone under the button ("Takes under a minute").
+ */
+function asSentence(line: string) {
+  return /[.!?…]["”']?$/.test(line) ? line : `${line}.`;
+}
+
 export function HeroSection({ content, cta }: { content: HeroContent; cta?: CtaContent }) {
   const { preview } = content;
   const reduce = useReducedMotion() ?? false;
@@ -30,13 +38,14 @@ export function HeroSection({ content, cta }: { content: HeroContent; cta?: CtaC
               <span className="text-muted-foreground">{content.headlineLine2}</span>
             </h1>
 
+            {/* The Studio's "note under the button" closes the sub-copy: the hero
+                keeps one line of support copy and nothing under its CTA. */}
             <p className="mt-7 max-w-lg text-lg leading-relaxed text-pretty text-muted-foreground">
-              {content.subhead}
+              {`${asSentence(content.subhead)} ${asSentence(content.ctaNote)}`}
             </p>
 
-            <div className="mt-10 flex flex-col items-start gap-3.5">
+            <div className="mt-10">
               <CtaButton className="w-full sm:w-auto" labels={cta} />
-              <span className="text-xs text-muted-foreground">{content.ctaNote}</span>
             </div>
           </div>
 

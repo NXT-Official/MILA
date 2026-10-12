@@ -1,9 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { generateLookForUser } from "@/server/services/look";
+import { generateLookForUser, type LookResponse } from "@/server/services/look";
 import { MILA_VOICE } from "@/lib/mila-voice";
 import type { LookProduct } from "@/lib/look-products.functions";
+import { MAX_SWATCH_NAME_LENGTH, type MemberSwatch } from "@/lib/color-analysis/member-swatches";
+import { WEAR_ROLES, hydrateWearColour } from "@/lib/wear-colour";
 
 // Named 2026 haircut trends, sourced from current hairstylist/salon
 // coverage (Refinery29 spring/fall 2026 haircut roundups, Pete & Pedro and
@@ -123,6 +125,10 @@ export const Input = z.object({
   timezone: z.string().min(1).max(64).optional(),
   /** ISO 3166-1 alpha-2 country code. Empty/omitted = unknown, don't region-filter shoppable picks. */
   region: z.string().length(2).optional(),
+  /** Idempotency key for this generation (a UUID the client picks once per
+   * press). The same key never charges twice and replays the stored look.
+   * Optional: clients that predate generation jobs keep working without it. */
+  clientRequestId: z.string().uuid().optional(),
 });
 export type GenerateLookInputData = z.infer<typeof Input>;
 
@@ -144,7 +150,78 @@ export function computeMakeupEligibility(profile: {
  * exist) — see buildDailyLookTool. */
 export const MIN_SHOPPABLE_PICKS = 3;
 
-export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: string[] = []) {
+/**
+ * A swatch name as the look plan may see it. Her names are member-writable
+ * and go into the system prompt and the tool enum, and JSON quoting does not
+ * escape Unicode line or paragraph separators (or NEL, U+0085). So every
+ * control character and line or paragraph separator becomes a space, every
+ * invisible format character (zero-width, bidi overrides) is removed, and
+ * runs of space collapse.
+ */
+function promptSafeSwatchName(name: string): string {
+  return name
+    .replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ")
+    .replace(/\p{Cf}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Her swatches with prompt-safe names (see promptSafeSwatchName), each name
+ * once (case-insensitive, first kept) and none empty. The prompt block, the
+ * tool enum and hydration all go through this, so the three always agree.
+ */
+export function promptSafeSwatches(swatches: readonly MemberSwatch[]): MemberSwatch[] {
+  const seen = new Set<string>();
+  const safe: MemberSwatch[] = [];
+  for (const swatch of swatches) {
+    const name = promptSafeSwatchName(swatch.name);
+    const key = name.toLowerCase();
+    if (!name || seen.has(key)) continue;
+    seen.add(key);
+    safe.push({ name, hex: swatch.hex });
+  }
+  return safe;
+}
+
+/** The tool enum's names: promptSafeSwatches, for names alone. */
+function promptSafeSwatchNames(names: readonly string[]): string[] {
+  return promptSafeSwatches(names.map((name) => ({ name, hex: "" }))).map((swatch) => swatch.name);
+}
+
+/**
+ * Her colour map's half of the look tool (Wave D, R6): each pick names one of
+ * her own swatches (the enum is her `memberSwatches` names) and a role. The
+ * model never emits a hex: hydrateShoppablePicks copies it from her swatch.
+ */
+function wearColourProperty(swatchNames: string[]) {
+  return {
+    type: "object",
+    description:
+      "Which of HER PALETTE colors she should wear this piece in, and the role that color plays in the look.",
+    properties: {
+      swatch: {
+        type: "string",
+        enum: swatchNames,
+        description: "One HER PALETTE name, verbatim.",
+      },
+      role: {
+        type: "string",
+        enum: [...WEAR_ROLES],
+        description:
+          "base: bottoms and outer layers. statement: the top, near the face. accent: shoes, bags and jewelry.",
+      },
+    },
+    required: ["swatch", "role"],
+    additionalProperties: false,
+  };
+}
+
+export function buildDailyLookTool(
+  makeupEnabled: boolean,
+  candidateProductIds: string[] = [],
+  swatchNames: string[] = [],
+) {
   const properties: Record<string, unknown> = {
     outfit: {
       type: "object",
@@ -217,6 +294,22 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
   // a title, price, or link, so those always come from the server-side DB
   // hydration in look.ts, never from model text.
   if (candidateProductIds.length > 0) {
+    const pickProperties: Record<string, unknown> = {
+      product_id: { type: "string", enum: candidateProductIds },
+      rationale: {
+        type: "string",
+        description:
+          "One concrete sentence naming why this item suits the client's face shape and skin tone/undertone.",
+      },
+    };
+    const pickRequired = ["product_id", "rationale"];
+    // Only with her swatches: without them the tool is exactly the one that
+    // shipped before colour maps.
+    const enumNames = promptSafeSwatchNames(swatchNames);
+    if (enumNames.length > 0) {
+      pickProperties.wear_colour = wearColourProperty(enumNames);
+      pickRequired.push("wear_colour");
+    }
     properties.shoppable_picks = {
       type: "array",
       // Confirmed live: the prompt's "every garment must appear here" rule is
@@ -232,15 +325,8 @@ export function buildDailyLookTool(makeupEnabled: boolean, candidateProductIds: 
         "Every garment and pair of shoes named in the outfit description must appear here (real ids from the shortlist), plus any bag/jewelry/accessories styled into the look.",
       items: {
         type: "object",
-        properties: {
-          product_id: { type: "string", enum: candidateProductIds },
-          rationale: {
-            type: "string",
-            description:
-              "One concrete sentence naming why this item suits the client's face shape and skin tone/undertone.",
-          },
-        },
-        required: ["product_id", "rationale"],
+        properties: pickProperties,
+        required: pickRequired,
         additionalProperties: false,
       },
     };
@@ -384,7 +470,28 @@ export type OutfitPlanPromptInput = {
   hairRule: string;
   /** The shortlist with REAL ids + full descriptions; "(none available...)" fallback otherwise. */
   shortlistBlock: string;
+  /**
+   * Her palette and the wear map, from buildSwatchBlock. Omitted or empty:
+   * the prompt is exactly the one that shipped before colour maps.
+   */
+  swatchBlock?: string;
 };
+
+/**
+ * The plan prompt's colour-map block (Wave D, R6): her own swatches with
+ * prompt-safe names (promptSafeSwatches), each once as a quoted string (her
+ * names are member-writable, so a stray quote stays escaped and no separator
+ * can start a new line), then the wear map. Empty when she has no swatches.
+ */
+export function buildSwatchBlock(swatches: readonly MemberSwatch[]): string {
+  const safe = promptSafeSwatches(swatches);
+  if (safe.length === 0) return "";
+  return [
+    "HER PALETTE (wear_colour.swatch must be one of these names, verbatim):",
+    ...safe.map((swatch) => `- ${JSON.stringify(swatch.name)} (${swatch.hex})`),
+    "WEAR MAP: base colors go on bottoms and outer layers; the statement color goes on the top, near the face; accent colors go on shoes, bags and jewelry. For every shoppable pick choose the palette color she should wear that piece in and its role. Prefer the swatch closest to the piece's own described color; never describe a piece as a color its row does not state.",
+  ].join("\n");
+}
 
 /**
  * Step-two prompt (the outfit plan): the outfit must be composed ONLY from
@@ -405,6 +512,7 @@ export function buildOutfitPlanPrompt({
   beautyPrefsLine,
   hairRule,
   shortlistBlock,
+  swatchBlock,
 }: OutfitPlanPromptInput): string {
   return `You are an elite head-to-toe stylist composing one cohesive Daily Look — outfit + hair + makeup. The outfit MUST be composed from the client's live shop shortlist below; hair and makeup are composed from the profile. Never invent a garment, color, price, id, or link.
 
@@ -436,7 +544,7 @@ ${MILA_VOICE}
 SHOPPABLE PICKS — THE PRE-SCREENED SHORTLIST (real inventory rows, chosen from the client's full live catalog; the outfit is composed ONLY from these pieces — never invent a garment, price, id, or link):
 ${shortlistBlock}
 Every garment and pair of shoes named in 'description' MUST appear in shoppable_picks with its real id from the list above, plus any bag/jewelry/accessories you styled into the look — never list an item you did not name. For each pick, the 'rationale' must name concretely why it suits face shape ${faceShape ?? "the client's face shape"} and skin tone/undertone (${skinDepth ?? "n/a"}${skinUndertone ? `, ${skinUndertone} undertone` : ""}) — e.g. necklines/collars that balance the face shape, colors that harmonize with skin depth/undertone. Only choose product_id values from the list above, verbatim. If the shortlist has nothing workable for a slot (e.g. no shoes), style around it with the pieces that are there — never reach outside the list.
-
+${swatchBlock ? `\n${swatchBlock}\n` : ""}
 Always call the report_daily_look tool.`;
 }
 
@@ -455,6 +563,17 @@ const prose = (max: number) =>
     .string()
     .min(1)
     .transform((s) => (s.length > max ? s.slice(0, max) : s));
+
+/**
+ * One piece's colour on her colour map (Wave D, R6): her own swatch's name
+ * and hex, and the role it plays. Built only by the server from her swatches
+ * (see hydrateWearColour), never from model text.
+ */
+export const WearColourSchema = z.object({
+  name: z.string().trim().min(1).max(MAX_SWATCH_NAME_LENGTH),
+  hex: z.string().regex(/^#[0-9a-f]{6}$/i),
+  role: z.enum(WEAR_ROLES),
+});
 
 export const DailyLookSchema = z.object({
   outfit: z.object({
@@ -520,6 +639,11 @@ export const DailyLookSchema = z.object({
         // a look saved or echoed back by an older client still validates —
         // consumers treat a missing value as "planned".
         source: z.enum(["planned", "similar"]).optional(),
+        // Her colour map (Wave D, R6). Optional so every look from before
+        // colour maps still validates unchanged; null when no colour was
+        // picked for this piece. A malformed value is cosmetic, like the
+        // score above: it reads as "no colour" instead of rejecting the look.
+        wear_colour: WearColourSchema.nullable().optional().catch(null),
       }),
     )
     .optional(),
@@ -545,6 +669,10 @@ export type ShoppablePick = NonNullable<DailyLook["shoppable_picks"]>[number];
 export const RawShoppablePickSchema = z.object({
   product_id: z.string(),
   rationale: z.string().min(1),
+  // `{ swatch, role }` when the tool offered her swatches. Left unchecked here
+  // on purpose: one malformed colour must never drop every pick (this array
+  // parses as a whole). hydrateWearColour checks it and gives null instead.
+  wear_colour: z.unknown().optional(),
 });
 
 /**
@@ -557,17 +685,32 @@ export const RawShoppablePickSchema = z.object({
  *
  * Every hydrated pick is tagged source "planned" — these are the composed
  * outfit's actual pieces; look.ts appends the "similar" shelf options after.
+ *
+ * With her swatches, every pick also carries `wear_colour`: her swatch's own
+ * name and hex with the model's role, or null when the model named no swatch
+ * she has. Without swatches a pick is exactly what it was before colour maps.
  */
 export function hydrateShoppablePicks(
   rawShoppablePicks: unknown,
   candidateProducts: LookProduct[],
+  swatches: readonly MemberSwatch[] = [],
 ): ShoppablePick[] {
   const rawPicksResult = z.array(RawShoppablePickSchema).optional().safeParse(rawShoppablePicks);
   const rawPicks = rawPicksResult.success ? (rawPicksResult.data ?? []) : [];
+  // The same prompt-safe names the tool enum and the prompt offered.
+  const offered = promptSafeSwatches(swatches);
   return rawPicks
     .map((pick): ShoppablePick | null => {
       const product = candidateProducts.find((p) => p.id === pick.product_id);
-      return product ? { ...product, rationale: pick.rationale, source: "planned" as const } : null;
+      if (!product) return null;
+      const hydrated: ShoppablePick = {
+        ...product,
+        rationale: pick.rationale,
+        source: "planned" as const,
+      };
+      return swatches.length > 0
+        ? { ...hydrated, wear_colour: hydrateWearColour(pick.wear_colour, offered) }
+        : hydrated;
     })
     .filter((pick): pick is ShoppablePick => pick !== null);
 }
@@ -577,6 +720,14 @@ export type GeneratedLook = DailyLook & {
   imageGenerationError?: string;
 };
 
+/**
+ * Composes today's look (1 credit) as a generation job — see
+ * generateLookForUser. Accepts an optional `clientRequestId`. Always answers
+ * with a look (plus `jobId` once generation jobs are live): when another look
+ * is already being composed for this member it waits for that one instead of
+ * charging again, so the dashboard's `DailyLook` contract is unchanged. A web
+ * client that wants to follow a running job reads its `generation_jobs` row.
+ */
 export const generateDailyLook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => {
@@ -586,6 +737,6 @@ export const generateDailyLook = createServerFn({ method: "POST" })
     }
     return parsed.data;
   })
-  .handler(async ({ data, context }): Promise<DailyLook> =>
+  .handler(async ({ data, context }): Promise<LookResponse> =>
     generateLookForUser(context.supabase, context.userId, data),
   );

@@ -1,20 +1,18 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { SiteHeader } from "@/components/landing/site-header";
+import { SiteFooter } from "@/components/landing/site-footer";
+import { LANDING_FALLBACK } from "@/lib/landing-content.fallback";
 
 export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
+  const { footer } = LANDING_FALLBACK;
   return (
     <div className="relative min-h-screen bg-background">
-      <div className="relative atelier-page max-w-3xl">
+      <SiteHeader wordmark={footer.wordmark} />
+      <main className="relative atelier-page max-w-3xl">
         <div className="mb-10 flex flex-col items-center text-center">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2.5 font-serif text-2xl tracking-label-xwide"
-          >
-            <img src="/favicon.svg" alt="" className="size-7" />
-            MILA
-          </Link>
-          <h1 className="atelier-title mt-4">{title}</h1>
+          <h1 className="atelier-title">{title}</h1>
         </div>
 
         <article className="atelier-card mx-auto max-w-2xl space-y-5 p-6 text-sm leading-relaxed text-foreground sm:p-10">
@@ -30,7 +28,8 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
             Back to home
           </Link>
         </div>
-      </div>
+      </main>
+      <SiteFooter content={footer} />
     </div>
   );
 }

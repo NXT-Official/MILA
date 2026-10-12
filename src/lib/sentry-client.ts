@@ -4,9 +4,16 @@ import * as Sentry from "@sentry/react";
 // must keep working with this unset. Do not use requireEnv here.
 const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
 
-// Guard against re-initializing on every module re-evaluation (e.g. HMR) and
-// against running on the server, where __root.tsx is also imported for SSR.
-if (dsn && typeof window !== "undefined") {
+// Production only. A dev server was reporting React "Cannot read properties of
+// null (reading 'useMemo'/'useContext'/'useEffect')" from a stale Vite dep
+// pre-bundle (node_modules/.vite/deps) straight into the same project as real
+// production errors — unactionable development noise. import.meta.env.PROD is
+// false under `vite dev`, true for a real build, so this keeps `environment`
+// meaningful too. The window guard keeps the SSR pass (which also imports
+// __root.tsx) from initialising a browser SDK.
+const enabled = Boolean(dsn) && import.meta.env.PROD && typeof window !== "undefined";
+
+if (enabled) {
   Sentry.init({
     dsn,
     environment: import.meta.env.MODE,
@@ -14,8 +21,9 @@ if (dsn && typeof window !== "undefined") {
   });
 }
 
-/** Reports a client-side error to Sentry. No-op when VITE_SENTRY_DSN is unset. */
+/** Reports a client-side error to Sentry. No-op outside production, or when
+ * VITE_SENTRY_DSN is unset. */
 export function captureClientException(error: unknown): void {
-  if (!dsn || typeof window === "undefined") return;
+  if (!enabled || typeof window === "undefined") return;
   Sentry.captureException(error);
 }

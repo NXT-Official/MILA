@@ -31,7 +31,7 @@ export function PrivacyView({ exporting, onDownloadData, onNavigateSecurity }: P
           <span>{exporting ? "Preparing export…" : "Download My Data"}</span>
         </Button>
         <p className="text-micro text-stone leading-relaxed">
-          Exports your profile, outfits, posts, and favorites as JSON.
+          Exports your profile, outfits, posts, favorites, and saved pieces as JSON.
         </p>
       </div>
 

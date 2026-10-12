@@ -110,3 +110,65 @@ describe("POST /api/v1/look/style-sheet", () => {
     expect(deps.renderStyleSheetForUser).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/v1/look/style-sheet — generation jobs", () => {
+  const REQUEST_ID = "6f9c2a8e-3b1d-4c7a-9e2f-0a1b2c3d4e5f";
+
+  test("a clientRequestId asks for the running shape and passes it through", async () => {
+    const deps = fakeDeps({
+      renderStyleSheetForUser: mock(async () => ({ status: "running", jobId: "job-1" })),
+    } as unknown as Partial<HandleLookStyleSheetDeps>);
+
+    const res = await handleLookStyleSheet(
+      postRequest({ outfit: VALID_LOOK, clientRequestId: REQUEST_ID }, "good-token"),
+      deps,
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: "running", jobId: "job-1" });
+    expect(deps.renderStyleSheetForUser).toHaveBeenCalledWith(
+      {},
+      "user-1",
+      expect.objectContaining({ clientRequestId: REQUEST_ID }),
+      { inFlight: "report" },
+    );
+  });
+
+  test("without a clientRequestId the service is called exactly as before", async () => {
+    const deps = fakeDeps();
+    await handleLookStyleSheet(postRequest({ outfit: VALID_LOOK }, "good-token"), deps);
+    expect((deps.renderStyleSheetForUser as ReturnType<typeof mock>).mock.calls[0]).toHaveLength(3);
+  });
+
+  test("the render answer keeps every field and adds the job id", async () => {
+    const deps = fakeDeps({
+      renderStyleSheetForUser: mock(async () => ({
+        imageDataUri: "data:image/jpeg;base64,img",
+        mode: "style_sheet" as const,
+        jobId: "job-1",
+      })),
+    });
+
+    const res = await handleLookStyleSheet(
+      postRequest({ outfit: VALID_LOOK, clientRequestId: REQUEST_ID }, "good-token"),
+      deps,
+    );
+
+    expect(await res.json()).toEqual({
+      imageDataUri: "data:image/jpeg;base64,img",
+      mode: "style_sheet",
+      jobId: "job-1",
+    });
+  });
+
+  test("a clientRequestId that is not a UUID -> 400 VALIDATION_FAILED, nothing charged", async () => {
+    const deps = fakeDeps();
+    const res = await handleLookStyleSheet(
+      postRequest({ outfit: VALID_LOOK, clientRequestId: "not-a-uuid" }, "good-token"),
+      deps,
+    );
+
+    expect(res.status).toBe(400);
+    expect(deps.renderStyleSheetForUser).not.toHaveBeenCalled();
+  });
+});

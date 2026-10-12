@@ -1,19 +1,20 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import type * as z from "zod";
 import { ArrowRight, MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import { requestPasswordReset } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  authFormOptions,
+  describedBy,
+  forgotPasswordSchema,
+} from "@/components/login/auth-validation";
+import { FieldError } from "@/components/login/field-error";
 import { useCaptcha } from "@/components/login/use-captcha";
 import { errorMessage } from "@/lib/utils";
-
-const forgotPasswordSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid studio email address." }),
-});
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
@@ -26,10 +27,7 @@ export function ForgotPasswordForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: { email: "" },
-  });
+  } = useForm<ForgotPasswordFormValues>(authFormOptions(forgotPasswordSchema, { email: "" }));
 
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     if (!captcha.token) {
@@ -66,7 +64,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="forgot-password-email" className="text-xs">
           Email Address
@@ -74,17 +72,18 @@ export function ForgotPasswordForm() {
         <Input
           id="forgot-password-email"
           type="email"
+          // src: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill-field-name · 2026-10-07
+          // The email is the account's sign-in name, so a saved login can fill it.
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           placeholder="name@studio.com"
           className="h-10"
           aria-invalid={errors.email ? true : undefined}
-          aria-describedby={errors.email ? "forgot-password-email-error" : undefined}
+          aria-describedby={describedBy(errors.email && "forgot-password-email-error")}
           {...register("email")}
         />
-        {errors.email && (
-          <p id="forgot-password-email-error" className="text-xs text-destructive">
-            {errors.email.message}
-          </p>
-        )}
+        <FieldError id="forgot-password-email-error" message={errors.email?.message} />
       </div>
 
       {captcha.field}

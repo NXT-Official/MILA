@@ -1,5 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { memberAuthorization } from "@/lib/auth-session";
+import { memberQueryRetry } from "@/lib/queries/member-query";
 import {
   UNDERTONES,
   SEASONS,
@@ -44,46 +46,50 @@ export interface DashboardLookStats {
   streakDays: number;
 }
 
-function computeStreakDays(createdAtDates: string[]): number {
-  const days = new Set(
-    createdAtDates.map((iso) => {
-      const d = new Date(iso);
-      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    }),
-  );
+/**
+ * Consecutive local days with a look. A streak that ran through yesterday stays
+ * alive until the end of today; it breaks only when yesterday also has no look.
+ */
+export function computeStreakDays(createdAtDates: string[], now: Date = new Date()): number {
+  const keyOf = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const days = new Set(createdAtDates.map((iso) => keyOf(new Date(iso))));
+
+  const cursor = new Date(now);
+  if (!days.has(keyOf(cursor))) cursor.setDate(cursor.getDate() - 1);
 
   let streak = 0;
-  const cursor = new Date();
-  for (;;) {
-    const key = `${cursor.getFullYear()}-${cursor.getMonth()}-${cursor.getDate()}`;
-    if (!days.has(key)) break;
+  while (days.has(keyOf(cursor))) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
   return streak;
 }
 
-export function dashboardLookStatsQueryOptions(userId: string | undefined) {
+export function dashboardLookStatsQueryOptions(userId: string | undefined, client = supabase) {
   return queryOptions({
     queryKey: ["dashboard-look-stats", userId] as const,
     queryFn: async (): Promise<DashboardLookStats> => {
       const monthStart = new Date();
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
+      // Read as her, never as anonymous (an anonymous read sees no looks).
+      const authorization = await memberAuthorization(client.auth, userId as string);
 
       const [{ data: recent, error: recentError }, { count, error: countError }] =
         await Promise.all([
-          supabase
+          client
             .from("outfits")
             .select("id,image_url,match_score,created_at")
             .eq("user_id", userId as string)
             .order("created_at", { ascending: false })
-            .limit(30),
-          supabase
+            .limit(30)
+            .setHeader("Authorization", authorization),
+          client
             .from("outfits")
             .select("id", { count: "exact", head: true })
             .eq("user_id", userId as string)
-            .gte("created_at", monthStart.toISOString()),
+            .gte("created_at", monthStart.toISOString())
+            .setHeader("Authorization", authorization),
         ]);
 
       if (recentError) throw recentError;
@@ -98,5 +104,6 @@ export function dashboardLookStatsQueryOptions(userId: string | undefined) {
     },
     enabled: !!userId,
     staleTime: 60_000,
+    retry: memberQueryRetry,
   });
 }

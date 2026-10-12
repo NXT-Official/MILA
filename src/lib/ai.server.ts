@@ -74,9 +74,12 @@ function stripJsonFence(text: string): string {
   return text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
 }
 
-/** Each complete top-level `{…}` in `text`, in order. Quotes are tracked only
- * inside an object, so prose around it can't flip the string state. */
-function* topLevelObjects(text: string): Generator<string> {
+/** Each complete top-level `{…}` in `text`, in order, and whether the text
+ * ends inside an object that never closed (a reply cut off mid-answer).
+ * Quotes are tracked only inside an object, so prose around it can't flip
+ * the string state. */
+function scanTopLevelObjects(text: string): { objects: string[]; endsInsideObject: boolean } {
+  const objects: string[] = [];
   let depth = 0;
   let start = 0;
   let inString = false;
@@ -94,9 +97,31 @@ function* topLevelObjects(text: string): Generator<string> {
       depth += 1;
     } else if (ch === "}" && depth > 0) {
       depth -= 1;
-      if (depth === 0) yield text.slice(start, i + 1);
+      if (depth === 0) objects.push(text.slice(start, i + 1));
     }
   }
+  return { objects, endsInsideObject: depth > 0 };
+}
+
+/** A one-item array is its item, at any depth; any other array (empty, or a
+ * draft beside a final answer) holds no single answer to take. The answer
+ * must be a JSON object: every tool's root is `type: "object"`, so `null` or
+ * a bare string, number or boolean is unusable (callers reading `.reply`,
+ * `.items` or `.passes` off `null` used to throw a TypeError). */
+function singleAnswer(value: unknown): unknown {
+  let answer = value;
+  while (Array.isArray(answer)) {
+    if (answer.length !== 1) {
+      throw new SyntaxError(`Expected one answer, found an array of ${answer.length}`);
+    }
+    answer = answer[0];
+  }
+  if (answer === null || typeof answer !== "object") {
+    throw new SyntaxError(
+      `Expected a JSON object, found ${answer === null ? "null" : typeof answer}`,
+    );
+  }
+  return answer;
 }
 
 function tryParseJson(text: string): { value: unknown } | null {
@@ -115,23 +140,31 @@ function tryParseJson(text: string): { value: unknown } | null {
  *   2. the reply with reasoning blocks dropped — an unfinished one to the
  *      end, never mined for a draft;
  *   3. an object found in the prose, only when EXACTLY ONE complete
- *      top-level object parses. A draft and a final answer side by side are
- *      refused, not guessed between (some callers read `passes === true`
- *      without a schema), and a truncated reply never yields a nested
- *      fragment of itself.
+ *      top-level object parses and the reply does not end inside another one.
+ *      A draft and a final answer side by side are refused, not guessed
+ *      between (some callers read `passes === true` without a schema); so is
+ *      a complete draft followed by a final answer that was cut off; and a
+ *      truncated reply never yields a nested fragment of itself.
+ * A one-item array answer is its item in every form (bare, fenced or in
+ * prose, where the scan already finds the one object inside it); any other
+ * array is refused in every form.
  * Throws when there is no single JSON answer to take.
  */
 function parseModelJson(text: string): unknown {
   const asIs = tryParseJson(stripJsonFence(text));
-  if (asIs) return asIs.value;
+  if (asIs) return singleAnswer(asIs.value);
 
   const body = stripJsonFence(text.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, ""));
   const withoutReasoning = tryParseJson(body);
-  if (withoutReasoning) return withoutReasoning.value;
+  if (withoutReasoning) return singleAnswer(withoutReasoning.value);
 
-  const found = Array.from(topLevelObjects(body), tryParseJson).filter(
-    (parsed): parsed is { value: unknown } => parsed !== null,
-  );
+  const scan = scanTopLevelObjects(body);
+  if (scan.endsInsideObject) {
+    throw new SyntaxError("The reply ends inside an unfinished JSON object");
+  }
+  const found = scan.objects
+    .map(tryParseJson)
+    .filter((parsed): parsed is { value: unknown } => parsed !== null);
   if (found.length === 1) return found[0].value;
   throw new SyntaxError(`Expected one JSON object in the reply, found ${found.length}`);
 }
@@ -186,7 +219,20 @@ async function requestCompletion(
     return { ok: false, status: 504 };
   }
   if (!response.ok) {
-    const bodyText = await response.text();
+    // The status is already known when the error body fails to arrive (a
+    // dropped connection, the timeout firing mid-body): answer it, never
+    // throw past every caller's status mapping.
+    let bodyText: string;
+    try {
+      bodyText = await response.text();
+    } catch (err) {
+      console.error(
+        "[ai] provider error body unreadable",
+        response.status,
+        errorMessage(err, "unknown"),
+      );
+      return { ok: false, status: response.status };
+    }
     console.error("[ai] provider error", response.status, bodyText);
     return {
       ok: false,

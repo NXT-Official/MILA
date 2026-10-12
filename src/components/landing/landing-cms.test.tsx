@@ -105,7 +105,8 @@ describe("CTA labels are editable, destinations are not", () => {
     expect(out).toContain('href="/dashboard"');
   });
 
-  test("defaults to the pre-CMS labels", async () => {
-    expect(await renderCta()).toContain("Get your first look");
+  test("defaults to the checked-in labels", async () => {
+    expect(await renderCta()).toContain(`>${LANDING_FALLBACK.cta.signedOutLabel}<`);
+    expect(LANDING_FALLBACK.cta.signedOutLabel).toBe("Start with your colors");
   });
 });

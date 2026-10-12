@@ -109,4 +109,13 @@ describe("the app shell", () => {
     expect(markup).toContain('accept="image/jpeg,image/png,image/webp,image/heic,image/heif"');
     expect(markup).not.toContain('accept="image/*"');
   });
+
+  test("both avatars (sidebar and phone header) open the account menu", async () => {
+    const markup = await renderShell({ fullName: "Jane Doe", username: "mira.k" });
+    const triggers = markup.match(/<button[^>]*aria-label="Your account"[^>]*>/g) ?? [];
+
+    expect(triggers).toHaveLength(2);
+    for (const t of triggers) expect(t).toContain('aria-haspopup="menu"');
+    expect(markup).not.toMatch(/<a[^>]*href="\/account"/);
+  });
 });

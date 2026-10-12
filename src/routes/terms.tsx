@@ -1,10 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { pageHead, siteFromMatches } from "@/lib/site-seo";
 import { LegalPage } from "@/components/legal/legal-page";
 
 export const Route = createFileRoute("/terms")({
-  head: () => ({
-    meta: [{ title: "Terms of Service — Mila" }],
-  }),
+  head: ({ matches }) =>
+    pageHead(
+      {
+        path: "/terms",
+        title: "Terms of Service | Mila",
+        description:
+          "The terms that apply when you use Mila, including accounts, plans and credits.",
+      },
+      siteFromMatches(matches),
+    ),
   component: TermsPage,
 });
 

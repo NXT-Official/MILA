@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import type * as z from "zod";
 import { ArrowRight, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
@@ -10,22 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordVisibilityButton } from "@/components/ui/password-visibility-button";
+import { authFormOptions, describedBy, signupSchema } from "@/components/login/auth-validation";
+import { FieldError } from "@/components/login/field-error";
 import { useCaptcha } from "@/components/login/use-captcha";
-import { signupSuccessMessage } from "@/components/login/signup-outcome";
+import { completeSignup, signupRequest } from "@/components/login/signup-flow";
 import { passwordChecks } from "@/constants/password";
 import { signUpWithPassword } from "@/lib/auth.functions";
-import { errorMessage } from "@/lib/utils";
 import { trackEvent } from "@/lib/track-event";
-
-const signupSchema = z.object({
-  username: z
-    .string()
-    .min(3, { message: "Username must be at least 3 characters." })
-    .max(30, { message: "Username must be 30 characters or fewer." })
-    .regex(/^[a-zA-Z0-9_-]+$/, { message: "Letters, numbers, underscores and dashes only." }),
-  email: z.string().email({ message: "Please enter a valid studio email address." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-});
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
@@ -34,6 +24,8 @@ interface SignupFormProps {
   onEmailChange: (email: string) => void;
   showPassword: boolean;
   onToggleShowPassword: () => void;
+  /** Where the confirmation email should bring her back to (re-checked). */
+  returnTo?: string;
 }
 
 export function SignupForm({
@@ -41,8 +33,10 @@ export function SignupForm({
   onEmailChange,
   showPassword,
   onToggleShowPassword,
+  returnTo,
 }: SignupFormProps) {
   const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const captcha = useCaptcha();
 
   const {
@@ -50,11 +44,17 @@ export function SignupForm({
     handleSubmit,
     formState: { errors },
     watch,
-  } = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: { username: "", email, password: "" },
-  });
+  } = useForm<SignupFormValues>(
+    authFormOptions(signupSchema, { username: "", email, password: "" }),
+  );
   const emailField = register("email");
+
+  useEffect(() => {
+    // The message is about the last attempt; it stops being true once the member changes anything.
+    // src: https://react-hook-form.com/docs/useform/watch (callback form, returns a subscription) · 7.80.0
+    const subscription = watch(() => setFormError(null));
+    return () => subscription.unsubscribe();
+  }, [watch]);
 
   const password = watch("password") ?? "";
   const passedChecks = passwordChecks.filter((c) => c.test(password)).length;
@@ -76,22 +76,25 @@ export function SignupForm({
       return;
     }
     setBusy(true);
+    setFormError(null);
     try {
-      const { session } = await signUpWithPassword({
-        data: {
-          email: data.email,
-          password: data.password,
-          username: data.username,
-          captchaToken: captcha.token,
-        },
+      const outcome = await completeSignup({
+        createAccount: () =>
+          signUpWithPassword({
+            data: signupRequest(data, captcha.token!, returnTo),
+          }),
+        startSession: (session) => supabase.auth.setSession(session),
+        trackSignup: (session) => trackEvent(supabase, session.user.id, "signup_completed"),
       });
-      if (session) {
-        await supabase.auth.setSession(session);
-        trackEvent(supabase, session.user.id, "signup_completed");
+      if (outcome.status === "created") {
+        toast.success(outcome.message);
+      } else {
+        // Shown inline so it stays put while the member reads it and fixes the form,
+        // and as the toast this path always had. The toast is the one live channel
+        // (sonner's toaster is an aria-live region), so the inline copy does not announce.
+        setFormError(outcome.message);
+        toast.error(outcome.message);
       }
-      toast.success(signupSuccessMessage(session));
-    } catch (err) {
-      toast.error(errorMessage(err, "Authentication failed"));
     } finally {
       captcha.reset();
       setBusy(false);
@@ -99,24 +102,28 @@ export function SignupForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="signup-username" className="text-xs">
           Studio Username
         </Label>
         <Input
           id="signup-username"
+          // src: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill-field-name · 2026-10-07
+          // `nickname` is "a typically short name used instead of the full name". This
+          // handle is public, not the sign-in name (sign-in is by email), so it must not
+          // be `username`: a password manager would save it as the login.
+          autoComplete="nickname"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           placeholder="atelier_handle"
           className="h-10"
           aria-invalid={errors.username ? true : undefined}
-          aria-describedby={errors.username ? "signup-username-error" : undefined}
+          aria-describedby={describedBy(errors.username && "signup-username-error")}
           {...register("username")}
         />
-        {errors.username && (
-          <p id="signup-username-error" className="text-xs text-destructive">
-            {errors.username.message}
-          </p>
-        )}
+        <FieldError id="signup-username-error" message={errors.username?.message} />
       </div>
 
       <div className="space-y-1.5">
@@ -126,21 +133,21 @@ export function SignupForm({
         <Input
           id="signup-email"
           type="email"
+          // src: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill-field-name · 2026-10-07
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
           placeholder="name@studio.com"
           className="h-10"
           aria-invalid={errors.email ? true : undefined}
-          aria-describedby={errors.email ? "signup-email-error" : undefined}
+          aria-describedby={describedBy(errors.email && "signup-email-error")}
           {...emailField}
           onChange={(e) => {
             emailField.onChange(e);
             onEmailChange(e.target.value);
           }}
         />
-        {errors.email && (
-          <p id="signup-email-error" className="text-xs text-destructive">
-            {errors.email.message}
-          </p>
-        )}
+        <FieldError id="signup-email-error" message={errors.email?.message} />
       </div>
 
       <div className="space-y-1.5">
@@ -151,23 +158,24 @@ export function SignupForm({
           <Input
             id="signup-password"
             type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
+            // src: https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill-field-name · 2026-10-07
+            autoComplete="new-password"
+            placeholder="Create a password"
             className="h-10 pr-10"
             aria-invalid={errors.password ? true : undefined}
-            aria-describedby={errors.password ? "signup-password-error" : undefined}
+            aria-describedby={describedBy(
+              errors.password && "signup-password-error",
+              password && "signup-password-requirements",
+            )}
             {...register("password")}
           />
           <PasswordVisibilityButton visible={showPassword} onToggle={onToggleShowPassword} />
         </div>
-        {errors.password && (
-          <p id="signup-password-error" className="text-xs text-destructive">
-            {errors.password.message}
-          </p>
-        )}
+        <FieldError id="signup-password-error" message={errors.password?.message} />
       </div>
 
       {password && (
-        <div className="space-y-2">
+        <div id="signup-password-requirements" className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
               <div
@@ -211,6 +219,8 @@ export function SignupForm({
         </Link>
         .
       </p>
+
+      <FieldError id="signup-form-error" message={formError ?? undefined} announce={false} />
 
       <Button
         type="submit"

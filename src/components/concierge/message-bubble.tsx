@@ -1,5 +1,6 @@
-import { RotateCcw, Sparkles } from "lucide-react";
+import { Loader2, RotateCcw, Save, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CONCIERGE_COPY } from "@/hooks/use-concierge-send";
 import type { Msg } from "@/components/concierge/types";
 
 function formatTime(ts: number) {
@@ -9,10 +10,15 @@ function formatTime(ts: number) {
 export function MessageBubble({
   msg,
   onRetry,
+  onSave,
+  saving = false,
   sending,
 }: {
   msg: Msg;
   onRetry: () => void;
+  /** Retries saving an unsaved reply (the write only: no chat call, no credit). */
+  onSave?: () => void;
+  saving?: boolean;
   sending: boolean;
 }) {
   const isUser = msg.role === "user";
@@ -46,15 +52,40 @@ export function MessageBubble({
         </div>
         {msg.failed && (
           <div role="alert" className="flex items-center gap-2 text-label text-destructive">
-            Not sent.
+            {msg.failedNote ?? "Not sent."}
             <button
               type="button"
               onClick={onRetry}
               disabled={sending}
-              className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-foreground transition-colors disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-1 px-1 underline underline-offset-2 hover:text-foreground transition-colors disabled:opacity-50"
             >
               <RotateCcw className="size-3" aria-hidden="true" /> Try again
             </button>
+          </div>
+        )}
+        {!msg.failed && msg.note && (
+          <p role="status" className="text-label text-muted-foreground">
+            {msg.note}
+          </p>
+        )}
+        {!isUser && msg.unsaved && (
+          <div role="status" className="flex items-center gap-2 text-label text-muted-foreground">
+            {CONCIERGE_COPY.unsaved}
+            {onSave && (
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={saving}
+                className="inline-flex min-h-11 items-center gap-1 px-1 text-foreground underline underline-offset-2 hover:text-accent transition-colors disabled:opacity-50"
+              >
+                {saving ? (
+                  <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Save className="size-3" aria-hidden="true" />
+                )}
+                {saving ? CONCIERGE_COPY.saving : CONCIERGE_COPY.save}
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck, ExternalLink, ImageOff, Star, Truck } from "lucide-react";
 import {
   Sheet,
@@ -19,33 +18,178 @@ import {
 } from "@/components/ui/select";
 import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import { ProductCard } from "@/components/ui/product-card";
+import { GarmentBadge } from "@/components/ui/garment-badge";
+import { SaveProductButton } from "@/components/ui/save-product-button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { queryKeys } from "@/constants/query-keys";
-import { findSimilarItems } from "@/lib/dupe-hunter.functions";
+import type { DupeMatch } from "@/lib/dupe-hunter.functions";
+import {
+  prefetchSimilarItems,
+  similarItemsQueryOptions,
+  similarShopView,
+  useSimilarItemsInputs,
+} from "@/lib/queries/similar-items";
+import { garmentFor, garmentLine, recommendationAlt } from "@/lib/garment-label";
 import { sourceUrlHost, type PostItem } from "@/lib/outfit-items";
 import { formatPrice } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
-import { profileQueryOptions } from "@/lib/queries/profile";
 import { sortMatches, type ShopSort } from "@/lib/sort-matches";
 
-const MATCH_CACHE_MS = 24 * 60 * 60 * 1000;
+/** One catalog match in the Shop tab, named by its garment badge. */
+export function SimilarMatchCard({ match, postItemId }: { match: DupeMatch; postItemId: string }) {
+  const garment = garmentFor(match.category, match.title);
+  return (
+    <ProductCard
+      as="a"
+      href={match.affiliate_link}
+      overlay={<GarmentBadge garment={garment} />}
+      actions={<SaveProductButton product={match} context={{ source: "post_item", postItemId }} />}
+      image={
+        <>
+          <ImageWithFallback
+            src={match.image_url}
+            alt={recommendationAlt(match.title, garment)}
+            loading="lazy"
+            className="h-full w-full object-cover"
+            fallback={
+              <div className="h-full w-full flex items-center justify-center text-stone">
+                <ImageOff className="size-5" strokeWidth={1.5} />
+              </div>
+            }
+          />
+          {!!match.discount_percent && (
+            <span className="absolute top-2 left-2 rounded-full bg-ink/90 px-2 py-0.5 text-nano font-medium uppercase tracking-label-wide text-surface">
+              -{match.discount_percent}%
+            </span>
+          )}
+        </>
+      }
+    >
+      <div className="space-y-1">
+        <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
+          {garmentLine(garment, match.title)}
+        </p>
+        <div className="flex items-center gap-1.5">
+          <p className="atelier-label">
+            {formatPrice(match.price, match.currency)}
+            {/* Prices render in the product's stored currency, labelled by formatPrice (Intl). FX conversion to a viewer currency is deliberately out of scope until a real rate source exists (Morpessa MW-9 resolved as "labelled"). */}
+          </p>
+          {match.is_verified_seller && (
+            <BadgeCheck
+              className="size-3.5 text-accent"
+              strokeWidth={1.75}
+              aria-label="Verified seller"
+            />
+          )}
+        </div>
+        {(match.rating != null || match.units_sold != null) && (
+          <p className="flex items-center gap-1 text-micro text-muted-foreground">
+            {match.rating != null && (
+              <span className="flex items-center gap-0.5">
+                <Star className="size-3 fill-current" strokeWidth={0} />
+                {match.rating.toFixed(1)}
+              </span>
+            )}
+            {match.rating != null && match.units_sold != null && <span>·</span>}
+            {match.units_sold != null && <span>{match.units_sold} sold</span>}
+          </p>
+        )}
+        {match.shipping_info && (
+          <p className="flex items-center gap-1 text-micro text-muted-foreground">
+            <Truck className="size-3" strokeWidth={1.75} />
+            {match.shipping_info}
+          </p>
+        )}
+        <p className="text-micro text-muted-foreground">
+          {match.verification_status === "verified" && match.last_verified_at
+            ? `Last checked ${new Date(match.last_verified_at).toLocaleDateString()}`
+            : "Link not yet verified"}
+        </p>
+      </div>
+    </ProductCard>
+  );
+}
+
+/** Empty or error state for the Shop tab: a failed search must never read as "no matches". */
+export function SimilarShopNotice({
+  isError,
+  onRetry,
+  isRetrying = false,
+}: {
+  isError: boolean;
+  onRetry: () => void;
+  isRetrying?: boolean;
+}) {
+  if (isError) {
+    return (
+      <div role="alert" className="rounded-card border border-dashed border-border p-6 text-center">
+        <p className="font-serif text-base text-ink">We couldn't search the catalog just now.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Nothing is wrong with the piece.</p>
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={isRetrying}
+          aria-busy={isRetrying}
+          className="atelier-focus-ring mt-3 inline-flex min-h-11 items-center rounded-full border border-border px-5 text-sm text-ink hover:bg-secondary disabled:opacity-60"
+        >
+          {isRetrying ? "Searching again..." : "Try again"}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-card border border-dashed border-border p-6 text-center">
+      <p className="font-serif text-base text-ink">Nothing close in the catalog yet.</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Mila's shelf grows every week. Check back on this piece.
+      </p>
+    </div>
+  );
+}
+
+/** Shop tab results: loading, error (with retry), empty, or the matches. */
+export function SimilarShopResults({ item, sort }: { item: PostItem; sort: ShopSort }) {
+  const { fetchSimilar, region, settled } = useSimilarItemsInputs();
+  const {
+    data: similar,
+    status,
+    isFetching,
+    refetch,
+  } = useQuery(similarItemsQueryOptions(item, fetchSimilar, { region, settled }));
+  const sortedMatches = useMemo(() => sortMatches(similar ?? [], sort), [similar, sort]);
+  const view = similarShopView({ settled, status, count: sortedMatches.length });
+
+  return (
+    <>
+      {view === "loading" && (
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="aspect-3/4 rounded-card" />
+          <Skeleton className="aspect-3/4 rounded-card" />
+        </div>
+      )}
+
+      {(view === "error" || view === "empty") && (
+        <SimilarShopNotice
+          isError={view === "error"}
+          isRetrying={isFetching}
+          onRetry={() => void refetch()}
+        />
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        {sortedMatches.map((match) => (
+          <SimilarMatchCard key={match.id} match={match} postItemId={item.id} />
+        ))}
+      </div>
+    </>
+  );
+}
 
 export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClose: () => void }) {
-  const fetchSimilar = useServerFn(findSimilarItems);
-  const { user } = useAuth();
-  const { data: profile } = useQuery({ ...profileQueryOptions(user?.id), enabled: !!user });
-  const { data: similar, isLoading } = useQuery({
-    queryKey: queryKeys.similarItems(item?.id ?? ""),
-    queryFn: () =>
-      fetchSimilar({
-        data: { attributes: item!.attributes, region: profile?.delivery_country || undefined },
-      }),
-    enabled: !!item,
-    staleTime: MATCH_CACHE_MS,
-    gcTime: MATCH_CACHE_MS,
-  });
   const [sort, setSort] = useState<ShopSort>("best_match");
-  const sortedMatches = useMemo(() => sortMatches(similar ?? [], sort), [similar, sort]);
+  const queryClient = useQueryClient();
+  const { fetchSimilar, region, settled } = useSimilarItemsInputs();
+  useEffect(() => {
+    void prefetchSimilarItems(queryClient, item, fetchSimilar, { region, settled });
+  }, [queryClient, item, fetchSimilar, region, settled]);
 
   return (
     <Sheet open={!!item} onOpenChange={(open) => !open && onClose()}>
@@ -119,95 +263,7 @@ export function PostItemDrawer({ item, onClose }: { item: PostItem | null; onClo
                   </Select>
                 </div>
 
-                {isLoading && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Skeleton className="aspect-3/4 rounded-card" />
-                    <Skeleton className="aspect-3/4 rounded-card" />
-                  </div>
-                )}
-
-                {!isLoading && !sortedMatches.length && (
-                  <div className="rounded-card border border-dashed border-border p-6 text-center">
-                    <p className="font-serif text-base text-ink">
-                      Nothing close in the catalog yet.
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Mila's shelf grows every week — check back on this piece.
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  {sortedMatches.map((match) => (
-                    <ProductCard
-                      key={match.id}
-                      as="a"
-                      href={match.affiliate_link}
-                      image={
-                        <>
-                          <ImageWithFallback
-                            src={match.image_url}
-                            alt={match.title}
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                            fallback={
-                              <div className="h-full w-full flex items-center justify-center text-stone">
-                                <ImageOff className="size-5" strokeWidth={1.5} />
-                              </div>
-                            }
-                          />
-                          {!!match.discount_percent && (
-                            <span className="absolute top-2 left-2 rounded-full bg-ink/90 px-2 py-0.5 text-nano font-medium uppercase tracking-label-wide text-surface">
-                              -{match.discount_percent}%
-                            </span>
-                          )}
-                        </>
-                      }
-                    >
-                      <div className="space-y-1">
-                        <p className="font-serif text-sm text-ink leading-snug line-clamp-2">
-                          {match.title}
-                        </p>
-                        <div className="flex items-center gap-1.5">
-                          <p className="atelier-label">
-                            {formatPrice(match.price, match.currency)}
-                            {/* Prices render in the product's stored currency, labelled by formatPrice (Intl). FX conversion to a viewer currency is deliberately out of scope until a real rate source exists (Morpessa MW-9 resolved as "labelled"). */}
-                          </p>
-                          {match.is_verified_seller && (
-                            <BadgeCheck
-                              className="size-3.5 text-accent"
-                              strokeWidth={1.75}
-                              aria-label="Verified seller"
-                            />
-                          )}
-                        </div>
-                        {(match.rating != null || match.units_sold != null) && (
-                          <p className="flex items-center gap-1 text-micro text-muted-foreground">
-                            {match.rating != null && (
-                              <span className="flex items-center gap-0.5">
-                                <Star className="size-3 fill-current" strokeWidth={0} />
-                                {match.rating.toFixed(1)}
-                              </span>
-                            )}
-                            {match.rating != null && match.units_sold != null && <span>·</span>}
-                            {match.units_sold != null && <span>{match.units_sold} sold</span>}
-                          </p>
-                        )}
-                        {match.shipping_info && (
-                          <p className="flex items-center gap-1 text-micro text-muted-foreground">
-                            <Truck className="size-3" strokeWidth={1.75} />
-                            {match.shipping_info}
-                          </p>
-                        )}
-                        <p className="text-micro text-muted-foreground">
-                          {match.verification_status === "verified" && match.last_verified_at
-                            ? `Last checked ${new Date(match.last_verified_at).toLocaleDateString()}`
-                            : "Link not yet verified"}
-                        </p>
-                      </div>
-                    </ProductCard>
-                  ))}
-                </div>
+                <SimilarShopResults item={item} sort={sort} />
               </TabsContent>
             </Tabs>
           </div>

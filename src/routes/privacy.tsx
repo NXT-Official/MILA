@@ -1,10 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { pageHead, siteFromMatches } from "@/lib/site-seo";
 import { LegalPage } from "@/components/legal/legal-page";
 
 export const Route = createFileRoute("/privacy")({
-  head: () => ({
-    meta: [{ title: "Privacy Policy — Mila" }],
-  }),
+  head: ({ matches }) =>
+    pageHead(
+      {
+        path: "/privacy",
+        title: "Privacy Policy | Mila",
+        description:
+          "How Mila collects, uses and protects your personal data, and the choices you have.",
+      },
+      siteFromMatches(matches),
+    ),
   component: PrivacyPage,
 });
 

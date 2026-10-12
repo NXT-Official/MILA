@@ -131,7 +131,12 @@ export const updatePostItems = createServerFn({ method: "POST" })
     return updates.flatMap((result) => (result.data ? [toPostItem(result.data)] : []));
   });
 
-export const AnalyzeOutfitItemsInput = z.object({ post_id: z.string().uuid() });
+export const AnalyzeOutfitItemsInput = z.object({
+  post_id: z.string().uuid(),
+  /** The client's idempotency key: one charge and one detection per key. Optional,
+   * so builds that predate generation jobs keep working. */
+  clientRequestId: z.string().uuid().optional(),
+});
 export type AnalyzeOutfitItemsInputData = z.infer<typeof AnalyzeOutfitItemsInput>;
 
 /**
@@ -142,5 +147,7 @@ export const analyzeOutfitItems = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => AnalyzeOutfitItemsInput.parse(input))
   .handler(async ({ data, context }): Promise<PostItem[]> =>
-    analyzeOutfitItemsForUser(context.supabase, context.userId, data),
+    // A web caller cannot handle `{ status: 'running' }`, so a turn already in
+    // flight is waited for (attach) rather than reported.
+    analyzeOutfitItemsForUser(context.supabase, context.userId, data, { inFlight: "attach" }),
   );

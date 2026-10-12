@@ -573,6 +573,7 @@ export function pickWeatherBackfill(
   } = best;
   return {
     product,
-    rationale: "Added for today's temperature — structural outerwear the look was missing.",
+    // Shown on her color map (the reason line), so it carries no em dash.
+    rationale: "Added for today's temperature: the outer layer this look was missing.",
   };
 }

@@ -1,8 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { aiChatCompletion, isAiConfigured } from "@/lib/ai.server";
 import { logAiSpend } from "@/lib/ai-spend.server";
 import { isPaidStyleMember, payForLookImage } from "@/lib/credits.server";
+import {
+  GENERATION_DEADLINE_SECONDS,
+  lookImageFreeSlot,
+  resolveDailyAllowance,
+  withGenerationJob,
+  withJobId,
+  type GenerationJobRunning,
+  type GenerationSettlement,
+} from "@/lib/generation-jobs.server";
 import type { DailyLook } from "@/lib/generate-outfit.functions";
 import { generateStyleSheet, STYLE_SHEET_PROVIDER } from "@/lib/openrouter-style-sheet.server";
 import { ImageProviderRateLimitError } from "@/lib/openrouter-image.server";
@@ -108,7 +117,51 @@ export type StyleSheetPreviewResult =
   | { imageDataUri: string; mode: "style_sheet" }
   | { imageDataUri: null; mode: "unavailable"; reason: string };
 
-export type StyleSheetInputData = { outfit: DailyLook };
+/** Today's response plus the generation job it was recorded as (absent while
+ * the generation_jobs migration is not applied). */
+export type StyleSheetResponse = StyleSheetPreviewResult & { jobId?: string };
+
+/** Optional `clientRequestId`: the idempotency key of a job-aware client. */
+export type StyleSheetInputData = { outfit: DailyLook; clientRequestId?: string };
+
+export const STYLE_SHEET_UNVERIFIED_REASON =
+  "Your style sheet couldn't be verified safe this time.";
+export const STYLE_SHEET_FAILED_REASON = "Your style sheet couldn't be generated this time.";
+
+/**
+ * How a style sheet job is stored and replayed. A rendered sheet is stored as
+ * an image in the generations bucket (the result JSON only names its mode and
+ * path); an `unavailable` answer is a refundable failure, recorded with a code
+ * so a replay can give the same kind of answer.
+ */
+export const styleSheetJob = {
+  settle(result: StyleSheetPreviewResult): GenerationSettlement {
+    if (result.mode === "style_sheet") {
+      return { ok: true, result: { mode: "style_sheet" }, imageDataUri: result.imageDataUri };
+    }
+    return {
+      ok: false,
+      errorCode:
+        result.reason === STYLE_SHEET_UNVERIFIED_REASON
+          ? "qa_failed"
+          : result.reason === STYLE_SHEET_FAILED_REASON
+            ? "render_failed"
+            : "rate_limited",
+    };
+  },
+  fromStored({ imageDataUri }: { imageDataUri: string | null }): StyleSheetPreviewResult {
+    return imageDataUri
+      ? { imageDataUri, mode: "style_sheet" }
+      : { imageDataUri: null, mode: "unavailable", reason: STYLE_SHEET_FAILED_REASON };
+  },
+  failure(errorCode: string): StyleSheetPreviewResult {
+    return {
+      imageDataUri: null,
+      mode: "unavailable",
+      reason: errorCode === "qa_failed" ? STYLE_SHEET_UNVERIFIED_REASON : STYLE_SHEET_FAILED_REASON,
+    };
+  },
+};
 
 /**
  * Renders the identity-locked 5-view style sheet for today's recommended
@@ -121,12 +174,34 @@ export type StyleSheetInputData = { outfit: DailyLook };
  *
  * Shared verbatim by the web `generateStyleSheetPreview` server function and
  * the mobile `POST /api/v1/look/style-sheet` route.
+ *
+ * Runs as a generation job (src/lib/generation-jobs.server.ts) once the
+ * consent gate passes: the free first render or one credit is taken when the
+ * job starts, the sheet is stored at `generations/<uid>/<jobId>.jpg` before it
+ * is returned, a repeated `clientRequestId` replays it without a second
+ * charge, and an unavailable sheet or any failure hands back the free slot or
+ * the credit once. `inFlight: 'report'` answers `{ status: 'running', jobId }`
+ * while another sheet is still rendering; the default waits for it. Until the
+ * migration is applied this is exactly the old `payForLookImage` path.
  */
+export function renderStyleSheetForUser(
+  supabase: MilaSupabaseClient,
+  userId: string,
+  data: StyleSheetInputData,
+  options?: { inFlight?: "attach" },
+): Promise<StyleSheetResponse>;
+export function renderStyleSheetForUser(
+  supabase: MilaSupabaseClient,
+  userId: string,
+  data: StyleSheetInputData,
+  options: { inFlight: "report" },
+): Promise<StyleSheetResponse | GenerationJobRunning>;
 export async function renderStyleSheetForUser(
   supabase: MilaSupabaseClient,
   userId: string,
   data: StyleSheetInputData,
-): Promise<StyleSheetPreviewResult> {
+  options: { inFlight?: "attach" | "report" } = {},
+): Promise<StyleSheetResponse | GenerationJobRunning> {
   const { data: profileRow } = await supabase
     .from("profiles")
     .select("gender,photo_consent_at,profile_photo_path")
@@ -142,7 +217,7 @@ export async function renderStyleSheetForUser(
   const paidMember = await isPaidStyleMember(supabase, userId);
   const budget = createRenderBudget();
 
-  return payForLookImage(supabase, userId, async (): Promise<StyleSheetPreviewResult> => {
+  const render = async (): Promise<StyleSheetPreviewResult> => {
     try {
       const { data: photoBlob, error: downloadError } = await supabase.storage
         .from("profile-photos")
@@ -164,7 +239,7 @@ export async function renderStyleSheetForUser(
       // or failed QA moves on to the next attempt only when a whole render +
       // check can still finish before Vercel's 300s kill.
       const MAX_ATTEMPTS = 3;
-      let lastReason = "Your style sheet couldn't be verified safe this time.";
+      let lastReason = STYLE_SHEET_UNVERIFIED_REASON;
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         if (!budget.canStart(STYLE_SHEET_MIN_ATTEMPT_MS)) {
           console.warn(
@@ -223,14 +298,14 @@ export async function renderStyleSheetForUser(
             `[renderStyleSheetForUser] QA check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
             verification.reason,
           );
-          lastReason = "Your style sheet couldn't be verified safe this time.";
+          lastReason = STYLE_SHEET_UNVERIFIED_REASON;
         } catch (attemptError) {
           if (attemptError instanceof ImageProviderRateLimitError) throw attemptError;
           console.warn(
             `[renderStyleSheetForUser] attempt ${attempt}/${MAX_ATTEMPTS} threw:`,
             errorMessage(attemptError, "Unknown error"),
           );
-          lastReason = "Your style sheet couldn't be generated this time.";
+          lastReason = STYLE_SHEET_FAILED_REASON;
         }
       }
 
@@ -243,8 +318,28 @@ export async function renderStyleSheetForUser(
       return {
         imageDataUri: null,
         mode: "unavailable",
-        reason: "Your style sheet couldn't be generated this time.",
+        reason: STYLE_SHEET_FAILED_REASON,
       };
     }
-  });
+  };
+
+  const outcome = await withGenerationJob<StyleSheetPreviewResult>(
+    {
+      kind: "style_sheet",
+      userId,
+      clientRequestId: data.clientRequestId,
+      input: { outfit: data.outfit } as Json,
+      charge: true,
+      dailyAllowance: await resolveDailyAllowance(supabase, userId),
+      deadlineSeconds: GENERATION_DEADLINE_SECONDS,
+      inFlight: options.inFlight,
+      freeSlot: lookImageFreeSlot(userId),
+      settle: styleSheetJob.settle,
+      fromStored: styleSheetJob.fromStored,
+      failure: styleSheetJob.failure,
+      legacy: () => payForLookImage(supabase, userId, render),
+    },
+    render,
+  );
+  return outcome.status === "running" ? outcome : withJobId(outcome.value, outcome.jobId);
 }

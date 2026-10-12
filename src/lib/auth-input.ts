@@ -14,6 +14,9 @@ export const Signup = Credentials.extend({
     .min(3)
     .max(30)
     .regex(/^[a-zA-Z0-9_-]+$/),
+  // Where to bring her back to after the confirmation email. Re-checked with
+  // safeRedirect on the server; anything unsafe means the dashboard.
+  next: z.string().max(2048).optional(),
 }).strict();
 
 export const RequestReset = z

@@ -4,6 +4,7 @@ import {
   Images,
   History as HistoryIcon,
   Palette,
+  Bookmark,
   Sparkles,
   Camera,
   MessageCircle,
@@ -14,12 +15,14 @@ import {
 import { cn } from "@/lib/utils";
 import { AvatarInitial } from "@/components/ui/avatar-initial";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { ProfileMenu } from "@/components/layout/profile-menu";
 
 const primaryNavItems: { to: string; label: string; icon: typeof LayoutGrid }[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { to: "/feed", label: "Feed", icon: Images },
   { to: "/history", label: "History", icon: HistoryIcon },
   { to: "/palettes", label: "Palettes", icon: Palette },
+  { to: "/saved", label: "Saved pieces", icon: Bookmark },
   { to: "/style-profile", label: "Studio", icon: Sparkles },
 ];
 
@@ -201,10 +204,10 @@ export function Sidebar({
           {expanded && <ThemeToggle />}
         </div>
 
-        <Link
-          to="/account"
-          aria-label="Your account"
-          className="atelier-focus-ring flex items-center gap-2 rounded-control"
+        <ProfileMenu
+          side="top"
+          align="start"
+          triggerClassName="atelier-focus-ring flex cursor-pointer items-center gap-2 rounded-control text-left"
         >
           <AvatarInitial
             name={displayName}
@@ -218,7 +221,7 @@ export function Sidebar({
           >
             {displayName}
           </span>
-        </Link>
+        </ProfileMenu>
 
         <button
           type="button"

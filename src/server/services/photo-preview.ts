@@ -1,8 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { aiChatCompletion, isAiConfigured } from "@/lib/ai.server";
 import { logAiSpend } from "@/lib/ai-spend.server";
 import { isPaidStyleMember, payForLookImage } from "@/lib/credits.server";
+import {
+  GENERATION_DEADLINE_SECONDS,
+  lookImageFreeSlot,
+  resolveDailyAllowance,
+  withGenerationJob,
+  withJobId,
+  type GenerationJobRunning,
+  type GenerationSettlement,
+} from "@/lib/generation-jobs.server";
 import { computeMakeupEligibility, type DailyLook } from "@/lib/generate-outfit.functions";
 import { verifyFaceMatch } from "@/lib/face-match.server";
 import { ImageProviderRateLimitError } from "@/lib/openrouter-image.server";
@@ -98,7 +107,51 @@ export type PhotoPreviewResult =
   | { imageDataUri: string; mode: "photo_edit" }
   | { imageDataUri: null; mode: "unavailable"; reason: string };
 
-export type PhotoPreviewInputData = { outfit: DailyLook };
+/** Today's response plus the generation job it was recorded as (absent while
+ * the generation_jobs migration is not applied). */
+export type PhotoPreviewResponse = PhotoPreviewResult & { jobId?: string };
+
+/** Optional `clientRequestId`: the idempotency key of a job-aware client. */
+export type PhotoPreviewInputData = { outfit: DailyLook; clientRequestId?: string };
+
+export const PHOTO_PREVIEW_UNVERIFIED_REASON =
+  "Your photo preview couldn't be verified safe this time.";
+export const PHOTO_PREVIEW_FAILED_REASON = "Your photo preview couldn't be generated this time.";
+
+/**
+ * How a portrait preview job is stored and replayed: the edited photo goes
+ * to the generations bucket (the result JSON only names its mode and path);
+ * an `unavailable` answer is a refundable failure recorded with a code.
+ */
+export const photoPreviewJob = {
+  settle(result: PhotoPreviewResult): GenerationSettlement {
+    if (result.mode === "photo_edit") {
+      return { ok: true, result: { mode: "photo_edit" }, imageDataUri: result.imageDataUri };
+    }
+    return {
+      ok: false,
+      errorCode:
+        result.reason === PHOTO_PREVIEW_UNVERIFIED_REASON
+          ? "qa_failed"
+          : result.reason === PHOTO_PREVIEW_FAILED_REASON
+            ? "render_failed"
+            : "rate_limited",
+    };
+  },
+  fromStored({ imageDataUri }: { imageDataUri: string | null }): PhotoPreviewResult {
+    return imageDataUri
+      ? { imageDataUri, mode: "photo_edit" }
+      : { imageDataUri: null, mode: "unavailable", reason: PHOTO_PREVIEW_FAILED_REASON };
+  },
+  failure(errorCode: string): PhotoPreviewResult {
+    return {
+      imageDataUri: null,
+      mode: "unavailable",
+      reason:
+        errorCode === "qa_failed" ? PHOTO_PREVIEW_UNVERIFIED_REASON : PHOTO_PREVIEW_FAILED_REASON,
+    };
+  },
+};
 
 /**
  * Renders the single-photo edit preview (the member's own consented selfie
@@ -107,12 +160,32 @@ export type PhotoPreviewInputData = { outfit: DailyLook };
  *
  * Shared verbatim by the web `generatePhotoPreview` server function and the
  * mobile `POST /api/v1/look/photo-preview` route.
+ *
+ * Runs as a generation job once the consent gate passes, exactly like
+ * renderStyleSheetForUser: free first render or one credit at job start, the
+ * portrait stored at `generations/<uid>/<jobId>.jpg` before it is returned,
+ * replay on a repeated `clientRequestId`, one refund (or the free slot handed
+ * back) on any failure, and the old `payForLookImage` path until the
+ * migration is applied.
  */
+export function renderPhotoPreviewForUser(
+  supabase: MilaSupabaseClient,
+  userId: string,
+  data: PhotoPreviewInputData,
+  options?: { inFlight?: "attach" },
+): Promise<PhotoPreviewResponse>;
+export function renderPhotoPreviewForUser(
+  supabase: MilaSupabaseClient,
+  userId: string,
+  data: PhotoPreviewInputData,
+  options: { inFlight: "report" },
+): Promise<PhotoPreviewResponse | GenerationJobRunning>;
 export async function renderPhotoPreviewForUser(
   supabase: MilaSupabaseClient,
   userId: string,
   data: PhotoPreviewInputData,
-): Promise<PhotoPreviewResult> {
+  options: { inFlight?: "attach" | "report" } = {},
+): Promise<PhotoPreviewResponse | GenerationJobRunning> {
   const { data: profileRow } = await supabase
     .from("profiles")
     .select("gender,makeup_preference,hair_length,photo_consent_at,profile_photo_path")
@@ -128,7 +201,7 @@ export async function renderPhotoPreviewForUser(
   const paidMember = await isPaidStyleMember(supabase, userId);
   const budget = createRenderBudget();
 
-  return payForLookImage(supabase, userId, async (): Promise<PhotoPreviewResult> => {
+  const render = async (): Promise<PhotoPreviewResult> => {
     try {
       const { data: photoBlob, error: downloadError } = await supabase.storage
         .from("profile-photos")
@@ -168,7 +241,7 @@ export async function renderPhotoPreviewForUser(
       // function on the first bad attempt, wasting the other retries.
       // Caught per-attempt instead so it's treated like a failed
       // verification and the loop moves on.
-      let lastReason = "Your photo preview couldn't be verified safe this time.";
+      let lastReason = PHOTO_PREVIEW_UNVERIFIED_REASON;
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         // Same budget rule as renderStyleSheetForUser: never start an attempt
         // Vercel's 300s kill would cut off mid-render.
@@ -244,9 +317,11 @@ export async function renderPhotoPreviewForUser(
               // image-gen provider — a model update, a prompt regression —
               // shows up in distance trends before it starts failing outright.
               console.log(`[renderPhotoPreviewForUser] face-match distance ${faceMatch.distance}`);
-              // Not persisted here — same as the text-to-image inspiration
-              // path, this is a preview; saveOutfitToHistory uploads it
-              // only if/when the user explicitly saves the look.
+              // Not saved to her history here — same as the text-to-image
+              // inspiration path, this is a preview; saveOutfitToHistory
+              // uploads it only if/when the user explicitly saves the look.
+              // (The generation job keeps a private copy in the generations
+              // bucket so a reload can recover it; that is not her history.)
               return { imageDataUri: imageUrl, mode: "photo_edit" };
             }
             console.warn(
@@ -254,21 +329,21 @@ export async function renderPhotoPreviewForUser(
               faceMatch.reason,
               { distance: faceMatch.distance },
             );
-            lastReason = "Your photo preview couldn't be verified safe this time.";
+            lastReason = PHOTO_PREVIEW_UNVERIFIED_REASON;
             continue;
           }
           console.warn(
             `[renderPhotoPreviewForUser] protected-region check failed (attempt ${attempt}/${MAX_ATTEMPTS}):`,
             verification.reason,
           );
-          lastReason = "Your photo preview couldn't be verified safe this time.";
+          lastReason = PHOTO_PREVIEW_UNVERIFIED_REASON;
         } catch (attemptError) {
           if (attemptError instanceof ImageProviderRateLimitError) throw attemptError;
           console.warn(
             `[renderPhotoPreviewForUser] attempt ${attempt}/${MAX_ATTEMPTS} threw:`,
             errorMessage(attemptError, "Unknown error"),
           );
-          lastReason = "Your photo preview couldn't be generated this time.";
+          lastReason = PHOTO_PREVIEW_FAILED_REASON;
         }
       }
 
@@ -281,8 +356,28 @@ export async function renderPhotoPreviewForUser(
       return {
         imageDataUri: null,
         mode: "unavailable",
-        reason: "Your photo preview couldn't be generated this time.",
+        reason: PHOTO_PREVIEW_FAILED_REASON,
       };
     }
-  });
+  };
+
+  const outcome = await withGenerationJob<PhotoPreviewResult>(
+    {
+      kind: "photo_preview",
+      userId,
+      clientRequestId: data.clientRequestId,
+      input: { outfit: data.outfit } as Json,
+      charge: true,
+      dailyAllowance: await resolveDailyAllowance(supabase, userId),
+      deadlineSeconds: GENERATION_DEADLINE_SECONDS,
+      inFlight: options.inFlight,
+      freeSlot: lookImageFreeSlot(userId),
+      settle: photoPreviewJob.settle,
+      fromStored: photoPreviewJob.fromStored,
+      failure: photoPreviewJob.failure,
+      legacy: () => payForLookImage(supabase, userId, render),
+    },
+    render,
+  );
+  return outcome.status === "running" ? outcome : withJobId(outcome.value, outcome.jobId);
 }

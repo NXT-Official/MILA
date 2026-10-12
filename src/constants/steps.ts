@@ -22,6 +22,7 @@ export type OnboardingStepId =
   | "face-shape"
   | "hair-type"
   | "hair-length"
+  | "refine"
   | "makeup-preference"
   | "beauty-preferences"
   | "location"
@@ -68,13 +69,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     shortTitle: "Silhouette",
   },
   {
-    id: "measurements",
-    title: "Body measurements",
-    shortTitle: "Measurements",
-    description: "Optional — helps Mila describe fit and proportion in your looks.",
-    optional: true,
-  },
-  {
     id: "face-shape",
     title: "Face shape",
     shortTitle: "Face shape",
@@ -89,6 +83,20 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "Hair length",
     shortTitle: "Hair length",
     description: "Mila only recommends styles achievable at your current length.",
+  },
+  {
+    id: "refine",
+    title: "That's the essentials",
+    shortTitle: "Essentials",
+    description:
+      "Seven questions is all Mila needs to style you. Add more detail only if you want sharper looks.",
+  },
+  {
+    id: "measurements",
+    title: "Body measurements",
+    shortTitle: "Measurements",
+    description: "Optional — helps Mila describe fit and proportion in your looks.",
+    optional: true,
   },
   {
     id: "makeup-preference",
@@ -212,6 +220,11 @@ export function isOnboardingStepComplete(
       return hasHairType(profile);
     case "hair-length":
       return hasHairLength(profile);
+    case "refine":
+      // The fork after the seventh question. It gates nothing — the profile is
+      // already complete here — so it is always "complete" and never blocks
+      // the optional steps that follow it.
+      return true;
     case "makeup-preference":
     case "beauty-preferences":
     case "location":
@@ -253,7 +266,39 @@ export function getFirstIncompleteOnboardingStep(
   if (!hasFaceShape(profile)) return "face-shape";
   if (!hasHairType(profile)) return "hair-type";
   if (!hasHairLength(profile)) return "hair-length";
-  return "beauty-preferences";
+  return "refine";
+}
+
+/**
+ * The seven questions Mila needs before it can style you. `color-path` and
+ * `color-result` are two screens for one question — your coloring — so the
+ * numbering a member sees counts questions, not screens.
+ *
+ * Everything after `hair-length` is optional: `refine` is the fork that offers
+ * to stop, and the steps after it only run if she takes that offer.
+ */
+export const CORE_QUESTION_STEPS: OnboardingStepId[] = [
+  "color-path",
+  "color-result",
+  "gender",
+  "skin-depth",
+  "body-type",
+  "face-shape",
+  "hair-type",
+  "hair-length",
+];
+
+export const CORE_QUESTION_COUNT = 7;
+
+/**
+ * 1-based question number for the core screens, or null for every optional
+ * step and for the fork itself — the progress bar reads that null as "extras".
+ */
+export function getCoreQuestionNumber(step: OnboardingStepId): number | null {
+  const screen = CORE_QUESTION_STEPS.indexOf(step);
+  if (screen === -1) return null;
+  // Both colour screens are question 1, so screens 2..7 are questions 2..7.
+  return screen <= 1 ? 1 : screen;
 }
 
 export function isOnboardingStepReachable(

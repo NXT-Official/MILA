@@ -37,8 +37,9 @@ export function WelcomeStep({ onBegin }: { onBegin: () => void }) {
         that are specific to you — not generic inspiration.
       </p>
       <p className="mt-2 max-w-reading text-sm text-muted leading-relaxed">
-        It usually takes about five minutes. Your progress is saved as you go, and you can update
-        your profile at any time from Style Profile.
+        Seven quick questions — under two minutes. After that everything else is optional: answer
+        the extras only if you want even more precise looks. Your progress saves as you go, and you
+        can update your profile any time from Style Profile.
       </p>
 
       <ul className="mt-8 grid gap-4 sm:grid-cols-3">
