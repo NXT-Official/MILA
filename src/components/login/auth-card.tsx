@@ -29,7 +29,10 @@ export function AuthCard({ returnTo }: { returnTo?: string } = {}) {
   return (
     <Card className="w-full max-w-sm border-border/60 shadow-sm">
       <CardHeader className="space-y-1.5 pb-4">
-        <CardTitle className="font-serif text-xl">Get Started</CardTitle>
+        {/* CardTitle is a <div>; without the role the page had no heading at all. */}
+        <CardTitle role="heading" aria-level={1} className="font-serif text-xl">
+          Get Started
+        </CardTitle>
         <CardDescription className="text-xs">
           Log in or sign up to see your studio color dossier.
         </CardDescription>
@@ -42,7 +45,7 @@ export function AuthCard({ returnTo }: { returnTo?: string } = {}) {
           onClick={() => handleGoogleOAuth(returnTo)}
           className="w-full h-10 gap-2"
         >
-          <img src="/google.svg" alt="google-icon" className="size-5" />
+          <img src="/google.svg" alt="" className="size-5" />
           Continue with Google
         </Button>
 

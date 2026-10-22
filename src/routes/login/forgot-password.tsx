@@ -28,7 +28,10 @@ function ForgotPasswordPage() {
 
         <Card className="w-full max-w-sm border-border/60 shadow-sm">
           <CardHeader className="space-y-1.5 pb-4">
-            <CardTitle className="font-serif text-xl">Forgot password?</CardTitle>
+            {/* CardTitle is a <div>; without the role the page had no heading at all. */}
+            <CardTitle role="heading" aria-level={1} className="font-serif text-xl">
+              Forgot password?
+            </CardTitle>
             <CardDescription className="text-xs">
               Enter your studio email and we&apos;ll send you a link to reset it.
             </CardDescription>
