@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiChatCompletion, isAiConfigured } from "./ai.server";
+import { resetPlatformSettingsCache, resolveTextModel } from "./platform-settings.server";
 
 const fakeCaller = {
   supabase: {
@@ -11,6 +12,18 @@ const fakeCaller = {
 
 const originalFetch = globalThis.fetch;
 const originalKey = process.env.OPENROUTER_API_KEY;
+
+// The gateway resolves its model from platform_settings before calling the
+// provider. With service-role credentials in the environment (a developer's
+// .env) that read went through each test's stubbed fetch as its first call.
+// Settle the model on the shipped default first, with the network answering
+// a miss, so every test here sees only its own provider requests.
+beforeEach(async () => {
+  resetPlatformSettingsCache();
+  globalThis.fetch = (async () => new Response("{}", { status: 404 })) as unknown as typeof fetch;
+  await resolveTextModel();
+  globalThis.fetch = originalFetch;
+});
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
