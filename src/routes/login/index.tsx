@@ -35,7 +35,8 @@ function LoginPage() {
             <img src="/favicon.svg" alt="" className="size-7" />
             MILA
           </Link>
-          <p className="atelier-kicker mt-3">Personal AI Fashion Stylist</p>
+          {/* Darker than the kicker default: on phones the champagne blob sits behind it. */}
+          <p className="atelier-kicker mt-3 text-foreground/80">Personal AI Fashion Stylist</p>
         </div>
 
         <AuthCard returnTo={redirect} />
